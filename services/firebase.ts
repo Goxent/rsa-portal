@@ -6,7 +6,9 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    User as FirebaseUser
+    User as FirebaseUser,
+    GoogleAuthProvider,
+    signInWithPopup
 } from 'firebase/auth';
 import {
     getFirestore,
@@ -86,7 +88,35 @@ export const AuthService = {
     },
 
     loginWithGoogle: async (): Promise<any> => {
-        throw new Error("Google Login not yet configured for production.");
+        const provider = new GoogleAuthProvider();
+        const userCredential = await signInWithPopup(auth, provider);
+        const user = userCredential.user;
+
+        // Check if Profile exists
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+            return { uid: user.uid, ...userDoc.data() } as UserProfile;
+        } else {
+            // New User via Google -> Create Profile
+            const newUser: UserProfile = {
+                uid: user.uid,
+                email: user.email || '',
+                displayName: user.displayName || 'New User',
+                role: UserRole.STAFF, // Default
+                department: 'General',
+                isSetupComplete: false,
+                status: 'Active',
+                phoneNumber: '',
+                address: '',
+                position: 'Staff',
+                dateOfJoining: new Date().toISOString().split('T')[0],
+                gender: 'Other'
+            };
+            await setDoc(userDocRef, newUser);
+            return newUser;
+        }
     },
 
     logout: async () => {
