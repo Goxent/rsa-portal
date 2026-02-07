@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { AuthService, auth, db } from '../services/firebase'; // Import auth instance
+import { AuthService, auth, db } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -40,10 +39,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
-            setUser({ uid: firebaseUser.uid, ...userDoc.data() } as UserProfile);
+            const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
+            setUser(userData);
           } else {
             console.error("User authenticated but no profile found in Firestore");
-            // Optional: Create a default profile if missing?
+            // Create a default profile if missing
+            const defaultProfile: UserProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              role: 'STAFF' as any,
+              department: 'General',
+              isSetupComplete: false,
+              status: 'Active',
+              phoneNumber: '',
+              address: '',
+              position: 'Staff',
+              dateOfJoining: new Date().toISOString().split('T')[0],
+              gender: 'Other'
+            };
+            await AuthService.updateUserProfile(firebaseUser.uid, defaultProfile);
+            setUser(defaultProfile);
           }
         } catch (err) {
           console.error("Error fetching user profile:", err);
@@ -51,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // User is signed out
         setUser(null);
+        setEmailVerified(false);
       }
       setLoading(false);
     });
@@ -59,53 +76,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, pass: string) => {
-    // AuthService.login wraps signInWithEmailAndPassword and fetches profile
-    // The onAuthStateChanged listener will also fire, but we can update state here directly for speed
-    const profile = await AuthService.login(email, pass);
-    setUser(profile);
-    if (auth.currentUser) {
-      setEmailVerified(auth.currentUser.emailVerified);
+    try {
+      const profile = await AuthService.login(email, pass);
+      setUser(profile);
+      if (auth.currentUser) {
+        setEmailVerified(auth.currentUser.emailVerified);
+      }
+    } catch (error) {
+      console.error('Login error in context:', error);
+      throw error; // Re-throw to be handled by the component
     }
   };
 
   const signup = async (email: string, pass: string) => {
-    const profile = await AuthService.register(email, pass);
-    setUser(profile);
-    if (auth.currentUser) {
-      setEmailVerified(auth.currentUser.emailVerified);
+    try {
+      const profile = await AuthService.register(email, pass);
+      setUser(profile);
+      if (auth.currentUser) {
+        setEmailVerified(auth.currentUser.emailVerified);
+      }
+    } catch (error) {
+      console.error('Signup error in context:', error);
+      throw error; // Re-throw to be handled by the component
     }
   };
 
   const googleLogin = async () => {
-    await AuthService.loginWithGoogle();
-    if (auth.currentUser) {
-      setEmailVerified(auth.currentUser.emailVerified);
+    try {
+      const profile = await AuthService.loginWithGoogle();
+      setUser(profile);
+      if (auth.currentUser) {
+        setEmailVerified(auth.currentUser.emailVerified);
+      }
+    } catch (error) {
+      console.error('Google login error in context:', error);
+      throw error; // Re-throw to be handled by the component
     }
   };
 
   const logout = async () => {
-    await AuthService.logout();
-    setUser(null);
+    try {
+      await AuthService.logout();
+      setUser(null);
+      setEmailVerified(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   };
 
   const refreshProfile = async () => {
     if (user && auth.currentUser) {
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-      if (userDoc.exists()) {
-        setUser({ uid: auth.currentUser.uid, ...userDoc.data() } as UserProfile);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+          setUser({ uid: auth.currentUser.uid, ...userDoc.data() } as UserProfile);
+        }
+      } catch (error) {
+        console.error('Error refreshing profile:', error);
       }
     }
   };
 
   const reloadUser = async () => {
     if (auth.currentUser) {
-      await auth.currentUser.reload();
-      setEmailVerified(auth.currentUser.emailVerified);
+      try {
+        await auth.currentUser.reload();
+        setEmailVerified(auth.currentUser.emailVerified);
+      } catch (error) {
+        console.error('Error reloading user:', error);
+      }
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, emailVerified, loading, login, signup, googleLogin, logout, refreshProfile, reloadUser, isDemo: false }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        emailVerified,
+        loading,
+        login,
+        signup,
+        googleLogin,
+        logout,
+        refreshProfile,
+        reloadUser,
+        isDemo: false
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

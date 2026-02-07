@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -19,23 +18,32 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, emailVerified } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) return <PageLoader />;
 
-  // Strict check: User must be logged in
+  // User must be logged in
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // NOTE: The email verification check has been removed from here.
-  // Unverified users can now access protected routes, but a warning
-  // will be displayed within the dashboard or relevant pages.
-  // This allows users to complete profile setup even if email is not yet verified.
-
-  // Check if profile setup is complete (Name & Phone)
-  if (!user.isSetupComplete) {
+  // Check if profile setup is complete
+  // Allow access to verify-email page even if setup is not complete
+  if (!user.isSetupComplete && window.location.hash !== '#/setup-profile') {
     return <Navigate to="/setup-profile" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Special wrapper for ProfileSetup that only requires login
+const ProfileSetupRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <PageLoader />;
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -47,14 +55,30 @@ const App: React.FC = () => {
       <AuthProvider>
         <HashRouter>
           <Routes>
+            {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Verification Route */}
-            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            {/* Profile Setup - Protected but doesn't require isSetupComplete */}
+            <Route
+              path="/setup-profile"
+              element={
+                <ProfileSetupRoute>
+                  <ProfileSetupPage />
+                </ProfileSetupRoute>
+              }
+            />
 
-            {/* Profile Setup Route - Protected but doesn't require setupComplete to access itself */}
-            <Route path="/setup-profile" element={<ProfileSetupPage />} />
+            {/* Email Verification Page - Protected but doesn't require isSetupComplete */}
+            <Route
+              path="/verify-email"
+              element={
+                <ProfileSetupRoute>
+                  <VerifyEmailPage />
+                </ProfileSetupRoute>
+              }
+            />
 
+            {/* Protected Routes - Requires login AND profile setup */}
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout />
@@ -70,6 +94,9 @@ const App: React.FC = () => {
               <Route path="leaves" element={<LeavePage />} />
               <Route path="staff" element={<StaffPage />} />
             </Route>
+
+            {/* Catch all - redirect to login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </HashRouter>
       </AuthProvider>
@@ -78,4 +105,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
