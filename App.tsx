@@ -22,8 +22,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading) return <PageLoader />;
 
-  // Strict check: User must be logged in AND email must be verified
-  if (!user || !emailVerified) {
+  // Strict check: User must be logged in
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
