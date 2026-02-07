@@ -3,7 +3,18 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 // Initialize Gemini API
 // Note: process.env.API_KEY must be configured in the environment
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = process.env.API_KEY;
+let ai: GoogleGenAI | null = null;
+
+if (apiKey) {
+  try {
+    ai = new GoogleGenAI({ apiKey });
+  } catch (e) {
+    console.error("Failed to initialize Gemini AI", e);
+  }
+} else {
+  console.warn("Gemini API Key missing. AI features will be disabled.");
+}
 
 export const AIService = {
   /**
@@ -11,9 +22,11 @@ export const AIService = {
    * Uses Gemini 3 Flash for speed and JSON structure.
    */
   async generateSubtasks(title: string, description: string): Promise<string[]> {
+    if (!ai) return ["Review task requirements", "Update subtasks manually"];
+
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash', // Fallback to stable model if preview unavailable
         contents: `You are an expert audit manager. Create a concise checklist of 3 to 6 actionable subtasks for a task titled "${title}". 
         Context: "${description}".
         Return ONLY a raw JSON array of strings (e.g. ["Review documents", "Prepare draft"]).`,
@@ -25,7 +38,7 @@ export const AIService = {
           }
         }
       });
-      
+
       const text = response.text;
       if (!text) return [];
       return JSON.parse(text);
@@ -45,9 +58,11 @@ export const AIService = {
    * Uses Gemini 2.5 Flash with googleMaps tool.
    */
   async findLocationDetails(query: string): Promise<{ text: string, mapLink?: string }> {
+    if (!ai) return { text: "AI Location services unavailable (Missing Key)." };
+
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.0-flash-exp', // Updated model name
         contents: `Find the exact address for: ${query}. Provide the address in a single line.`,
         config: {
           tools: [{ googleMaps: {} }],
@@ -57,13 +72,13 @@ export const AIService = {
       let mapLink = undefined;
       // Extract Google Maps URI from grounding metadata
       const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-      
+
       if (chunks) {
         for (const chunk of chunks) {
-           if (chunk.maps?.uri) {
-               mapLink = chunk.maps.uri;
-               break; 
-           }
+          if (chunk.maps?.uri) {
+            mapLink = chunk.maps.uri;
+            break;
+          }
         }
       }
 
@@ -81,9 +96,11 @@ export const AIService = {
    * Researches a concept related to a specific resource using Google Search Grounding.
    */
   async researchConcept(resourceTitle: string, userQuery: string): Promise<string> {
+    if (!ai) return "AI research unavailable.";
+
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash',
         contents: `I am reading a document titled "${resourceTitle}". 
         Help me understand this concept: "${userQuery}".
         Provide a clear, professional explanation suitable for an auditor or accountant. 
@@ -92,7 +109,7 @@ export const AIService = {
           tools: [{ googleSearch: {} }],
         },
       });
-      
+
       // Return text directly. Grounding sources are automatically handled by the SDK but we just return the synthesis here.
       return response.text || "I couldn't find specific information on that topic.";
     } catch (error) {
@@ -105,11 +122,13 @@ export const AIService = {
    * Suggests the best staff member for a task based on workload and role.
    */
   async suggestStaffAssignment(
-    taskTitle: string, 
-    taskPriority: string, 
-    staffProfiles: any[], 
+    taskTitle: string,
+    taskPriority: string,
+    staffProfiles: any[],
     activeTasks: any[]
   ): Promise<{ uid: string, reasoning: string } | null> {
+    if (!ai) return null;
+
     try {
       // 1. Calculate workload per staff
       const workloadMap = staffProfiles.map(staff => {
@@ -141,7 +160,7 @@ export const AIService = {
       `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
           responseMimeType: "application/json",
