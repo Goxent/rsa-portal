@@ -12,6 +12,8 @@ import {
   Briefcase,
   BookOpen,
   UserCog,
+  AlertTriangle,
+  Bell,
   Sun,
   Moon,
   Settings

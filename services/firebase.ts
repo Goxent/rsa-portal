@@ -475,10 +475,18 @@ export const AuthService = {
             orderBy('createdAt', 'desc')
         );
 
-        return onSnapshot(q, (snapshot) => {
-            const notifs = snapshot.docs.map(d => docConverter<Notification>(d));
-            callback(notifs);
-        });
+        return onSnapshot(q,
+            (snapshot) => {
+                const notifs = snapshot.docs.map(d => docConverter<Notification>(d));
+                callback(notifs);
+            },
+            (error) => {
+                console.error("Firestore Notification Listener Error:", error);
+                if (error.code === 'failed-precondition') {
+                    console.warn("Notification index is still building. Please wait...");
+                }
+            }
+        );
     }
 };
 

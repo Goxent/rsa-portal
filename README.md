@@ -3,7 +3,7 @@ Advanced Workflow & Attendance Management System
 
 ## Features
 - Task Management (Kanban)
-- Attendance Tracking (Geolocation based)
+- Attendance Tracking
 - Client Management
 - Staff Directory & Roles
 - Knowledge Base
