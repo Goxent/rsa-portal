@@ -63,15 +63,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // The onAuthStateChanged listener will also fire, but we can update state here directly for speed
     const profile = await AuthService.login(email, pass);
     setUser(profile);
+    if (auth.currentUser) {
+      setEmailVerified(auth.currentUser.emailVerified);
+    }
   };
 
   const signup = async (email: string, pass: string) => {
     const profile = await AuthService.register(email, pass);
     setUser(profile);
+    if (auth.currentUser) {
+      setEmailVerified(auth.currentUser.emailVerified);
+    }
   };
 
   const googleLogin = async () => {
     await AuthService.loginWithGoogle();
+    if (auth.currentUser) {
+      setEmailVerified(auth.currentUser.emailVerified);
+    }
   };
 
   const logout = async () => {

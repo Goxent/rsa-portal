@@ -28,10 +28,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if email is verified
-  if (!emailVerified) {
-    return <Navigate to="/verify-email" replace />;
-  }
+  // NOTE: The email verification check has been removed from here.
+  // Unverified users can now access protected routes, but a warning
+  // will be displayed within the dashboard or relevant pages.
+  // This allows users to complete profile setup even if email is not yet verified.
 
   // Check if profile setup is complete (Name & Phone)
   if (!user.isSetupComplete) {
