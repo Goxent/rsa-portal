@@ -1,7 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { AuthService } from '../services/firebase';
+import { AuthService, auth, db } from '../services/firebase'; // Import auth instance
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -25,45 +27,50 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [emailVerified, setEmailVerified] = useState(true); // Always true for prototype
+  const [emailVerified, setEmailVerified] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Listen for Authentication State Changes (Persistence)
   useEffect(() => {
-    // Initial Load - Check Local Storage for Mock Session
-    const loadSession = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in, fetch their profile from Firestore
+        setEmailVerified(firebaseUser.emailVerified);
         try {
-            const sessionStr = localStorage.getItem('rsa_mock_session');
-            if (sessionStr) {
-                const userData = JSON.parse(sessionStr);
-                // Ensure profile is up to date with "DB"
-                const freshProfile = await AuthService.syncUserProfile(userData);
-                setUser(freshProfile);
-            }
-        } catch (e) {
-            console.error("Session load failed", e);
-        } finally {
-            setLoading(false);
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            setUser({ uid: firebaseUser.uid, ...userDoc.data() } as UserProfile);
+          } else {
+            console.error("User authenticated but no profile found in Firestore");
+            // Optional: Create a default profile if missing?
+          }
+        } catch (err) {
+          console.error("Error fetching user profile:", err);
         }
-    };
-    loadSession();
+      } else {
+        // User is signed out
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, pass: string) => {
-    const user = await AuthService.login(email, pass);
-    setUser(user);
-    setEmailVerified(true);
+    // AuthService.login wraps signInWithEmailAndPassword and fetches profile
+    // The onAuthStateChanged listener will also fire, but we can update state here directly for speed
+    const profile = await AuthService.login(email, pass);
+    setUser(profile);
   };
 
   const signup = async (email: string, pass: string) => {
-    const user = await AuthService.register(email, pass);
-    setUser(user); // Auto login on signup for prototype
-    setEmailVerified(true);
+    const profile = await AuthService.register(email, pass);
+    setUser(profile);
   };
 
   const googleLogin = async () => {
-    const user = await AuthService.loginWithGoogle();
-    setUser(user);
-    setEmailVerified(true);
+    await AuthService.loginWithGoogle();
   };
 
   const logout = async () => {
@@ -72,14 +79,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
-    if (user) {
-       const profile = await AuthService.syncUserProfile(user);
-       setUser(profile);
+    if (user && auth.currentUser) {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      if (userDoc.exists()) {
+        setUser({ uid: auth.currentUser.uid, ...userDoc.data() } as UserProfile);
+      }
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, emailVerified, loading, login, signup, googleLogin, logout, refreshProfile, isDemo: true }}>
+    <AuthContext.Provider value={{ user, emailVerified, loading, login, signup, googleLogin, logout, refreshProfile, isDemo: false }}>
       {children}
     </AuthContext.Provider>
   );
