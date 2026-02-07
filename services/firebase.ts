@@ -24,7 +24,8 @@ import {
     deleteDoc,
     query,
     where,
-    orderBy
+    orderBy,
+    onSnapshot
 } from 'firebase/firestore';
 import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource } from '../types';
 
@@ -293,6 +294,22 @@ export const AuthService = {
         return snapshot.docs.map(d => docConverter<UserProfile>(d));
     },
 
+    updateUserRole: async (uid: string, role: UserRole) => {
+        await updateDoc(doc(db, 'users', uid), { role });
+    },
+
+    seedDemoData: async () => {
+        const demoClients: Partial<Client>[] = [
+            { name: 'Apple Inc.', code: 'CL-001', serviceType: 'Audit' as any, status: 'Active' as any, category: 'A' as any, industry: 'Trading' as any },
+            { name: 'Tesla Motors', code: 'CL-002', serviceType: 'Tax' as any, status: 'Active' as any, category: 'A' as any, industry: 'Manufacturing' as any },
+            { name: 'Upper Tamakoshi', code: 'CL-003', serviceType: 'Consulting' as any, status: 'Active' as any, category: 'B' as any, industry: 'Hydropower' as any }
+        ];
+
+        for (const c of demoClients) {
+            await addDoc(collection(db, 'clients'), c);
+        }
+    },
+
     // --- CLIENTS ---
     getAllClients: async (): Promise<Client[]> => {
         const q = query(collection(db, 'clients'));
@@ -435,6 +452,33 @@ export const AuthService = {
     updateResource: async (resource: Resource) => {
         const { id, ...data } = resource;
         await updateDoc(doc(db, 'resources', id), data);
+    },
+
+    // --- NOTIFICATIONS ---
+    createNotification: async (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {
+        await addDoc(collection(db, 'notifications'), {
+            ...notification,
+            read: false,
+            createdAt: new Date().toISOString()
+        });
+    },
+
+    markAsRead: async (id: string) => {
+        await updateDoc(doc(db, 'notifications', id), { read: true });
+    },
+
+    // Real-time listener
+    subscribeToNotifications: (userId: string, callback: (notifications: Notification[]) => void) => {
+        const q = query(
+            collection(db, 'notifications'),
+            where('userId', 'in', [userId, 'ALL']), // 'ALL' for global events
+            orderBy('createdAt', 'desc')
+        );
+
+        return onSnapshot(q, (snapshot) => {
+            const notifs = snapshot.docs.map(d => docConverter<Notification>(d));
+            callback(notifs);
+        });
     }
 };
 

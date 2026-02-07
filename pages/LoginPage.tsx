@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
   const { login, signup, googleLogin } = useAuth();
   const navigate = useNavigate();
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -44,6 +44,7 @@ const LoginPage: React.FC = () => {
     } catch (err: any) {
       console.error('Authentication error:', err);
       setError(err.message || 'Authentication failed. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -146,7 +147,7 @@ const LoginPage: React.FC = () => {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleAuth}>
+          <form className="space-y-6" onSubmit={handleLogin}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
                 Email address

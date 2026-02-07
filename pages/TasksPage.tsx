@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, DragEvent } from 'react';
 import {
     Plus, Filter, Search, Calendar, Trash2, X,
     LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, Edit2, CheckCircle2, Lock, AlertCircle, ChevronDown, Check, Sparkles, Loader2, Wand2
@@ -61,18 +61,12 @@ const TasksPage: React.FC = () => {
 
         const task = tasks.find(t => t.id === draggedTaskId);
         if (task && task.status !== newStatus) {
-            // Optimistic Update
-            const updatedTasks = tasks.map(t =>
-                t.id === draggedTaskId ? { ...t, status: newStatus } : t
-            );
-            setTasks(updatedTasks);
-
-            // API Update
+            const updatedTask = { ...task, status: newStatus };
             try {
-                await AuthService.saveTask({ ...task, status: newStatus });
-            } catch (error) {
-                console.error("Failed to update task status", error);
-                fetchData(); // Revert on failure
+                await AuthService.saveTask(updatedTask);
+                fetchData();
+            } catch (err) {
+                console.error("Failed to move task:", err);
             }
         }
         setDraggedTaskId(null);
@@ -184,11 +178,11 @@ const TasksPage: React.FC = () => {
             return;
         }
 
-        const client = clientsList.find(c => c.id === currentTask.clientId);
+        const client = clientsList.find((c: Client) => c.id === currentTask.clientId);
         const clientName = client ? client.name : 'Internal Task';
 
-        const assignedNames = currentTask.assignedTo!.map(uid => {
-            const u = usersList.find(user => user.uid === uid);
+        const assignedNames = currentTask.assignedTo!.map((uid: string) => {
+            const u = usersList.find((user: UserProfile) => user.uid === uid);
             return u ? u.displayName : 'Unknown';
         });
 
@@ -292,7 +286,7 @@ const TasksPage: React.FC = () => {
     const deleteSubtask = (subId: string) => {
         setCurrentTask(prev => ({
             ...prev,
-            subtasks: prev.subtasks?.filter(st => st.id !== subId)
+            subtasks: prev.subtasks?.filter((st: SubTask) => st.id !== subId)
         }));
     };
 
@@ -310,8 +304,8 @@ const TasksPage: React.FC = () => {
         return (
             <div
                 className="flex-1 min-w-[320px] flex flex-col h-full max-h-[calc(100vh-240px)] animate-fade-in-up"
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, status)}
+                onDragOver={(e: React.DragEvent) => handleDragOver(e)}
+                onDrop={(e: React.DragEvent) => handleDrop(e, status)}
             >
                 <div className={`p-4 rounded-xl border mb-3 flex justify-between items-center backdrop-blur-md ${colorClass} bg-opacity-10 border-opacity-30`}>
                     <div className="flex items-center space-x-2">
@@ -333,7 +327,7 @@ const TasksPage: React.FC = () => {
                             <div
                                 key={task.id}
                                 draggable
-                                onDragStart={(e) => handleDragStart(e, task.id)}
+                                onDragStart={(e: React.DragEvent) => handleDragStart(e, task.id)}
                                 onClick={() => handleOpenEdit(task)}
                                 className={`glass-panel p-5 rounded-xl hover:border-brand-500/40 hover:bg-navy-700 transition-all cursor-grab active:cursor-grabbing group relative overflow-hidden shadow-lg border border-white/5 animate-fade-in-up transform hover:-translate-y-1 ${isDragging ? 'opacity-40 ring-2 ring-brand-500 ring-offset-2 ring-offset-navy-900' : ''}`}
                                 style={{ animationDelay: `${idx * 50}ms` }}
@@ -519,19 +513,19 @@ const TasksPage: React.FC = () => {
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 relative">
                             {/* Basic Fields */}
                             <div className="space-y-4">
-                                <div><label className="block text-sm font-medium text-gray-300 mb-1">Title <span className="text-red-400">*</span></label><input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.title} onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} placeholder="e.g. Q4 Audit for Alpha" /></div>
+                                <div><label className="block text-sm font-medium text-gray-300 mb-1">Title <span className="text-red-400">*</span></label><input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.title} onChange={(e: ChangeEvent<HTMLInputElement>) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} placeholder="e.g. Q4 Audit for Alpha" /></div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-300 mb-1">Client <span className="text-red-400">*</span></label>
-                                        <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.clientId || ''} onChange={(e) => setCurrentTask({ ...currentTask, clientId: e.target.value })} disabled={!hasEditPermission}>
+                                        <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.clientId || ''} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, clientId: e.target.value })} disabled={!hasEditPermission}>
                                             <option value="">Select Client</option>
-                                            {clientsList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            {clientsList.map((c: Client) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select>
                                     </div>
-                                    <div><label className="block text-sm font-medium text-gray-300 mb-1">Status</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.status} onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>{Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}</select></div>
+                                    <div><label className="block text-sm font-medium text-gray-300 mb-1">Status</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.status} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>{Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}</select></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="block text-sm font-medium text-gray-300 mb-1">Priority</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.priority} onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasEditPermission}>{Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+                                    <div><label className="block text-sm font-medium text-gray-300 mb-1">Priority</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.priority} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasEditPermission}>{Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}</select></div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-300 mb-1">
                                             Due Date <span className="text-red-400">*</span>

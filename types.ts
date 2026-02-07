@@ -131,11 +131,14 @@ export interface CalendarEvent {
 
 export interface Notification {
   id: string;
+  userId: string; // The user who should see this notification
   title: string;
   message: string;
   type: 'WARNING' | 'INFO' | 'SUCCESS';
+  category: 'TASK' | 'LEAVE' | 'EVENT' | 'SYSTEM';
+  link?: string; // Optional navigation link (e.g., /tasks)
   read: boolean;
-  createdAt: string;
+  createdAt: string; // ISO Timestamp
 }
 
 export interface Resource {

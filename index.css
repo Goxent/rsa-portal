@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply font-sans antialiased transition-colors duration-300;
+    }
+}
+
+/* Theme Variabels & Base Classes */
+@layer components {
+    .theme-dark {
+        --bg-main: #0a0e1a;
+        --text-main: #94a3b8;
+        --glass-bg: rgba(30, 41, 59, 0.4);
+        --glass-border: rgba(59, 130, 246, 0.1);
+    }
+
+    .theme-light {
+        --bg-main: #f8fafc;
+        --text-main: #475569;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(37, 99, 235, 0.1);
+    }
+
+    body {
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        background-image:
+            radial-gradient(circle at 20% 30%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 50%);
+        background-attachment: fixed;
+        overflow-x: hidden;
+    }
+
+    .dark body {
+        background-color: #0a0e1a;
+        background-image:
+            radial-gradient(circle at 20% 30%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 50%);
+    }
+
+    .glass-panel {
+        @apply backdrop-blur-xl border transition-all duration-300;
+        background: rgba(30, 41, 59, 0.4);
+        border-color: rgba(59, 130, 246, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .dark .glass-panel {
+        background: rgba(30, 41, 59, 0.4);
+        border-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .light .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        border-color: rgba(37, 99, 235, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+
+    .glass-modal {
+        @apply backdrop-blur-2xl border transition-all duration-300;
+        background: rgba(15, 23, 42, 0.95);
+        border-color: rgba(59, 130, 246, 0.2);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .light .glass-modal {
+        background: rgba(255, 255, 255, 0.98);
+        border-color: rgba(37, 99, 235, 0.2);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    }
+
+    .glass-card {
+        @apply backdrop-blur-lg border rounded-xl transition-all duration-300;
+        background: rgba(30, 41, 59, 0.3);
+        border-color: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .light .glass-card {
+        background: rgba(255, 255, 255, 0.5);
+        border-color: rgba(37, 99, 235, 0.05);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    .glass-input,
+    select,
+    textarea,
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    input[type="email"],
+    input[type="number"],
+    input[type="password"] {
+        @apply rounded-lg px-3 py-2 text-sm transition-all duration-300 outline-none !important;
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(59, 130, 246, 0.2) !important;
+        color: #f1f5f9 !important;
+    }
+
+    .light .glass-input,
+    .light select,
+    .light textarea,
+    .light input {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        border: 1px solid rgba(203, 213, 225, 0.5) !important;
+        color: #1e293b !important;
+    }
+
+    .glass-input:focus,
+    select:focus,
+    textarea:focus,
+    input:focus {
+        @apply border-brand-600 ring-2 ring-brand-500/10 !important;
+    }
+
+    .btn-primary {
+        @apply px-4 py-2 bg-gradient-to-br from-brand-600 to-brand-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-brand-900/40 hover:-translate-y-0.5 hover:shadow-brand-900/50 active:scale-95;
+    }
+
+    .light .btn-primary {
+        @apply shadow-brand-500/20 hover:shadow-brand-500/30;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3b82f6, #06b6d4);
+    border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    border: 2px solid #0f172a;
+}

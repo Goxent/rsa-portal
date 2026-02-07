@@ -15,6 +15,7 @@ import ResourcesPage from './pages/ResourcesPage';
 import ProfileSetupPage from './pages/ProfileSetupPage';
 import StaffPage from './pages/StaffPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import SystemSettingsPage from './pages/SystemSettingsPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -93,6 +94,7 @@ const App: React.FC = () => {
               <Route path="clients" element={<ClientsPage />} />
               <Route path="leaves" element={<LeavePage />} />
               <Route path="staff" element={<StaffPage />} />
+              <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
 
             {/* Catch all - redirect to login */}
