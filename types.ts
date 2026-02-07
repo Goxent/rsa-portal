@@ -1,5 +1,6 @@
 
 export enum UserRole {
+  MASTER_ADMIN = 'MASTER_ADMIN',
   ADMIN = 'ADMIN',
   MANAGER = 'MANAGER',
   STAFF = 'STAFF'
@@ -138,11 +139,13 @@ export interface Notification {
 }
 
 export interface Resource {
-    id: string;
-    title: string;
-    type: 'folder' | 'pdf' | 'doc' | 'sheet';
-    category: string;
-    updatedAt: string;
-    link: string;
-    previewLink?: string;
+  id: string;
+  title: string;
+  type: 'folder' | 'pdf' | 'doc' | 'sheet' | 'article';
+  category: string; // Keep for legacy/filtering
+  updatedAt: string;
+  link?: string; // Optional for folders/articles
+  content?: string; // HTML/Markdown for articles
+  parentId?: string | null; // For hierarchy
+  previewLink?: string;
 }

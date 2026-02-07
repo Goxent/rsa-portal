@@ -9,7 +9,8 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     sendEmailVerification,
-    ActionCodeSettings
+    ActionCodeSettings,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import {
     getFirestore,
@@ -164,6 +165,21 @@ export const AuthService = {
                 throw new Error('Email/password accounts are not enabled. Please contact support.');
             } else {
                 throw new Error(error.message || 'Registration failed. Please try again.');
+            }
+        }
+    },
+
+    resetPassword: async (email: string) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+        } catch (error: any) {
+            console.error("Password Reset Error:", error);
+            if (error.code === 'auth/user-not-found') {
+                throw new Error('No account found with this email.');
+            } else if (error.code === 'auth/invalid-email') {
+                throw new Error('Invalid email address format.');
+            } else {
+                throw new Error('Failed to send reset email. Please try again.');
             }
         }
     },
@@ -414,6 +430,11 @@ export const AuthService = {
 
     deleteResource: async (id: string) => {
         await deleteDoc(doc(db, 'resources', id));
+    },
+
+    updateResource: async (resource: Resource) => {
+        const { id, ...data } = resource;
+        await updateDoc(doc(db, 'resources', id), data);
     }
 };
 

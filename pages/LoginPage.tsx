@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Briefcase, AlertCircle, Mail, ArrowRight, Lock, UserPlus, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Briefcase, AlertCircle, Mail, ArrowRight, Lock, UserPlus, Eye, EyeOff, CheckCircle, X, KeyRound } from 'lucide-react';
+import { AuthService } from '../services/firebase';
 
 const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
@@ -11,6 +12,11 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Reset Password State
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
   const { login, signup, googleLogin } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +61,22 @@ const LoginPage: React.FC = () => {
     } catch (err: any) {
       console.error('Google login error:', err);
       setError(err.message || 'Google sign-in failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) return;
+    setLoading(true);
+    setResetStatus(null);
+    try {
+      await AuthService.resetPassword(resetEmail);
+      setResetStatus({ type: 'success', msg: 'Password reset link sent! Check your email.' });
+      setResetEmail('');
+    } catch (err: any) {
+      setResetStatus({ type: 'error', msg: err.message });
+    } finally {
       setLoading(false);
     }
   };
@@ -149,9 +171,20 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1.5">
-                Password
-              </label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                  Password
+                </label>
+                {mode === 'LOGIN' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsResetOpen(true)}
+                    className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-500" />
@@ -248,6 +281,57 @@ const LoginPage: React.FC = () => {
           &copy; {new Date().getFullYear()} R. Sapkota & Associates. <br />Secure RSA Portal System.
         </p>
       </div>
+
+      {/* Reset Password Modal */}
+      {isResetOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="glass-panel w-full max-w-md p-6 rounded-2xl border border-white/10 shadow-2xl relative">
+            <button
+              onClick={() => { setIsResetOpen(false); setResetStatus(null); }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-brand-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <KeyRound className="text-brand-400" size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-white">Reset Password</h3>
+              <p className="text-sm text-gray-400 mt-1">Enter your email to receive a reset link.</p>
+            </div>
+
+            {resetStatus && (
+              <div className={`mb-4 p-3 rounded-lg flex items-start ${resetStatus.type === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-200' : 'bg-red-500/10 border border-red-500/20 text-red-200'}`}>
+                {resetStatus.type === 'success' ? <CheckCircle size={16} className="mr-2 mt-0.5" /> : <AlertCircle size={16} className="mr-2 mt-0.5" />}
+                <span className="text-sm">{resetStatus.msg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Email Address</label>
+                <input
+                  required
+                  type="email"
+                  className="w-full glass-input rounded-xl px-4 py-3 text-sm text-white focus:ring-2 focus:ring-brand-500 outline-none"
+                  value={resetEmail}
+                  onChange={e => setResetEmail(e.target.value)}
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-brand-900/20 disabled:opacity-70 flex justify-center"
+              >
+                {loading ? <span className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></span> : 'Send Reset Link'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
