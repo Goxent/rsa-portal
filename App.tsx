@@ -15,6 +15,7 @@ import CalendarPage from './pages/CalendarPage';
 import ResourcesPage from './pages/ResourcesPage';
 import ProfileSetupPage from './pages/ProfileSetupPage';
 import StaffPage from './pages/StaffPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -25,6 +26,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // Strict check: User must be logged in
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Check if email is verified
+  if (!emailVerified) {
+    return <Navigate to="/verify-email" replace />;
   }
 
   // Check if profile setup is complete (Name & Phone)
@@ -42,6 +48,9 @@ const App: React.FC = () => {
         <HashRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+
+            {/* Verification Route */}
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
 
             {/* Profile Setup Route - Protected but doesn't require setupComplete to access itself */}
             <Route path="/setup-profile" element={<ProfileSetupPage />} />

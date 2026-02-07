@@ -8,7 +8,8 @@ import {
     onAuthStateChanged,
     User as FirebaseUser,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    sendEmailVerification
 } from 'firebase/auth';
 import {
     getFirestore,
@@ -57,8 +58,23 @@ export const AuthService = {
         if (userDoc.exists()) {
             return { uid, ...userDoc.data() } as UserProfile;
         } else {
-            // Fallback if auth exists but no profile (shouldn't happen ideally)
-            throw new Error("User Profile not found in database.");
+            // Fallback: If Auth successful but no Profile, create one!
+            const newUser: UserProfile = {
+                uid,
+                email,
+                displayName: 'Staff Member',
+                role: UserRole.STAFF, // Default role
+                department: 'General',
+                isSetupComplete: false,
+                status: 'Active',
+                phoneNumber: '',
+                address: '',
+                position: 'Staff',
+                dateOfJoining: new Date().toISOString().split('T')[0],
+                gender: 'Other'
+            };
+            await setDoc(doc(db, 'users', uid), newUser);
+            return newUser;
         }
     },
 
@@ -84,6 +100,14 @@ export const AuthService = {
         };
 
         await setDoc(doc(db, 'users', uid), newUser);
+
+        // Send Verification Email
+        try {
+            await sendEmailVerification(userCredential.user);
+        } catch (e) {
+            console.error("Failed to send verification email", e);
+        }
+
         return newUser;
     },
 
@@ -121,6 +145,12 @@ export const AuthService = {
 
     logout: async () => {
         await signOut(auth);
+    },
+
+    sendVerification: async () => {
+        if (auth.currentUser) {
+            await sendEmailVerification(auth.currentUser);
+        }
     },
 
     // Get current profile (used for sync)

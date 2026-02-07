@@ -14,6 +14,7 @@ interface AuthContextType {
   googleLogin: () => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  reloadUser: () => Promise<void>;
   isDemo: boolean;
 }
 
@@ -87,8 +88,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const reloadUser = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setEmailVerified(auth.currentUser.emailVerified);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, emailVerified, loading, login, signup, googleLogin, logout, refreshProfile, isDemo: false }}>
+    <AuthContext.Provider value={{ user, emailVerified, loading, login, signup, googleLogin, logout, refreshProfile, reloadUser, isDemo: false }}>
       {children}
     </AuthContext.Provider>
   );
