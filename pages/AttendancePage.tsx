@@ -191,7 +191,7 @@ const AttendancePage: React.FC = () => {
                     status: isLateEntry ? 'LATE' : 'PRESENT',
                     notes: isLateEntry ? `Late Reason: ${lateReason}` : '',
                     workHours: 0,
-                    location: coords ? { lat: coords.latitude, lng: coords.longitude } : undefined
+                    ...(coords ? { location: { lat: coords.latitude, lng: coords.longitude } } : {})
                 };
 
                 await AuthService.recordAttendance(newRecord);
