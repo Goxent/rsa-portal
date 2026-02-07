@@ -11,7 +11,13 @@
     ],
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "vite/client"
+    ],
+    "include": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "vite-env.d.ts"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
