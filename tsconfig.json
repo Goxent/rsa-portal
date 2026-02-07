@@ -14,22 +14,12 @@
       "node",
       "vite/client"
     ],
-    "include": [
-      "src/**/*.ts",
-      "src/**/*.tsx",
-      "vite-env.d.ts"
-    ],
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "allowJs": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite-env.d.ts"
+  ]
 }
