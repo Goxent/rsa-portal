@@ -1,0 +1,7 @@
+{
+  "name": "R. Sapkota Attendance & Workflow System",
+  "description": "A comprehensive office management system for audit firms featuring attendance tracking, task management, client handling, and reporting.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
