@@ -96,7 +96,7 @@ export const AuthService = {
                     phoneNumber: '',
                     address: '',
                     position: 'Staff',
-                    dateOfJoining: new Date().toISOString().split('T')[0],
+                    dateOfJoining: new Date().toLocaleDateString('en-CA'),
                     gender: 'Other'
                 };
                 await setDoc(doc(db, 'users', uid), newUser);
@@ -136,7 +136,7 @@ export const AuthService = {
                 phoneNumber: '',
                 address: '',
                 position: 'Staff',
-                dateOfJoining: new Date().toISOString().split('T')[0],
+                dateOfJoining: new Date().toLocaleDateString('en-CA'),
                 gender: 'Other'
             };
 
@@ -215,7 +215,7 @@ export const AuthService = {
                     phoneNumber: user.phoneNumber || '',
                     address: '',
                     position: 'Staff',
-                    dateOfJoining: new Date().toISOString().split('T')[0],
+                    dateOfJoining: new Date().toLocaleDateString('en-CA'),
                     gender: 'Other'
                 };
                 await setDoc(userDocRef, newUser);

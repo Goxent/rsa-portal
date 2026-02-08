@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AIService } from '../services/ai';
 import { toBS } from '../utils/dateUtils';
+import NepaliDatePicker from '../components/NepaliDatePicker';
 import ClientSelect from '../components/ClientSelect';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
@@ -140,7 +141,7 @@ const TasksPage: React.FC = () => {
             status: TaskStatus.NOT_STARTED,
             priority: TaskPriority.MEDIUM,
             subtasks: [],
-            dueDate: new Date().toISOString().split('T')[0]
+            dueDate: new Date().toLocaleDateString('en-CA')
         });
         setIsModalOpen(true);
     };
@@ -163,7 +164,7 @@ const TasksPage: React.FC = () => {
                 createdBy: user?.uid || 'system',
                 createdAt: new Date().toISOString()
             })),
-            dueDate: new Date().toISOString().split('T')[0]
+            dueDate: new Date().toLocaleDateString('en-CA')
         });
         setIsModalOpen(true);
     };
@@ -495,8 +496,13 @@ const TasksPage: React.FC = () => {
                                         <ClientSelect clients={clientsList} value={currentTask.clientId || ''} onChange={(id) => setCurrentTask({ ...currentTask, clientId: id as string })} disabled={!hasEditPermission} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Due Date <span className="text-red-400">*</span></label>
-                                        <input type="date" className="w-full glass-input" value={currentTask.dueDate} onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })} disabled={!hasEditPermission} />
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Due Date (BS) <span className="text-red-400">*</span></label>
+                                        <NepaliDatePicker
+                                            value={currentTask.dueDate}
+                                            onChange={(adDate) => setCurrentTask({ ...currentTask, dueDate: adDate })}
+                                            disabled={!hasEditPermission}
+                                            placeholder="Select due date..."
+                                        />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

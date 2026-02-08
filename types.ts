@@ -101,20 +101,26 @@ export interface Client {
   status: 'Active' | 'Inactive';
   email?: string;
   phone?: string;
+
+  // Extended Details
   contactPersonName?: string;
   contactPersonNumber?: string;
   panNumber?: string;
+  address?: string; // Main Office Address
+  city?: string;
+
   notes?: string;
-  // New Fields
+
+  // Classification
   category?: 'A' | 'B' | 'C';
   industry?: 'Hydropower' | 'Manufacturing' | 'Trading' | 'Consulting' | 'Security Broker' | 'Other';
-  address?: string;
   riskProfile?: 'LOW' | 'MEDIUM' | 'HIGH';
+
   // Audit & Billing Section
   auditorSignatory?: string; // Flexible signatory (e.g. R. Sapkota & Associates, etc.)
   billingAmount?: number;
   isPaymentReceived?: boolean;
-  fiscalYear?: string;
+  fiscalYear?: string; // e.g., "2080-81"
 }
 
 export interface LeaveRequest {

@@ -1,18 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Folder, ExternalLink, Search, Plus, Building2, Mail, Phone, Briefcase, X, ArrowUpDown,
-    FileText, Edit, Save, User, Grid, List as ListIcon, FileDown, Trash2, MapPin,
-    AlertTriangle, Loader2, MoreVertical, LayoutDashboard, Users, UserCheck, UserX
+    Plus, Search, Building2, MapPin, Phone, Mail,
+    Briefcase, FileText, Globe, MoreVertical, CreditCard,
+    LayoutGrid, List as ListIcon, Loader2, AlertTriangle,
+    CheckCircle2, XCircle, Trash2, Edit
 } from 'lucide-react';
 import { Client, UserRole } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
-import { AIService } from '../services/ai';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
 
 const ClientsPage: React.FC = () => {
     const { user } = useAuth();
@@ -20,48 +17,43 @@ const ClientsPage: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-
-    // Sort State
-    const [sortBy, setSortBy] = useState<'name' | 'code' | 'status'>('name');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-
-    // View State
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
 
-    // Modal States
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Forms
+    // Form Data
     const initialFormState: Partial<Client> = {
-        name: '', code: '', serviceType: 'Audit', folderLink: '', status: 'Active',
-        email: '', phone: '', contactPersonName: '', contactPersonNumber: '', panNumber: '', notes: '',
-        category: 'B', industry: 'Trading', address: '',
+        name: '',
+        code: '',
+        serviceType: 'Audit',
+        status: 'Active',
+        email: '',
+        phone: '',
+        address: '',
+        city: 'Kathmandu',
+        panNumber: '',
+        contactPersonName: '',
+        contactPersonNumber: '',
+        industry: 'Trading',
+        category: 'B',
         riskProfile: 'LOW',
         auditorSignatory: 'R. Sapkota & Associates',
         billingAmount: 0,
         isPaymentReceived: false,
-        fiscalYear: format(new Date(), 'yyyy') + '-' + (parseInt(format(new Date(), 'yy')) + 1)
+        fiscalYear: '2080-81',
+        notes: ''
     };
     const [formData, setFormData] = useState<Partial<Client>>(initialFormState);
 
-    // Map Verification State
-    const [isVerifyingAddr, setIsVerifyingAddr] = useState(false);
-    const [verifiedMapLink, setVerifiedMapLink] = useState<string | undefined>(undefined);
-
-    const getInitials = (name: string) => {
-        return name
-            ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-            : '?';
-    };
-
     useEffect(() => {
         if (user) {
-            if (user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN) {
-                navigate('/dashboard'); // Redirect non-admins
-                return;
+            const allowedRoles = [UserRole.ADMIN, UserRole.MASTER_ADMIN];
+            if (!allowedRoles.includes(user.role)) {
+                // navigate('/dashboard'); // Optional: redirect if restricted
             }
             fetchClients();
         }
@@ -73,332 +65,209 @@ const ClientsPage: React.FC = () => {
             const data = await AuthService.getAllClients();
             setClients(data);
         } catch (error) {
-            console.error("Failed to fetch clients", error);
+            console.error(error);
+            toast.error("Failed to load clients");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleAddClient = async (e: React.FormEvent) => {
+    const handleOpenAdd = () => {
+        setIsEditing(false);
+        setSelectedClient(null);
+        setFormData(initialFormState);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEdit = (client: Client) => {
+        setIsEditing(true);
+        setSelectedClient(client);
+        setFormData({ ...client });
+        setIsModalOpen(true);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!formData.name) return toast.error("Client Name is required");
+
         setIsSubmitting(true);
         try {
-            const client: Client = {
-                id: '', // Generated by Firestore
-                name: formData.name!,
-                code: formData.code || `CL-${Math.floor(Math.random() * 1000)}`,
-                serviceType: formData.serviceType as any,
-                folderLink: formData.folderLink || '#',
-                status: formData.status as any,
-                email: formData.email,
-                phone: formData.phone,
-                contactPersonName: formData.contactPersonName,
-                contactPersonNumber: formData.contactPersonNumber,
-                panNumber: formData.panNumber,
-                notes: formData.notes,
-                category: formData.category as any,
-                industry: formData.industry as any,
-                address: formData.address,
-                riskProfile: formData.riskProfile as any,
-                auditorSignatory: formData.auditorSignatory,
-                billingAmount: Number(formData.billingAmount) || 0,
-                isPaymentReceived: formData.isPaymentReceived || false,
-                fiscalYear: formData.fiscalYear
-            };
-
-            await AuthService.addClient(client);
+            if (isEditing && selectedClient) {
+                await AuthService.updateClient({ ...selectedClient, ...formData } as Client);
+                toast.success("Client updated successfully");
+            } else {
+                await AuthService.addClient({
+                    ...formData,
+                    id: '', // will be set by firebase
+                    code: formData.code || `CL-${Math.floor(Math.random() * 10000)}`
+                } as Client);
+                toast.success("Client added successfully");
+            }
             fetchClients();
-            setIsAddModalOpen(false);
-            setFormData(initialFormState);
-            setVerifiedMapLink(undefined);
-        } catch (error) {
-            console.error("Error adding client", error);
-            alert("Failed to add client.");
+            setIsModalOpen(false);
+        } catch (error: any) {
+            toast.error(error.message || "Operation failed");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleUpdateClient = async () => {
+    const handleDelete = async () => {
         if (!selectedClient) return;
-        setIsSubmitting(true);
-        try {
-            const updatedClient = {
-                ...selectedClient,
-                ...formData,
-                billingAmount: Number(formData.billingAmount) || 0
-            } as Client;
-            await AuthService.updateClient(updatedClient);
-            fetchClients();
-            setSelectedClient(updatedClient);
-            setIsEditing(false);
-        } catch (error) {
-            console.error("Error updating client", error);
-            alert("Failed to update client.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+        if (!window.confirm(`Delete ${selectedClient.name}? This cannot be undone.`)) return;
 
-    const handleDeleteClient = async () => {
-        if (!selectedClient) return;
-        if (!window.confirm(`Are you sure you want to delete ${selectedClient.name}? This will mark the client as Inactive.`)) return;
-
-        setIsSubmitting(true);
         try {
             await AuthService.deleteClient(selectedClient.id);
-            setIsAddModalOpen(false);
-            setSelectedClient(null);
-            fetchClients(); // Refresh list
+            toast.success("Client deleted");
+            fetchClients();
+            setIsModalOpen(false);
         } catch (error) {
-            console.error("Error deleting client", error);
-            alert("Failed to delete client.");
-        } finally {
-            setIsSubmitting(false);
+            toast.error("Delete failed");
         }
     };
 
-    const handleCardClick = (client: Client) => {
-        setSelectedClient(client);
-        setFormData(client); // Pre-fill form
-        setIsEditing(false);
-        setVerifiedMapLink(undefined);
-    };
+    const filteredClients = clients.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.panNumber?.includes(searchTerm)
+    );
 
-    const verifyAddress = async () => {
-        if (!formData.name && !formData.address) {
-            alert("Please enter a client name or address to verify.");
-            return;
-        }
+    const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
 
-        const query = `${formData.name} ${formData.address || ''}`;
-        setIsVerifyingAddr(true);
-        setVerifiedMapLink(undefined);
-
-        try {
-            const result = await AIService.findLocationDetails(query);
-            if (result.mapLink) {
-                setVerifiedMapLink(result.mapLink);
-            }
-            if (window.confirm(`Found Location: ${result.text}\n\nUpdate address field with this?`)) {
-                setFormData({ ...formData, address: result.text });
-            }
-        } catch (e) {
-            alert("Address verification failed.");
-        } finally {
-            setIsVerifyingAddr(false);
-        }
-    };
-
-    // Stats Calculation
-    const stats = {
-        total: clients.length,
-        active: clients.filter(c => c.status === 'Active').length,
-        highRisk: clients.filter(c => c.riskProfile === 'HIGH').length,
-        audit: clients.filter(c => c.serviceType === 'Audit').length
-    };
-
-    const toggleSort = (field: 'name' | 'code' | 'status') => {
-        if (sortBy === field) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortBy(field);
-            setSortOrder('asc');
-        }
-    };
-
-    const filteredClients = clients
-        .filter(c =>
-            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.code.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .sort((a, b) => {
-            let compareA = a[sortBy] || '';
-            let compareB = b[sortBy] || '';
-            if (compareA < compareB) return sortOrder === 'asc' ? -1 : 1;
-            if (compareA > compareB) return sortOrder === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-    // Helper for Risk Badge
+    // Risk Badge Component
     const RiskBadge = ({ level }: { level?: string }) => {
-        switch (level) {
-            case 'HIGH': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 flex items-center"><AlertTriangle size={10} className="mr-1" /> HIGH RISK</span>;
-            case 'MEDIUM': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">MEDIUM RISK</span>;
-            default: return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">LOW RISK</span>;
-        }
+        const colors = {
+            'HIGH': 'bg-red-500/10 text-red-400 border-red-500/20',
+            'MEDIUM': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+            'LOW': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+        };
+        const colorClass = colors[level as keyof typeof colors] || colors['LOW'];
+        return (
+            <span className={`text-[10px] px-2 py-0.5 rounded border font-bold uppercase ${colorClass}`}>
+                {level || 'LOW'} Risk
+            </span>
+        );
     };
-
-    // --- Export Logic (Simplified from previous) ---
-    const exportCSV = () => { /* ... existing logic ... */ };
-    const exportPDF = () => { /* ... existing logic ... */ };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Header Area */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white font-heading">Client Directory</h1>
-                    <p className="text-sm text-gray-400">Manage client profiles, risk assessments, and audit details</p>
+                    <p className="text-sm text-gray-400">Manage client profiles, billing, and audit status</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-brand-600/20 transition-all hover:scale-105"
-                    >
-                        <Plus size={18} className="mr-2" /> New Client
-                    </button>
-                </div>
+                <button
+                    onClick={handleOpenAdd}
+                    className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-brand-900/40 transition-all hover:scale-105 active:scale-95 border border-brand-500/30"
+                >
+                    <Plus size={18} className="mr-2" /> Add Client
+                </button>
             </div>
 
-            {/* Dashboard Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-brand-500 flex items-center justify-between">
-                    <div><p className="text-xs text-gray-400 uppercase">Total Clients</p><h3 className="text-2xl font-bold text-white">{stats.total}</h3></div>
-                    <div className="p-3 bg-brand-500/10 rounded-lg text-brand-400"><Users size={20} /></div>
-                </div>
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-emerald-500 flex items-center justify-between">
-                    <div><p className="text-xs text-gray-400 uppercase">Active</p><h3 className="text-2xl font-bold text-emerald-400">{stats.active}</h3></div>
-                    <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400"><UserCheck size={20} /></div>
-                </div>
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-red-500 flex items-center justify-between">
-                    <div><p className="text-xs text-gray-400 uppercase">High Risk</p><h3 className="text-2xl font-bold text-red-400">{stats.highRisk}</h3></div>
-                    <div className="p-3 bg-red-500/10 rounded-lg text-red-400"><AlertTriangle size={20} /></div>
-                </div>
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-blue-500 flex items-center justify-between">
-                    <div><p className="text-xs text-gray-400 uppercase">Audit Clients</p><h3 className="text-2xl font-bold text-blue-400">{stats.audit}</h3></div>
-                    <div className="p-3 bg-blue-500/10 rounded-lg text-blue-400"><Briefcase size={20} /></div>
-                </div>
-            </div>
-
-            {/* Controls & Search */}
-            <div className="glass-panel p-4 rounded-xl flex flex-col md:flex-row gap-4 justify-between items-center sticky top-4 z-20 backdrop-blur-md bg-navy-900/80 border border-white/10 shadow-xl">
+            {/* Controls */}
+            <div className="glass-panel p-4 rounded-xl flex flex-col md:flex-row gap-4 justify-between items-center sticky top-0 bg-navy-900/90 backdrop-blur-md z-10 border-b border-white/5">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                     <input
                         type="text"
-                        placeholder="Search clients, codes, or PAN..."
+                        placeholder="Search by name, code, or PAN..."
                         className="w-full bg-black/40 text-white text-sm rounded-lg pl-10 pr-4 py-2.5 border border-white/10 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="bg-black/20 p-1 rounded-lg border border-white/5 flex">
-                        <button onClick={() => setViewMode('GRID')} className={`p-2 rounded-md transition-all ${viewMode === 'GRID' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}><Grid size={18} /></button>
-                        <button onClick={() => setViewMode('LIST')} className={`p-2 rounded-md transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}><ListIcon size={18} /></button>
-                    </div>
+                <div className="flex bg-black/20 p-1 rounded-lg border border-white/5">
+                    <button onClick={() => setViewMode('GRID')} className={`p-2 rounded-md ${viewMode === 'GRID' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}><LayoutGrid size={18} /></button>
+                    <button onClick={() => setViewMode('LIST')} className={`p-2 rounded-md ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}><ListIcon size={18} /></button>
                 </div>
             </div>
 
-            {/* Main Content */}
+            {/* Content */}
             {isLoading ? (
                 <div className="flex justify-center py-20"><Loader2 size={40} className="animate-spin text-brand-500" /></div>
             ) : filteredClients.length === 0 ? (
-                <div className="text-center py-20 opacity-60">
+                <div className="text-center py-20 opacity-50">
                     <Building2 size={64} className="mx-auto mb-4 text-gray-600" />
-                    <h3 className="text-xl font-bold text-gray-400">No Clients Found</h3>
-                    <p className="text-gray-500">Try adjusting your search terms</p>
+                    <p className="text-xl font-bold text-gray-400">No Clients Found</p>
                 </div>
             ) : viewMode === 'GRID' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredClients.map((client) => (
-                        <div
-                            key={client.id}
-                            onClick={() => handleCardClick(client)}
-                            className={`glass-panel p-6 rounded-xl relative group cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl hover:border-brand-500/30 ${client.status === 'Inactive' ? 'opacity-60 grayscale' : ''}`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-xl font-bold text-white border-2 border-white/10 shadow-lg">
-                                        {getInitials(client.name)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-white text-lg leading-tight group-hover:text-brand-400 transition-colors">{client.name}</h3>
-                                        <p className="text-brand-400 text-sm font-mono mt-0.5">{client.code}</p>
-                                    </div>
+                    {filteredClients.map(client => (
+                        <div key={client.id} onClick={() => handleOpenEdit(client)} className="glass-panel p-6 rounded-xl hover:border-brand-500/30 transition-all cursor-pointer group relative overflow-hidden hover:shadow-2xl">
+                            <div className="absolute top-0 right-0 p-4 opacity-50"><RiskBadge level={client.riskProfile} /></div>
+
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-lg font-bold text-white border border-white/10 shadow-inner">
+                                    {getInitials(client.name)}
                                 </div>
-                                <RiskBadge level={client.riskProfile} />
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-white truncate pr-16">{client.name}</h3>
+                                    <p className="text-xs text-brand-400 font-mono">{client.code} • {client.serviceType}</p>
+                                </div>
                             </div>
 
-                            <div className="space-y-3 pt-2 border-t border-white/5">
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div className="flex items-center text-gray-400">
-                                        <Briefcase size={14} className="mr-2 text-brand-500" /> {client.serviceType}
-                                    </div>
-                                    <div className="flex items-center text-gray-400">
-                                        <Building2 size={14} className="mr-2 text-brand-500" /> {client.industry}
-                                    </div>
+                            <div className="space-y-3 border-t border-white/5 pt-4">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500 flex items-center"><MapPin size={12} className="mr-2" /> City</span>
+                                    <span className="text-gray-300">{client.city || client.address || 'N/A'}</span>
                                 </div>
-                                <div className="flex items-start text-sm text-gray-400">
-                                    <User size={14} className="mr-2 mt-1 text-brand-500 shrink-0" />
-                                    <div>
-                                        <div className="font-medium text-gray-200">{client.contactPersonName || 'No Contact'}</div>
-                                        {client.contactPersonNumber && <div className="text-xs opacity-60 flex items-center mt-0.5"><Phone size={10} className="mr-1" /> {client.contactPersonNumber}</div>}
-                                    </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500 flex items-center"><Phone size={12} className="mr-2" /> Contact</span>
+                                    <span className="text-gray-300">{client.contactPersonName ? client.contactPersonName.split(' ')[0] : 'N/A'}</span>
                                 </div>
-                                {client.auditorSignatory && (
-                                    <div className="flex items-center text-xs text-brand-300 bg-brand-500/5 p-2 rounded-lg border border-brand-500/10">
-                                        <FileText size={12} className="mr-2" />
-                                        <span className="truncate">{client.auditorSignatory}</span>
-                                    </div>
-                                )}
-                                <div className="flex items-center justify-between pt-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${client.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                        {client.status}
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500 flex items-center"><CreditCard size={12} className="mr-2" /> Billing</span>
+                                    <span className={`font-mono font-bold ${client.isPaymentReceived ? 'text-emerald-400' : 'text-orange-400'}`}>
+                                        Rs. {client.billingAmount?.toLocaleString() || 0}
                                     </span>
-                                    {client.billingAmount && client.billingAmount > 0 ? (
-                                        <span className={`text-[10px] font-bold ${client.isPaymentReceived ? 'text-emerald-400' : 'text-orange-400'}`}>
-                                            Rs. {client.billingAmount.toLocaleString()}
-                                        </span>
-                                    ) : null}
                                 </div>
+                            </div>
+
+                            <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
+                                <span className="flex items-center">{client.auditorSignatory || 'RSA'}</span>
+                                <span className={client.isPaymentReceived ? 'text-emerald-500 flex items-center' : 'text-orange-500 flex items-center'}>
+                                    {client.isPaymentReceived ? <CheckCircle2 size={12} className="mr-1" /> : <AlertTriangle size={12} className="mr-1" />}
+                                    {client.isPaymentReceived ? 'Paid' : 'Pending'}
+                                </span>
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
                 <div className="glass-panel rounded-xl overflow-hidden">
-                    <table className="w-full text-sm text-left text-gray-300">
-                        <thead className="bg-white/5 text-gray-400 font-medium border-b border-white/10">
+                    <table className="w-full text-left text-sm text-gray-300">
+                        <thead className="bg-white/5 text-gray-400 font-bold border-b border-white/10">
                             <tr>
-                                <th className="px-6 py-4">Client</th>
+                                <th className="px-6 py-4">Client Name</th>
                                 <th className="px-6 py-4">Service</th>
-                                <th className="px-6 py-4">Auditor</th>
+                                <th className="px-6 py-4">Contact Person</th>
                                 <th className="px-6 py-4">Billing</th>
-                                <th className="px-6 py-4">Contact</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                                <th className="px-6 py-4 text-center">Status</th>
+                                <th className="px-6 py-4 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {filteredClients.map((client) => (
-                                <tr key={client.id} onClick={() => handleCardClick(client)} className="hover:bg-white/5 cursor-pointer transition-colors group">
+                            {filteredClients.map(client => (
+                                <tr key={client.id} onClick={() => handleOpenEdit(client)} className="hover:bg-white/5 cursor-pointer transition-colors">
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-white group-hover:text-brand-400 transition-colors">{client.name}</div>
+                                        <div className="font-bold text-white">{client.name}</div>
                                         <div className="text-xs text-gray-500 font-mono">{client.code}</div>
                                     </td>
+                                    <td className="px-6 py-4">{client.serviceType}</td>
                                     <td className="px-6 py-4">
-                                        <div className="text-gray-200">{client.serviceType}</div>
-                                        <div className="text-[10px] text-gray-500 uppercase">{client.industry}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-xs text-gray-400 truncate max-w-[150px]">{client.auditorSignatory || '-'}</td>
-                                    <td className="px-6 py-4">
-                                        {client.billingAmount ? (
-                                            <div className="flex flex-col">
-                                                <span className="font-mono text-gray-200">Rs.{client.billingAmount.toLocaleString()}</span>
-                                                <span className={`text-[9px] uppercase font-bold ${client.isPaymentReceived ? 'text-emerald-400' : 'text-orange-400'}`}>
-                                                    {client.isPaymentReceived ? 'RECEIVED' : 'PENDING'}
-                                                </span>
-                                            </div>
-                                        ) : '-'}
+                                        <div className="text-white">{client.contactPersonName || '-'}</div>
+                                        <div className="text-xs text-gray-500">{client.contactPersonNumber}</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-gray-200">{client.contactPersonName || '-'}</div>
-                                        <div className="text-xs opacity-50 font-mono">{client.contactPersonNumber}</div>
+                                        <div className="text-white">Rs. {client.billingAmount?.toLocaleString()}</div>
+                                        <div className="text-xs text-gray-500">{client.fiscalYear}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <RiskBadge level={client.riskProfile} />
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"><MoreVertical size={16} /></button>
+                                        <button className="text-gray-400 hover:text-white"><Edit size={16} /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -408,185 +277,125 @@ const ClientsPage: React.FC = () => {
             )}
 
             {/* Combined Add/Edit Modal */}
-            {(isAddModalOpen || selectedClient) && (
+            {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-white/10 shadow-2xl overflow-hidden">
+                    <div className="glass-modal rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-white/10 shadow-2xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h2 className="text-lg font-bold text-white flex items-center uppercase tracking-wider">
-                                {selectedClient ? <Edit size={18} className="mr-2 text-brand-400" /> : <Plus size={18} className="mr-2 text-brand-400" />}
-                                {selectedClient ? 'Edit Client Profile' : 'Add New Client'}
+                            <h2 className="text-xl font-bold text-white flex items-center">
+                                {isEditing ? 'Edit Client Profile' : 'New Client Registration'}
                             </h2>
-                            <button onClick={() => { setIsAddModalOpen(false); setSelectedClient(null); }} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><XCircle size={24} /></button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                            {/* Section 1: Basic Information */}
-                            <div>
-                                <h3 className="text-sm font-bold text-brand-400 mb-4 flex items-center uppercase tracking-widest"><Building2 size={16} className="mr-2" /> Basic Information</h3>
-                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                                    <div className="col-span-2">
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Client Name *</label>
-                                        <input
-                                            required
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 font-medium"
-                                            value={formData.name}
-                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="e.g. Acme Corp Nepal Pvt Ltd"
-                                        />
+                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Section 1: Basic Details */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-brand-400 uppercase tracking-widest border-b border-white/10 pb-2 mb-4">Basic Information</h3>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Client Name *</label>
+                                            <input required className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Company Name" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Client Code</label>
+                                            <input className="w-full glass-input p-2.5 rounded-lg text-sm font-mono" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="Auto-generate if empty" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">PAN Number</label>
+                                            <input className="w-full glass-input p-2.5 rounded-lg text-sm font-mono" value={formData.panNumber} onChange={e => setFormData({ ...formData, panNumber: e.target.value })} placeholder="987654321" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Industry</label>
+                                            <select className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value as any })}>
+                                                <option value="Trading">Trading</option>
+                                                <option value="Manufacturing">Manufacturing</option>
+                                                <option value="Hydropower">Hydropower</option>
+                                                <option value="Service">Service</option>
+                                                <option value="Consulting">Consulting</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Service Type</label>
+                                            <select className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}>
+                                                <option value="Audit">Audit</option>
+                                                <option value="Tax">Tax</option>
+                                                <option value="Consulting">Consulting</option>
+                                                <option value="Accounting">Accounting</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Client Code</label>
-                                        <input
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm font-mono"
-                                            value={formData.code}
-                                            onChange={e => setFormData({ ...formData, code: e.target.value })}
-                                            placeholder="e.g. CL-001"
-                                        />
+
+                                    <div className="pt-4">
+                                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Office Address</label>
+                                        <input className="w-full glass-input p-2.5 rounded-lg text-sm mb-2" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Street Address" />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <input className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} placeholder="City" />
+                                            <select className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.riskProfile} onChange={e => setFormData({ ...formData, riskProfile: e.target.value as any })}>
+                                                <option value="LOW">Low Risk</option>
+                                                <option value="MEDIUM">Medium Risk</option>
+                                                <option value="HIGH">High Risk</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Industry</label>
-                                        <select
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
-                                            value={formData.industry}
-                                            onChange={e => setFormData({ ...formData, industry: e.target.value as any })}
-                                        >
-                                            <option value="Trading">Trading</option>
-                                            <option value="Manufacturing">Manufacturing</option>
-                                            <option value="Hydropower">Hydropower</option>
-                                            <option value="Service">Service</option>
-                                            <option value="Security Broker">Security Broker</option>
-                                            <option value="Consulting">Consulting</option>
-                                            <option value="Other">Other</option>
-                                        </select>
+                                </div>
+
+                                {/* Section 2: Contact & Billing */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-brand-400 uppercase tracking-widest border-b border-white/10 pb-2 mb-4">Contact & Billing</h3>
+
+                                    <div className="bg-white/5 p-4 rounded-xl space-y-3">
+                                        <label className="text-xs font-bold text-gray-400 uppercase">Contact Person</label>
+                                        <input className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.contactPersonName} onChange={e => setFormData({ ...formData, contactPersonName: e.target.value })} placeholder="Name" />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <input className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.contactPersonNumber} onChange={e => setFormData({ ...formData, contactPersonNumber: e.target.value })} placeholder="Mobile Number" />
+                                            <input className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="Email (Optional)" />
+                                        </div>
                                     </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Office Address</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
-                                                value={formData.address}
-                                                onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                                placeholder="e.g. Mid-Baneshwor, Kathmandu"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={verifyAddress}
-                                                className="bg-brand-500/10 hover:bg-brand-500/20 px-3 py-2.5 rounded-lg text-brand-400 border border-brand-500/20 transition-all"
-                                                title="Verify with AI"
-                                            >
-                                                <MapPin size={18} />
-                                            </button>
+
+                                    <div className="bg-white/5 p-4 rounded-xl space-y-3">
+                                        <label className="text-xs font-bold text-gray-400 uppercase">Audit & Fees</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="col-span-2">
+                                                <label className="block text-[10px] text-gray-500 mb-1">Auditor / Signatory</label>
+                                                <select className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.auditorSignatory} onChange={e => setFormData({ ...formData, auditorSignatory: e.target.value })}>
+                                                    <option value="R. Sapkota & Associates">R. Sapkota (Main)</option>
+                                                    <option value="Pankaj Thapa Associates">Pankaj Thapa</option>
+                                                    <option value="NP Sharma & Co.">NP Sharma</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-gray-500 mb-1">Fee Amount</label>
+                                                <input type="number" className="w-full glass-input p-2.5 rounded-lg text-sm font-mono" value={formData.billingAmount} onChange={e => setFormData({ ...formData, billingAmount: Number(e.target.value) })} placeholder="0.00" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-gray-500 mb-1">Fiscal Year</label>
+                                                <input className="w-full glass-input p-2.5 rounded-lg text-sm" value={formData.fiscalYear} onChange={e => setFormData({ ...formData, fiscalYear: e.target.value })} placeholder="2080-81" />
+                                            </div>
+                                        </div>
+                                        <div className="pt-2 flex items-center">
+                                            <input type="checkbox" id="paid" className="w-4 h-4 rounded bg-white/10 border-white/20 text-brand-600 focus:ring-brand-500" checked={formData.isPaymentReceived} onChange={e => setFormData({ ...formData, isPaymentReceived: e.target.checked })} />
+                                            <label htmlFor="paid" className="ml-2 text-sm text-gray-300">Payment Received</label>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Section 2: Contact Person Details */}
-                            <div>
-                                <h3 className="text-sm font-bold text-brand-400 mb-4 flex items-center uppercase tracking-widest"><User size={16} className="mr-2" /> Contact Person Details</h3>
-                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Person Name</label>
-                                        <input
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
-                                            value={formData.contactPersonName}
-                                            onChange={e => setFormData({ ...formData, contactPersonName: e.target.value })}
-                                            placeholder="e.g. Ram Bahadur"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Contact Number</label>
-                                        <input
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
-                                            value={formData.contactPersonNumber}
-                                            onChange={e => setFormData({ ...formData, contactPersonNumber: e.target.value })}
-                                            placeholder="e.g. 9841234567"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">PAN Number</label>
-                                        <input
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm font-mono tracking-widest"
-                                            value={formData.panNumber}
-                                            onChange={e => setFormData({ ...formData, panNumber: e.target.value })}
-                                            placeholder="9-digit PAN code"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section 3: Audit & Billing */}
-                            <div>
-                                <h3 className="text-sm font-bold text-brand-400 mb-4 flex items-center uppercase tracking-widest"><FileText size={16} className="mr-2" /> Audit & Billing Section</h3>
-                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                                    <div className="col-span-2">
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Auditor / Signatory</label>
-                                        <select
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
-                                            value={formData.auditorSignatory}
-                                            onChange={e => setFormData({ ...formData, auditorSignatory: e.target.value })}
-                                        >
-                                            <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
-                                            <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
-                                            <option value="NP Sharma & Co.">NP Sharma & Co.</option>
-                                            <option value="TN Acharya & Co.">TN Acharya & Co.</option>
-                                            <option value="Others">Others</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Billing Amount (Rs.)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
-                                            value={formData.billingAmount}
-                                            onChange={e => setFormData({ ...formData, billingAmount: Number(e.target.value) })}
-                                            placeholder="Enter amount"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Fiscal Year</label>
-                                        <input
-                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
-                                            value={formData.fiscalYear}
-                                            onChange={e => setFormData({ ...formData, fiscalYear: e.target.value })}
-                                            placeholder="e.g. 2080-81"
-                                        />
-                                    </div>
-                                    <div className="flex items-center space-x-3 mt-4">
-                                        <div className="flex items-center">
-                                            <input
-                                                id="paymentReceived"
-                                                type="checkbox"
-                                                checked={formData.isPaymentReceived}
-                                                onChange={e => setFormData({ ...formData, isPaymentReceived: e.target.checked })}
-                                                className="w-4 h-4 bg-black/40 border-white/10 rounded text-brand-600 focus:ring-brand-500"
-                                            />
-                                            <label htmlFor="paymentReceived" className="ml-2 text-sm text-gray-300">Payment Received</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        </form>
 
                         <div className="p-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
-                            {selectedClient ? (
-                                <button
-                                    onClick={handleDeleteClient}
-                                    type="button"
-                                    className="text-red-400 hover:text-red-300 text-sm font-bold flex items-center px-4 py-2 rounded-lg hover:bg-red-500/10 transition-colors"
-                                >
-                                    <Trash2 size={16} className="mr-2" /> Delete Client
+                            {isEditing && (
+                                <button onClick={handleDelete} className="text-red-400 hover:text-red-300 text-sm font-medium flex items-center">
+                                    <Trash2 size={16} className="mr-2" /> Delete
                                 </button>
-                            ) : <div></div>}
-                            <div className="flex gap-3">
-                                <button onClick={() => { setIsAddModalOpen(false); setSelectedClient(null); }} className="px-5 py-2.5 rounded-xl text-gray-400 hover:text-white transition-colors text-sm font-bold">Cancel</button>
-                                <button
-                                    onClick={selectedClient ? handleUpdateClient : handleAddClient}
-                                    disabled={isSubmitting}
-                                    className="bg-brand-600 hover:bg-brand-500 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-600/20 transition-all flex items-center hover:scale-105 active:scale-95 text-sm"
-                                >
+                            )}
+                            <div className="flex gap-3 ml-auto">
+                                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white text-sm font-medium">Cancel</button>
+                                <button onClick={handleSubmit} disabled={isSubmitting} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center">
                                     {isSubmitting && <Loader2 size={16} className="animate-spin mr-2" />}
-                                    {selectedClient ? 'Update Profile' : 'Register Client'}
+                                    {isEditing ? 'Update Client' : 'Register Client'}
                                 </button>
                             </div>
                         </div>

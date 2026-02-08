@@ -7,10 +7,31 @@ export interface PerformanceStats {
     totalTasks: number;
     completedTasks: number;
     onTimeTasks: number;
+    overdueTasks: number;
     completionRate: number;
     onTimeRate: number;
     punctualityScore: number;
     totalScore: number;
+
+    // Extended metrics
+    highPriorityTasks: number;
+    highPriorityCompleted: number;
+    highPriorityRate: number;
+    avgWorkHours: number;
+    presentDays: number;
+    lateDays: number;
+    absentDays: number;
+
+    // Benchmark comparison
+    benchmark: {
+        isAboveAverage: boolean;
+        rank: number;
+        totalStaff: number;
+        percentile: number;
+    } | null;
+
+    // Performance tier
+    performanceTier: 'Exceptional' | 'Strong' | 'Meeting Expectations' | 'Needs Improvement' | 'Critical';
 }
 
 export class PerformanceService {
@@ -51,28 +72,72 @@ export class PerformanceService {
         const attendance = attendanceSnap.docs.map(doc => doc.data() as AttendanceRecord);
 
         const totalDays = attendance.length;
-        const presentationDays = attendance.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length;
+        const presentDays = attendance.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length;
         const lateDays = attendance.filter(a => a.status === 'LATE').length;
+        const absentDays = attendance.filter(a => a.status === 'ABSENT').length;
+
+        // Calculate average work hours
+        const totalWorkHours = attendance.reduce((sum, a) => sum + (a.workHours || 0), 0);
+        const avgWorkHours = presentDays > 0 ? totalWorkHours / presentDays : 0;
+
+        // High priority task handling (URGENT + HIGH)
+        const highPriorityTasks = monthlyTasks.filter(t =>
+            t.priority === 'URGENT' || t.priority === 'HIGH'
+        );
+        const highPriorityCompleted = highPriorityTasks.filter(t => t.status === TaskStatus.COMPLETED);
+
+        // Overdue tasks
+        const now = new Date();
+        const overdueTasks = monthlyTasks.filter(t =>
+            t.status !== TaskStatus.COMPLETED &&
+            new Date(t.dueDate) < now
+        );
 
         // Scoring Logic (out of 100)
-        // 40% Completion Rate
-        // 30% On-Time Rate
-        // 30% Punctuality (Late status penalty)
+        // 35% Completion Rate
+        // 25% On-Time Rate
+        // 20% Punctuality (Late status penalty)
+        // 20% High Priority Handling
 
         const completionRate = monthlyTasks.length > 0 ? (completed.length / monthlyTasks.length) * 100 : 100;
         const onTimeRate = completed.length > 0 ? (onTime.length / completed.length) * 100 : 100;
-        const punctualityScore = presentationDays > 0 ? ((presentationDays - lateDays) / presentationDays) * 100 : 100;
+        const punctualityScore = presentDays > 0 ? ((presentDays - lateDays) / presentDays) * 100 : 100;
+        const highPriorityRate = highPriorityTasks.length > 0
+            ? (highPriorityCompleted.length / highPriorityTasks.length) * 100
+            : 100;
 
-        const totalScore = (completionRate * 0.4) + (onTimeRate * 0.3) + (punctualityScore * 0.3);
+        const totalScore = (completionRate * 0.35) + (onTimeRate * 0.25) + (punctualityScore * 0.20) + (highPriorityRate * 0.20);
+
+        // Determine performance tier
+        let performanceTier: PerformanceStats['performanceTier'];
+        if (totalScore >= 90) performanceTier = 'Exceptional';
+        else if (totalScore >= 75) performanceTier = 'Strong';
+        else if (totalScore >= 60) performanceTier = 'Meeting Expectations';
+        else if (totalScore >= 40) performanceTier = 'Needs Improvement';
+        else performanceTier = 'Critical';
 
         return {
             totalTasks: monthlyTasks.length,
             completedTasks: completed.length,
             onTimeTasks: onTime.length,
+            overdueTasks: overdueTasks.length,
             completionRate,
             onTimeRate,
             punctualityScore,
-            totalScore
+            totalScore,
+
+            // Extended metrics
+            highPriorityTasks: highPriorityTasks.length,
+            highPriorityCompleted: highPriorityCompleted.length,
+            highPriorityRate,
+            avgWorkHours,
+            presentDays,
+            lateDays,
+            absentDays,
+
+            // Benchmark will be populated separately
+            benchmark: null,
+            performanceTier
         };
     }
 

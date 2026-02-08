@@ -7,9 +7,12 @@ import { AuthService } from '../services/firebase';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { useLocation } from 'react-router-dom';
 import ClientSelect from '../components/ClientSelect';
 import StaffSelect from '../components/StaffSelect';
+import { getCurrentBSDate, formatBSDate, convertADToBS } from '../utils/nepaliDate';
+import NepaliDate from 'nepali-date-converter';
 
 const AttendancePage: React.FC = () => {
     const { user } = useAuth();
@@ -46,7 +49,7 @@ const AttendancePage: React.FC = () => {
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
     const [manualForm, setManualForm] = useState({
         userId: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'),
         clockIn: '10:00',
         clockOut: '17:00',
         clientId: '',
@@ -133,8 +136,8 @@ const AttendancePage: React.FC = () => {
             setLateCount(lCount);
             setLeavesList(lList);
 
-            // Check if already clocked in today (simple local check based on history)
-            const today = new Date().toISOString().split('T')[0];
+            // Check if already clocked in today (Local Time check)
+            const today = new Date().toLocaleDateString('en-CA');
             const todayRecord = attHistory.find(r => r.userId === user?.uid && r.date === today && !r.clockOut);
 
             if (todayRecord) {
@@ -161,7 +164,7 @@ const AttendancePage: React.FC = () => {
     const handleClockAction = async () => {
         // 0. Single Clock-In Check
         if (status === 'CLOCKED_OUT') {
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = new Date().toLocaleDateString('en-CA');
             // Search local history state (which should be up to date) for a record today
             const hasRecordToday = history.some(r => r.userId === user?.uid && r.date === todayStr);
             if (hasRecordToday) {
@@ -195,7 +198,7 @@ const AttendancePage: React.FC = () => {
     const proceedClockAction = async (coords: any) => {
         try {
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+            const todayStr = now.toLocaleDateString('en-CA');
             const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
 
             if (status === 'CLOCKED_OUT') {
@@ -266,8 +269,8 @@ const AttendancePage: React.FC = () => {
             const clientObj = clientsList.find(c => c.id === manualForm.clientId);
 
             // Calculate Duration roughly
-            const start = new Date(`${manualForm.date}T${manualForm.clockIn}`);
-            const end = new Date(`${manualForm.date}T${manualForm.clockOut}`);
+            const start = new Date(`${manualForm.date}  ${manualForm.clockIn}`);
+            const end = new Date(`${manualForm.date}  ${manualForm.clockOut}`);
             const hours = (end.getTime() - start.getTime()) / (1000 * 3600);
 
             const record: AttendanceRecord = {
@@ -290,7 +293,7 @@ const AttendancePage: React.FC = () => {
             setIsManualModalOpen(false);
             setManualForm({
                 userId: '',
-                date: new Date().toISOString().split('T')[0],
+                date: new Date().toLocaleDateString('en-CA'),
                 clockIn: '10:00',
                 clockOut: '17:00',
                 clientId: '',
@@ -411,24 +414,33 @@ const AttendancePage: React.FC = () => {
     const exportPDF = () => {
         const doc = new jsPDF();
 
-        // -- Letterhead Design --
+        // -- Enhanced Letterhead with violet gradient --
+        doc.setFillColor(124, 58, 237); // Violet-600
+        doc.rect(0, 0, 210, 40, 'F');
+
         doc.setFontSize(22);
-        doc.setTextColor(37, 99, 235); // Tailwind Blue-600 #2563eb
+        doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
         doc.text("R. Sapkota & Associates", 105, 15, { align: "center" });
 
         doc.setFontSize(10);
-        doc.setTextColor(100);
+        doc.setTextColor(233, 213, 255); // Light violet
         doc.setFont("helvetica", "normal");
-        doc.text("Attendance & Activity Report", 14, 45);
+        doc.text("Chartered Accountants | Mid-Baneshwor, Kathmandu", 105, 23, { align: "center" });
 
+        doc.setFontSize(12);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text("Attendance & Activity Report", 105, 34, { align: "center" });
+
+        // Report info
         doc.setFontSize(10);
-        doc.setTextColor(150);
+        doc.setTextColor(76, 29, 149); // Violet-900
         doc.setFont("helvetica", "normal");
-        doc.text(`Period: ${filterStartDate} to ${filterEndDate}`, 14, 51);
+        doc.text(`Period: ${filterStartDate} to ${filterEndDate}`, 14, 50);
         doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 56);
 
-        // -- Table --
+        // -- Table with violet styling --
         const tableColumn = ["Date", "Name", "Client / Activity", "In", "Out", "Hr", "Status"];
         const tableRows = reportData.map(r => [
             r.date,
@@ -446,8 +458,8 @@ const AttendancePage: React.FC = () => {
             startY: 62,
             theme: 'grid',
             headStyles: {
-                fillColor: [15, 23, 42], // Navy-900 color
-                textColor: [59, 130, 246], // Brand blue
+                fillColor: [124, 58, 237],  // Violet-600
+                textColor: [255, 255, 255], // White
                 fontStyle: 'bold',
                 halign: 'center'
             },
@@ -455,11 +467,11 @@ const AttendancePage: React.FC = () => {
                 fontSize: 8,
                 cellPadding: 3,
                 overflow: 'linebreak',
-                fillColor: [30, 41, 59], // Navy-800
-                textColor: [241, 245, 249] // Gray-100
+                fillColor: [250, 245, 255], // Light violet
+                textColor: [76, 29, 149]    // Violet-900
             },
             alternateRowStyles: {
-                fillColor: [15, 23, 42] // Solid navy
+                fillColor: [237, 233, 254]  // Violet-100
             },
             columnStyles: {
                 0: { cellWidth: 20 },
@@ -474,7 +486,7 @@ const AttendancePage: React.FC = () => {
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
             doc.setFontSize(8);
-            doc.setTextColor(150);
+            doc.setTextColor(124, 58, 237);
             doc.text(`Page ${i} of ${pageCount}`, 196, 285, { align: 'right' });
             doc.text("Confidential System Report - RSA Portal", 14, 285);
         }
@@ -482,32 +494,119 @@ const AttendancePage: React.FC = () => {
         doc.save("RSA_Attendance_Report.pdf");
     };
 
-    const exportExcel = () => {
-        const headers = ["Date", "Staff Name", "Client/Activity", "Clock In", "Clock Out", "Duration (Hrs)", "Status", "Notes/Description"];
-        const data = reportData.map(r => [
-            r.date,
-            r.userName,
-            r.clientName || '-',
-            r.clockIn,
-            r.clockOut || '-',
-            r.workHours,
-            r.status,
-            r.workDescription || r.notes || '-'
-        ]);
+    const exportExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Attendance Report');
 
-        const ws = XLSX.utils.aoa_to_sheet([
-            ["R. Sapkota & Associates"],
-            ["Mid-Baneshwor, Kathmandu"],
-            ["Attendance & Activity Report"],
-            [`Period: ${filterStartDate} to ${filterEndDate}`],
-            [],
-            headers,
-            ...data
-        ]);
+        // Set column widths
+        worksheet.columns = [
+            { width: 12 },  // Date
+            { width: 22 },  // Staff Name
+            { width: 28 },  // Client/Activity
+            { width: 10 },  // Clock In
+            { width: 10 },  // Clock Out
+            { width: 12 },  // Duration
+            { width: 12 },  // Status
+            { width: 35 },  // Notes
+        ];
 
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
-        XLSX.writeFile(wb, `RSA_Attendance_Report_${filterStartDate}_to_${filterEndDate}.xlsx`);
+        // Violet color scheme
+        const violetBg = '7C3AED';
+        const lightViolet = 'EDE9FE';
+        const darkViolet = '4C1D95';
+
+        // Company Name (Row 1)
+        worksheet.mergeCells('A1:H1');
+        const companyCell = worksheet.getCell('A1');
+        companyCell.value = 'R. Sapkota & Associates';
+        companyCell.font = { bold: true, size: 18, color: { argb: 'FFFFFF' } };
+        companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: violetBg } };
+        companyCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(1).height = 30;
+
+        // Address (Row 2)
+        worksheet.mergeCells('A2:H2');
+        const addressCell = worksheet.getCell('A2');
+        addressCell.value = 'Chartered Accountants | Mid-Baneshwor, Kathmandu';
+        addressCell.font = { size: 10, color: { argb: 'E9D5FF' } };
+        addressCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: violetBg } };
+        addressCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Empty row 3
+        worksheet.mergeCells('A3:H3');
+
+        // Report Title (Row 4)
+        worksheet.mergeCells('A4:H4');
+        const titleCell = worksheet.getCell('A4');
+        titleCell.value = 'Attendance & Activity Report';
+        titleCell.font = { bold: true, size: 14, color: { argb: darkViolet } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(4).height = 25;
+
+        // Period (Row 5)
+        worksheet.mergeCells('A5:H5');
+        const periodCell = worksheet.getCell('A5');
+        periodCell.value = `Period: ${filterStartDate} to ${filterEndDate}`;
+        periodCell.font = { size: 10, color: { argb: '64748B' } };
+        periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Generated (Row 6)
+        worksheet.mergeCells('A6:H6');
+        const generatedCell = worksheet.getCell('A6');
+        generatedCell.value = `Generated: ${new Date().toLocaleDateString()}`;
+        generatedCell.font = { size: 10, color: { argb: '64748B' } };
+        generatedCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Empty row 7
+        worksheet.addRow([]);
+
+        // Table Header (Row 8)
+        const headers = ['Date', 'Staff Name', 'Client/Activity', 'Clock In', 'Clock Out', 'Duration', 'Status', 'Notes'];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.height = 22;
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true, color: { argb: 'FFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: violetBg } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: violetBg } },
+                bottom: { style: 'thin', color: { argb: violetBg } },
+            };
+        });
+
+        // Data rows
+        reportData.forEach((r, index) => {
+            const row = worksheet.addRow([
+                r.date,
+                r.userName,
+                r.clientName || '-',
+                r.clockIn,
+                r.clockOut || '-',
+                r.workHours,
+                r.status,
+                r.workDescription || r.notes || '-'
+            ]);
+
+            const bgColor = index % 2 === 0 ? 'FAF5FF' : lightViolet;
+            row.eachCell((cell) => {
+                cell.font = { size: 9, color: { argb: darkViolet } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+                cell.alignment = { vertical: 'middle' };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'DDD6FE' } },
+                };
+            });
+        });
+
+        // Generate and download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `RSA_Attendance_Report_${filterStartDate}_to_${filterEndDate}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -537,8 +636,11 @@ const AttendancePage: React.FC = () => {
                             <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded border border-orange-500/30">LATE ENTRY</span>
                         )}
                     </div>
-                    <div className="text-5xl font-mono font-bold text-blue-400 tracking-wider drop-shadow-lg mb-4">
+                    <div className="text-5xl font-mono font-bold text-blue-400 tracking-wider drop-shadow-lg mb-2">
                         {currentTime.toLocaleTimeString()}
+                    </div>
+                    <div className="text-lg font-medium text-violet-400 mb-4">
+                        📅 {new NepaliDate().format('DD MMMM YYYY')} <span className="text-gray-500 text-sm">(BS)</span>
                     </div>
 
                     {status === 'CLOCKED_IN' ? (

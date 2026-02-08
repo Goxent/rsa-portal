@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               phoneNumber: '',
               address: '',
               position: 'Staff',
-              dateOfJoining: new Date().toISOString().split('T')[0],
+              dateOfJoining: new Date().toLocaleDateString('en-CA'),
               gender: 'Other'
             };
             await AuthService.updateUserProfile(firebaseUser.uid, defaultProfile);

@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
 
             // Upcoming Schedule
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+            const todayStr = now.toLocaleDateString('en-CA');
             const datePlus30 = new Date(now);
             datePlus30.setDate(datePlus30.getDate() + 30);
             const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
@@ -277,8 +277,8 @@ const Dashboard: React.FC = () => {
                                                     <p className="text-xs text-gray-400">{task.clientName}</p>
                                                 </div>
                                                 <span className={`text-xs px-2 py-1 rounded-full ${task.priority === 'URGENT' ? 'bg-red-500/20 text-red-400' :
-                                                        task.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
-                                                            'bg-blue-500/20 text-blue-400'
+                                                    task.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
+                                                        'bg-blue-500/20 text-blue-400'
                                                     }`}>
                                                     {task.priority}
                                                 </span>
