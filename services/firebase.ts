@@ -27,7 +27,7 @@ import {
     orderBy,
     onSnapshot
 } from 'firebase/firestore';
-import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource } from '../types';
+import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification } from '../types';
 
 // Load Config from Environment Variables
 const firebaseConfig = {
@@ -384,7 +384,8 @@ export const AuthService = {
                 throw new Error("Attendance already recorded for today.");
             }
 
-            await updateDoc(doc(db, 'attendance', docId), record);
+            const { id, ...updateData } = record;
+            await updateDoc(doc(db, 'attendance', docId), updateData);
         } else {
             // Create New
             const { id, ...data } = record;
@@ -455,7 +456,7 @@ export const AuthService = {
     },
 
     // --- NOTIFICATIONS ---
-    createNotification: async (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {
+    createNotification: async (notification: Omit<AppNotification, 'id' | 'read' | 'createdAt'>) => {
         await addDoc(collection(db, 'notifications'), {
             ...notification,
             read: false,
@@ -468,7 +469,7 @@ export const AuthService = {
     },
 
     // Real-time listener
-    subscribeToNotifications: (userId: string, callback: (notifications: Notification[]) => void) => {
+    subscribeToNotifications: (userId: string, callback: (notifications: AppNotification[]) => void) => {
         const q = query(
             collection(db, 'notifications'),
             where('userId', 'in', [userId, 'ALL']), // 'ALL' for global events
@@ -477,7 +478,7 @@ export const AuthService = {
 
         return onSnapshot(q,
             (snapshot) => {
-                const notifs = snapshot.docs.map(d => docConverter<Notification>(d));
+                const notifs = snapshot.docs.map(d => docConverter<AppNotification>(d));
                 callback(notifs);
             },
             (error) => {

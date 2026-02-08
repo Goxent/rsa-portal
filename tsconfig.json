@@ -12,14 +12,28 @@
     "skipLibCheck": true,
     "types": [
       "node",
-      "vite/client"
+      "vite/client",
+      "vitest/globals"
     ],
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "components/**/*.tsx",
+    "context/**/*.tsx",
+    "pages/**/*.tsx",
+    "services/**/*.ts",
+    "utils/**/*.ts",
+    "*.ts",
+    "*.tsx",
     "vite-env.d.ts"
   ]
 }

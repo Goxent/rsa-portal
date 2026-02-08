@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, MapPin, AlertTriangle, FileText, Download, UserCog, Check, X, Filter, FileDown, CalendarRange, Users, Briefcase, AlertOctagon, CalendarOff, Palmtree, Plus, Save } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Clock, MapPin, AlertTriangle, FileText, Download, UserCog, Check, X, Filter, FileDown, CalendarRange, Users, Briefcase, AlertOctagon, CalendarOff, Palmtree, Plus, Save, Search, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AttendanceRecord, UserRole, UserProfile, Client, LeaveRequest } from '../types';
 import { AuthService } from '../services/firebase';
@@ -22,7 +22,9 @@ const AttendancePage: React.FC = () => {
     const [isLateEntry, setIsLateEntry] = useState(false);
 
     // Daily Reporting State
-    const [selectedClientId, setSelectedClientId] = useState('');
+    const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+    const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+    const clientDropdownRef = useRef<HTMLDivElement>(null);
     const [workDescription, setWorkDescription] = useState('');
 
     // Data State
@@ -93,6 +95,19 @@ const AttendancePage: React.FC = () => {
         return () => clearInterval(sessionTimer);
     }, [status]);
 
+    // Close client dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target as Node)) {
+                setIsClientDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [clientDropdownRef]);
+
     const loadData = async () => {
         if (!user) return; // Guard against unauthenticated calls
         setLoading(true);
@@ -160,8 +175,8 @@ const AttendancePage: React.FC = () => {
 
         // 2. Clock Out Validation
         if (status === 'CLOCKED_IN') {
-            if (!selectedClientId) {
-                alert("⚠️ Please select the Client or Site you worked on before clocking out.");
+            if (selectedClientIds.length === 0) {
+                alert("⚠️ Please select at least one Client or Site you worked on before clocking out.");
                 return;
             }
             if (!workDescription.trim()) {
@@ -202,7 +217,8 @@ const AttendancePage: React.FC = () => {
                 loadData();
             } else {
                 // Clocking OUT
-                const clientObj = clientsList.find(c => c.id === selectedClientId);
+                const selectedClients = clientsList.filter(c => selectedClientIds.includes(c.id));
+                const clientNames = selectedClients.map(c => c.name).join(', ');
 
                 const record: AttendanceRecord = {
                     id: '', // Auto
@@ -213,8 +229,8 @@ const AttendancePage: React.FC = () => {
                     clockOut: timeStr,
                     workHours: Number((sessionTime / 3600).toFixed(2)),
                     status: isLateEntry ? 'LATE' : 'PRESENT',
-                    clientId: selectedClientId,
-                    clientName: clientObj ? clientObj.name : 'Internal',
+                    clientIds: selectedClientIds,
+                    clientName: clientNames || 'Internal',
                     workDescription: workDescription,
                     notes: lateReason ? `Late Reason: ${lateReason}` : ''
                 };
@@ -222,7 +238,7 @@ const AttendancePage: React.FC = () => {
                 await AuthService.recordAttendance(record);
                 setStatus('CLOCKED_OUT');
                 setWorkDescription('');
-                setSelectedClientId('');
+                setSelectedClientIds([]);
                 setLateReason('');
                 loadData();
             }
@@ -594,19 +610,83 @@ const AttendancePage: React.FC = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site</label>
-                            <select
-                                className="w-full text-sm rounded-lg p-3 bg-black/20 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none text-white"
-                                value={selectedClientId}
-                                onChange={(e) => setSelectedClientId(e.target.value)}
-                                disabled={status === 'CLOCKED_OUT'}
-                            >
-                                <option value="">-- Select Client --</option>
-                                <option value="INTERNAL">Office / Internal Work</option>
-                                {clientsList.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-                                ))}
-                            </select>
+                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
+                            <div className="relative" ref={clientDropdownRef}>
+                                <div
+                                    className="w-full text-sm rounded-lg p-3 bg-black/20 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none text-white min-h-[46px] flex flex-wrap gap-2 cursor-pointer"
+                                    onClick={() => {
+                                        if (status === 'CLOCKED_IN') {
+                                            setIsClientDropdownOpen(!isClientDropdownOpen);
+                                        }
+                                    }}
+                                >
+                                    {selectedClientIds.length > 0 ? (
+                                        selectedClientIds.map(clientId => {
+                                            const client = clientsList.find(c => c.id === clientId);
+                                            return (
+                                                <span key={clientId} className="bg-blue-600/40 text-blue-100 px-2 py-1 rounded text-xs flex items-center border border-blue-500/30">
+                                                    {client?.name}
+                                                    <X size={12} className="ml-1 hover:text-white" onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedClientIds(prev => prev.filter(id => id !== clientId));
+                                                    }} />
+                                                </span>
+                                            );
+                                        })
+                                    ) : (
+                                        <span className="text-gray-500 py-1">Select Clients...</span>
+                                    )}
+                                    <div className="ml-auto flex items-center">
+                                        <ChevronDown size={16} className="text-gray-400" />
+                                    </div>
+                                </div>
+
+                                {isClientDropdownOpen && (
+                                    <div className="absolute z-30 bottom-full left-0 right-0 mb-1 bg-navy-800 border border-white/10 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2">
+                                        <div className="p-2 border-b border-white/10 sticky top-0 bg-navy-800 z-10">
+                                            <div className="relative">
+                                                <Search size={14} className="absolute left-2 top-2.5 text-gray-500" />
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    placeholder="Search clients..."
+                                                    className="w-full bg-black/20 text-white text-xs rounded-lg pl-8 pr-2 py-2 border border-white/5 focus:border-blue-500/50 focus:outline-none"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onChange={(e) => {
+                                                        const term = e.target.value.toLowerCase();
+                                                        const items = e.target.parentElement?.parentElement?.nextElementSibling?.children;
+                                                        if (items) {
+                                                            Array.from(items).forEach((item: any) => {
+                                                                const text = item.textContent?.toLowerCase() || '';
+                                                                item.style.display = text.includes(term) ? 'flex' : 'none';
+                                                            });
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        {clientsList.map((c) => (
+                                            <div
+                                                key={c.id}
+                                                className={`px-4 py-2 text-sm hover:bg-white/5 cursor-pointer flex items-center justify-between ${selectedClientIds.includes(c.id) ? 'bg-blue-600/10 text-blue-300' : 'text-gray-300'}`}
+                                                onClick={() => {
+                                                    setSelectedClientIds(prev =>
+                                                        prev.includes(c.id)
+                                                            ? prev.filter(id => id !== c.id)
+                                                            : [...prev, c.id]
+                                                    );
+                                                }}
+                                            >
+                                                <span>{c.name}</span>
+                                                {selectedClientIds.includes(c.id) && <Check size={14} className="text-blue-400" />}
+                                            </div>
+                                        ))}
+                                        {clientsList.length === 0 && (
+                                            <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div>

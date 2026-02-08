@@ -20,14 +20,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { UserRole, Notification } from '../types';
+import { UserRole, AppNotification } from '../types';
 import { AuthService } from '../services/firebase';
 
 const SidebarItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => {
   return (
     <NavLink
       to={to}
-      className={({ isActive }) =>
+      className={({ isActive }: { isActive: boolean }) =>
         `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 mb-1.5 border border-transparent group relative overflow-hidden ${isActive
           ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/10 text-blue-100 border-blue-500/20 shadow-[0_0_20px_rgba(37,99,235,0.15)]'
           : 'text-gray-400 hover:bg-white/5 hover:text-white hover:border-white/5'
@@ -51,14 +51,14 @@ const Layout: React.FC = () => {
   const location = useLocation();
 
   // Notification State
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
     // Subscribe to real-time notifications
-    const unsubscribe = AuthService.subscribeToNotifications(user.uid, (notifs) => {
+    const unsubscribe = AuthService.subscribeToNotifications(user.uid, (notifs: AppNotification[]) => {
       setNotifications(notifs);
     });
 

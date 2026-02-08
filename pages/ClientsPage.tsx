@@ -448,15 +448,6 @@ const ClientsPage: React.FC = () => {
                                             <label className="block text-xs text-gray-400 mb-1">Address / Location</label>
                                             <div className="flex items-center space-x-2">
                                                 <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newClient.address} onChange={(e) => setNewClient({ ...newClient, address: e.target.value })} />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => verifyAddress(false)}
-                                                    className="p-2 bg-brand-600/30 hover:bg-brand-600/50 text-brand-200 rounded-lg transition-colors border border-brand-500/30"
-                                                    title="Verify with Google Maps"
-                                                    disabled={isVerifyingAddr}
-                                                >
-                                                    {isVerifyingAddr ? <Loader2 size={18} className="animate-spin" /> : <MapPinCheck size={18} />}
-                                                </button>
                                             </div>
                                             {verifiedMapLink && (
                                                 <a href={verifiedMapLink} target="_blank" rel="noopener noreferrer" className="absolute right-14 top-8 text-[10px] text-brand-300 underline flex items-center bg-navy-900 px-1 rounded">
@@ -516,15 +507,6 @@ const ClientsPage: React.FC = () => {
                                             {isEditing ? (
                                                 <div className="flex items-center w-full space-x-2">
                                                     <input value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} className="bg-black/20 rounded p-1 w-full" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => verifyAddress(true)}
-                                                        className="p-1 bg-brand-600/30 hover:bg-brand-600/50 text-brand-200 rounded transition-colors border border-brand-500/30"
-                                                        title="Verify"
-                                                        disabled={isVerifyingAddr}
-                                                    >
-                                                        {isVerifyingAddr ? <Loader2 size={14} className="animate-spin" /> : <MapPinCheck size={14} />}
-                                                    </button>
                                                 </div>
                                             ) : (
                                                 <span>

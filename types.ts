@@ -37,6 +37,7 @@ export interface AttendanceRecord {
   // New Reporting Fields
   clientId?: string;
   clientName?: string;
+  clientIds?: string[]; // Multiple clients
   workDescription?: string;
 }
 
@@ -129,7 +130,7 @@ export interface CalendarEvent {
   type: 'MEETING' | 'DEADLINE' | 'GENERAL';
 }
 
-export interface Notification {
+export interface AppNotification {
   id: string;
   userId: string; // The user who should see this notification
   title: string;

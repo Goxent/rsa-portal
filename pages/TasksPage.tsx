@@ -36,6 +36,10 @@ const TasksPage: React.FC = () => {
     const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    // Client Dropdown State
+    const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+    const clientDropdownRef = useRef<HTMLDivElement>(null);
+
     // Permissions Check
     const canCreateTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER;
 
@@ -515,12 +519,72 @@ const TasksPage: React.FC = () => {
                             <div className="space-y-4">
                                 <div><label className="block text-sm font-medium text-gray-300 mb-1">Title <span className="text-red-400">*</span></label><input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.title} onChange={(e: ChangeEvent<HTMLInputElement>) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} placeholder="e.g. Q4 Audit for Alpha" /></div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
+                                    <div className="relative" ref={clientDropdownRef}>
                                         <label className="block text-sm font-medium text-gray-300 mb-1">Client <span className="text-red-400">*</span></label>
-                                        <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.clientId || ''} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, clientId: e.target.value })} disabled={!hasEditPermission}>
-                                            <option value="">Select Client</option>
-                                            {clientsList.map((c: Client) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
+                                        <div
+                                            className={`w-full glass-input rounded-lg px-3 py-2 text-sm flex items-center justify-between cursor-pointer ${!hasEditPermission ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            onClick={() => hasEditPermission && setIsClientDropdownOpen(!isClientDropdownOpen)}
+                                        >
+                                            <span className={currentTask.clientId ? 'text-white' : 'text-gray-500'}>
+                                                {currentTask.clientId
+                                                    ? clientsList.find(c => c.id === currentTask.clientId)?.name
+                                                    : 'Select Client'}
+                                            </span>
+                                            <ChevronDown size={16} className="text-gray-400" />
+                                        </div>
+
+                                        {isClientDropdownOpen && (
+                                            <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-navy-800 border border-white/10 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2">
+                                                <div className="p-2 border-b border-white/10 sticky top-0 bg-navy-800 z-10">
+                                                    <div className="relative">
+                                                        <Search size={14} className="absolute left-2 top-2.5 text-gray-500" />
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            placeholder="Search clients..."
+                                                            className="w-full bg-black/20 text-white text-xs rounded-lg pl-8 pr-2 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                // Simple search filter implemented in render
+                                                                // For now, we'll just let the list filter itself if we had a state for it
+                                                                // But since we don't have a separate search state for this dropdown yet, 
+                                                                // we can add it or just rely on native browser search for now. 
+                                                                // Actually, let's just show all clients for now or add a quick local state if needed.
+                                                                // To keep it simple and robust without extra state:
+                                                                const term = e.target.value.toLowerCase();
+                                                                const items = e.target.parentElement?.parentElement?.nextElementSibling?.children;
+                                                                if (items) {
+                                                                    Array.from(items).forEach((item: any) => {
+                                                                        const text = item.textContent?.toLowerCase() || '';
+                                                                        item.style.display = text.includes(term) ? 'flex' : 'none';
+                                                                    });
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {clientsList.map((c: Client) => (
+                                                    <div
+                                                        key={c.id}
+                                                        className={`px-4 py-2 text-sm hover:bg-white/5 cursor-pointer flex items-center justify-between ${currentTask.clientId === c.id ? 'bg-brand-600/10 text-brand-300' : 'text-gray-300'}`}
+                                                        onClick={() => {
+                                                            setCurrentTask({
+                                                                ...currentTask,
+                                                                clientId: c.id,
+                                                                clientName: c.name
+                                                            });
+                                                            setIsClientDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        <span>{c.name}</span>
+                                                        {currentTask.clientId === c.id && <Check size={14} className="text-brand-400" />}
+                                                    </div>
+                                                ))}
+                                                {clientsList.length === 0 && (
+                                                    <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div><label className="block text-sm font-medium text-gray-300 mb-1">Status</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.status} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>{Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}</select></div>
                                 </div>
