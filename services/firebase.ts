@@ -328,7 +328,8 @@ export const AuthService = {
     },
 
     deleteClient: async (id: string) => {
-        await deleteDoc(doc(db, 'clients', id));
+        // Soft delete: Mark as Inactive
+        await updateDoc(doc(db, 'clients', id), { status: 'Inactive' });
     },
 
     // --- TASKS ---

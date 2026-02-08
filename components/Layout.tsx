@@ -99,7 +99,7 @@ const Layout: React.FC = () => {
       case 'attendance': return 'Attendance & Time';
       case 'tasks': return 'Workflow & Kanban';
       case 'calendar': return 'Firm Calendar';
-      case 'resources': return 'Knowledge & Resources';
+      case 'knowledge-base': return 'Knowledge Base';
       case 'clients': return 'Client Directory';
       case 'leaves': return 'Leave Management';
       case 'staff': return 'Staff Directory';
@@ -141,7 +141,7 @@ const Layout: React.FC = () => {
           <SidebarItem to="/leaves" icon={Calendar} label="Leaves" />
 
           <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Firm Data</p>
-          <SidebarItem to="/resources" icon={BookOpen} label="Knowledge Base" />
+          <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
 
           {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
             <>
@@ -279,7 +279,7 @@ const Layout: React.FC = () => {
               <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
               <SidebarItem to="/tasks" icon={CheckSquare} label="Tasks" />
               <SidebarItem to="/leaves" icon={Calendar} label="Leaves" />
-              <SidebarItem to="/resources" icon={BookOpen} label="Resources" />
+              <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
               {user?.role === UserRole.ADMIN && <SidebarItem to="/clients" icon={Users} label="Clients" />}
               {user?.role === UserRole.ADMIN && <SidebarItem to="/staff" icon={UserCog} label="Staff Directory" />}
             </nav>

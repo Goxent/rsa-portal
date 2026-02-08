@@ -107,6 +107,7 @@ export interface Client {
   industry?: 'Hydropower' | 'Manufacturing' | 'Trading' | 'Consulting' | 'Security Broker' | 'Other';
   address?: string;
   panNumber?: string;
+  riskProfile?: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
 export interface LeaveRequest {

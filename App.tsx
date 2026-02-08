@@ -17,6 +17,7 @@ import ProfileSetupPage from './pages/ProfileSetupPage';
 import StaffPage from './pages/StaffPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
+import KnowledgeBasePage from './pages/KnowledgeBasePage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -93,6 +94,7 @@ const App: React.FC = () => {
               <Route path="calendar" element={<CalendarPage />} />
               <Route path="resources" element={<ResourcesPage />} />
               <Route path="clients" element={<ClientsPage />} />
+              <Route path="knowledge-base" element={<KnowledgeBasePage />} />
               <Route path="leaves" element={<LeavePage />} />
               <Route path="staff" element={<StaffPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />

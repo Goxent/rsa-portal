@@ -7,6 +7,7 @@ import { AuthService } from '../services/firebase';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useLocation } from 'react-router-dom';
+import ClientSelect from '../components/ClientSelect';
 
 const AttendancePage: React.FC = () => {
     const { user } = useAuth();
@@ -611,82 +612,13 @@ const AttendancePage: React.FC = () => {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
-                            <div className="relative" ref={clientDropdownRef}>
-                                <div
-                                    className="w-full text-sm rounded-lg p-3 bg-black/20 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none text-white min-h-[46px] flex flex-wrap gap-2 cursor-pointer"
-                                    onClick={() => {
-                                        if (status === 'CLOCKED_IN') {
-                                            setIsClientDropdownOpen(!isClientDropdownOpen);
-                                        }
-                                    }}
-                                >
-                                    {selectedClientIds.length > 0 ? (
-                                        selectedClientIds.map(clientId => {
-                                            const client = clientsList.find(c => c.id === clientId);
-                                            return (
-                                                <span key={clientId} className="bg-blue-600/40 text-blue-100 px-2 py-1 rounded text-xs flex items-center border border-blue-500/30">
-                                                    {client?.name}
-                                                    <X size={12} className="ml-1 hover:text-white" onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedClientIds(prev => prev.filter(id => id !== clientId));
-                                                    }} />
-                                                </span>
-                                            );
-                                        })
-                                    ) : (
-                                        <span className="text-gray-500 py-1">Select Clients...</span>
-                                    )}
-                                    <div className="ml-auto flex items-center">
-                                        <ChevronDown size={16} className="text-gray-400" />
-                                    </div>
-                                </div>
-
-                                {isClientDropdownOpen && (
-                                    <div className="absolute z-30 bottom-full left-0 right-0 mb-1 bg-navy-800 border border-white/10 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2">
-                                        <div className="p-2 border-b border-white/10 sticky top-0 bg-navy-800 z-10">
-                                            <div className="relative">
-                                                <Search size={14} className="absolute left-2 top-2.5 text-gray-500" />
-                                                <input
-                                                    autoFocus
-                                                    type="text"
-                                                    placeholder="Search clients..."
-                                                    className="w-full bg-black/20 text-white text-xs rounded-lg pl-8 pr-2 py-2 border border-white/5 focus:border-blue-500/50 focus:outline-none"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    onChange={(e) => {
-                                                        const term = e.target.value.toLowerCase();
-                                                        const items = e.target.parentElement?.parentElement?.nextElementSibling?.children;
-                                                        if (items) {
-                                                            Array.from(items).forEach((item: any) => {
-                                                                const text = item.textContent?.toLowerCase() || '';
-                                                                item.style.display = text.includes(term) ? 'flex' : 'none';
-                                                            });
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        {clientsList.map((c) => (
-                                            <div
-                                                key={c.id}
-                                                className={`px-4 py-2 text-sm hover:bg-white/5 cursor-pointer flex items-center justify-between ${selectedClientIds.includes(c.id) ? 'bg-blue-600/10 text-blue-300' : 'text-gray-300'}`}
-                                                onClick={() => {
-                                                    setSelectedClientIds(prev =>
-                                                        prev.includes(c.id)
-                                                            ? prev.filter(id => id !== c.id)
-                                                            : [...prev, c.id]
-                                                    );
-                                                }}
-                                            >
-                                                <span>{c.name}</span>
-                                                {selectedClientIds.includes(c.id) && <Check size={14} className="text-blue-400" />}
-                                            </div>
-                                        ))}
-                                        {clientsList.length === 0 && (
-                                            <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                            <ClientSelect
+                                value={selectedClientIds}
+                                onChange={(val) => setSelectedClientIds(val as string[])}
+                                multi={true}
+                                placeholder="Select Clients..."
+                                disabled={status === 'CLOCKED_OUT'}
+                            />
                         </div>
 
                         <div>

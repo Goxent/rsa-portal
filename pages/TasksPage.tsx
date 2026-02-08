@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AIService } from '../services/ai';
 import { toBS, formatDualDate } from '../utils/dateUtils';
+import ClientSelect from '../components/ClientSelect';
+import TaskTemplateModal from '../components/TaskTemplateModal';
 
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
@@ -22,6 +24,7 @@ const TasksPage: React.FC = () => {
 
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentTask, setCurrentTask] = useState<Partial<Task>>({});
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -147,6 +150,23 @@ const TasksPage: React.FC = () => {
             status: TaskStatus.NOT_STARTED,
             priority: TaskPriority.MEDIUM,
             subtasks: [],
+            dueDate: new Date().toISOString().split('T')[0]
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleTemplateSelect = (template: any) => {
+        setIsTemplateModalOpen(false);
+        setIsEditMode(false);
+        setFormError('');
+        setAssignSuggestion(null);
+        setCurrentTask({
+            title: template.title,
+            description: template.description,
+            assignedTo: [],
+            status: TaskStatus.NOT_STARTED,
+            priority: template.priority,
+            subtasks: template.subtasks.map((t: string) => ({ id: Math.random().toString(36).substr(2, 9), title: t, isCompleted: false, createdBy: user?.uid || '', createdAt: new Date().toISOString() })),
             dueDate: new Date().toISOString().split('T')[0]
         });
         setIsModalOpen(true);
@@ -478,7 +498,12 @@ const TasksPage: React.FC = () => {
                         <button onClick={() => setBoardMode('ALL')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${boardMode === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>Firm View</button>
                         <button onClick={() => setBoardMode('MY')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center ${boardMode === 'MY' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}><UserCircle2 size={14} className="mr-1" /> My Board</button>
                     </div>
-                    {canCreateTask && <button onClick={handleOpenCreate} className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-brand-900/40 transition-all border border-brand-500/30 transform hover:-translate-y-0.5"><Plus size={16} className="mr-2" /> New Task</button>}
+                    {canCreateTask && (
+                        <>
+                            <button onClick={() => setIsTemplateModalOpen(true)} className="bg-white/5 hover:bg-white/10 text-brand-300 px-3 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg border border-brand-500/20 mr-2 transition-all hover:-translate-y-0.5"><Sparkles size={16} className="mr-2" /> Templates</button>
+                            <button onClick={handleOpenCreate} className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-brand-900/40 transition-all border border-brand-500/30 transform hover:-translate-y-0.5"><Plus size={16} className="mr-2" /> New Task</button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -519,74 +544,34 @@ const TasksPage: React.FC = () => {
                             <div className="space-y-4">
                                 <div><label className="block text-sm font-medium text-gray-300 mb-1">Title <span className="text-red-400">*</span></label><input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.title} onChange={(e: ChangeEvent<HTMLInputElement>) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} placeholder="e.g. Q4 Audit for Alpha" /></div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="relative" ref={clientDropdownRef}>
+                                    <div>
                                         <label className="block text-sm font-medium text-gray-300 mb-1">Client <span className="text-red-400">*</span></label>
-                                        <div
-                                            className={`w-full glass-input rounded-lg px-3 py-2 text-sm flex items-center justify-between cursor-pointer ${!hasEditPermission ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                            onClick={() => hasEditPermission && setIsClientDropdownOpen(!isClientDropdownOpen)}
-                                        >
-                                            <span className={currentTask.clientId ? 'text-white' : 'text-gray-500'}>
-                                                {currentTask.clientId
-                                                    ? clientsList.find(c => c.id === currentTask.clientId)?.name
-                                                    : 'Select Client'}
-                                            </span>
-                                            <ChevronDown size={16} className="text-gray-400" />
-                                        </div>
-
-                                        {isClientDropdownOpen && (
-                                            <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-navy-800 border border-white/10 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2">
-                                                <div className="p-2 border-b border-white/10 sticky top-0 bg-navy-800 z-10">
-                                                    <div className="relative">
-                                                        <Search size={14} className="absolute left-2 top-2.5 text-gray-500" />
-                                                        <input
-                                                            autoFocus
-                                                            type="text"
-                                                            placeholder="Search clients..."
-                                                            className="w-full bg-black/20 text-white text-xs rounded-lg pl-8 pr-2 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            onChange={(e) => {
-                                                                // Simple search filter implemented in render
-                                                                // For now, we'll just let the list filter itself if we had a state for it
-                                                                // But since we don't have a separate search state for this dropdown yet, 
-                                                                // we can add it or just rely on native browser search for now. 
-                                                                // Actually, let's just show all clients for now or add a quick local state if needed.
-                                                                // To keep it simple and robust without extra state:
-                                                                const term = e.target.value.toLowerCase();
-                                                                const items = e.target.parentElement?.parentElement?.nextElementSibling?.children;
-                                                                if (items) {
-                                                                    Array.from(items).forEach((item: any) => {
-                                                                        const text = item.textContent?.toLowerCase() || '';
-                                                                        item.style.display = text.includes(term) ? 'flex' : 'none';
-                                                                    });
-                                                                }
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                {clientsList.map((c: Client) => (
-                                                    <div
-                                                        key={c.id}
-                                                        className={`px-4 py-2 text-sm hover:bg-white/5 cursor-pointer flex items-center justify-between ${currentTask.clientId === c.id ? 'bg-brand-600/10 text-brand-300' : 'text-gray-300'}`}
-                                                        onClick={() => {
-                                                            setCurrentTask({
-                                                                ...currentTask,
-                                                                clientId: c.id,
-                                                                clientName: c.name
-                                                            });
-                                                            setIsClientDropdownOpen(false);
-                                                        }}
-                                                    >
-                                                        <span>{c.name}</span>
-                                                        {currentTask.clientId === c.id && <Check size={14} className="text-brand-400" />}
-                                                    </div>
-                                                ))}
-                                                {clientsList.length === 0 && (
-                                                    <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
-                                                )}
-                                            </div>
-                                        )}
+                                        <ClientSelect
+                                            value={currentTask.clientId || ''}
+                                            onChange={(val) => {
+                                                const clientId = val as string;
+                                                const client = clientsList.find(c => c.id === clientId);
+                                                setCurrentTask({
+                                                    ...currentTask,
+                                                    clientId,
+                                                    clientName: client?.name
+                                                });
+                                            }}
+                                            placeholder="Select Client..."
+                                            disabled={!hasEditPermission}
+                                        />
                                     </div>
-                                    <div><label className="block text-sm font-medium text-gray-300 mb-1">Status</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.status} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>{Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}</select></div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                                        <select
+                                            className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                            value={currentTask.status}
+                                            onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })}
+                                            disabled={!hasEditPermission}
+                                        >
+                                            {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><label className="block text-sm font-medium text-gray-300 mb-1">Priority</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.priority} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasEditPermission}>{Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}</select></div>
@@ -710,6 +695,12 @@ const TasksPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <TaskTemplateModal
+                isOpen={isTemplateModalOpen}
+                onClose={() => setIsTemplateModalOpen(false)}
+                onSelectTemplate={handleTemplateSelect}
+            />
         </div>
     );
 };
