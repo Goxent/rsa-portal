@@ -58,45 +58,21 @@ export const AIService = {
    * Uses Gemini 2.5 Flash with googleMaps tool.
    */
   async findLocationDetails(query: string): Promise<{ text: string, mapLink?: string }> {
-    if (!ai) return { text: "AI Location services unavailable (Missing Key)." };
-
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp', // Updated model name
-        contents: `Find the exact address for: ${query}. Provide the address in a single line.`,
-        config: {
-          tools: [{ googleMaps: {} }],
-        },
-      });
-
-      let mapLink = undefined;
-      // Extract Google Maps URI from grounding metadata
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-
-      if (chunks) {
-        for (const chunk of chunks) {
-          if (chunk.maps?.uri) {
-            mapLink = chunk.maps.uri;
-            break;
-          }
-        }
-      }
-
-      return {
-        text: response.text || "Location details not found.",
-        mapLink
-      };
-    } catch (error) {
-      console.error("Maps Grounding Error:", error);
-      return { text: "Could not verify location. Please check internet connection or API key." };
-    }
+    // DISABLED: Google Maps integration removed per user request
+    return {
+      text: "🗺️ Location services are currently disabled. You can manually enter addresses."
+    };
   },
 
   /**
    * Researches a concept related to a specific resource using Google Search Grounding.
    */
   async researchConcept(resourceTitle: string, userQuery: string): Promise<string> {
-    if (!ai) return "AI research unavailable.";
+    if (!ai) {
+      return "🔑 **AI Research Assistant requires setup:**\n\n" +
+        "Please ask your administrator to add the VITE_GEMINI_API_KEY to the environment variables.\n" +
+        "Get a free API key from: https://makersuite.google.com/app/apikey";
+    }
 
     try {
       const response = await ai.models.generateContent({
@@ -111,10 +87,10 @@ export const AIService = {
       });
 
       // Return text directly. Grounding sources are automatically handled by the SDK but we just return the synthesis here.
-      return response.text || "I couldn't find specific information on that topic.";
+      return response.text || "I couldn't find specific information on that topic. Try rephrasing your question.";
     } catch (error) {
       console.error("Research Error:", error);
-      return "I'm having trouble connecting to the research service right now.";
+      return "❌ Research service error: " + (error instanceof Error ? error.message : "Connection failed. Please try again.");
     }
   },
 
