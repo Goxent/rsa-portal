@@ -294,6 +294,12 @@ export const AuthService = {
         return snapshot.docs.map(d => docConverter<UserProfile>(d));
     },
 
+    getAllStaff: async (): Promise<UserProfile[]> => {
+        const q = query(collection(db, 'users'), where('role', '!=', UserRole.ADMIN));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => docConverter<UserProfile>(d));
+    },
+
     updateUserRole: async (uid: string, role: UserRole) => {
         await updateDoc(doc(db, 'users', uid), { role });
     },

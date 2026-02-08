@@ -37,9 +37,13 @@ const ClientsPage: React.FC = () => {
     // Forms
     const initialFormState: Partial<Client> = {
         name: '', code: '', serviceType: 'Audit', folderLink: '', status: 'Active',
-        email: '', phone: '', contactPerson: '', notes: '',
-        category: 'B', industry: 'Trading', address: '', panNumber: '',
-        riskProfile: 'LOW'
+        email: '', phone: '', contactPersonName: '', contactPersonNumber: '', panNumber: '', notes: '',
+        category: 'B', industry: 'Trading', address: '',
+        riskProfile: 'LOW',
+        auditorSignatory: 'R. Sapkota & Associates',
+        billingAmount: 0,
+        isPaymentReceived: false,
+        fiscalYear: format(new Date(), 'yyyy') + '-' + (parseInt(format(new Date(), 'yy')) + 1)
     };
     const [formData, setFormData] = useState<Partial<Client>>(initialFormState);
 
@@ -67,11 +71,6 @@ const ClientsPage: React.FC = () => {
         setIsLoading(true);
         try {
             const data = await AuthService.getAllClients();
-            // Filter out 'Inactive' (Soft Deleted) clients from the main view if desired,
-            // OR show them with a 'Deleted' badge. The user requested deletion functionality.
-            // Typically "Delete" means remove from view. "Inactive" might just be status.
-            // Let's hide 'Inactive' clients from the main list OR toggle them?
-            // For now, let's show all but maybe sort Inactive to bottom.
             setClients(data);
         } catch (error) {
             console.error("Failed to fetch clients", error);
@@ -93,13 +92,18 @@ const ClientsPage: React.FC = () => {
                 status: formData.status as any,
                 email: formData.email,
                 phone: formData.phone,
-                contactPerson: formData.contactPerson,
+                contactPersonName: formData.contactPersonName,
+                contactPersonNumber: formData.contactPersonNumber,
+                panNumber: formData.panNumber,
                 notes: formData.notes,
                 category: formData.category as any,
                 industry: formData.industry as any,
                 address: formData.address,
-                panNumber: formData.panNumber,
-                riskProfile: formData.riskProfile as any
+                riskProfile: formData.riskProfile as any,
+                auditorSignatory: formData.auditorSignatory,
+                billingAmount: Number(formData.billingAmount) || 0,
+                isPaymentReceived: formData.isPaymentReceived || false,
+                fiscalYear: formData.fiscalYear
             };
 
             await AuthService.addClient(client);
@@ -119,7 +123,11 @@ const ClientsPage: React.FC = () => {
         if (!selectedClient) return;
         setIsSubmitting(true);
         try {
-            const updatedClient = { ...selectedClient, ...formData } as Client;
+            const updatedClient = {
+                ...selectedClient,
+                ...formData,
+                billingAmount: Number(formData.billingAmount) || 0
+            } as Client;
             await AuthService.updateClient(updatedClient);
             fetchClients();
             setSelectedClient(updatedClient);
@@ -307,32 +315,44 @@ const ClientsPage: React.FC = () => {
                                         {getInitials(client.name)}
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-white text-lg leading-tight">{client.name}</h3>
-                                        <p className="text-brand-400 text-sm font-mono">{client.code}</p>
+                                        <h3 className="font-bold text-white text-lg leading-tight group-hover:text-brand-400 transition-colors">{client.name}</h3>
+                                        <p className="text-brand-400 text-sm font-mono mt-0.5">{client.code}</p>
                                     </div>
                                 </div>
                                 <RiskBadge level={client.riskProfile} />
                             </div>
 
                             <div className="space-y-3 pt-2 border-t border-white/5">
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <Briefcase size={14} className="mr-2 text-brand-500" /> {client.serviceType}
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div className="flex items-center text-gray-400">
+                                        <Briefcase size={14} className="mr-2 text-brand-500" /> {client.serviceType}
+                                    </div>
+                                    <div className="flex items-center text-gray-400">
+                                        <Building2 size={14} className="mr-2 text-brand-500" /> {client.industry}
+                                    </div>
                                 </div>
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <Building2 size={14} className="mr-2 text-brand-500" /> {client.industry}
+                                <div className="flex items-start text-sm text-gray-400">
+                                    <User size={14} className="mr-2 mt-1 text-brand-500 shrink-0" />
+                                    <div>
+                                        <div className="font-medium text-gray-200">{client.contactPersonName || 'No Contact'}</div>
+                                        {client.contactPersonNumber && <div className="text-xs opacity-60 flex items-center mt-0.5"><Phone size={10} className="mr-1" /> {client.contactPersonNumber}</div>}
+                                    </div>
                                 </div>
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <User size={14} className="mr-2 text-brand-500" /> {client.contactPerson || 'No Contact'}
-                                </div>
+                                {client.auditorSignatory && (
+                                    <div className="flex items-center text-xs text-brand-300 bg-brand-500/5 p-2 rounded-lg border border-brand-500/10">
+                                        <FileText size={12} className="mr-2" />
+                                        <span className="truncate">{client.auditorSignatory}</span>
+                                    </div>
+                                )}
                                 <div className="flex items-center justify-between pt-2">
                                     <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${client.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                                         {client.status}
                                     </span>
-                                    {client.address && (
-                                        <div className="flex items-center text-[10px] text-gray-500">
-                                            <MapPin size={10} className="mr-1" /> {client.address.split(',')[0]}
-                                        </div>
-                                    )}
+                                    {client.billingAmount && client.billingAmount > 0 ? (
+                                        <span className={`text-[10px] font-bold ${client.isPaymentReceived ? 'text-emerald-400' : 'text-orange-400'}`}>
+                                            Rs. {client.billingAmount.toLocaleString()}
+                                        </span>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
@@ -345,32 +365,40 @@ const ClientsPage: React.FC = () => {
                             <tr>
                                 <th className="px-6 py-4">Client</th>
                                 <th className="px-6 py-4">Service</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Risk</th>
+                                <th className="px-6 py-4">Auditor</th>
+                                <th className="px-6 py-4">Billing</th>
                                 <th className="px-6 py-4">Contact</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {filteredClients.map((client) => (
-                                <tr key={client.id} onClick={() => handleCardClick(client)} className="hover:bg-white/5 cursor-pointer transition-colors">
+                                <tr key={client.id} onClick={() => handleCardClick(client)} className="hover:bg-white/5 cursor-pointer transition-colors group">
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-white">{client.name}</div>
+                                        <div className="font-bold text-white group-hover:text-brand-400 transition-colors">{client.name}</div>
                                         <div className="text-xs text-gray-500 font-mono">{client.code}</div>
                                     </td>
-                                    <td className="px-6 py-4">{client.serviceType}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-0.5 rounded textxs ${client.status === 'Active' ? 'text-emerald-400 bg-emerald-500/10' : 'text-gray-400 bg-gray-500/10'}`}>
-                                            {client.status}
-                                        </span>
+                                        <div className="text-gray-200">{client.serviceType}</div>
+                                        <div className="text-[10px] text-gray-500 uppercase">{client.industry}</div>
                                     </td>
-                                    <td className="px-6 py-4"><RiskBadge level={client.riskProfile} /></td>
+                                    <td className="px-6 py-4 text-xs text-gray-400 truncate max-w-[150px]">{client.auditorSignatory || '-'}</td>
                                     <td className="px-6 py-4">
-                                        <div>{client.contactPerson}</div>
-                                        <div className="text-xs opacity-50">{client.phone}</div>
+                                        {client.billingAmount ? (
+                                            <div className="flex flex-col">
+                                                <span className="font-mono text-gray-200">Rs.{client.billingAmount.toLocaleString()}</span>
+                                                <span className={`text-[9px] uppercase font-bold ${client.isPaymentReceived ? 'text-emerald-400' : 'text-orange-400'}`}>
+                                                    {client.isPaymentReceived ? 'RECEIVED' : 'PENDING'}
+                                                </span>
+                                            </div>
+                                        ) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="text-gray-200">{client.contactPersonName || '-'}</div>
+                                        <div className="text-xs opacity-50 font-mono">{client.contactPersonNumber}</div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"><MoreVertical size={16} /></button>
+                                        <button className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"><MoreVertical size={16} /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -382,115 +410,183 @@ const ClientsPage: React.FC = () => {
             {/* Combined Add/Edit Modal */}
             {(isAddModalOpen || selectedClient) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/10 shadow-2xl overflow-hidden">
+                    <div className="glass-modal rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-white/10 shadow-2xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h2 className="text-lg font-bold text-white flex items-center">
+                            <h2 className="text-lg font-bold text-white flex items-center uppercase tracking-wider">
                                 {selectedClient ? <Edit size={18} className="mr-2 text-brand-400" /> : <Plus size={18} className="mr-2 text-brand-400" />}
                                 {selectedClient ? 'Edit Client Profile' : 'Add New Client'}
                             </h2>
                             <button onClick={() => { setIsAddModalOpen(false); setSelectedClient(null); }} className="text-gray-400 hover:text-white"><X size={20} /></button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase">Client Name *</label>
-                                    <input
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500"
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        placeholder="e.g. Acme Corp"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase">Client Code</label>
-                                    <input
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                        value={formData.code}
-                                        onChange={e => setFormData({ ...formData, code: e.target.value })}
-                                        placeholder="Auto-generated if empty"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase">Risk Profile</label>
-                                    <select
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                        value={formData.riskProfile}
-                                        onChange={e => setFormData({ ...formData, riskProfile: e.target.value as any })}
-                                    >
-                                        <option value="LOW">Low Risk</option>
-                                        <option value="MEDIUM">Medium Risk</option>
-                                        <option value="HIGH">High Risk</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase">Service Type</label>
-                                    <select
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                        value={formData.serviceType}
-                                        onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}
-                                    >
-                                        <option value="Audit">Audit</option>
-                                        <option value="Tax">Tax</option>
-                                        <option value="Accounting">Accounting</option>
-                                        <option value="Consulting">Consulting</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase">Industry</label>
-                                    <select
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                        value={formData.industry}
-                                        onChange={e => setFormData({ ...formData, industry: e.target.value as any })}
-                                    >
-                                        <option value="Trading">Trading</option>
-                                        <option value="Manufacturing">Manufacturing</option>
-                                        <option value="Hydropower">Hydropower</option>
-                                        <option value="Service">Service</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 uppercase">Address</label>
-                                    <div className="flex gap-2">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                            {/* Section 1: Basic Information */}
+                            <div>
+                                <h3 className="text-sm font-bold text-brand-400 mb-4 flex items-center uppercase tracking-widest"><Building2 size={16} className="mr-2" /> Basic Information</h3>
+                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Client Name *</label>
                                         <input
-                                            className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                            value={formData.address}
-                                            onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                            placeholder="Full Address"
+                                            required
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 font-medium"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            placeholder="e.g. Acme Corp Nepal Pvt Ltd"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={verifyAddress}
-                                            className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg text-gray-300 border border-white/10"
-                                            title="Verify Address with AI"
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Client Code</label>
+                                        <input
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm font-mono"
+                                            value={formData.code}
+                                            onChange={e => setFormData({ ...formData, code: e.target.value })}
+                                            placeholder="e.g. CL-001"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Industry</label>
+                                        <select
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
+                                            value={formData.industry}
+                                            onChange={e => setFormData({ ...formData, industry: e.target.value as any })}
                                         >
-                                            <MapPin size={18} />
-                                        </button>
+                                            <option value="Trading">Trading</option>
+                                            <option value="Manufacturing">Manufacturing</option>
+                                            <option value="Hydropower">Hydropower</option>
+                                            <option value="Service">Service</option>
+                                            <option value="Security Broker">Security Broker</option>
+                                            <option value="Consulting">Consulting</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Office Address</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
+                                                value={formData.address}
+                                                onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                                placeholder="e.g. Mid-Baneshwor, Kathmandu"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={verifyAddress}
+                                                className="bg-brand-500/10 hover:bg-brand-500/20 px-3 py-2.5 rounded-lg text-brand-400 border border-brand-500/20 transition-all"
+                                                title="Verify with AI"
+                                            >
+                                                <MapPin size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 2: Contact Person Details */}
+                            <div>
+                                <h3 className="text-sm font-bold text-brand-400 mb-4 flex items-center uppercase tracking-widest"><User size={16} className="mr-2" /> Contact Person Details</h3>
+                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Person Name</label>
+                                        <input
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
+                                            value={formData.contactPersonName}
+                                            onChange={e => setFormData({ ...formData, contactPersonName: e.target.value })}
+                                            placeholder="e.g. Ram Bahadur"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Contact Number</label>
+                                        <input
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
+                                            value={formData.contactPersonNumber}
+                                            onChange={e => setFormData({ ...formData, contactPersonNumber: e.target.value })}
+                                            placeholder="e.g. 9841234567"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">PAN Number</label>
+                                        <input
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm font-mono tracking-widest"
+                                            value={formData.panNumber}
+                                            onChange={e => setFormData({ ...formData, panNumber: e.target.value })}
+                                            placeholder="9-digit PAN code"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 3: Audit & Billing */}
+                            <div>
+                                <h3 className="text-sm font-bold text-brand-400 mb-4 flex items-center uppercase tracking-widest"><FileText size={16} className="mr-2" /> Audit & Billing Section</h3>
+                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Auditor / Signatory</label>
+                                        <select
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
+                                            value={formData.auditorSignatory}
+                                            onChange={e => setFormData({ ...formData, auditorSignatory: e.target.value })}
+                                        >
+                                            <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
+                                            <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
+                                            <option value="NP Sharma & Co.">NP Sharma & Co.</option>
+                                            <option value="TN Acharya & Co.">TN Acharya & Co.</option>
+                                            <option value="Others">Others</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Billing Amount (Rs.)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
+                                            value={formData.billingAmount}
+                                            onChange={e => setFormData({ ...formData, billingAmount: Number(e.target.value) })}
+                                            placeholder="Enter amount"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Fiscal Year</label>
+                                        <input
+                                            className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
+                                            value={formData.fiscalYear}
+                                            onChange={e => setFormData({ ...formData, fiscalYear: e.target.value })}
+                                            placeholder="e.g. 2080-81"
+                                        />
+                                    </div>
+                                    <div className="flex items-center space-x-3 mt-4">
+                                        <div className="flex items-center">
+                                            <input
+                                                id="paymentReceived"
+                                                type="checkbox"
+                                                checked={formData.isPaymentReceived}
+                                                onChange={e => setFormData({ ...formData, isPaymentReceived: e.target.checked })}
+                                                className="w-4 h-4 bg-black/40 border-white/10 rounded text-brand-600 focus:ring-brand-500"
+                                            />
+                                            <label htmlFor="paymentReceived" className="ml-2 text-sm text-gray-300">Payment Received</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-4 border-t border-white/10 bg-white/5 flex justify-between items-center">
+                        <div className="p-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
                             {selectedClient ? (
                                 <button
                                     onClick={handleDeleteClient}
                                     type="button"
-                                    className="text-red-400 hover:text-red-300 text-sm font-medium flex items-center px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                                    className="text-red-400 hover:text-red-300 text-sm font-bold flex items-center px-4 py-2 rounded-lg hover:bg-red-500/10 transition-colors"
                                 >
-                                    <Trash2 size={16} className="mr-2" /> Delete
+                                    <Trash2 size={16} className="mr-2" /> Delete Client
                                 </button>
                             ) : <div></div>}
                             <div className="flex gap-3">
-                                <button onClick={() => { setIsAddModalOpen(false); setSelectedClient(null); }} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white">Cancel</button>
+                                <button onClick={() => { setIsAddModalOpen(false); setSelectedClient(null); }} className="px-5 py-2.5 rounded-xl text-gray-400 hover:text-white transition-colors text-sm font-bold">Cancel</button>
                                 <button
                                     onClick={selectedClient ? handleUpdateClient : handleAddClient}
                                     disabled={isSubmitting}
-                                    className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-all flex items-center"
+                                    className="bg-brand-600 hover:bg-brand-500 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-600/20 transition-all flex items-center hover:scale-105 active:scale-95 text-sm"
                                 >
                                     {isSubmitting && <Loader2 size={16} className="animate-spin mr-2" />}
-                                    {selectedClient ? 'Save Changes' : 'Create Client'}
+                                    {selectedClient ? 'Update Profile' : 'Register Client'}
                                 </button>
                             </div>
                         </div>

@@ -86,6 +86,7 @@ export interface Task {
   driveFolderLink?: string;
   sopLink?: string;
   createdAt: string;
+  completedAt?: string;
   attachments?: Attachment[];
   subtasks?: SubTask[];
 }
@@ -100,14 +101,20 @@ export interface Client {
   status: 'Active' | 'Inactive';
   email?: string;
   phone?: string;
-  contactPerson?: string;
+  contactPersonName?: string;
+  contactPersonNumber?: string;
+  panNumber?: string;
   notes?: string;
   // New Fields
   category?: 'A' | 'B' | 'C';
   industry?: 'Hydropower' | 'Manufacturing' | 'Trading' | 'Consulting' | 'Security Broker' | 'Other';
   address?: string;
-  panNumber?: string;
   riskProfile?: 'LOW' | 'MEDIUM' | 'HIGH';
+  // Audit & Billing Section
+  auditorSignatory?: string; // Flexible signatory (e.g. R. Sapkota & Associates, etc.)
+  billingAmount?: number;
+  isPaymentReceived?: boolean;
+  fiscalYear?: string;
 }
 
 export interface LeaveRequest {

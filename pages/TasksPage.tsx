@@ -151,7 +151,7 @@ const TasksPage: React.FC = () => {
         setFormError('');
         setAssignSuggestion(null);
         setCurrentTask({
-            title: template.title,
+            title: template.name,
             description: template.description || '',
             assignedTo: [],
             status: TaskStatus.NOT_STARTED,
