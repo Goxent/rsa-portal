@@ -1,0 +1,153 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() in ['ADMIN', 'MASTER_ADMIN'];
+    }
+    
+    // Helper function to check if user is master admin
+    function isMasterAdmin() {
+      return isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
+    }
+    
+    // USERS COLLECTION
+    match /users/{userId} {
+      // Anyone authenticated can read user profiles (for staff directory)
+      allow read: if isAuthenticated();
+      
+      // Users can update their own profile, admins can update anyone
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
+      // Only master admins can create/delete users
+      allow create, delete: if isMasterAdmin();
+    }
+    
+    // CLIENTS COLLECTION
+    match /clients/{clientId} {
+      // All authenticated users can read clients (for dropdown selection)
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, or delete clients
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // TASKS COLLECTION
+    match /tasks/{taskId} {
+      // All authenticated users can read tasks
+      allow read: if isAuthenticated();
+      
+      // Users can create tasks
+      allow create: if isAuthenticated();
+      
+      // Users can update tasks they created or are assigned to, admins can update any
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.createdBy ||
+        request.auth.uid in resource.data.assignedTo ||
+        isAdmin()
+      );
+      
+      // Only admins can delete tasks
+      allow delete: if isAdmin();
+    }
+    
+    // ATTENDANCE COLLECTION
+    match /attendance/{attendanceId} {
+      // Users can read their own attendance, admins can read all
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin()
+      );
+      
+      // Users can create/update their own attendance
+      allow create, update: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      
+      // Only admins can delete attendance records
+      allow delete: if isAdmin();
+    }
+    
+    // LEAVE REQUESTS COLLECTION
+    match /leave_requests/{leaveId} {
+      // Users can read their own leave requests, admins can read all
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin()
+      );
+      
+      // Users can create their own leave requests
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      
+      // Users can update their own pending requests, admins can update any
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.userId && resource.data.status == 'PENDING') ||
+        isAdmin()
+      );
+      
+      // Only the user or admins can delete leave requests
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin()
+      );
+    }
+    
+    // RESOURCES/KNOWLEDGE BASE COLLECTION
+    match /resources/{resourceId} {
+      // All authenticated users can read resources
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, or delete resources
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // EVENTS/CALENDAR COLLECTION
+    match /events/{eventId} {
+      // All authenticated users can read events
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, or delete events
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // NOTIFICATIONS COLLECTION
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications or system-wide notifications
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        resource.data.userId == 'ALL'
+      );
+      
+      // System can create notifications (from Cloud Functions)
+      allow create: if isAuthenticated();
+      
+      // Users can update (mark as read) their own notifications
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      
+      // Only admins can delete notifications
+      allow delete: if isAdmin();
+    }
+    
+    // AUDIT LOGS COLLECTION (new)
+    match /audit_logs/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+      
+      // Anyone authenticated can create audit logs (automatically)
+      allow create: if isAuthenticated();
+      
+      // Audit logs are immutable - no updates or deletes
+      allow update, delete: if false;
+    }
+  }
+}

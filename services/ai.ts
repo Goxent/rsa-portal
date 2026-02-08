@@ -1,19 +1,19 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize Gemini API
-// Note: process.env.API_KEY must be configured in the environment
-const apiKey = process.env.API_KEY;
+// Initialize Gemini API with Vite environment variable
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 let ai: GoogleGenAI | null = null;
 
 if (apiKey) {
   try {
     ai = new GoogleGenAI({ apiKey });
+    console.info("✅ Gemini AI initialized successfully");
   } catch (e) {
-    console.error("Failed to initialize Gemini AI", e);
+    console.error("❌ Failed to initialize Gemini AI", e);
   }
 } else {
-  console.warn("Gemini API Key missing. AI features will be disabled.");
+  console.warn("⚠️ Gemini API Key missing. AI features will be disabled. Add VITE_GEMINI_API_KEY to your .env.local file.");
 }
 
 export const AIService = {

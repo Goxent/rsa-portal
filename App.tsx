@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import * as Sentry from '@sentry/react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageLoader } from './components/ui/LoadingSkeleton';
+import { initSentry } from './services/sentry';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import AttendancePage from './pages/AttendancePage';
@@ -16,6 +19,9 @@ import ProfileSetupPage from './pages/ProfileSetupPage';
 import StaffPage from './pages/StaffPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
+
+// Initialize Sentry on app load
+initSentry();
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -101,6 +107,34 @@ const App: React.FC = () => {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </HashRouter>
+
+        {/* Global Toast Notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'rgba(30, 41, 59, 0.95)',
+              color: '#fff',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '16px',
+              backdropFilter: 'blur(10px)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
       </AuthProvider>
     </ErrorBoundary>
   );
