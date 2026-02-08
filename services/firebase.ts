@@ -340,13 +340,28 @@ export const AuthService = {
     },
 
     saveTask: async (task: Task) => {
-        if (task.id && !task.id.startsWith('t_')) { // Existing ID (Firestore ID)
+        let taskId = task.id;
+        if (task.id && !task.id.startsWith('t_')) {
             const { id, ...data } = task;
             await updateDoc(doc(db, 'tasks', id), data);
         } else {
-            // New Task (ignore temp ID)
-            const { id, ...data } = task; // drop temp ID
-            await addDoc(collection(db, 'tasks'), { ...data, createdAt: new Date().toISOString() });
+            const { id, ...data } = task;
+            const docRef = await addDoc(collection(db, 'tasks'), { ...data, createdAt: new Date().toISOString() });
+            taskId = docRef.id;
+        }
+
+        // Notify assigned users
+        if (task.assignedTo && task.assignedTo.length > 0) {
+            for (const uid of task.assignedTo) {
+                await AuthService.createNotification({
+                    userId: uid,
+                    title: 'New Task Assignment',
+                    message: `You have been assigned to: ${task.title}`,
+                    type: 'INFO',
+                    category: 'TASK',
+                    link: '/workflow'
+                });
+            }
         }
     },
 
@@ -433,7 +448,19 @@ export const AuthService = {
     },
 
     updateLeaveStatus: async (id: string, status: 'APPROVED' | 'REJECTED') => {
-        await updateDoc(doc(db, 'leaves', id), { status });
+        const leaveDoc = doc(db, 'leaves', id);
+        const leaveData = (await getDoc(leaveDoc)).data() as LeaveRequest;
+        await updateDoc(leaveDoc, { status });
+
+        // Notify user about leave status
+        await AuthService.createNotification({
+            userId: leaveData.userId,
+            title: `Leave ${status}`,
+            message: `Your leave request for ${leaveData.startDate} has been ${status.toLowerCase()}.`,
+            type: status === 'APPROVED' ? 'SUCCESS' : 'WARNING',
+            category: 'LEAVE',
+            link: '/leaves'
+        });
     },
 
     // --- RESOURCES ---

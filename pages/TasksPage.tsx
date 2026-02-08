@@ -1,16 +1,20 @@
 
-import React, { useState, useEffect, useRef, ChangeEvent, DragEvent } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Filter, Search, Calendar, Trash2, X,
-    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, Edit2, CheckCircle2, Lock, AlertCircle, ChevronDown, Check, Sparkles, Loader2, Wand2
+    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Sparkles, Loader2, Wand2, Save
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AIService } from '../services/ai';
-import { toBS, formatDualDate } from '../utils/dateUtils';
+import { toBS } from '../utils/dateUtils';
 import ClientSelect from '../components/ClientSelect';
 import TaskTemplateModal from '../components/TaskTemplateModal';
+import TemplateManager from '../components/TemplateManager';
+import StaffSelect from '../components/StaffSelect';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { toast } from 'react-hot-toast';
 
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
@@ -25,6 +29,7 @@ const TasksPage: React.FC = () => {
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentTask, setCurrentTask] = useState<Partial<Task>>({});
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -39,44 +44,32 @@ const TasksPage: React.FC = () => {
     const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Client Dropdown State
-    const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
-    const clientDropdownRef = useRef<HTMLDivElement>(null);
-
     // Permissions Check
-    const canCreateTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER;
+    const canCreateTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
 
     const [filterPriority, setFilterPriority] = useState<string>('ALL');
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Drag and Drop State
-    const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+    const onDragEnd = async (result: DropResult) => {
+        const { destination, source, draggableId } = result;
 
-    const handleDragStart = (e: React.DragEvent, taskId: string) => {
-        setDraggedTaskId(taskId);
-        e.dataTransfer.effectAllowed = 'move';
-    };
+        if (!destination) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    };
+        const newStatus = destination.droppableId as TaskStatus;
+        const task = tasks.find(t => t.id === draggableId);
 
-    const handleDrop = async (e: React.DragEvent, newStatus: TaskStatus) => {
-        e.preventDefault();
-        if (!draggedTaskId) return;
-
-        const task = tasks.find(t => t.id === draggedTaskId);
         if (task && task.status !== newStatus) {
             const updatedTask = { ...task, status: newStatus };
             try {
+                // Optimistic Update
+                setTasks(prev => prev.map(t => t.id === draggableId ? updatedTask : t));
                 await AuthService.saveTask(updatedTask);
-                fetchData();
             } catch (err) {
-                console.error("Failed to move task:", err);
+                toast.error("Failed to move task");
+                fetchData(); // Rollback
             }
         }
-        setDraggedTaskId(null);
     };
 
     useEffect(() => {
@@ -107,7 +100,7 @@ const TasksPage: React.FC = () => {
 
     const getPriorityStyle = (p: TaskPriority) => {
         switch (p) {
-            case TaskPriority.URGENT: return 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]';
+            case TaskPriority.URGENT: return 'bg-red-500/10 text-red-400 border-red-500/20';
             case TaskPriority.HIGH: return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
             case TaskPriority.MEDIUM: return 'bg-brand-500/10 text-brand-400 border-brand-500/20';
             default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
@@ -115,7 +108,7 @@ const TasksPage: React.FC = () => {
     };
 
     const canEditTask = (task: Task | Partial<Task>) => {
-        if (user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER) return true;
+        if (user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN) return true;
         if (task.assignedTo && user?.uid && task.assignedTo.includes(user.uid)) return true;
         return false;
     };
@@ -131,11 +124,8 @@ const TasksPage: React.FC = () => {
 
     const getInitials = (name: string) => {
         return name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .substring(0, 2)
-            .toUpperCase();
+            ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+            : '?';
     };
 
     const handleOpenCreate = () => {
@@ -162,11 +152,17 @@ const TasksPage: React.FC = () => {
         setAssignSuggestion(null);
         setCurrentTask({
             title: template.title,
-            description: template.description,
+            description: template.description || '',
             assignedTo: [],
             status: TaskStatus.NOT_STARTED,
-            priority: template.priority,
-            subtasks: template.subtasks.map((t: string) => ({ id: Math.random().toString(36).substr(2, 9), title: t, isCompleted: false, createdBy: user?.uid || '', createdAt: new Date().toISOString() })),
+            priority: template.priority || TaskPriority.MEDIUM,
+            subtasks: (template.subtasks || []).map((t: string) => ({
+                id: Math.random().toString(36).substr(2, 9),
+                title: t,
+                isCompleted: false,
+                createdBy: user?.uid || 'system',
+                createdAt: new Date().toISOString()
+            })),
             dueDate: new Date().toISOString().split('T')[0]
         });
         setIsModalOpen(true);
@@ -180,47 +176,32 @@ const TasksPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDeleteTask = async () => {
-        if (!currentTask.id) return;
-        if (window.confirm("Are you sure you want to delete this task? This action cannot be undone.")) {
-            await AuthService.deleteTask(currentTask.id);
+    const handleDeleteTask = async (taskId: string) => {
+        if (window.confirm("Are you sure you want to delete this task?")) {
+            await AuthService.deleteTask(taskId);
             fetchData();
             setIsModalOpen(false);
         }
     };
 
     const handleSaveTask = async () => {
-        // Validation
-        const errors = [];
-        if (!currentTask.title?.trim()) errors.push("Title is required.");
-        if (!currentTask.clientId) errors.push("Client selection is required.");
-        if (!currentTask.assignedTo || currentTask.assignedTo.length === 0) errors.push("At least one staff member must be assigned.");
-        if (!currentTask.dueDate) errors.push("Due Date is required.");
-
-        if (errors.length > 0) {
-            setFormError(errors.join(" "));
+        if (!currentTask.title?.trim()) {
+            setFormError("Title is required.");
             return;
         }
-
-        const client = clientsList.find((c: Client) => c.id === currentTask.clientId);
-        const clientName = client ? client.name : 'Internal Task';
-
-        const assignedNames = currentTask.assignedTo!.map((uid: string) => {
-            const u = usersList.find((user: UserProfile) => user.uid === uid);
-            return u ? u.displayName : 'Unknown';
-        });
-
+        const client = clientsList.find(c => c.id === currentTask.clientId);
         const taskToSave: Task = {
             ...currentTask,
             id: currentTask.id || `t_${Date.now()}`,
-            clientName,
-            assignedToNames: assignedNames,
-            createdBy: currentTask.createdBy || user?.uid || 'unknown',
-            createdAt: currentTask.createdAt || new Date().toISOString().split('T')[0],
+            clientName: client?.name || 'Internal',
+            createdAt: currentTask.createdAt || new Date().toISOString(),
+            createdBy: currentTask.createdBy || user?.uid || 'system',
+            assignedTo: currentTask.assignedTo || [],
             subtasks: currentTask.subtasks || []
         } as Task;
 
         await AuthService.saveTask(taskToSave);
+        toast.success(isEditMode ? "Task updated" : "Task created");
         fetchData();
         setIsModalOpen(false);
     };
@@ -231,18 +212,15 @@ const TasksPage: React.FC = () => {
             id: 'st_' + Date.now(),
             title: newSubtaskTitle,
             isCompleted: false,
-            createdBy: user?.displayName || 'Admin',
-            createdAt: new Date().toLocaleDateString()
+            createdBy: user?.displayName || 'User',
+            createdAt: new Date().toISOString()
         };
         setCurrentTask(prev => ({ ...prev, subtasks: [...(prev.subtasks || []), sub] }));
         setNewSubtaskTitle('');
     };
 
     const generateAISubtasks = async () => {
-        if (!currentTask.title) {
-            setFormError("Please enter a task title first.");
-            return;
-        }
+        if (!currentTask.title) return;
         setIsGeneratingAI(true);
         try {
             const aiSuggestions = await AIService.generateSubtasks(currentTask.title, currentTask.description || '');
@@ -251,7 +229,7 @@ const TasksPage: React.FC = () => {
                 title,
                 isCompleted: false,
                 createdBy: 'Gemini AI',
-                createdAt: new Date().toLocaleDateString()
+                createdAt: new Date().toISOString()
             }));
 
             setCurrentTask(prev => ({
@@ -259,42 +237,28 @@ const TasksPage: React.FC = () => {
                 subtasks: [...(prev.subtasks || []), ...newSubtasks]
             }));
         } catch (e) {
-            setFormError("Failed to generate AI subtasks.");
+            toast.error("AI Generation failed");
         } finally {
             setIsGeneratingAI(false);
         }
     };
 
     const autoAssignStaff = async () => {
-        if (!currentTask.title) {
-            setFormError("Please provide a task title first.");
-            return;
-        }
-
+        if (!currentTask.title) return;
         setIsAutoAssigning(true);
-        setAssignSuggestion(null);
-
         try {
-            // Pass current users and all tasks (to calculate load)
             const result = await AIService.suggestStaffAssignment(
                 currentTask.title,
                 currentTask.priority || TaskPriority.MEDIUM,
                 usersList,
                 tasks
             );
-
             if (result && result.uid) {
-                // Update state
-                setCurrentTask(prev => ({
-                    ...prev,
-                    assignedTo: [result.uid]
-                }));
+                setCurrentTask(prev => ({ ...prev, assignedTo: [result.uid] }));
                 setAssignSuggestion(result.reasoning);
-            } else {
-                setFormError("AI could not determine the best assignee.");
             }
         } catch (e) {
-            setFormError("Auto-assign failed.");
+            toast.error("Auto-assign failed");
         } finally {
             setIsAutoAssigning(false);
         }
@@ -310,110 +274,106 @@ const TasksPage: React.FC = () => {
     const deleteSubtask = (subId: string) => {
         setCurrentTask(prev => ({
             ...prev,
-            subtasks: prev.subtasks?.filter((st: SubTask) => st.id !== subId)
+            subtasks: prev.subtasks?.filter(st => st.id !== subId)
         }));
     };
 
-    // Assignee Dropdown Toggle Logic
     const toggleAssignee = (uid: string) => {
-        if (!hasEditPermission) return;
         const current = currentTask.assignedTo || [];
         const updated = current.includes(uid) ? current.filter(id => id !== uid) : [...current, uid];
         setCurrentTask({ ...currentTask, assignedTo: updated });
     };
 
-    // Improved Kanban Column from Legacy Code
-    const KanbanColumn = ({ status, title, colorClass, badgeColor }: { status: TaskStatus, title: string, colorClass: string, badgeColor: string }) => {
-        const columnTasks = filteredTasks.filter(t => t.status === status);
+    const KanbanBoard = () => {
         return (
-            <div
-                className="flex-1 min-w-[320px] flex flex-col h-full max-h-[calc(100vh-240px)] animate-fade-in-up"
-                onDragOver={(e: React.DragEvent) => handleDragOver(e)}
-                onDrop={(e: React.DragEvent) => handleDrop(e, status)}
-            >
-                <div className={`p-4 rounded-xl border mb-3 flex justify-between items-center backdrop-blur-md ${colorClass} bg-opacity-10 border-opacity-30`}>
-                    <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full shadow-[0_0_8px_currentColor] ${badgeColor}`}></div>
-                        <h3 className="font-bold text-sm text-gray-100 font-heading tracking-wide uppercase">{title}</h3>
-                    </div>
-                    <span className="bg-navy-900/50 px-2 py-0.5 rounded text-xs font-mono text-gray-300 border border-white/5">{columnTasks.length}</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 px-1 pb-4">
-                    {columnTasks.map((task, idx) => {
-                        const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
-                        const totalSub = task.subtasks?.length || 0;
-                        const subtaskProgress = totalSub > 0 ? (completedSub / totalSub) * 100 : 0;
-                        const progressColor = subtaskProgress === 100 ? 'bg-emerald-500' : subtaskProgress > 50 ? 'bg-brand-500' : 'bg-amber-500';
-                        const isDragging = draggedTaskId === task.id;
-
-                        return (
-                            <div
-                                key={task.id}
-                                draggable
-                                onDragStart={(e: React.DragEvent) => handleDragStart(e, task.id)}
-                                onClick={() => handleOpenEdit(task)}
-                                className={`glass-panel p-5 rounded-xl hover:border-brand-500/40 hover:bg-navy-700 transition-all cursor-grab active:cursor-grabbing group relative overflow-hidden shadow-lg border border-white/5 animate-fade-in-up transform hover:-translate-y-1 ${isDragging ? 'opacity-40 ring-2 ring-brand-500 ring-offset-2 ring-offset-navy-900' : ''}`}
-                                style={{ animationDelay: `${idx * 50}ms` }}
-                            >
-                                {/* Top Glow */}
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                                <div className="flex justify-between items-start mb-3">
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
-                                    <div className="flex flex-col items-end text-[10px] text-gray-400 font-mono">
-                                        <span>{toBS(task.dueDate)} BS</span>
-                                        <span className="text-[9px] opacity-70">{task.dueDate}</span>
-                                    </div>
-                                </div>
-
-                                <h4 className="font-bold text-gray-100 text-sm mb-2 leading-snug group-hover:text-brand-300 transition-colors">{task.title}</h4>
-
-                                <div className="flex items-center text-xs text-gray-400 mb-4">
-                                    <Briefcase size={12} className="mr-1.5 text-brand-500" />
-                                    <span className="truncate max-w-[200px] text-gray-300">{task.clientName || 'Internal'}</span>
-                                </div>
-
-                                {/* Progress Bar (Legacy Style) */}
-                                {
-                                    totalSub > 0 && (
-                                        <div className="mb-4">
-                                            <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                                                <span>Progress</span>
-                                                <span>{Math.round(subtaskProgress)}%</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-navy-900 rounded-full overflow-hidden">
-                                                <div className={`h-full rounded-full ${progressColor} transition-all duration-500`} style={{ width: `${subtaskProgress}%` }}></div>
-                                            </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="flex space-x-6 overflow-x-auto pb-6 h-full custom-scrollbar items-start">
+                    {Object.values(TaskStatus).map(status => (
+                        <Droppable key={status} droppableId={status}>
+                            {(provided, snapshot) => (
+                                <div
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    className={`flex-shrink-0 w-80 rounded-2xl p-4 transition-all ${snapshot.isDraggingOver ? 'bg-brand-500/5 ring-2 ring-brand-500/20' : 'bg-transparent'}`}
+                                >
+                                    <div className="flex items-center justify-between mb-4 px-2">
+                                        <div className="flex items-center space-x-2">
+                                            <div className={`w-2 h-2 rounded-full ${status === TaskStatus.COMPLETED ? 'bg-emerald-500' : status === TaskStatus.IN_PROGRESS ? 'bg-brand-500' : 'bg-gray-500'}`} />
+                                            <h3 className="font-bold text-gray-300 text-xs uppercase tracking-widest">{status.replace('_', ' ')}</h3>
                                         </div>
-                                    )
-                                }
+                                        <span className="bg-navy-800 text-gray-400 text-[10px] px-2 py-0.5 rounded-full font-bold">{filteredTasks.filter(t => t.status === status).length}</span>
+                                    </div>
 
-                                <div className="pt-3 border-t border-white/5 flex justify-between items-center">
-                                    {/* Avatars */}
-                                    <div className="flex -space-x-2">
-                                        {task.assignedTo.slice(0, 3).map((uid, i) => {
-                                            const u = usersList.find(user => user.uid === uid);
+                                    <div className="space-y-4">
+                                        {filteredTasks.filter(t => t.status === status).map((task, idx) => {
+                                            const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
+                                            const totalSub = task.subtasks?.length || 0;
+                                            const subtaskProgress = totalSub > 0 ? (completedSub / totalSub) * 100 : 0;
+                                            const progressColor = subtaskProgress === 100 ? 'bg-emerald-500' : 'bg-brand-500';
+
                                             return (
-                                                <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 border border-navy-800 flex items-center justify-center text-[9px] font-bold text-gray-300 shadow-sm">
-                                                    {getInitials(u?.displayName || '?')}
-                                                </div>
+                                                <Draggable key={task.id} draggableId={task.id} index={idx}>
+                                                    {(provided, snapshot) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                            {...provided.dragHandleProps}
+                                                            onClick={() => handleOpenEdit(task)}
+                                                            className={`glass-panel p-5 rounded-xl hover:border-brand-500/40 hover:bg-navy-700 transition-all group relative overflow-hidden shadow-lg border border-white/5 ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50' : ''}`}
+                                                        >
+                                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
+                                                                <div className="text-[10px] text-gray-400 font-mono">
+                                                                    <span>{toBS(task.dueDate)} BS</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <h4 className="font-bold text-gray-100 text-sm mb-2 leading-snug group-hover:text-brand-300 transition-colors">{task.title}</h4>
+                                                            <div className="flex items-center text-xs text-gray-400 mb-4">
+                                                                <Briefcase size={12} className="mr-1.5 text-brand-500" />
+                                                                <span className="truncate max-w-[200px] text-gray-300">{task.clientName || 'Internal'}</span>
+                                                            </div>
+
+                                                            {totalSub > 0 && (
+                                                                <div className="mb-4">
+                                                                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                                                                        <span>{Math.round(subtaskProgress)}%</span>
+                                                                    </div>
+                                                                    <div className="w-full h-1.5 bg-navy-900 rounded-full overflow-hidden">
+                                                                        <div className={`h-full rounded-full ${progressColor} transition-all duration-500`} style={{ width: `${subtaskProgress}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="pt-3 border-t border-white/5 flex justify-between items-center">
+                                                                <div className="flex -space-x-2">
+                                                                    {task.assignedTo.slice(0, 3).map((uid, i) => {
+                                                                        const u = usersList.find(user => user.uid === uid);
+                                                                        return (
+                                                                            <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-700 border border-navy-800 flex items-center justify-center text-[9px] font-bold text-gray-300">
+                                                                                {getInitials(u?.displayName || '?')}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-500 flex items-center">
+                                                                    <Calendar size={10} className="mr-1" /> {task.createdAt.split('T')[0]}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </Draggable>
                                             );
                                         })}
-                                        {task.assignedTo.length > 3 && (
-                                            <div className="w-6 h-6 rounded-full bg-navy-800 border border-navy-700 flex items-center justify-center text-[8px] text-gray-400">+{task.assignedTo.length - 3}</div>
-                                        )}
-                                    </div>
-
-                                    <div className="text-[10px] text-gray-500 flex items-center">
-                                        <Calendar size={10} className="mr-1" /> {task.createdAt}
+                                        {provided.placeholder}
                                     </div>
                                 </div>
-                            </div>
-                        )
-                    })}
+                            )}
+                        </Droppable>
+                    ))}
                 </div>
-            </div >
+            </DragDropContext>
         );
     };
 
@@ -424,110 +384,94 @@ const TasksPage: React.FC = () => {
                     <tr className="bg-navy-900/50 text-gray-400 uppercase tracking-wider text-xs border-b border-white/10">
                         <th className="px-6 py-4 font-heading font-bold">Task Name</th>
                         <th className="px-6 py-4 font-heading font-bold">Client</th>
-                        <th className="px-6 py-4 font-heading font-bold">Assigned To</th>
-                        <th className="px-6 py-4 font-heading font-bold">Dates</th>
-                        <th className="px-6 py-4 font-heading font-bold">Progress</th>
-                        <th className="px-6 py-4 font-heading font-bold">Priority</th>
+                        <th className="px-6 py-4 font-heading font-bold">Assigned</th>
+                        <th className="px-6 py-4 font-heading font-bold">Due Date</th>
                         <th className="px-6 py-4 font-heading font-bold">Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                    {filteredTasks.map((task, idx) => {
-                        const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
-                        const totalSub = task.subtasks?.length || 0;
-
-                        return (
-                            <tr key={task.id} onClick={() => handleOpenEdit(task)} className="hover:bg-white/5 transition-colors cursor-pointer group animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
-                                <td className="px-6 py-4 font-medium text-white group-hover:text-brand-300 transition-colors">{task.title}</td>
-                                <td className="px-6 py-4 text-brand-200">{task.clientName}</td>
-                                <td className="px-6 py-4 text-xs">
-                                    <div className="flex -space-x-2">
-                                        {task.assignedTo.map((uid, i) => {
-                                            const u = usersList.find(user => user.uid === uid);
-                                            if (i > 3) return null; // Limit display in list
-                                            return (
-                                                <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-700 border border-navy-900 flex items-center justify-center text-[9px] font-bold text-white">
-                                                    {getInitials(u?.displayName || '?')}
-                                                </div>
-                                            );
-                                        })}
-                                        {task.assignedTo.length > 4 && <div className="w-6 h-6 rounded-full bg-navy-800 border border-navy-900 flex items-center justify-center text-[8px] text-gray-400">+{task.assignedTo.length - 4}</div>}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 font-mono text-xs">
-                                    <div className="text-gray-500">Start: {task.createdAt}</div>
-                                    <div className="text-white">Due: {toBS(task.dueDate)} BS</div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    {totalSub > 0 ? (
-                                        <span className={`text-xs ${completedSub === totalSub ? 'text-emerald-400' : 'text-gray-400'}`}>
-                                            {completedSub} / {totalSub}
-                                        </span>
-                                    ) : <span className="text-gray-600">-</span>}
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-0.5 rounded border text-[10px] uppercase font-bold ${getPriorityStyle(task.priority)}`}>
-                                        {task.priority}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className="text-xs bg-white/5 border border-white/10 px-2 py-1 rounded">{task.status.replace('_', ' ')}</span>
-                                </td>
-                            </tr>
-                        )
-                    })}
+                    {filteredTasks.map((task) => (
+                        <tr key={task.id} onClick={() => handleOpenEdit(task)} className="hover:bg-white/5 transition-colors cursor-pointer group">
+                            <td className="px-6 py-4 font-medium text-white group-hover:text-brand-300 transition-colors">{task.title}</td>
+                            <td className="px-6 py-4 text-brand-200">{task.clientName}</td>
+                            <td className="px-6 py-4">
+                                <div className="flex -space-x-2">
+                                    {task.assignedTo.slice(0, 3).map((uid, i) => {
+                                        const u = usersList.find(user => user.uid === uid);
+                                        return (
+                                            <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-700 border border-navy-900 flex items-center justify-center text-[9px] font-bold text-white">
+                                                {getInitials(u?.displayName || '?')}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4 text-xs font-mono">{toBS(task.dueDate)} BS</td>
+                            <td className="px-6 py-4">
+                                <span className={`px-2 py-0.5 rounded border text-[10px] uppercase font-bold ${getPriorityStyle(task.priority)}`}>
+                                    {task.status.replace('_', ' ')}
+                                </span>
+                            </td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
-        </div >
+        </div>
     );
 
     const hasEditPermission = canEditTask(currentTask);
 
     return (
         <div className="flex flex-col h-full space-y-6">
-            {/* Header & Controls */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-                <div><h1 className="text-2xl font-bold text-white font-heading">Workflow</h1><p className="text-sm text-gray-400">Manage tasks and track progress</p></div>
+                <div>
+                    <h1 className="text-2xl font-bold text-white font-heading">Workflow</h1>
+                    <p className="text-sm text-gray-400">Manage tasks and track progress</p>
+                </div>
                 <div className="flex flex-wrap items-center gap-3">
-                    <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex space-x-1">
-                        <button onClick={() => setViewMode('KANBAN')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}><LayoutGrid size={16} /></button>
-                        <button onClick={() => setViewMode('LIST')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}><ListIcon size={16} /></button>
-                    </div>
-                    <div className="h-6 w-px bg-white/10 mx-2"></div>
                     <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex space-x-1">
                         <button onClick={() => setBoardMode('ALL')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${boardMode === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>Firm View</button>
                         <button onClick={() => setBoardMode('MY')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center ${boardMode === 'MY' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}><UserCircle2 size={14} className="mr-1" /> My Board</button>
                     </div>
                     {canCreateTask && (
-                        <>
-                            <button onClick={() => setIsTemplateModalOpen(true)} className="bg-white/5 hover:bg-white/10 text-brand-300 px-3 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg border border-brand-500/20 mr-2 transition-all hover:-translate-y-0.5"><Sparkles size={16} className="mr-2" /> Templates</button>
-                            <button onClick={handleOpenCreate} className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-brand-900/40 transition-all border border-brand-500/30 transform hover:-translate-y-0.5"><Plus size={16} className="mr-2" /> New Task</button>
-                        </>
+                        <button onClick={handleOpenCreate} className="bg-brand-600 hover:bg-brand-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all border border-brand-500/30 transform hover:-translate-y-0.5"><Plus size={16} className="mr-2" /> New Task</button>
                     )}
                 </div>
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-hidden">
-                {viewMode === 'KANBAN' ? (
-                    <div className="flex space-x-4 overflow-x-auto pb-4 h-full">
-                        <KanbanColumn status={TaskStatus.NOT_STARTED} title="Not Started" colorClass="bg-navy-700 border-navy-600" badgeColor="bg-gray-400" />
-                        <KanbanColumn status={TaskStatus.IN_PROGRESS} title="In Progress" colorClass="bg-amber-500/10 border-amber-500/20" badgeColor="bg-amber-500 text-amber-500" />
-                        <KanbanColumn status={TaskStatus.UNDER_REVIEW} title="Review" colorClass="bg-accent-purple/10 border-accent-purple/20" badgeColor="bg-accent-purple text-accent-purple" />
-                        <KanbanColumn status={TaskStatus.COMPLETED} title="Done" colorClass="bg-emerald-500/10 border-emerald-500/20" badgeColor="bg-emerald-500 text-emerald-500" />
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-4 rounded-xl shadow-xl border-white/5">
+                <div className="flex bg-navy-900/50 p-1.5 rounded-xl border border-white/10">
+                    <button onClick={() => setViewMode('KANBAN')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all ${viewMode === 'KANBAN' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                        <LayoutGrid size={16} className="mr-2" /> Board
+                    </button>
+                    <button onClick={() => setViewMode('LIST')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all ${viewMode === 'LIST' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                        <ListIcon size={16} className="mr-2" /> List
+                    </button>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
+                        <input className="pl-9 pr-4 py-2 glass-input text-sm" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                     </div>
-                ) : (
-                    <div className="overflow-y-auto h-full pb-10">
-                        <ListView />
-                    </div>
-                )}
+                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                        <button onClick={() => setIsTemplateManagerOpen(true)} className="px-4 py-2 bg-navy-800 text-brand-300 border border-brand-500/20 rounded-xl text-sm font-bold hover:bg-navy-700 transition-all flex items-center">
+                            <Sparkles size={16} className="mr-2" /> Manage Templates
+                        </button>
+                    )}
+                    <button onClick={() => setIsTemplateModalOpen(true)} className="px-4 py-2 bg-white/5 text-gray-300 border border-white/10 rounded-xl text-sm font-bold hover:bg-white/10 transition-all flex items-center">
+                        <CheckSquare size={16} className="mr-2" /> Use Template
+                    </button>
+                </div>
             </div>
 
-            {/* Task Modal (Create / Edit) - Keeping existing modal structure but refined classes */}
+            <div className="flex-1 overflow-hidden">
+                {viewMode === 'KANBAN' ? <KanbanBoard /> : <ListView />}
+            </div>
+
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10">
-                        {/* ... Modal content similar to previous but with updated tailwind classes for glass inputs ... */}
+                    <div className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10 text-gray-100">
                         <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                             <h3 className="text-lg font-bold text-white font-heading">{isEditMode ? 'Edit Task' : 'Create New Task'}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-transform hover:rotate-90"><X size={20} /></button>
@@ -539,168 +483,125 @@ const TasksPage: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 relative">
-                            {/* Basic Fields */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             <div className="space-y-4">
-                                <div><label className="block text-sm font-medium text-gray-300 mb-1">Title <span className="text-red-400">*</span></label><input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.title} onChange={(e: ChangeEvent<HTMLInputElement>) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} placeholder="e.g. Q4 Audit for Alpha" /></div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Task Title <span className="text-red-400">*</span></label>
+                                    <input className="w-full glass-input" value={currentTask.title} onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">Client <span className="text-red-400">*</span></label>
-                                        <ClientSelect
-                                            value={currentTask.clientId || ''}
-                                            onChange={(val) => {
-                                                const clientId = val as string;
-                                                const client = clientsList.find(c => c.id === clientId);
-                                                setCurrentTask({
-                                                    ...currentTask,
-                                                    clientId,
-                                                    clientName: client?.name
-                                                });
-                                            }}
-                                            placeholder="Select Client..."
-                                            disabled={!hasEditPermission}
-                                        />
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Client <span className="text-red-400">*</span></label>
+                                        <ClientSelect clients={clientsList} value={currentTask.clientId || ''} onChange={(id) => setCurrentTask({ ...currentTask, clientId: id as string })} disabled={!hasEditPermission} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
-                                        <select
-                                            className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                            value={currentTask.status}
-                                            onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })}
-                                            disabled={!hasEditPermission}
-                                        >
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Due Date <span className="text-red-400">*</span></label>
+                                        <input type="date" className="w-full glass-input" value={currentTask.dueDate} onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })} disabled={!hasEditPermission} />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
+                                        <select className="w-full glass-input" value={currentTask.priority} onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasEditPermission}>
+                                            {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                                        <select className="w-full glass-input" value={currentTask.status} onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>
                                             {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                                         </select>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="block text-sm font-medium text-gray-300 mb-1">Priority</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.priority} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasEditPermission}>{Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}</select></div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            Due Date <span className="text-red-400">*</span>
-                                            {currentTask.dueDate && <span className="ml-2 text-xs text-brand-300 font-mono">({toBS(currentTask.dueDate)} BS)</span>}
-                                        </label>
-                                        <input type="date" className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={currentTask.dueDate} onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })} disabled={!hasEditPermission} />
-                                    </div>
-                                </div>
 
-                                {/* New Multi-Select Staff Assign */}
                                 <div className="relative" ref={dropdownRef}>
                                     <div className="flex justify-between items-center mb-1">
-                                        <label className="block text-sm font-medium text-gray-300">Assign Staff <span className="text-red-400">*</span></label>
+                                        <label className="block text-sm font-medium text-gray-400">Assign Staff</label>
                                         {hasEditPermission && (
-                                            <button
-                                                onClick={autoAssignStaff}
-                                                disabled={isAutoAssigning}
-                                                className="text-xs flex items-center text-purple-300 hover:text-purple-200 transition-colors"
-                                                type="button"
-                                                title="Let AI suggest the best staff member based on workload"
-                                            >
-                                                {isAutoAssigning ? <Loader2 size={12} className="animate-spin mr-1" /> : <Wand2 size={12} className="mr-1" />}
+                                            <button onClick={autoAssignStaff} disabled={isAutoAssigning} className="text-[10px] text-brand-400 flex items-center hover:text-brand-300">
+                                                {isAutoAssigning ? <Loader2 size={10} className="animate-spin mr-1" /> : <Wand2 size={10} className="mr-1" />}
                                                 Auto-Assign
                                             </button>
                                         )}
                                     </div>
-
                                     {assignSuggestion && (
-                                        <div className="mb-2 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs text-purple-200 flex items-start">
-                                            <Sparkles size={12} className="mr-2 mt-0.5 shrink-0" />
-                                            <div>
-                                                <span className="font-bold">AI Suggestion:</span> {assignSuggestion}
-                                            </div>
+                                        <div className="text-[10px] bg-brand-500/10 p-2 rounded mb-2 border border-brand-500/20 text-brand-300">
+                                            {assignSuggestion}
                                         </div>
                                     )}
+                                    <StaffSelect
+                                        users={usersList}
+                                        value={currentTask.assignedTo || []}
+                                        onChange={(val) => setCurrentTask({ ...currentTask, assignedTo: val as string[] })}
+                                        multi={true}
+                                        placeholder="Assign staff..."
+                                        disabled={!hasEditPermission}
+                                    />
+                                </div>
 
-                                    <div
-                                        className={`w-full glass-input rounded-lg px-3 py-2 text-sm min-h-[42px] flex flex-wrap items-center gap-2 cursor-pointer ${!hasEditPermission ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                        onClick={() => hasEditPermission && setIsAssignDropdownOpen(!isAssignDropdownOpen)}
-                                    >
-                                        {currentTask.assignedTo && currentTask.assignedTo.length > 0 ? (
-                                            currentTask.assignedTo.map(uid => {
-                                                const user = usersList.find(u => u.uid === uid);
-                                                return (
-                                                    <span key={uid} className="bg-brand-600/30 text-brand-200 px-2 py-0.5 rounded text-xs flex items-center border border-brand-500/30">
-                                                        {user?.displayName}
-                                                        {hasEditPermission && <X size={12} className="ml-1 hover:text-white" onClick={(e) => { e.stopPropagation(); toggleAssignee(uid); }} />}
-                                                    </span>
-                                                );
-                                            })
-                                        ) : <span className="text-gray-500">Select Staff Members...</span>}
-                                        <div className="ml-auto"><ChevronDown size={16} className="text-gray-400" /></div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Description</label>
+                                    <textarea rows={2} className="w-full glass-input" value={currentTask.description} onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })} disabled={!hasEditPermission} />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm font-bold text-gray-300">Subtasks</label>
+                                        {hasEditPermission && (
+                                            <button onClick={generateAISubtasks} disabled={isGeneratingAI} className="text-[10px] bg-brand-600/20 text-brand-300 px-2 py-1 rounded-full border border-brand-500/20 flex items-center">
+                                                {isGeneratingAI ? <Loader2 size={10} className="animate-spin mr-1" /> : <Sparkles size={10} className="mr-1" />}
+                                                AI Steps
+                                            </button>
+                                        )}
                                     </div>
-
-                                    {/* Dropdown Menu */}
-                                    {isAssignDropdownOpen && (
-                                        <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-navy-800 border border-white/10 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2">
-                                            {usersList.map(u => {
-                                                const isSelected = currentTask.assignedTo?.includes(u.uid);
-                                                return (
-                                                    <div
-                                                        key={u.uid}
-                                                        className={`px-4 py-2 text-sm hover:bg-white/5 cursor-pointer flex items-center justify-between ${isSelected ? 'bg-brand-600/10 text-brand-300' : 'text-gray-300'}`}
-                                                        onClick={() => toggleAssignee(u.uid)}
-                                                    >
-                                                        <div className="flex items-center">
-                                                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-navy-700 to-navy-800 flex items-center justify-center text-[10px] mr-3 border border-white/10">
-                                                                {getInitials(u.displayName)}
-                                                            </div>
-                                                            {u.displayName}
-                                                        </div>
-                                                        {isSelected && <Check size={14} className="text-brand-400" />}
-                                                    </div>
-                                                )
-                                            })}
+                                    <div className="space-y-2">
+                                        {currentTask.subtasks?.map(st => (
+                                            <div key={st.id} className="flex items-center space-x-2 bg-white/5 p-2 rounded-lg">
+                                                <button onClick={() => toggleSubtask(st.id)} className={st.isCompleted ? 'text-emerald-500' : 'text-gray-500'}>
+                                                    {st.isCompleted ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 border border-gray-500 rounded-full" />}
+                                                </button>
+                                                <span className={`text-xs flex-1 ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>{st.title}</span>
+                                                {hasEditPermission && <Trash2 size={14} className="text-gray-600 hover:text-red-400 cursor-pointer" onClick={() => deleteSubtask(st.id)} />}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {hasEditPermission && (
+                                        <div className="flex gap-2">
+                                            <input className="flex-1 glass-input text-xs" placeholder="New step..." value={newSubtaskTitle} onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubtask()} />
+                                            <button onClick={addSubtask} className="px-3 bg-white/10 rounded font-bold text-xs">Add</button>
                                         </div>
                                     )}
                                 </div>
-
-                                <div><label className="block text-sm font-medium text-gray-300 mb-1">Description</label><textarea rows={3} className="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none" value={currentTask.description} onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })} disabled={!hasEditPermission} /></div>
-                            </div>
-
-                            {/* Subtasks */}
-                            <div className="border-t border-white/10 pt-4 relative z-20">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h4 className="text-sm font-bold text-gray-200 flex items-center"><CheckSquare size={16} className="mr-2 text-brand-400" /> Subtasks</h4>
-                                    {hasEditPermission && (
-                                        <button
-                                            onClick={generateAISubtasks}
-                                            disabled={isGeneratingAI}
-                                            className="flex items-center text-xs bg-gradient-to-r from-accent-purple to-brand-600 hover:from-accent-purple/80 hover:to-brand-600/80 text-white px-3 py-1 rounded-full shadow-lg transition-all"
-                                        >
-                                            {isGeneratingAI ? <Loader2 size={12} className="animate-spin mr-1" /> : <Sparkles size={12} className="mr-1" />}
-                                            {isGeneratingAI ? 'Generating...' : 'Auto-Generate'}
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2 mb-3">{currentTask.subtasks?.map(sub => (<div key={sub.id} className="flex items-center justify-between bg-white/5 px-3 py-2 rounded-lg group hover:bg-white/10 transition-colors"><div className="flex items-center space-x-3"><button onClick={() => toggleSubtask(sub.id)} disabled={!hasEditPermission} className={`text-gray-400 hover:text-emerald-400 ${sub.isCompleted ? 'text-emerald-500' : ''}`}>{sub.isCompleted ? <CheckCircle2 size={18} /> : <div className="w-4 h-4 border border-gray-500 rounded-full"></div>}</button><div className={sub.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}><span className="text-sm">{sub.title}</span></div></div>{hasEditPermission && (<button onClick={() => deleteSubtask(sub.id)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><X size={14} /></button>)}</div>))}</div>
-                                {hasEditPermission && (<div className="flex space-x-2"><input className="flex-1 glass-input rounded-lg px-3 py-2 text-sm" placeholder="Add subtask..." value={newSubtaskTitle} onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubtask()} /><button onClick={addSubtask} className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm border border-white/10 transition-colors">Add</button></div>)}
                             </div>
                         </div>
-                        <div className="p-6 border-t border-white/10 bg-white/5 flex items-center justify-between rounded-b-xl">
-                            {isEditMode && user?.role === UserRole.ADMIN ? (
-                                <button
-                                    onClick={handleDeleteTask}
-                                    className="px-4 py-2 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors text-sm flex items-center border border-transparent hover:border-red-500/20"
-                                >
+
+                        <div className="px-6 py-4 border-t border-white/10 flex justify-between bg-white/5">
+                            {isEditMode && hasEditPermission && (
+                                <button onClick={() => currentTask.id && handleDeleteTask(currentTask.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center">
                                     <Trash2 size={16} className="mr-2" /> Delete
                                 </button>
-                            ) : <div></div>}
-
-                            <div className="flex space-x-3">
-                                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition-colors text-sm">Cancel</button>
-                                {hasEditPermission && <button onClick={handleSaveTask} className="px-6 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-lg shadow-brand-900/50 text-sm transition-all transform hover:-translate-y-0.5">Save Task</button>}
+                            )}
+                            <div className="flex space-x-3 ml-auto">
+                                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                                {hasEditPermission && (
+                                    <button onClick={handleSaveTask} className="btn-primary flex items-center px-6">
+                                        <Save size={16} className="mr-2" /> {isEditMode ? 'Update' : 'Create'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            <TaskTemplateModal
-                isOpen={isTemplateModalOpen}
-                onClose={() => setIsTemplateModalOpen(false)}
-                onSelectTemplate={handleTemplateSelect}
-            />
+            {isTemplateModalOpen && (
+                <TaskTemplateModal
+                    isOpen={isTemplateModalOpen}
+                    onClose={() => setIsTemplateModalOpen(false)}
+                    onSelectTemplate={handleTemplateSelect}
+                />
+            )}
+            {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
         </div>
     );
 };

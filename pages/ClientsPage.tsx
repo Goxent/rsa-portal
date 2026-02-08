@@ -47,6 +47,12 @@ const ClientsPage: React.FC = () => {
     const [isVerifyingAddr, setIsVerifyingAddr] = useState(false);
     const [verifiedMapLink, setVerifiedMapLink] = useState<string | undefined>(undefined);
 
+    const getInitials = (name: string) => {
+        return name
+            ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+            : '?';
+    };
+
     useEffect(() => {
         if (user) {
             if (user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN) {
@@ -297,26 +303,37 @@ const ClientsPage: React.FC = () => {
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-navy-800 to-navy-700 flex items-center justify-center text-gray-300 border border-white/10">
-                                        <Building2 size={20} />
+                                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-xl font-bold text-white border-2 border-white/10 shadow-lg">
+                                        {getInitials(client.name)}
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-white leading-tight">{client.name}</h3>
-                                        <p className="text-xs text-gray-400 font-mono">{client.code}</p>
+                                        <h3 className="font-bold text-white text-lg leading-tight">{client.name}</h3>
+                                        <p className="text-brand-400 text-sm font-mono">{client.code}</p>
                                     </div>
                                 </div>
                                 <RiskBadge level={client.riskProfile} />
                             </div>
 
-                            <div className="space-y-2 text-sm text-gray-400 mb-4">
-                                <div className="flex justify-between"><span>Service:</span> <span className="text-gray-200">{client.serviceType}</span></div>
-                                <div className="flex justify-between"><span>Industry:</span> <span className="text-gray-200">{client.industry}</span></div>
-                                <div className="flex justify-between"><span>Status:</span> <span className={client.status === 'Active' ? 'text-emerald-400' : 'text-gray-500'}>{client.status}</span></div>
-                            </div>
-
-                            <div className="pt-4 border-t border-white/5 flex justify-between items-center text-xs text-gray-500">
-                                <span>{client.contactPerson || 'No Contact'}</span>
-                                {client.address && <div className="flex items-center"><MapPin size={10} className="mr-1" /> {client.address.split(',')[0]}</div>}
+                            <div className="space-y-3 pt-2 border-t border-white/5">
+                                <div className="flex items-center text-sm text-gray-400">
+                                    <Briefcase size={14} className="mr-2 text-brand-500" /> {client.serviceType}
+                                </div>
+                                <div className="flex items-center text-sm text-gray-400">
+                                    <Building2 size={14} className="mr-2 text-brand-500" /> {client.industry}
+                                </div>
+                                <div className="flex items-center text-sm text-gray-400">
+                                    <User size={14} className="mr-2 text-brand-500" /> {client.contactPerson || 'No Contact'}
+                                </div>
+                                <div className="flex items-center justify-between pt-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${client.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                        {client.status}
+                                    </span>
+                                    {client.address && (
+                                        <div className="flex items-center text-[10px] text-gray-500">
+                                            <MapPin size={10} className="mr-1" /> {client.address.split(',')[0]}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}

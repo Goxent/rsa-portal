@@ -154,3 +154,15 @@ export interface Resource {
   parentId?: string | null; // For hierarchy
   previewLink?: string;
 }
+
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  description: string;
+  priority: TaskPriority;
+  category: string;
+  subtasks: string[]; // Standardized subtask titles
+  expectedDays?: number;
+  createdAt: string;
+  updatedAt?: string;
+}

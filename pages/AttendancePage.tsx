@@ -6,8 +6,10 @@ import { AttendanceRecord, UserRole, UserProfile, Client, LeaveRequest } from '.
 import { AuthService } from '../services/firebase';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { useLocation } from 'react-router-dom';
 import ClientSelect from '../components/ClientSelect';
+import StaffSelect from '../components/StaffSelect';
 
 const AttendancePage: React.FC = () => {
     const { user } = useAuth();
@@ -418,36 +420,24 @@ const AttendancePage: React.FC = () => {
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.setFont("helvetica", "normal");
-        doc.text("Mid-Baneshwor, Kathmandu", 105, 22, { align: "center" });
-        doc.text("Excellence in Audit, Taxation & Advisory", 105, 27, { align: "center" });
-
-        // Decorative Line
-        doc.setDrawColor(37, 99, 235);
-        doc.setLineWidth(0.5);
-        doc.line(20, 32, 190, 32);
-
-        // -- Report Title --
-        doc.setFontSize(14);
-        doc.setTextColor(30);
-        doc.setFont("helvetica", "bold");
         doc.text("Attendance & Activity Report", 14, 45);
 
         doc.setFontSize(10);
-        doc.setTextColor(100);
+        doc.setTextColor(150);
         doc.setFont("helvetica", "normal");
         doc.text(`Period: ${filterStartDate} to ${filterEndDate}`, 14, 51);
         doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 56);
 
         // -- Table --
-        const tableColumn = ["Date", "Name", "Client / Activity", "In", "Out", "Status", "Notes"];
+        const tableColumn = ["Date", "Name", "Client / Activity", "In", "Out", "Hr", "Status"];
         const tableRows = reportData.map(r => [
             r.date,
             r.userName,
             r.clientName || '-',
             r.clockIn,
             r.clockOut || '-',
-            r.status,
-            r.notes || '-'
+            r.workHours.toString(),
+            r.status
         ]);
 
         autoTable(doc, {
@@ -456,24 +446,26 @@ const AttendancePage: React.FC = () => {
             startY: 62,
             theme: 'grid',
             headStyles: {
-                fillColor: [37, 99, 235],
-                textColor: 255,
+                fillColor: [15, 23, 42], // Navy-900 color
+                textColor: [59, 130, 246], // Brand blue
                 fontStyle: 'bold',
                 halign: 'center'
             },
             styles: {
                 fontSize: 8,
                 cellPadding: 3,
-                overflow: 'linebreak'
+                overflow: 'linebreak',
+                fillColor: [30, 41, 59], // Navy-800
+                textColor: [241, 245, 249] // Gray-100
             },
             alternateRowStyles: {
-                fillColor: [240, 249, 255] // Light blue
+                fillColor: [15, 23, 42] // Solid navy
             },
             columnStyles: {
-                0: { cellWidth: 20 }, // Date
-                2: { cellWidth: 35 }, // Client
-                5: { fontStyle: 'bold', halign: 'center' }, // Status
-                6: { cellWidth: 'auto' } // Notes
+                0: { cellWidth: 20 },
+                2: { cellWidth: 35 },
+                5: { halign: 'center' },
+                6: { fontStyle: 'bold', halign: 'center' }
             }
         });
 
@@ -490,41 +482,32 @@ const AttendancePage: React.FC = () => {
         doc.save("RSA_Attendance_Report.pdf");
     };
 
-    const exportCSV = () => {
-        // Header for Excel-like feel
-        const letterhead = [
+    const exportExcel = () => {
+        const headers = ["Date", "Staff Name", "Client/Activity", "Clock In", "Clock Out", "Duration (Hrs)", "Status", "Notes/Description"];
+        const data = reportData.map(r => [
+            r.date,
+            r.userName,
+            r.clientName || '-',
+            r.clockIn,
+            r.clockOut || '-',
+            r.workHours,
+            r.status,
+            r.workDescription || r.notes || '-'
+        ]);
+
+        const ws = XLSX.utils.aoa_to_sheet([
             ["R. Sapkota & Associates"],
             ["Mid-Baneshwor, Kathmandu"],
             ["Attendance & Activity Report"],
             [`Period: ${filterStartDate} to ${filterEndDate}`],
-            [`Generated: ${new Date().toLocaleDateString()}`],
-            [] // Empty row spacer
-        ];
-
-        const headers = ["Date", "Staff Name", "Client/Activity", "Clock In", "Clock Out", "Status", "Description/Notes"];
-
-        const rows = reportData.map(r => [
-            r.date,
-            `"${r.userName}"`, // Quote to handle potential commas in names
-            `"${r.clientName || '-'}"`,
-            r.clockIn,
-            r.clockOut || '-',
-            r.status,
-            `"${(r.workDescription || r.notes || '-').replace(/"/g, '""')}"` // Escape quotes in desc
+            [],
+            headers,
+            ...data
         ]);
 
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + letterhead.map(e => e.join(",")).join("\n") + "\n"
-            + headers.join(",") + "\n"
-            + rows.map(e => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "RSA_Attendance_Report.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
+        XLSX.writeFile(wb, `RSA_Attendance_Report_${filterStartDate}_to_${filterEndDate}.xlsx`);
     };
 
     return (
@@ -613,6 +596,7 @@ const AttendancePage: React.FC = () => {
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
                             <ClientSelect
+                                clients={clientsList}
                                 value={selectedClientIds}
                                 onChange={(val) => setSelectedClientIds(val as string[])}
                                 multi={true}
@@ -681,8 +665,8 @@ const AttendancePage: React.FC = () => {
                         </button>
                     )}
                     <div className="h-6 w-px bg-white/10 mx-2"></div>
-                    <button onClick={exportCSV} className="bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-2 rounded-lg text-sm flex items-center border border-white/10"><FileText size={16} className="mr-2" /> CSV</button>
-                    <button onClick={exportPDF} className="bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-2 rounded-lg text-sm flex items-center border border-white/10"><FileDown size={16} className="mr-2" /> PDF</button>
+                    <button onClick={exportExcel} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-sm flex items-center border border-emerald-500/30 transition-all shadow-lg hover:-translate-y-0.5"><FileText size={16} className="mr-2" /> Excel</button>
+                    <button onClick={exportPDF} className="bg-brand-600/10 hover:bg-brand-600/20 text-brand-400 px-3 py-2 rounded-lg text-sm flex items-center border border-brand-500/20 transition-all"><FileDown size={16} className="mr-2" /> PDF</button>
                 </div>
             </div>
 
@@ -761,15 +745,12 @@ const AttendancePage: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div className="col-span-1 md:col-span-2">
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Staff Member</label>
-                                    <select
-                                        required
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                    <StaffSelect
+                                        users={usersList}
                                         value={manualForm.userId}
-                                        onChange={(e) => setManualForm({ ...manualForm, userId: e.target.value })}
-                                    >
-                                        <option value="">Select Staff...</option>
-                                        {usersList.map(u => <option key={u.uid} value={u.uid}>{u.displayName}</option>)}
-                                    </select>
+                                        onChange={(val) => setManualForm({ ...manualForm, userId: val as string })}
+                                        placeholder="Select Staff..."
+                                    />
                                 </div>
 
                                 <div>

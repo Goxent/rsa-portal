@@ -5,6 +5,7 @@ import { Client } from '../types';
 import { AuthService } from '../services/firebase';
 
 interface ClientSelectProps {
+    clients: Client[];
     value: string | string[]; // Single ID or Array of IDs
     onChange: (value: string | string[]) => void;
     multi?: boolean;
@@ -14,6 +15,7 @@ interface ClientSelectProps {
 }
 
 const ClientSelect: React.FC<ClientSelectProps> = ({
+    clients = [],
     value,
     onChange,
     multi = false,
@@ -21,22 +23,9 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     className = "",
     disabled = false
 }) => {
-    const [clients, setClients] = useState<Client[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Fetch clients on mount
-    useEffect(() => {
-        const loadClients = async () => {
-            const data = await AuthService.getAllClients();
-            // Filter out Inactive clients unless they are already selected
-            // But for soft-delete logic, we generally only want Active ones in new selections
-            // We'll keep it simple: Show all Active, plus any Inactive that are currently selected (to preserve history)
-            setClients(data.filter(c => c.status === 'Active' || (Array.isArray(value) ? value.includes(c.id) : value === c.id)));
-        };
-        loadClients();
-    }, []);
 
     // Close on click outside
     useEffect(() => {
@@ -71,13 +60,13 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
         }
     };
 
-    const getRiskColor = (risk?: string) => {
-        switch (risk) {
-            case 'HIGH': return 'text-red-400';
-            case 'MEDIUM': return 'text-orange-400';
-            case 'LOW': return 'text-emerald-400';
-            default: return 'text-gray-400';
-        }
+    const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .substring(0, 2)
+            .toUpperCase();
     };
 
     // Render Logic
@@ -116,10 +105,14 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
             );
         }
 
-        const selectedClient = clients.find(c => c.id === (Array.isArray(value) ? value[0] : value));
+        const selectedId = Array.isArray(value) ? value[0] : value;
+        const selectedClient = clients.find(c => c.id === selectedId);
+
         return selectedClient ? (
             <span className="text-gray-200 flex items-center">
-                <Building2 size={14} className="mr-2 text-brand-400" />
+                <div className="w-5 h-5 rounded-full bg-navy-700 flex items-center justify-center text-[8px] font-bold mr-2 border border-white/10 shrink-0">
+                    {getInitials(selectedClient.name)}
+                </div>
                 <span className="truncate max-w-[200px]">{selectedClient.name}</span>
                 <span className="ml-2 text-[10px] text-gray-500 hidden sm:inline">({selectedClient.code})</span>
             </span>
@@ -129,25 +122,25 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             <div
-                className={`w-full glass-input rounded-lg px-3 py-2 text-sm min-h-[42px] flex items-center justify-between cursor-pointer border border-white/10 hover:border-brand-500/50 transition-colors ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${isOpen ? 'ring-2 ring-brand-500/50 border-brand-500' : ''}`}
+                className={`w-full glass-input rounded-lg px-3 py-2 text-sm min-h-[42px] flex items-center justify-between cursor-pointer border border-white/10 hover:border-brand-500/50 transition-colors ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${isOpen ? 'ring-2 ring-brand-500/50 border-brand-500 shadow-lg shadow-brand-500/10' : ''}`}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
             >
-                <div className="flex-1">
+                <div className="flex-1 overflow-hidden">
                     {renderTriggerObject()}
                 </div>
-                <ChevronDown size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
             </div>
 
             {isOpen && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-navy-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    <div className="p-2 border-b border-white/10 sticky top-0 bg-navy-900/95 z-10">
+                <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 border-b border-white/10 sticky top-0 bg-navy-900 z-10">
                         <div className="relative">
-                            <Search size={14} className="absolute left-3 top-2.5 text-gray-500" />
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                             <input
                                 autoFocus
                                 type="text"
                                 placeholder="Search clients..."
-                                className="w-full bg-black/20 text-white text-xs rounded-lg pl-9 pr-3 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
+                                className="w-full bg-black/40 text-white text-xs rounded-lg pl-9 pr-3 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
                                 value={searchTerm}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -162,18 +155,23 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                                 return (
                                     <div
                                         key={client.id}
-                                        className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-colors ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
+                                        className={`px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-all mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
                                         onClick={(e) => handleSelect(client.id, e)}
                                     >
-                                        <div className="flex flex-col">
-                                            <span className="font-medium flex items-center">
-                                                {client.name}
-                                                {client.riskProfile === 'HIGH' && <AlertTriangle size={12} className="ml-2 text-red-500" />}
-                                            </span>
-                                            <div className="flex items-center text-[10px] text-gray-500 mt-0.5 space-x-2">
-                                                <span>{client.code}</span>
-                                                <span>•</span>
-                                                <span>{client.serviceType}</span>
+                                        <div className="flex items-center">
+                                            <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10 transition-colors">
+                                                {getInitials(client.name)}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-white flex items-center">
+                                                    {client.name}
+                                                    {client.riskProfile === 'HIGH' && <AlertTriangle size={12} className="ml-2 text-red-500" />}
+                                                </span>
+                                                <div className="flex items-center text-[10px] text-gray-500 space-x-2">
+                                                    <span className="font-mono">{client.code}</span>
+                                                    <span>•</span>
+                                                    <span>{client.serviceType}</span>
+                                                </div>
                                             </div>
                                         </div>
                                         {isSelected && <Check size={14} className="text-brand-400" />}
@@ -183,9 +181,6 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                         ) : (
                             <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
                         )}
-                    </div>
-                    <div className="p-2 bg-navy-950/50 border-t border-white/5 text-[10px] text-center text-gray-500">
-                        Showing {filteredClients.length} clients
                     </div>
                 </div>
             )}
