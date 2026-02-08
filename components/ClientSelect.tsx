@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Check, X, ChevronDown, Building2, AlertTriangle, Briefcase, FileText } from 'lucide-react';
+import { Search, Check, X, ChevronDown, Building2, AlertTriangle } from 'lucide-react';
 import { Client } from '../types';
 
 interface ClientSelectProps {
@@ -26,6 +26,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     // Close on click outside
     useEffect(() => {
@@ -38,19 +39,36 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Focus input when opening
+    useEffect(() => {
+        if (isOpen && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isOpen]);
+
     // Selection Logic
     const handleSelect = (clientId: string) => {
         if (multi) {
             const currentValues = Array.isArray(value) ? value : [];
+            let newValues;
             if (currentValues.includes(clientId)) {
-                onChange(currentValues.filter(id => id !== clientId));
+                newValues = currentValues.filter(id => id !== clientId);
             } else {
-                onChange([...currentValues, clientId]);
+                newValues = [...currentValues, clientId];
             }
+            onChange(newValues);
+            // Keep open for multi-select
         } else {
             onChange(clientId);
             setIsOpen(false);
+            setSearchTerm(''); // Reset search on selection
         }
+    };
+
+    const handleClear = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onChange(multi ? [] : '');
+        setSearchTerm('');
     };
 
     // Filter Logic
@@ -76,41 +94,57 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
         }
     };
 
+    // Safe safe-guards for rendering
+    const displayValue = getDisplayValue();
+    const hasSelection = !!displayValue;
+
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             {/* Trigger Button */}
             <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
-                    w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all cursor-pointer
+                    w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all cursor-pointer select-none
                     ${disabled ? 'bg-white/5 opacity-50 cursor-not-allowed border-white/5' : 'bg-black/20 hover:bg-black/30 hover:border-white/20'}
                     ${error ? 'border-red-500/50' : 'border-white/10'}
-                    ${isOpen ? 'ring-2 ring-brand-500/50 border-brand-500/50' : ''}
+                    ${isOpen ? 'ring-2 ring-brand-500/50 border-brand-500/50 bg-black/40' : ''}
                 `}
             >
-                <div className="flex items-center truncate mr-2">
-                    <Building2 size={16} className={`mr-2 shrink-0 ${value && (Array.isArray(value) ? value.length > 0 : value) ? 'text-brand-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm truncate ${value && (Array.isArray(value) ? value.length > 0 : value) ? 'text-white font-medium' : 'text-gray-500'}`}>
-                        {getDisplayValue() || placeholder}
+                <div className="flex items-center truncate mr-2 flex-1">
+                    <Building2 size={16} className={`mr-2 shrink-0 ${hasSelection ? 'text-brand-400' : 'text-gray-500'}`} />
+                    <span className={`text-sm truncate ${hasSelection ? 'text-white font-medium' : 'text-gray-500'}`}>
+                        {hasSelection ? displayValue : placeholder}
                     </span>
                 </div>
-                <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+
+                <div className="flex items-center gap-1">
+                    {hasSelection && !disabled && (
+                        <div
+                            onClick={handleClear}
+                            className="p-1 hover:bg-white/10 rounded-full text-gray-500 hover:text-white transition-colors"
+                        >
+                            <X size={14} />
+                        </div>
+                    )}
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
             </div>
 
             {/* Dropdown Menu */}
             {isOpen && (
                 <div className="absolute z-50 w-full mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col max-h-[300px]">
                     {/* Search Bar */}
-                    <div className="p-2 border-b border-white/5 bg-white/5">
+                    <div className="p-2 border-b border-white/5 bg-white/5 backdrop-blur-xl supports-[backdrop-filter]:bg-navy-900/50 sticky top-0 z-10">
                         <div className="relative">
                             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
                             <input
+                                ref={inputRef}
                                 type="text"
-                                autoFocus
-                                className="w-full bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 placeholder-gray-600"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 placeholder-gray-600 focus:ring-1 focus:ring-brand-500/50"
                                 placeholder="Search clients..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
                             />
                         </div>
                     </div>
@@ -128,19 +162,23 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                                 return (
                                     <div
                                         key={client.id}
-                                        onClick={() => handleSelect(client.id)}
+                                        onMouseDown={(e) => {
+                                            e.preventDefault(); // Prevents input blur
+                                            handleSelect(client.id);
+                                        }}
                                         className={`
-                                            flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 text-sm group transition-colors
-                                            ${isSelected ? 'bg-brand-500/20 text-brand-100' : 'text-gray-300 hover:bg-white/5 hover:text-white'}
+                                            flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 text-sm group transition-colors select-none
+                                            ${isSelected ? 'bg-brand-500/20 text-brand-100 border border-brand-500/20' : 'text-gray-300 hover:bg-white/5 hover:text-white border border-transparent'}
                                         `}
                                     >
                                         <div className="flex flex-col min-w-0">
                                             <span className="font-medium truncate">{client.name}</span>
                                             <div className="flex items-center text-[10px] opacity-70 mt-0.5 space-x-2">
-                                                <span className="font-mono">{client.code}</span>
+                                                <span className="font-mono bg-white/5 px-1 rounded">{client.code}</span>
                                                 {client.riskProfile === 'HIGH' && (
-                                                    <span className="text-red-400 flex items-center font-bold"><AlertTriangle size={10} className="mr-0.5" /> High Risk</span>
+                                                    <span className="text-red-400 flex items-center font-bold bg-red-500/10 px-1 rounded"><AlertTriangle size={10} className="mr-0.5" /> High Risk</span>
                                                 )}
+                                                {client.city && <span>• {client.city}</span>}
                                             </div>
                                         </div>
                                         {isSelected && <Check size={16} className="text-brand-400 shrink-0 ml-2" />}
