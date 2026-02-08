@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { AuthService, auth, db } from '../services/firebase';
-import { setUserContext, clearUserContext } from '../services/sentry';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -42,14 +41,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (userDoc.exists()) {
             const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
             setUser(userData);
-
-            // Set Sentry user context
-            setUserContext({
-              uid: userData.uid,
-              email: userData.email,
-              displayName: userData.displayName,
-              role: userData.role,
-            });
           } else {
             console.error("User authenticated but no profile found in Firestore");
             // Create a default profile if missing
@@ -77,7 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // User is signed out
         setUser(null);
         setEmailVerified(false);
-        clearUserContext(); // Clear Sentry user context
       }
       setLoading(false);
     });

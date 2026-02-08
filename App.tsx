@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import * as Sentry from '@sentry/react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageLoader } from './components/ui/LoadingSkeleton';
-import { initSentry } from './services/sentry';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import AttendancePage from './pages/AttendancePage';
@@ -19,9 +17,6 @@ import ProfileSetupPage from './pages/ProfileSetupPage';
 import StaffPage from './pages/StaffPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
-
-// Initialize Sentry on app load
-initSentry();
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
