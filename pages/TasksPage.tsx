@@ -586,17 +586,29 @@ const TasksPage: React.FC = () => {
                                 {/* Due Date & Priority Row */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Due Date <span className="text-red-400">*</span></label>
+                                        <input
+                                            type="date"
+                                            className="w-full glass-input"
+                                            value={currentTask.dueDate}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
+                                            disabled={!hasEditPermission}
+                                        />
+                                    </div>
+                                    <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
                                         <select className="w-full glass-input" value={currentTask.priority} onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasEditPermission}>
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
-                                        <select className="w-full glass-input" value={currentTask.status} onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>
-                                            {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                                        </select>
-                                    </div>
+                                </div>
+
+                                {/* Status Row */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                                    <select className="w-full glass-input" value={currentTask.status} onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>
+                                        {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                                    </select>
                                 </div>
 
                                 <div className="relative" ref={dropdownRef}>
