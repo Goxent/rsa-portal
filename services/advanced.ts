@@ -97,6 +97,21 @@ export const ChatService = {
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatChannel));
     },
 
+    async updateChannel(id: string, updates: Partial<ChatChannel>): Promise<void> {
+        await updateDoc(doc(db, 'chatChannels', id), updates);
+    },
+
+    async deleteChannel(id: string): Promise<void> {
+        // Delete all messages in the channel first
+        const messagesQuery = query(collection(db, 'chatMessages'), where('channelId', '==', id));
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+
+        // Delete the channel
+        await deleteDoc(doc(db, 'chatChannels', id));
+    },
+
     async markAsRead(messageId: string, userId: string): Promise<void> {
         const msgRef = doc(db, 'chatMessages', messageId);
         const msgDoc = await getDocs(query(collection(db, 'chatMessages'), where('__name__', '==', messageId)));
