@@ -1,49 +1,48 @@
+import Anthropic from "@anthropic-ai/sdk";
 
-import { GoogleGenAI, Type } from "@google/genai";
-
-// Initialize Gemini API with Vite environment variable
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-let ai: GoogleGenAI | null = null;
+// Initialize Claude API with Vite environment variable
+const apiKey = import.meta.env.VITE_CLAUDE_API_KEY;
+let anthropic: Anthropic | null = null;
 
 if (apiKey) {
   try {
-    ai = new GoogleGenAI({ apiKey });
-    console.info("✅ Gemini AI initialized successfully");
+    anthropic = new Anthropic({ apiKey });
+    console.info("✅ Claude AI initialized successfully");
   } catch (e) {
-    console.error("❌ Failed to initialize Gemini AI", e);
+    console.error("❌ Failed to initialize Claude AI", e);
   }
 } else {
-  console.warn("⚠️ Gemini API Key missing. AI features will be disabled. Add VITE_GEMINI_API_KEY to your .env.local file.");
+  console.warn("⚠️ Claude API Key missing. AI features will be disabled. Add VITE_CLAUDE_API_KEY to your .env.local file.");
 }
 
 export const AIService = {
   /**
    * Generates a checklist of subtasks based on the main task title and description.
-   * Uses Gemini 3 Flash for speed and JSON structure.
+   * Uses Claude 3.5 Sonnet for intelligent task breakdown.
    */
   async generateSubtasks(title: string, description: string): Promise<string[]> {
-    if (!ai) return ["Review task requirements", "Update subtasks manually"];
+    if (!anthropic) return ["Review task requirements", "Update subtasks manually"];
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash', // Fallback to stable model if preview unavailable
-        contents: `You are an expert audit manager. Create a concise checklist of 3 to 6 actionable subtasks for a task titled "${title}". 
-        Context: "${description}".
-        Return ONLY a raw JSON array of strings (e.g. ["Review documents", "Prepare draft"]).`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING }
-          }
-        }
+      const message = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1024,
+        messages: [{
+          role: "user",
+          content: `You are an expert audit manager. Create a concise checklist of 3 to 6 actionable subtasks for a task titled "${title}". 
+          Context: "${description}".
+          Return ONLY a raw JSON array of strings (e.g. ["Review documents", "Prepare draft"]). No markdown, no explanation, just the JSON array.`
+        }]
       });
 
-      const text = response.text;
+      const text = message.content[0].type === 'text' ? message.content[0].text : '';
       if (!text) return [];
-      return JSON.parse(text);
+
+      // Remove markdown code blocks if present
+      const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
+      return JSON.parse(cleanText);
     } catch (error) {
-      console.error("Gemini Generation Error:", error);
+      console.error("Claude Generation Error:", error);
       return [
         "Review initial requirements",
         "Gather necessary documentation",
@@ -55,7 +54,7 @@ export const AIService = {
 
   /**
    * Verifies an address or finds a location using Google Maps Grounding.
-   * Uses Gemini 2.5 Flash with googleMaps tool.
+   * Uses Claude with location reasoning (no map integration).
    */
   async findLocationDetails(query: string): Promise<{ text: string, mapLink?: string }> {
     // DISABLED: Google Maps integration removed per user request
@@ -65,29 +64,37 @@ export const AIService = {
   },
 
   /**
-   * Researches a concept related to a specific resource using Google Search Grounding.
+   * Researches a concept related to a specific resource.
+   * Uses Claude's knowledge base (training data up to April 2024).
    */
   async researchConcept(resourceTitle: string, userQuery: string): Promise<string> {
-    if (!ai) {
+    if (!anthropic) {
       return "🔑 **AI Research Assistant requires setup:**\n\n" +
-        "Please ask your administrator to add the VITE_GEMINI_API_KEY to the environment variables.\n" +
-        "Get a free API key from: https://makersuite.google.com/app/apikey";
+        "Please ask your administrator to add the VITE_CLAUDE_API_KEY to the environment variables.\n" +
+        "Get an API key from: https://console.anthropic.com/";
     }
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: `I am reading a document titled "${resourceTitle}". 
-        Help me understand this concept: "${userQuery}".
-        Provide a clear, professional explanation suitable for an auditor or accountant. 
-        Use Google Search to find the most up-to-date regulations or standards if applicable.`,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
+      const message = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 2048,
+        messages: [{
+          role: "user",
+          content: `I am reading a document titled "${resourceTitle}". 
+          Help me understand this concept: "${userQuery}".
+          Provide a clear, professional explanation suitable for an auditor or accountant. 
+          Include relevant regulations or standards if applicable (IFRS, GAAP, IAS, ISA, etc.).
+          
+          Format your response in markdown with:
+          - Clear headings
+          - Bullet points for key concepts
+          - Examples where helpful
+          - References to standards when relevant`
+        }]
       });
 
-      // Return text directly. Grounding sources are automatically handled by the SDK but we just return the synthesis here.
-      return response.text || "I couldn't find specific information on that topic. Try rephrasing your question.";
+      const text = message.content[0].type === 'text' ? message.content[0].text : '';
+      return text || "I couldn't find specific information on that topic. Try rephrasing your question.";
     } catch (error) {
       console.error("Research Error:", error);
       return "❌ Research service error: " + (error instanceof Error ? error.message : "Connection failed. Please try again.");
@@ -96,6 +103,7 @@ export const AIService = {
 
   /**
    * Suggests the best staff member for a task based on workload and role.
+   * Uses Claude's reasoning capabilities for intelligent assignment.
    */
   async suggestStaffAssignment(
     taskTitle: string,
@@ -103,10 +111,10 @@ export const AIService = {
     staffProfiles: any[],
     activeTasks: any[]
   ): Promise<{ uid: string, reasoning: string } | null> {
-    if (!ai) return null;
+    if (!anthropic) return null;
 
     try {
-      // 1. Calculate workload per staff
+      // Calculate workload per staff
       const workloadMap = staffProfiles.map(staff => {
         const load = activeTasks.filter(t => t.assignedTo.includes(staff.uid) && t.status !== 'COMPLETED').length;
         return {
@@ -118,41 +126,35 @@ export const AIService = {
         };
       });
 
-      const prompt = `
-        You are an intelligent resource manager for an audit firm.
-        Task: "${taskTitle}"
-        Priority: "${taskPriority}"
-        
-        Staff Availability Data:
-        ${JSON.stringify(workloadMap)}
-        
-        Rules:
-        1. "URGENT" or "HIGH" priority tasks should ideally go to "MANAGER" or "ADMIN" roles if their load is < 5, otherwise an experienced "STAFF".
-        2. Distribute work evenly. Prefer staff with lower 'currentLoad'.
-        3. Match department if possible (e.g. Audit task -> Audit dept).
-        
-        Recommend the single best User UID.
-        Return JSON: { "uid": "string", "reasoning": "string" }
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              uid: { type: Type.STRING },
-              reasoning: { type: Type.STRING }
-            }
-          }
-        }
+      const message = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1024,
+        messages: [{
+          role: "user",
+          content: `You are an intelligent resource manager for an audit firm.
+          Task: "${taskTitle}"
+          Priority: "${taskPriority}"
+          
+          Staff Availability Data:
+          ${JSON.stringify(workloadMap, null, 2)}
+          
+          Rules:
+          1. "URGENT" or "HIGH" priority tasks should ideally go to "MANAGER" or "ADMIN" roles if their load is < 5, otherwise an experienced "STAFF".
+          2. Distribute work evenly. Prefer staff with lower 'currentLoad'.
+          3. Match department if possible (e.g. Audit task -> Audit dept).
+          
+          Recommend the single best User UID.
+          Return ONLY a raw JSON object: { "uid": "string", "reasoning": "string" }
+          No markdown, no explanation, just the JSON object.`
+        }]
       });
 
-      const text = response.text;
+      const text = message.content[0].type === 'text' ? message.content[0].text : '';
       if (!text) return null;
-      return JSON.parse(text);
+
+      // Remove markdown code blocks if present
+      const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
+      return JSON.parse(cleanText);
 
     } catch (error) {
       console.error("Auto-Assign Error:", error);
