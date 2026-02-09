@@ -33,6 +33,7 @@ const TasksPage: React.FC = () => {
     const [currentTask, setCurrentTask] = useState<Partial<Task>>({});
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
     const [formError, setFormError] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     // AI State
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -232,26 +233,37 @@ const TasksPage: React.FC = () => {
             setFormError("Title is required.");
             return;
         }
-        // Support both clientIds array (new) and clientId (deprecated)
-        const clientIds = currentTask.clientIds || (currentTask.clientId ? [currentTask.clientId] : []);
-        const clientNames = clientIds
-            .map(id => clientsList.find(c => c.id === id)?.name)
-            .filter(Boolean);
 
-        const taskToSave: Task = {
-            ...currentTask,
-            id: currentTask.id || `t_${Date.now()}`,
-            clientName: clientNames.length > 0 ? clientNames.join(', ') : 'Internal',
-            createdAt: currentTask.createdAt || new Date().toISOString(),
-            createdBy: currentTask.createdBy || user?.uid || 'system',
-            assignedTo: currentTask.assignedTo || [],
-            subtasks: currentTask.subtasks || []
-        } as Task;
+        if (isSaving) return; // Prevent duplicate submissions
+        setIsSaving(true);
 
-        await AuthService.saveTask(taskToSave);
-        toast.success(isEditMode ? "Task updated" : "Task created");
-        fetchData();
-        setIsModalOpen(false);
+        try {
+            // Support both clientIds array (new) and clientId (deprecated)
+            const clientIds = currentTask.clientIds || (currentTask.clientId ? [currentTask.clientId] : []);
+            const clientNames = clientIds
+                .map(id => clientsList.find(c => c.id === id)?.name)
+                .filter(Boolean);
+
+            const taskToSave: Task = {
+                ...currentTask,
+                id: currentTask.id || `t_${Date.now()}`,
+                clientName: clientNames.length > 0 ? clientNames.join(', ') : 'Internal',
+                createdAt: currentTask.createdAt || new Date().toISOString(),
+                createdBy: currentTask.createdBy || user?.uid || 'system',
+                assignedTo: currentTask.assignedTo || [],
+                subtasks: currentTask.subtasks || []
+            } as Task;
+
+            await AuthService.saveTask(taskToSave);
+            toast.success(isEditMode ? "Task updated" : "Task created");
+            fetchData();
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Error saving task:', error);
+            toast.error('Failed to save task');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const addSubtask = () => {
@@ -681,25 +693,33 @@ const TasksPage: React.FC = () => {
                             <div className="flex space-x-3 ml-auto">
                                 <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
                                 {hasEditPermission && (
-                                    <button onClick={handleSaveTask} className="btn-primary flex items-center px-6">
-                                        <Save size={16} className="mr-2" /> {isEditMode ? 'Update' : 'Create'}
-                                    </button>
+                                    <button
+                                        onClick={handleSaveTask}
+                                        disabled={isSaving}
+                                className={`btn-primary flex items-center px-6 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
+                                {isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
+                            </button>
                                 )}
-                            </div>
                         </div>
                     </div>
                 </div>
-            )}
+                </div>
+    )
+}
 
-            {isTemplateModalOpen && (
-                <TaskTemplateModal
-                    isOpen={isTemplateModalOpen}
-                    onClose={() => setIsTemplateModalOpen(false)}
-                    onSelectTemplate={handleTemplateSelect}
-                />
-            )}
-            {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
-        </div>
+{
+    isTemplateModalOpen && (
+        <TaskTemplateModal
+            isOpen={isTemplateModalOpen}
+            onClose={() => setIsTemplateModalOpen(false)}
+            onSelectTemplate={handleTemplateSelect}
+        />
+    )
+}
+{ isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} /> }
+        </div >
     );
 };
 
