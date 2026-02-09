@@ -8,8 +8,6 @@ import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask 
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AIService } from '../services/ai';
-import { toBS } from '../utils/dateUtils';
-import NepaliDatePicker from '../components/NepaliDatePicker';
 import ClientSelect from '../components/ClientSelect';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
@@ -61,7 +59,46 @@ const TasksPage: React.FC = () => {
         const task = tasks.find(t => t.id === draggableId);
 
         if (task && task.status !== newStatus) {
-            const updatedTask = { ...task, status: newStatus };
+            // Create updated task with new status
+            let updatedTask = { ...task, status: newStatus };
+
+            // Auto-add status-specific subtasks if they don't already exist
+            if (task.subtasks) {
+                const statusSubtasks: SubTask[] = [];
+
+                // Define default status-based subtasks
+                const defaultStatusSubtasks: Record<TaskStatus, string[]> = {
+                    [TaskStatus.NOT_STARTED]: [],
+                    [TaskStatus.IN_PROGRESS]: ['Review requirements', 'Start initial work'],
+                    [TaskStatus.HALTED]: ['Document blocker', 'Identify resolution path'],
+                    [TaskStatus.UNDER_REVIEW]: ['Prepare review documentation', 'Submit for approval'],
+                    [TaskStatus.COMPLETED]: ['Final quality check', 'Archive documentation']
+                };
+
+                const subtasksToAdd = defaultStatusSubtasks[newStatus] || [];
+                const existingTitles = task.subtasks.map(st => st.title.toLowerCase());
+
+                subtasksToAdd.forEach(title => {
+                    if (!existingTitles.includes(title.toLowerCase())) {
+                        statusSubtasks.push({
+                            id: `st_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                            title,
+                            isCompleted: false,
+                            createdBy: 'System',
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                });
+
+                if (statusSubtasks.length > 0) {
+                    updatedTask = {
+                        ...updatedTask,
+                        subtasks: [...task.subtasks, ...statusSubtasks]
+                    };
+                    toast.success(`Added ${statusSubtasks.length} status-specific subtask(s)`);
+                }
+            }
+
             try {
                 // Optimistic Update
                 setTasks(prev => prev.map(t => t.id === draggableId ? updatedTask : t));
@@ -331,7 +368,7 @@ const TasksPage: React.FC = () => {
                                                             <div className="flex justify-between items-start mb-3">
                                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
                                                                 <div className="text-[10px] text-gray-400 font-mono">
-                                                                    <span>{toBS(task.dueDate)} BS</span>
+                                                                    <span>{task.dueDate}</span>
                                                                 </div>
                                                             </div>
 
@@ -412,7 +449,7 @@ const TasksPage: React.FC = () => {
                                     })}
                                 </div>
                             </td>
-                            <td className="px-6 py-4 text-xs font-mono">{toBS(task.dueDate)} BS</td>
+                            <td className="px-6 py-4 text-xs font-mono">{task.dueDate}</td>
                             <td className="px-6 py-4">
                                 <span className={`px-2 py-0.5 rounded border text-[10px] uppercase font-bold ${getPriorityStyle(task.priority)}`}>
                                     {task.status.replace('_', ' ')}
@@ -501,12 +538,13 @@ const TasksPage: React.FC = () => {
                                         <ClientSelect clients={clientsList} value={currentTask.clientId || ''} onChange={(id) => setCurrentTask({ ...currentTask, clientId: id as string })} disabled={!hasEditPermission} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Due Date (BS) <span className="text-red-400">*</span></label>
-                                        <NepaliDatePicker
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Due Date <span className="text-red-400">*</span></label>
+                                        <input
+                                            type="date"
+                                            className="w-full glass-input"
                                             value={currentTask.dueDate}
-                                            onChange={(adDate) => setCurrentTask({ ...currentTask, dueDate: adDate })}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
                                             disabled={!hasEditPermission}
-                                            placeholder="Select due date..."
                                         />
                                     </div>
                                 </div>

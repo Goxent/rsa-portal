@@ -231,4 +231,8 @@ export interface TaskTemplate {
   expectedDays?: number;
   createdAt: string;
   updatedAt?: string;
+  // Status-based automatic subtasks
+  statusSubtasks?: {
+    [key in TaskStatus]?: string[]; // Subtasks to add when entering each status
+  };
 }
