@@ -561,39 +561,29 @@ const TasksPage: React.FC = () => {
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             <div className="space-y-4">
+                                {/* Client Selection - Top Section */}
+                                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                    <label className="block text-sm font-semibold text-gray-300 mb-2 flex items-center">
+                                        <Briefcase size={16} className="mr-2 text-brand-400" />
+                                        Client(s)
+                                    </label>
+                                    <ClientSelect
+                                        clients={clientsList}
+                                        value={currentTask.clientIds || []}
+                                        onChange={(ids) => setCurrentTask({ ...currentTask, clientIds: ids as string[] })}
+                                        multi={true}
+                                        placeholder="Select Clients..."
+                                        disabled={!hasEditPermission}
+                                    />
+                                </div>
+
+                                {/* Task Title */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Task Title <span className="text-red-400">*</span></label>
                                     <input className="w-full glass-input" value={currentTask.title} onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} />
-                                    {currentTask.clientName && (
-                                        <div className="text-sm text-brand-300 flex items-center mt-2">
-                                            <Briefcase size={14} className="mr-2" />
-                                            <span className="font-medium">{currentTask.clientName}</span>
-                                        </div>
-                                    )}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Client(s)</label>
-                                        <ClientSelect
-                                            clients={clientsList}
-                                            value={currentTask.clientIds || []}
-                                            onChange={(ids) => setCurrentTask({ ...currentTask, clientIds: ids as string[] })}
-                                            multi={true}
-                                            placeholder="Select Clients..."
-                                            disabled={!hasEditPermission}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Due Date <span className="text-red-400">*</span></label>
-                                        <input
-                                            type="date"
-                                            className="w-full glass-input"
-                                            value={currentTask.dueDate}
-                                            onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
-                                            disabled={!hasEditPermission}
-                                        />
-                                    </div>
-                                </div>
+
+                                {/* Due Date & Priority Row */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
