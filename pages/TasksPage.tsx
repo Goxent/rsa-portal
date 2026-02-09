@@ -134,6 +134,11 @@ const TasksPage: React.FC = () => {
         setIsEditMode(false);
         setFormError('');
         setAssignSuggestion(null);
+
+        // Get local date string without timezone conversion
+        const today = new Date();
+        const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
         setCurrentTask({
             title: '',
             description: '',
@@ -141,7 +146,7 @@ const TasksPage: React.FC = () => {
             status: TaskStatus.NOT_STARTED,
             priority: TaskPriority.MEDIUM,
             subtasks: [],
-            dueDate: new Date().toLocaleDateString('en-CA')
+            dueDate: localDate
         });
         setIsModalOpen(true);
     };

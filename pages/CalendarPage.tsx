@@ -1,9 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X, Edit, Trash2, Eye, EyeOff, Repeat } from 'lucide-react';
 import { AuthService } from '../services/firebase';
-import { Task, CalendarEvent, UserRole } from '../types';
+import { Task, CalendarEvent, UserRole, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
+import EventModal from '../components/EventModal';
+import { generateRecurringInstances, canEditEvent, canDeleteEvent, getVisibilityBadge, formatEventTime } from '../utils/eventUtils';
+import { toBS } from '../utils/dateUtils';
 
 // Helpers
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -16,12 +19,12 @@ const CalendarPage: React.FC = () => {
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+    const [showOnlyMyEvents, setShowOnlyMyEvents] = useState(false);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({
-        title: '', time: '09:00', type: 'MEETING', description: ''
-    });
+    const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -33,9 +36,27 @@ const CalendarPage: React.FC = () => {
     useEffect(() => {
         if (user) {
             AuthService.getAllTasks().then(setTasks);
-            AuthService.getAllEvents().then(setEvents);
+            // Use new visibility-aware function
+            AuthService.getAllEventsForUser(user.uid, user.role, user.department).then(rawEvents => {
+                // Expand recurring events for the current month view
+                const startOfMonth = new Date(year, month, 1);
+                const endOfMonth = new Date(year, month + 1, 0);
+
+                const expandedEvents: CalendarEvent[] = [];
+                rawEvents.forEach(event => {
+                    if (event.isRecurring && event.recurrenceRule) {
+                        const instances = generateRecurringInstances(event, startOfMonth, endOfMonth);
+                        expandedEvents.push(...instances);
+                    } else {
+                        expandedEvents.push(event);
+                    }
+                });
+
+                setEvents(expandedEvents);
+            });
+            AuthService.getAllUsers().then(setAllUsers);
         }
-    }, [user]);
+    }, [user, year, month]);
 
     const changeMonth = (offset: number) => {
         setCurrentDate(new Date(year, month + offset, 1));
@@ -50,42 +71,102 @@ const CalendarPage: React.FC = () => {
                 taskDate.getFullYear() === year;
         });
 
-        const eventItems = events.filter(ev => {
+        let eventItems = events.filter(ev => {
             const evDate = new Date(ev.date);
             return evDate.getDate() === day &&
                 evDate.getMonth() === month &&
                 evDate.getFullYear() === year;
         });
 
+        // Filter to only user's events if toggle is on
+        if (showOnlyMyEvents && user) {
+            eventItems = eventItems.filter(ev => ev.createdBy === user.uid);
+        }
+
         return { tasks: taskItems, events: eventItems };
     };
 
-    const handleSaveEvent = async () => {
-        if (!newEvent.title || !selectedDate) return;
-        if (user?.role !== UserRole.ADMIN) {
-            alert("Only Admins can create events.");
-            return;
-        }
-
-        const d = new Date(year, month, selectedDate);
-        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-        const evt: CalendarEvent = {
-            id: '',
-            title: newEvent.title,
-            date: dateStr,
-            time: newEvent.time,
-            description: newEvent.description,
-            type: newEvent.type as any
-        };
-
-        await AuthService.saveEvent(evt);
-        const updatedEvents = await AuthService.getAllEvents();
-        setEvents(updatedEvents);
-        setIsModalOpen(false);
-        setNewEvent({ title: '', time: '09:00', type: 'MEETING', description: '' });
+    const handleOpenEventModal = (date?: number) => {
+        if (date) setSelectedDate(date);
+        setEditingEvent(undefined);
+        setIsModalOpen(true);
     };
 
+    const handleEditEvent = (event: CalendarEvent, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (user && canEditEvent(event, user)) {
+            setEditingEvent(event);
+            setIsModalOpen(true);
+        }
+    };
+
+    const handleDeleteEvent = async (event: CalendarEvent, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!user || !canDeleteEvent(event, user)) return;
+
+        if (confirm(`Delete event "${event.title}"?`)) {
+            try {
+                await AuthService.deleteEvent(event.id, user.uid, user.role);
+                // Refresh events
+                const rawEvents = await AuthService.getAllEventsForUser(user.uid, user.role, user.department);
+                const startOfMonth = new Date(year, month, 1);
+                const endOfMonth = new Date(year, month + 1, 0);
+
+                const expandedEvents: CalendarEvent[] = [];
+                rawEvents.forEach(ev => {
+                    if (ev.isRecurring && ev.recurrenceRule) {
+                        expandedEvents.push(...generateRecurringInstances(ev, startOfMonth, endOfMonth));
+                    } else {
+                        expandedEvents.push(ev);
+                    }
+                });
+                setEvents(expandedEvents);
+            } catch (error: any) {
+                alert(error.message || 'Failed to delete event');
+            }
+        }
+    };
+
+    const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
+        if (!user) return;
+
+        try {
+            if (editingEvent) {
+                // Update existing event
+                await AuthService.updateEvent(editingEvent.id, eventData, user.uid, user.role);
+            } else {
+                // Create new event
+                const d = selectedDate ? new Date(year, month, selectedDate) : new Date();
+                const fullEvent: CalendarEvent = {
+                    id: 'temp_' + Date.now(),
+                    ...eventData as CalendarEvent,
+                    date: d.toISOString().split('T')[0],
+                    createdBy: user.uid,
+                };
+                await AuthService.saveEvent(fullEvent);
+            }
+
+            // Refresh events
+            const rawEvents = await AuthService.getAllEventsForUser(user.uid, user.role, user.department);
+            const startOfMonth = new Date(year, month, 1);
+            const endOfMonth = new Date(year, month + 1, 0);
+
+            const expandedEvents: CalendarEvent[] = [];
+            rawEvents.forEach(ev => {
+                if (ev.isRecurring && ev.recurrenceRule) {
+                    expandedEvents.push(...generateRecurringInstances(ev, startOfMonth, endOfMonth));
+                } else {
+                    expandedEvents.push(ev);
+                }
+            });
+            setEvents(expandedEvents);
+
+            setIsModalOpen(false);
+            setEditingEvent(undefined);
+        } catch (error: any) {
+            alert(error.message || 'Failed to save event');
+        }
+    };
     const addToGoogleCalendar = (title: string, date: string, desc: string) => {
         const dateStr = date.replace(/-/g, '');
         const details = encodeURIComponent(desc);
@@ -116,32 +197,33 @@ const CalendarPage: React.FC = () => {
 
                     // Determine if Saturday (Day 6 in JS Date)
                     const isSaturday = new Date(year, month, day).getDay() === 6;
+                    const isCurrent = isToday; // Renamed for clarity with the new className
 
                     return (
                         <div
                             key={day}
                             onClick={() => setSelectedDate(day)}
-                            className={`h-24 lg:h-32 rounded-xl border p-2 flex flex-col justify-between transition-all cursor-pointer group hover:border-blue-500/50 hover:bg-white/5
-                            ${isSelected ? 'bg-white/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : 'bg-white/5 border-white/10'}
-                            ${isToday ? 'ring-1 ring-blue-400' : ''}
-                        `}
+                            className={`relative min-h-[100px] p-2 rounded-xl border-2 transition-all duration-200 cursor-pointer ${isCurrent
+                                ? 'border-emerald-500 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 shadow-lg shadow-emerald-500/20'
+                                : day === selectedDate
+                                    ? 'border-brand-500 bg-brand-500/10 shadow-lg shadow-brand-500/20'
+                                    : 'border-white/5 hover:border-brand-400/30 hover:bg-white/5'
+                                }  ${dayTasks.length > 0 || dayEvents.length > 0 ? 'shadow-inner' : ''}`}
                         >
-                            <div className="flex justify-between items-start">
-                                <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full 
-                                ${isToday
-                                        ? 'bg-blue-600 text-white'
-                                        : isSaturday
-                                            ? 'text-red-400' // Red font for Saturdays
-                                            : 'text-gray-300'
-                                    }`
-                                }>
+                            <div className="flex justify-between items-start mb-1">
+                                <span className={`text-sm font-bold ${isCurrent ? 'text-emerald-300' : day === selectedDate ? 'text-brand-300' : 'text-gray-300'}`}>
                                     {day}
                                 </span>
-                                {totalCount > 0 && (
-                                    <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400 font-medium">
-                                        {totalCount}
+                                <div className="flex flex-col items-end gap-0.5">
+                                    {totalCount > 0 && (
+                                        <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400 font-medium">
+                                            {totalCount}
+                                        </span>
+                                    )}
+                                    <span className="text-[8px] text-gray-600 font-mono">
+                                        {toBS(new Date(year, month, day)).split('-')[2]}
                                     </span>
-                                )}
+                                </div>
                             </div>
                             <div className="space-y-1 mt-1 overflow-hidden">
                                 {dayEvents.map((ev, i) => (
@@ -184,28 +266,95 @@ const CalendarPage: React.FC = () => {
                     {renderCalendarGrid()}
                 </div>
 
-                {/* Side Panel: Selected Day Agenda */}
                 <div className="w-full lg:w-80 glass-panel rounded-2xl p-6 flex flex-col shadow-2xl h-fit">
-                    <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+                    <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-4">
                         <h3 className="text-lg font-bold text-white flex items-center">
                             <CalendarIcon size={18} className="mr-2 text-blue-400" />
                             {selectedDate ? `${monthNames[month]} ${selectedDate}` : 'Select a date'}
                         </h3>
-                        {user?.role === UserRole.ADMIN && (
-                            <button onClick={() => selectedDate && setIsModalOpen(true)} className="p-2 bg-blue-600 rounded-lg text-white hover:bg-blue-500 transition-colors shadow-lg">
-                                <Plus size={16} />
-                            </button>
-                        )}
+                        {/* Everyone can create events now */}
+                        <button
+                            onClick={() => handleOpenEventModal(selectedDate || undefined)}
+                            className="p-2 bg-brand-600 rounded-lg text-white hover:bg-brand-500 transition-colors shadow-lg"
+                            title="Create event"
+                        >
+                            <Plus size={16} />
+                        </button>
                     </div>
 
-                    <div className="space-y-4 flex-1">
-                        {selectedDayEvents.map((ev, i) => (
-                            <div key={i} className="group flex flex-col p-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 transition-colors border border-purple-500/20">
-                                <h4 className="text-sm font-semibold text-purple-200">{ev.title}</h4>
-                                <p className="text-[10px] text-gray-400">{ev.time} • {ev.type}</p>
-                                <button onClick={() => addToGoogleCalendar(ev.title, ev.date, ev.description || '')} className="mt-2 text-[10px] text-purple-300 hover:underline flex items-center"><ExternalLink size={10} className="mr-1" /> Add to G-Cal</button>
-                            </div>
-                        ))}
+                    {/* Toggle for showing only my events */}
+                    <div className="mb-4">
+                        <button
+                            onClick={() => setShowOnlyMyEvents(!showOnlyMyEvents)}
+                            className="flex items-center text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                        >
+                            {showOnlyMyEvents ? <Eye size={14} className="mr-1" /> : <EyeOff size={14} className="mr-1" />}
+                            {showOnlyMyEvents ? 'Show all events' : 'Show only my events'}
+                        </button>
+                    </div>
+
+                    <div className="space-y-3 flex-1">
+                        {/* Event Items */}
+                        {selectedDayEvents.map((ev, i) => {
+                            // Add defaults for old events without new fields
+                            const eventWithDefaults = {
+                                ...ev,
+                                visibility: ev.visibility || 'PUBLIC',
+                                createdBy: ev.createdBy || 'system',
+                                type: ev.type || 'GENERAL'
+                            };
+
+                            const badge = getVisibilityBadge(eventWithDefaults.visibility);
+                            const canEdit = user && canEditEvent(eventWithDefaults, user);
+                            const canDelete = user && canDeleteEvent(eventWithDefaults, user);
+
+                            return (
+                                <div key={i} className="group flex flex-col p-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 transition-colors border border-purple-500/20">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="flex-1">
+                                            <h4 className="text-sm font-semibold text-purple-200">{eventWithDefaults.title}</h4>
+                                            <p className="text-[10px] text-gray-400">{formatEventTime(eventWithDefaults)} • {eventWithDefaults.type.replace('_', ' ')}</p>
+                                            {eventWithDefaults.isRecurring && (
+                                                <p className="text-[10px] text-emerald-400 flex items-center mt-1">
+                                                    <Repeat size={10} className="mr-1" /> Recurring
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            {canEdit && (
+                                                <button
+                                                    onClick={(e) => handleEditEvent(eventWithDefaults, e)}
+                                                    className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
+                                                    title="Edit event"
+                                                >
+                                                    <Edit size={14} />
+                                                </button>
+                                            )}
+                                            {canDelete && (
+                                                <button
+                                                    onClick={(e) => handleDeleteEvent(eventWithDefaults, e)}
+                                                    className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                                                    title="Delete event"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${badge.color}`}>
+                                            {badge.text}
+                                        </span>
+                                        <button
+                                            onClick={() => addToGoogleCalendar(eventWithDefaults.title, eventWithDefaults.date, eventWithDefaults.description || '')}
+                                            className="text-[10px] text-purple-300 hover:underline flex items-center"
+                                        >
+                                            <ExternalLink size={10} className="mr-1" /> G-Cal
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
 
                         {selectedDayTasks.map((task, i) => (
                             <div key={i} className="group flex flex-col p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
@@ -234,24 +383,25 @@ const CalendarPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Add Event Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-xl w-full max-w-sm p-6 shadow-2xl">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-white">Add Event</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
-                        </div>
-                        <div className="space-y-4">
-                            <div><label className="text-xs text-gray-400">Title</label><input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} /></div>
-                            <div><label className="text-xs text-gray-400">Time</label><input type="time" className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newEvent.time} onChange={e => setNewEvent({ ...newEvent, time: e.target.value })} /></div>
-                            <div><label className="text-xs text-gray-400">Type</label><select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newEvent.type} onChange={e => setNewEvent({ ...newEvent, type: e.target.value as any })}><option value="MEETING">Meeting</option><option value="DEADLINE">Deadline</option><option value="GENERAL">General</option></select></div>
-                            <div><label className="text-xs text-gray-400">Description</label><textarea className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newEvent.description} onChange={e => setNewEvent({ ...newEvent, description: e.target.value })} /></div>
-                            <button onClick={handleSaveEvent} className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Save Event</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* EventModal Component */}
+            <EventModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingEvent(undefined);
+                }}
+                onSave={handleSaveEvent}
+                event={editingEvent}
+                selectedDate={selectedDate ? (() => {
+                    const d = new Date(year, month, selectedDate);
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${day}`;
+                })() : undefined}
+                user={user!}
+                allUsers={allUsers}
+            />
         </div>
     );
 };

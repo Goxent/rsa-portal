@@ -135,13 +135,66 @@ export interface LeaveRequest {
   createdAt: string;
 }
 
+// Event visibility levels
+export type EventVisibility = 'PRIVATE' | 'PUBLIC' | 'TEAM' | 'DEPARTMENT';
+
+// Event types
+export type EventType = 'MEETING' | 'DEADLINE' | 'GENERAL' | 'PERSONAL' | 'FIRM_EVENT' | 'HOLIDAY';
+
+// RSVP status
+export type RSVPStatus = 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
+
+// Recurrence rule for recurring events
+export interface RecurrenceRule {
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  interval: number; // Every X days/weeks/months/years
+  endDate?: string; // When recurrence stops (YYYY-MM-DD)
+  daysOfWeek?: number[]; // For weekly recurrence (0=Sunday, 6=Saturday)
+}
+
+// Event reminder configuration
+export interface EventReminder {
+  type: 'EMAIL' | 'IN_APP';
+  minutesBefore: number; // Minutes before event to send reminder
+}
+
+// Enhanced CalendarEvent interface
 export interface CalendarEvent {
   id: string;
   title: string;
-  date: string;
-  time?: string;
+  date: string; // YYYY-MM-DD
+  time?: string; // HH:MM
+  endTime?: string; // HH:MM (for duration)
   description?: string;
-  type: 'MEETING' | 'DEADLINE' | 'GENERAL';
+  type: EventType;
+
+  // NEW: Event ownership and visibility
+  createdBy: string; // User UID who created the event
+  visibility: EventVisibility; // Who can see this event
+  teamIds?: string[]; // For TEAM visibility - array of user UIDs
+  department?: string; // For DEPARTMENT visibility
+
+  // NEW: Recurring events
+  isRecurring?: boolean;
+  recurrenceRule?: RecurrenceRule;
+  parentEventId?: string; // For instances of recurring events
+
+  // NEW: Participants and RSVP
+  participants?: string[]; // Array of user UIDs invited to event
+  rsvpRequired?: boolean;
+  rsvpResponses?: {
+    [userId: string]: RSVPStatus;
+  };
+
+  // NEW: Reminders
+  reminders?: EventReminder[];
+
+  // NEW: Additional metadata
+  color?: string; // Hex color for event category
+  location?: string; // Physical or virtual location
+  attachments?: string[]; // File URLs or references
+  createdAt?: string; // ISO timestamp when created
+  updatedAt?: string; // ISO timestamp when last modified
 }
 
 export interface AppNotification {

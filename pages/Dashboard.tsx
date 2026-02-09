@@ -141,7 +141,12 @@ const Dashboard: React.FC = () => {
                 const busyList: (UserProfile & { taskCount: number })[] = [];
                 const freeList: UserProfile[] = [];
 
-                allUsers.forEach(u => {
+                // Exclude ADMIN and MASTER_ADMIN from workload widget
+                const staffOnlyUsers = allUsers.filter(u =>
+                    u.role !== UserRole.ADMIN && u.role !== UserRole.MASTER_ADMIN
+                );
+
+                staffOnlyUsers.forEach(u => {
                     const userActiveTasks = activeTasksList.filter(t => t.assignedTo.includes(u.uid));
                     if (userActiveTasks.length > 0) {
                         busyList.push({ ...u, taskCount: userActiveTasks.length });

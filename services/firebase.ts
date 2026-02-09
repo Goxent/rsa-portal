@@ -425,16 +425,203 @@ export const AuthService = {
         return snapshot.size;
     },
 
-    // --- EVENTS ---
-    getAllEvents: async (): Promise<CalendarEvent[]> => {
+    // --- EVENTS (Enhanced) ---
+
+    /**
+     * Get all events visible to a specific user based on visibility rules
+     */
+    getAllEventsForUser: async (userId: string, userRole: UserRole, userDept: string): Promise<CalendarEvent[]> => {
         const snapshot = await getDocs(collection(db, 'events'));
-        return snapshot.docs.map(d => docConverter<CalendarEvent>(d));
+        const allEvents = snapshot.docs.map(d => docConverter<CalendarEvent>(d));
+
+        // Filter based on visibility
+        const visibleEvents = allEvents.filter(event => {
+            // PUBLIC events visible to all
+            if (event.visibility === 'PUBLIC') return true;
+
+            // PRIVATE events only visible to creator
+            if (event.visibility === 'PRIVATE') {
+                return event.createdBy === userId;
+            }
+
+            // TEAM events visible to team members
+            if (event.visibility === 'TEAM') {
+                return event.teamIds?.includes(userId) || event.createdBy === userId;
+            }
+
+            // DEPARTMENT events visible to department members
+            if (event.visibility === 'DEPARTMENT') {
+                return event.department === userDept || event.createdBy === userId;
+            }
+
+            // Admins can see all events
+            if (userRole === UserRole.ADMIN || userRole === UserRole.MASTER_ADMIN) {
+                return true;
+            }
+
+            return false;
+        });
+
+        return visibleEvents;
     },
 
+    /**
+     * Legacy function for backwards compatibility
+     * Returns all PUBLIC events
+     */
+    getAllEvents: async (): Promise<CalendarEvent[]> => {
+        const snapshot = await getDocs(collection(db, 'events'));
+        const allEvents = snapshot.docs.map(d => docConverter<CalendarEvent>(d));
+        // Return only public events for backwards compatibility
+        return allEvents.filter(e => e.visibility === 'PUBLIC' || !e.visibility);
+    },
+
+    /**
+     * Save a new event with metadata and validation
+     */
     saveEvent: async (event: CalendarEvent) => {
         const { id, ...data } = event;
-        await addDoc(collection(db, 'events'), data);
+
+        // Add metadata
+        const eventData = {
+            ...data,
+            createdAt: data.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        const docRef = await addDoc(collection(db, 'events'), eventData);
+
+        // Send notifications to participants if applicable
+        if (event.participants && event.participants.length > 0) {
+            for (const participantId of event.participants) {
+                await AuthService.createNotification({
+                    userId: participantId,
+                    title: 'Event Invitation',
+                    message: `You've been invited to: ${event.title}`,
+                    type: 'INFO',
+                    category: 'EVENT',
+                    link: '/calendar'
+                });
+            }
+        }
+
+        return docRef.id;
     },
+
+    /**
+     * Update an existing event
+     * Permission check: only creator or admin can update
+     */
+    updateEvent: async (eventId: string, updates: Partial<CalendarEvent>, userId: string, userRole: UserRole) => {
+        const eventDoc = await getDoc(doc(db, 'events', eventId));
+
+        if (!eventDoc.exists()) {
+            throw new Error('Event not found');
+        }
+
+        const existingEvent = eventDoc.data() as CalendarEvent;
+
+        // Permission check
+        const isCreator = existingEvent.createdBy === userId;
+        const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.MASTER_ADMIN;
+
+        if (!isCreator && !isAdmin) {
+            throw new Error('You do not have permission to edit this event');
+        }
+
+        // Update with timestamp
+        const updateData = {
+            ...updates,
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateDoc(doc(db, 'events', eventId), updateData);
+
+        // Notify participants of update if significant changes
+        if (existingEvent.participants && (updates.date || updates.time || updates.title)) {
+            for (const participantId of existingEvent.participants) {
+                await AuthService.createNotification({
+                    userId: participantId,
+                    title: 'Event Updated',
+                    message: `Event "${existingEvent.title}" has been updated`,
+                    type: 'INFO',
+                    category: 'EVENT',
+                    link: '/calendar'
+                });
+            }
+        }
+    },
+
+    /**
+     * Delete an event
+     * Permission check: only creator or admin can delete
+     */
+    deleteEvent: async (eventId: string, userId: string, userRole: UserRole) => {
+        const eventDoc = await getDoc(doc(db, 'events', eventId));
+
+        if (!eventDoc.exists()) {
+            throw new Error('Event not found');
+        }
+
+        const event = eventDoc.data() as CalendarEvent;
+
+        // Permission check
+        const isCreator = event.createdBy === userId;
+        const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.MASTER_ADMIN;
+
+        if (!isCreator && !isAdmin) {
+            throw new Error('You do not have permission to delete this event');
+        }
+
+        // Delete the event
+        await deleteDoc(doc(db, 'events', eventId));
+
+        // Notify participants of cancellation
+        if (event.participants) {
+            for (const participantId of event.participants) {
+                await AuthService.createNotification({
+                    userId: participantId,
+                    title: 'Event Cancelled',
+                    message: `Event "${event.title}" has been cancelled`,
+                    type: 'WARNING',
+                    category: 'EVENT',
+                    link: '/calendar'
+                });
+            }
+        }
+    },
+
+    /**
+     * Respond to event RSVP
+     */
+    respondToEventRSVP: async (eventId: string, userId: string, response: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE') => {
+        const eventDoc = doc(db, 'events', eventId);
+        const eventData = (await getDoc(eventDoc)).data() as CalendarEvent;
+
+        if (!eventData.rsvpRequired) {
+            throw new Error('RSVP not required for this event');
+        }
+
+        // Update RSVP responses
+        const rsvpResponses = eventData.rsvpResponses || {};
+        rsvpResponses[userId] = response;
+
+        await updateDoc(eventDoc, {
+            rsvpResponses,
+            updatedAt: new Date().toISOString()
+        });
+
+        // Notify event creator of RSVP
+        await AuthService.createNotification({
+            userId: eventData.createdBy,
+            title: 'RSVP Response',
+            message: `Someone ${response.toLowerCase()} your event "${eventData.title}"`,
+            type: 'INFO',
+            category: 'EVENT',
+            link: '/calendar'
+        });
+    },
+
 
     // --- LEAVES ---
     getAllLeaves: async (userId?: string): Promise<LeaveRequest[]> => {
