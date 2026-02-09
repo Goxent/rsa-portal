@@ -18,7 +18,12 @@ import {
   Moon,
   Settings,
   Trophy,
-  Command
+  Command,
+  Clock3,
+  MessageSquare,
+  AlertCircle,
+  FileStack,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -147,6 +152,13 @@ const Layout: React.FC = () => {
             <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
             <SidebarItem to="/tasks" icon={CheckSquare} label="Tasks & Kanban" />
             <SidebarItem to="/leaves" icon={Calendar} label="Leaves" />
+
+            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Advanced</p>
+            <SidebarItem to="/time-tracking" icon={Clock3} label="Time Tracking" />
+            <SidebarItem to="/team-chat" icon={MessageSquare} label="Team  Chat" />
+            <SidebarItem to="/compliance" icon={AlertCircle} label="Compliance" />
+            <SidebarItem to="/templates" icon={FileStack} label="Templates" />
+            <SidebarItem to="/analytics" icon={BarChart3} label="Analytics" />
 
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Firm Data</p>
             <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
