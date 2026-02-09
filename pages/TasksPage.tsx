@@ -232,11 +232,16 @@ const TasksPage: React.FC = () => {
             setFormError("Title is required.");
             return;
         }
-        const client = clientsList.find(c => c.id === currentTask.clientId);
+        // Support both clientIds array (new) and clientId (deprecated)
+        const clientIds = currentTask.clientIds || (currentTask.clientId ? [currentTask.clientId] : []);
+        const clientNames = clientIds
+            .map(id => clientsList.find(c => c.id === id)?.name)
+            .filter(Boolean);
+
         const taskToSave: Task = {
             ...currentTask,
             id: currentTask.id || `t_${Date.now()}`,
-            clientName: client?.name || 'Internal',
+            clientName: clientNames.length > 0 ? clientNames.join(', ') : 'Internal',
             createdAt: currentTask.createdAt || new Date().toISOString(),
             createdBy: currentTask.createdBy || user?.uid || 'system',
             assignedTo: currentTask.assignedTo || [],
@@ -337,11 +342,22 @@ const TasksPage: React.FC = () => {
                                 <div
                                     {...provided.droppableProps}
                                     ref={provided.innerRef}
-                                    className={`flex-shrink-0 w-80 rounded-2xl p-4 transition-all ${snapshot.isDraggingOver ? 'bg-brand-500/5 ring-2 ring-brand-500/20' : 'bg-transparent'}`}
+                                    className={`flex-shrink-0 w-80 rounded-2xl p-4 transition-all border-2 ${snapshot.isDraggingOver ? 'bg-brand-500/5 ring-2 ring-brand-500/20' :
+                                        status === TaskStatus.NOT_STARTED ? 'bg-blue-500/5 border-blue-500/30' :
+                                            status === TaskStatus.IN_PROGRESS ? 'bg-brand-500/5 border-brand-500/30' :
+                                                status === TaskStatus.HALTED ? 'bg-red-500/5 border-red-500/30' :
+                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-yellow-500/5 border-yellow-500/30' :
+                                                        'bg-emerald-500/5 border-emerald-500/30'
+                                        }`}
                                 >
                                     <div className="flex items-center justify-between mb-4 px-2">
                                         <div className="flex items-center space-x-2">
-                                            <div className={`w-2 h-2 rounded-full ${status === TaskStatus.COMPLETED ? 'bg-emerald-500' : status === TaskStatus.IN_PROGRESS ? 'bg-brand-500' : 'bg-gray-500'}`} />
+                                            <div className={`w-2 h-2 rounded-full ${status === TaskStatus.NOT_STARTED ? 'bg-blue-500' :
+                                                status === TaskStatus.IN_PROGRESS ? 'bg-brand-500' :
+                                                    status === TaskStatus.HALTED ? 'bg-red-500' :
+                                                        status === TaskStatus.UNDER_REVIEW ? 'bg-yellow-500' :
+                                                            'bg-emerald-500'
+                                                }`} />
                                             <h3 className="font-bold text-gray-300 text-xs uppercase tracking-widest">{status.replace('_', ' ')}</h3>
                                         </div>
                                         <span className="bg-navy-800 text-gray-400 text-[10px] px-2 py-0.5 rounded-full font-bold">{filteredTasks.filter(t => t.status === status).length}</span>
@@ -389,13 +405,17 @@ const TasksPage: React.FC = () => {
                                                                 </div>
                                                             )}
 
-                                                            <div className="pt-3 border-t border-white/5 flex justify-between items-center">
-                                                                <div className="flex -space-x-2">
-                                                                    {task.assignedTo.slice(0, 3).map((uid, i) => {
+                                                            <div className="pt-3 border-t border-white/5">
+                                                                <div className="text-[9px] text-gray-500 mb-1.5 uppercase tracking-wide">Assigned To</div>
+                                                                <div className="flex flex-wrap gap-1.5">
+                                                                    {task.assignedTo.map(uid => {
                                                                         const u = usersList.find(user => user.uid === uid);
                                                                         return (
-                                                                            <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-700 border border-navy-800 flex items-center justify-center text-[9px] font-bold text-gray-300">
-                                                                                {getInitials(u?.displayName || '?')}
+                                                                            <div key={uid} className="flex items-center bg-navy-800/50 px-2 py-1 rounded border border-white/5">
+                                                                                <div className="w-4 h-4 rounded-full bg-navy-700 border border-navy-600 flex items-center justify-center text-[8px] font-bold text-gray-300 mr-1.5">
+                                                                                    {getInitials(u?.displayName || '?')}
+                                                                                </div>
+                                                                                <span className="text-[10px] text-gray-300">{u?.displayName || 'Unknown'}</span>
                                                                             </div>
                                                                         );
                                                                     })}
@@ -438,15 +458,28 @@ const TasksPage: React.FC = () => {
                             <td className="px-6 py-4 font-medium text-white group-hover:text-brand-300 transition-colors">{task.title}</td>
                             <td className="px-6 py-4 text-brand-200">{task.clientName}</td>
                             <td className="px-6 py-4">
-                                <div className="flex -space-x-2">
-                                    {task.assignedTo.slice(0, 3).map((uid, i) => {
-                                        const u = usersList.find(user => user.uid === uid);
-                                        return (
-                                            <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-700 border border-navy-900 flex items-center justify-center text-[9px] font-bold text-white">
-                                                {getInitials(u?.displayName || '?')}
-                                            </div>
-                                        );
-                                    })}
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex -space-x-2">
+                                        {task.assignedTo.slice(0, 3).map((uid, i) => {
+                                            const u = usersList.find(user => user.uid === uid);
+                                            return (
+                                                <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-700 border border-navy-900 flex items-center justify-center text-[9px] font-bold text-white">
+                                                    {getInitials(u?.displayName || '?')}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                        {task.assignedTo.slice(0, 2).map(uid => {
+                                            const u = usersList.find(user => user.uid === uid);
+                                            return u ? (
+                                                <span key={uid} className="text-[10px] text-gray-400">{u.displayName}</span>
+                                            ) : null;
+                                        })}
+                                        {task.assignedTo.length > 2 && (
+                                            <span className="text-[10px] text-gray-500">+{task.assignedTo.length - 2}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </td>
                             <td className="px-6 py-4 text-xs font-mono">{task.dueDate}</td>
@@ -531,6 +564,12 @@ const TasksPage: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Task Title <span className="text-red-400">*</span></label>
                                     <input className="w-full glass-input" value={currentTask.title} onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} />
+                                    {currentTask.clientName && (
+                                        <div className="text-sm text-brand-300 flex items-center mt-2">
+                                            <Briefcase size={14} className="mr-2" />
+                                            <span className="font-medium">{currentTask.clientName}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
