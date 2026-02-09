@@ -10,7 +10,6 @@ interface ClientSelectProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
-    error?: boolean;
 }
 
 const ClientSelect: React.FC<ClientSelectProps> = ({
@@ -20,13 +19,11 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     multi = false,
     placeholder = "Select Client...",
     className = "",
-    disabled = false,
-    error = false
+    disabled = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
 
     // Close on click outside
     useEffect(() => {
@@ -39,159 +36,158 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Focus input when opening
-    useEffect(() => {
-        if (isOpen && inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, [isOpen]);
-
-    // Selection Logic
-    const handleSelect = (clientId: string) => {
-        if (multi) {
-            const currentValues = Array.isArray(value) ? value : [];
-            let newValues;
-            if (currentValues.includes(clientId)) {
-                newValues = currentValues.filter(id => id !== clientId);
-            } else {
-                newValues = [...currentValues, clientId];
-            }
-            onChange(newValues);
-            // Keep open for multi-select
-        } else {
-            onChange(clientId);
-            setIsOpen(false);
-            setSearchTerm(''); // Reset search on selection
-        }
-    };
-
-    const handleClear = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onChange(multi ? [] : '');
-        setSearchTerm('');
-    };
-
     // Filter Logic
     const filteredClients = clients.filter(client =>
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Selected Item Display
-    const getDisplayValue = () => {
-        if (!value || (Array.isArray(value) && value.length === 0)) return null;
+    const handleSelect = (clientId: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
 
         if (multi) {
-            const selectedCount = (value as string[]).length;
-            if (selectedCount === 1) {
-                const client = clients.find(c => c.id === (value as string[])[0]);
-                return client?.name;
-            }
-            return `${selectedCount} Clients Selected`;
+            const currentValues = Array.isArray(value) ? value : [];
+            const isAlreadySelected = currentValues.includes(clientId);
+            const newValue = isAlreadySelected
+                ? currentValues.filter(id => id !== clientId)
+                : [...currentValues, clientId];
+            onChange(newValue);
         } else {
-            const client = clients.find(c => c.id === value);
-            return client?.name;
+            onChange(clientId);
+            setIsOpen(false);
         }
     };
 
-    // Safe safe-guards for rendering
-    const displayValue = getDisplayValue();
-    const hasSelection = !!displayValue;
+    const getInitials = (name: string, code?: string) => {
+        // Use client code prefix if available (e.g., "CL-002" → "CL")
+        if (code && code.includes('-')) {
+            return code.split('-')[0].substring(0, 2).toUpperCase();
+        }
+        // Otherwise use first 2 letters of name
+        return name.substring(0, 2).toUpperCase();
+    };
+
+    const renderTrigger = () => {
+        const hasValue = value && (Array.isArray(value) ? value.length > 0 : true);
+
+        if (!hasValue) {
+            return <span className="text-gray-500">{placeholder}</span>;
+        }
+
+        if (multi && Array.isArray(value)) {
+            const selectedItems = value.map(id => clients.find(c => c.id === id)).filter(Boolean) as Client[];
+
+            if (selectedItems.length === 0) {
+                return <span className="text-gray-500">{placeholder}</span>;
+            }
+
+            return (
+                <div className="flex flex-wrap gap-1.5">
+                    {selectedItems.map(client => (
+                        <span key={client.id} className="bg-brand-600/30 text-brand-200 px-2 py-0.5 rounded text-[11px] flex items-center border border-brand-500/30">
+                            {client.name}
+                            {!disabled && (
+                                <X
+                                    size={10}
+                                    className="ml-1.5 cursor-pointer hover:text-white"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSelect(client.id);
+                                    }}
+                                />
+                            )}
+                        </span>
+                    ))}
+                </div>
+            );
+        }
+
+        const selectedId = Array.isArray(value) ? value[0] : value;
+        const selectedClient = clients.find(c => c.id === selectedId);
+
+        return selectedClient ? (
+            <span className="text-gray-200 flex items-center">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-[8px] font-bold mr-2 border border-white/10 shrink-0">
+                    {getInitials(selectedClient.name, selectedClient.code)}
+                </div>
+                <span className="truncate max-w-[180px]">{selectedClient.name}</span>
+            </span>
+        ) : <span className="text-gray-500">{placeholder}</span>;
+    };
 
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
-            {/* Trigger Button */}
             <div
+                className={`w-full glass-input rounded-lg px-3 py-2 text-sm min-h-[42px] flex items-center justify-between cursor-pointer border border-white/10 hover:border-brand-500/50 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${isOpen ? 'ring-2 ring-brand-500/30 border-brand-500 shadow-xl' : ''}`}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
-                className={`
-                    w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all cursor-pointer select-none
-                    ${disabled ? 'bg-white/5 opacity-50 cursor-not-allowed border-white/5' : 'bg-black/20 hover:bg-black/30 hover:border-white/20'}
-                    ${error ? 'border-red-500/50' : 'border-white/10'}
-                    ${isOpen ? 'ring-2 ring-brand-500/50 border-brand-500/50 bg-black/40' : ''}
-                `}
             >
-                <div className="flex items-center truncate mr-2 flex-1">
-                    <Building2 size={16} className={`mr-2 shrink-0 ${hasSelection ? 'text-brand-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm truncate ${hasSelection ? 'text-white font-medium' : 'text-gray-500'}`}>
-                        {hasSelection ? displayValue : placeholder}
-                    </span>
+                <div className="flex-1 overflow-hidden">
+                    {renderTrigger()}
                 </div>
-
-                <div className="flex items-center gap-1">
-                    {hasSelection && !disabled && (
-                        <div
-                            onClick={handleClear}
-                            className="p-1 hover:bg-white/10 rounded-full text-gray-500 hover:text-white transition-colors"
-                        >
-                            <X size={14} />
-                        </div>
-                    )}
-                    <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                </div>
+                <ChevronDown size={14} className={`text-gray-500 transition-transform duration-200 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col max-h-[300px]">
-                    {/* Search Bar */}
-                    <div className="p-2 border-b border-white/5 bg-white/5 backdrop-blur-xl supports-[backdrop-filter]:bg-navy-900/50 sticky top-0 z-10">
+                <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 border-b border-white/10">
                         <div className="relative">
                             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
                             <input
-                                ref={inputRef}
                                 type="text"
-                                className="w-full bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 placeholder-gray-600 focus:ring-1 focus:ring-brand-500/50"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 placeholder-gray-500"
                                 placeholder="Search clients..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
+                                autoFocus
                             />
                         </div>
                     </div>
 
-                    {/* Options List */}
-                    <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
+                    <div className="max-h-60 overflow-y-auto">
                         {filteredClients.length === 0 ? (
                             <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
                         ) : (
-                            filteredClients.map(client => {
+                            filteredClients.map((client) => {
                                 const isSelected = multi
-                                    ? (value as string[]).includes(client.id)
+                                    ? (Array.isArray(value) && value.includes(client.id))
                                     : value === client.id;
 
                                 return (
                                     <div
                                         key={client.id}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault(); // Prevents input blur
-                                            handleSelect(client.id);
-                                        }}
-                                        className={`
-                                            flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 text-sm group transition-colors select-none
-                                            ${isSelected ? 'bg-brand-500/20 text-brand-100 border border-brand-500/20' : 'text-gray-300 hover:bg-white/5 hover:text-white border border-transparent'}
-                                        `}
+                                        className={`px-3 py-2.5 hover:bg-white/5 cursor-pointer transition-colors flex items-center justify-between group ${isSelected ? 'bg-brand-500/10' : ''}`}
+                                        onClick={() => handleSelect(client.id)}
                                     >
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="font-medium truncate">{client.name}</span>
-                                            <div className="flex items-center text-[10px] opacity-70 mt-0.5 space-x-2">
-                                                <span className="font-mono bg-white/5 px-1 rounded">{client.code}</span>
-                                                {client.riskProfile === 'HIGH' && (
-                                                    <span className="text-red-400 flex items-center font-bold bg-red-500/10 px-1 rounded"><AlertTriangle size={10} className="mr-0.5" /> High Risk</span>
-                                                )}
-                                                {client.city && <span>• {client.city}</span>}
+                                        <div className="flex items-center flex-1 min-w-0">
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/10 shrink-0">
+                                                {getInitials(client.name, client.code)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-gray-200 font-medium truncate">{client.name}</div>
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
+                                                    <span className="font-mono">{client.code}</span>
+                                                    {client.status === 'Inactive' && (
+                                                        <span className="text-red-400 flex items-center">
+                                                            <AlertTriangle size={10} className="mr-0.5" /> Inactive
+                                                        </span>
+                                                    )}
+                                                    {client.city && <span>• {client.city}</span>}
+                                                </div>
                                             </div>
                                         </div>
-                                        {isSelected && <Check size={16} className="text-brand-400 shrink-0 ml-2" />}
+                                        {isSelected && (
+                                            <Check size={16} className="text-brand-400 shrink-0 ml-2" />
+                                        )}
                                     </div>
                                 );
                             })
                         )}
                     </div>
 
-                    {/* Footer for multi-select */}
-                    {multi && (
-                        <div className="p-2 border-t border-white/5 bg-white/5 text-[10px] text-center text-gray-500">
-                            {(value as string[]).length} Selected
+                    {multi && Array.isArray(value) && value.length > 0 && (
+                        <div className="p-2 border-t border-white/10 bg-white/5 text-xs text-gray-400 text-center">
+                            {value.length} Selected
                         </div>
                     )}
                 </div>
