@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X, Edit, Trash2, Eye, EyeOff, Repeat } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { Task, CalendarEvent, UserRole, UserProfile } from '../types';
+import { ComplianceEvent } from '../types/advanced';
 import { useAuth } from '../context/AuthContext';
 import EventModal from '../components/EventModal';
 import { generateRecurringInstances, canEditEvent, canDeleteEvent, getVisibilityBadge, formatEventTime } from '../utils/eventUtils';
 import { toBS } from '../utils/dateUtils';
+import { ComplianceService } from '../services/advanced';
 
 // Helpers
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -19,6 +21,7 @@ const CalendarPage: React.FC = () => {
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [complianceEvents, setComplianceEvents] = useState<ComplianceEvent[]>([]);
     const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [showOnlyMyEvents, setShowOnlyMyEvents] = useState(false);
 
@@ -55,6 +58,8 @@ const CalendarPage: React.FC = () => {
 
                 setEvents(expandedEvents);
             });
+            // Load compliance events
+            ComplianceService.getEvents().then(setComplianceEvents);
             AuthService.getAllUsers().then(setAllUsers);
         }
     }, [user, year, month]);
@@ -79,12 +84,20 @@ const CalendarPage: React.FC = () => {
                 evDate.getFullYear() === year;
         });
 
+        // Get compliance events for this day
+        const complianceItems = complianceEvents.filter(ce => {
+            const ceDate = new Date(ce.dueDate);
+            return ceDate.getDate() === day &&
+                ceDate.getMonth() === month &&
+                ceDate.getFullYear() === year;
+        });
+
         // Filter to only user's events if toggle is on
         if (showOnlyMyEvents && user) {
             eventItems = eventItems.filter(ev => ev.createdBy === user.uid);
         }
 
-        return { tasks: taskItems, events: eventItems };
+        return { tasks: taskItems, events: eventItems, compliance: complianceItems };
     };
 
     const handleOpenEventModal = (date?: number) => {
@@ -194,8 +207,8 @@ const CalendarPage: React.FC = () => {
                 {totalSlots.map((day, index) => {
                     if (!day) return <div key={`blank-${index}`} className="h-24 lg:h-32 rounded-xl bg-white/2 border border-white/5"></div>;
 
-                    const { tasks: dayTasks, events: dayEvents } = getItemsForDay(day);
-                    const totalCount = dayTasks.length + dayEvents.length;
+                    const { tasks: dayTasks, events: dayEvents, compliance: dayCompliance } = getItemsForDay(day);
+                    const totalCount = dayTasks.length + dayEvents.length + dayCompliance.length;
                     const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                     const isSelected = day === selectedDate;
 
@@ -212,7 +225,7 @@ const CalendarPage: React.FC = () => {
                                 : day === selectedDate
                                     ? 'border-brand-500 bg-brand-500/10 shadow-lg shadow-brand-500/20'
                                     : 'border-white/5 hover:border-brand-400/30 hover:bg-white/5'
-                                }  ${dayTasks.length > 0 || dayEvents.length > 0 ? 'shadow-inner' : ''}`}
+                                }  ${dayTasks.length > 0 || dayEvents.length > 0 || dayCompliance.length > 0 ? 'shadow-inner' : ''}`}
                         >
                             <div className="flex justify-between items-start mb-1">
                                 <span className={`text-sm font-bold ${isCurrent ? 'text-emerald-300' : day === selectedDate ? 'text-brand-300' : 'text-gray-300'}`}>
@@ -230,12 +243,20 @@ const CalendarPage: React.FC = () => {
                                 </div>
                             </div>
                             <div className="space-y-1 mt-1 overflow-hidden">
+                                {dayCompliance.map((comp, i) => (
+                                    <div key={`comp-${i}`} className={`px-1.5 py-1 rounded text-[10px] truncate border-l-2 ${comp.priority === 'CRITICAL' ? 'bg-red-500/20 text-red-200 border-red-500' :
+                                            comp.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-200 border-orange-500' :
+                                                'bg-amber-500/20 text-amber-200 border-amber-500'
+                                        }`} title={comp.title}>
+                                        🔔 {comp.title}
+                                    </div>
+                                ))}
                                 {dayEvents.map((ev, i) => (
                                     <div key={`ev-${i}`} className="px-1.5 py-1 rounded bg-purple-500/20 text-[10px] text-purple-200 truncate border-l-2 border-purple-500">
                                         {ev.title}
                                     </div>
                                 ))}
-                                {dayTasks.slice(0, 2 - dayEvents.length).map((t, i) => (
+                                {dayTasks.slice(0, 2 - dayEvents.length - dayCompliance.length).map((t, i) => (
                                     <div key={`t-${i}`} className="px-1.5 py-1 rounded bg-blue-500/20 text-[10px] text-blue-200 truncate border-l-2 border-blue-500">
                                         {t.title}
                                     </div>

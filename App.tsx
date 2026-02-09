@@ -27,6 +27,7 @@ const TeamChatPage = lazy(() => import('./pages/TeamChatPage'));
 const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const AdvancedAnalyticsPage = lazy(() => import('./pages/AdvancedAnalyticsPage'));
+const WorkflowPage = lazy(() => import('./pages/WorkflowPage'));
 
 // Suspense wrapper for lazy-loaded components
 const LazyPage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -122,6 +123,7 @@ const App: React.FC = () => {
                 <Route path="compliance" element={<LazyPage><CompliancePage /></LazyPage>} />
                 <Route path="templates" element={<LazyPage><TemplatesPage /></LazyPage>} />
                 <Route path="analytics" element={<LazyPage><AdvancedAnalyticsPage /></LazyPage>} />
+                <Route path="workflow" element={<LazyPage><WorkflowPage /></LazyPage>} />
               </Route>
 
               {/* Catch all - redirect to login */}

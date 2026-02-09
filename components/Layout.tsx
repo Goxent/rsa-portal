@@ -23,7 +23,8 @@ import {
   MessageSquare,
   AlertCircle,
   FileStack,
-  BarChart3
+  BarChart3,
+  Workflow
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -159,6 +160,7 @@ const Layout: React.FC = () => {
             <SidebarItem to="/compliance" icon={AlertCircle} label="Compliance" />
             <SidebarItem to="/templates" icon={FileStack} label="Templates" />
             <SidebarItem to="/analytics" icon={BarChart3} label="Analytics" />
+            <SidebarItem to="/workflow" icon={Workflow} label="Workflow Board" />
 
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Firm Data</p>
             <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
