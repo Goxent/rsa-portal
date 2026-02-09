@@ -534,8 +534,15 @@ const TasksPage: React.FC = () => {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Client <span className="text-red-400">*</span></label>
-                                        <ClientSelect clients={clientsList} value={currentTask.clientId || ''} onChange={(id) => setCurrentTask({ ...currentTask, clientId: id as string })} disabled={!hasEditPermission} />
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Client(s)</label>
+                                        <ClientSelect
+                                            clients={clientsList}
+                                            value={currentTask.clientIds || []}
+                                            onChange={(ids) => setCurrentTask({ ...currentTask, clientIds: ids as string[] })}
+                                            multi={true}
+                                            placeholder="Select Clients..."
+                                            disabled={!hasEditPermission}
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Due Date <span className="text-red-400">*</span></label>

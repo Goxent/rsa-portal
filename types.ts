@@ -78,7 +78,8 @@ export interface Task {
   assignedTo: string[]; // Array of User UIDs
   assignedToNames: string[]; // Array of Names for display
   createdBy: string; // User UID
-  clientId?: string; // Link to Client Database
+  clientId?: string; // DEPRECATED: Single client (kept for backward compatibility)
+  clientIds?: string[]; // NEW: Multiple clients support
   clientName?: string;
   status: TaskStatus;
   priority: TaskPriority;
