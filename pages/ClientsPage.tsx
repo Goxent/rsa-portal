@@ -93,19 +93,26 @@ const ClientsPage: React.FC = () => {
         setIsSubmitting(true);
         try {
             if (isEditing && selectedClient) {
+                // Ensure we have a valid ID
+                if (!selectedClient.id) {
+                    toast.error("Invalid client ID");
+                    return;
+                }
                 await AuthService.updateClient({ ...selectedClient, ...formData } as Client);
                 toast.success("Client updated successfully");
             } else {
                 await AuthService.addClient({
                     ...formData,
                     id: '', // will be set by firebase
-                    code: formData.code || `CL-${Math.floor(Math.random() * 10000)}`
+                    code: formData.code || `CL-${Math.floor(Math.random() * 10000)}`,
+                    folderLink: '' // Required field
                 } as Client);
                 toast.success("Client added successfully");
             }
             fetchClients();
             setIsModalOpen(false);
         } catch (error: any) {
+            console.error("Client submit error:", error);
             toast.error(error.message || "Operation failed");
         } finally {
             setIsSubmitting(false);
