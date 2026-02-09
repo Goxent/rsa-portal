@@ -18,6 +18,7 @@ const StaffPage: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [formError, setFormError] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     const [formData, setFormData] = useState<Partial<UserProfile>>({
         displayName: '',
