@@ -21,6 +21,7 @@ const AttendancePage: React.FC = () => {
     const [status, setStatus] = useState<'CLOCKED_OUT' | 'CLOCKED_IN'>('CLOCKED_OUT');
     const [sessionTime, setSessionTime] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Late Logic
     const [lateCount, setLateCount] = useState(0);
@@ -162,6 +163,9 @@ const AttendancePage: React.FC = () => {
     };
 
     const handleClockAction = async () => {
+        // Prevent duplicate submissions
+        if (isSaving || loading) return;
+
         // 0. Single Clock-In Check
         if (status === 'CLOCKED_OUT') {
             const todayStr = new Date().toLocaleDateString('en-CA');
@@ -192,6 +196,7 @@ const AttendancePage: React.FC = () => {
         }
 
         setLoading(true);
+        setIsSaving(true);
         proceedClockAction(undefined);
     };
 
@@ -253,6 +258,7 @@ const AttendancePage: React.FC = () => {
             alert(error.message || "Error processing attendance.");
         } finally {
             setLoading(false);
+            setIsSaving(false);
         }
     };
 
@@ -263,7 +269,10 @@ const AttendancePage: React.FC = () => {
             return;
         }
 
+        if (isSaving) return; // Prevent duplicate submissions
+
         setLoading(true);
+        setIsSaving(true);
         try {
             const selectedUser = usersList.find(u => u.uid === manualForm.userId);
             const clientObj = clientsList.find(c => c.id === manualForm.clientId);
