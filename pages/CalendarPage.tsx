@@ -25,6 +25,7 @@ const CalendarPage: React.FC = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
+    const [isSaving, setIsSaving] = useState(false);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -129,7 +130,9 @@ const CalendarPage: React.FC = () => {
 
     const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
         if (!user) return;
+        if (isSaving) return; // Prevent duplicate submissions
 
+        setIsSaving(true);
         try {
             if (editingEvent) {
                 // Update existing event
@@ -164,6 +167,8 @@ const CalendarPage: React.FC = () => {
             setEditingEvent(undefined);
         } catch (error: any) {
             alert(error.message || 'Failed to save event');
+        } finally {
+            setIsSaving(false);
         }
     };
     const addToGoogleCalendar = (title: string, date: string, desc: string) => {

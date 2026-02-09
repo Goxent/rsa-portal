@@ -79,6 +79,9 @@ const StaffPage: React.FC = () => {
         e.preventDefault();
         setFormError('');
 
+        if (isSaving) return; // Prevent duplicate submissions
+        setIsSaving(true);
+
         try {
             if (isEditing && selectedUser) {
                 await AuthService.updateUserProfile(selectedUser.uid, formData);
@@ -89,6 +92,8 @@ const StaffPage: React.FC = () => {
             setIsModalOpen(false);
         } catch (error: any) {
             setFormError(error.message);
+        } finally {
+            setIsSaving(false);
         }
     };
 
