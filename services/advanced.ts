@@ -112,6 +112,59 @@ export const ChatService = {
         await deleteDoc(doc(db, 'chatChannels', id));
     },
 
+    // User Integration: Add new user to all public channels
+    async addUserToPublicChannels(userId: string): Promise<void> {
+        const publicChannelsQuery = query(collection(db, 'chatChannels'), where('type', '==', 'PUBLIC'));
+        const snapshot = await getDocs(publicChannelsQuery);
+
+        const updatePromises = snapshot.docs.map(async (channelDoc) => {
+            const channelData = channelDoc.data() as ChatChannel;
+            if (!channelData.members.includes(userId)) {
+                const updatedMembers = [...channelData.members, userId];
+                await updateDoc(doc(db, 'chatChannels', channelDoc.id), { members: updatedMembers });
+            }
+        });
+
+        await Promise.all(updatePromises);
+    },
+
+    // Ensure a default 'general' channel exists
+    async ensureGeneralChannel(creatorId: string): Promise<string> {
+        // Check if general channel exists
+        const generalQuery = query(collection(db, 'chatChannels'), where('name', '==', 'general'));
+        const snapshot = await getDocs(generalQuery);
+
+        if (!snapshot.empty) {
+            return snapshot.docs[0].id;
+        }
+
+        // Create general channel if it doesn't exist
+        const generalChannel: Omit<ChatChannel, 'id'> = {
+            name: 'general',
+            description: 'General discussion for all team members',
+            type: 'PUBLIC',
+            members: [creatorId],
+            createdBy: creatorId,
+            createdAt: new Date().toISOString(),
+        };
+
+        return await this.createChannel(generalChannel);
+    },
+
+    // Remove user from all channels when user is deleted
+    async removeUserFromAllChannels(userId: string): Promise<void> {
+        const userChannelsQuery = query(collection(db, 'chatChannels'), where('members', 'array-contains', userId));
+        const snapshot = await getDocs(userChannelsQuery);
+
+        const updatePromises = snapshot.docs.map(async (channelDoc) => {
+            const channelData = channelDoc.data() as ChatChannel;
+            const updatedMembers = channelData.members.filter(m => m !== userId);
+            await updateDoc(doc(db, 'chatChannels', channelDoc.id), { members: updatedMembers });
+        });
+
+        await Promise.all(updatePromises);
+    },
+
     async markAsRead(messageId: string, userId: string): Promise<void> {
         const msgRef = doc(db, 'chatMessages', messageId);
         const msgDoc = await getDocs(query(collection(db, 'chatMessages'), where('__name__', '==', messageId)));

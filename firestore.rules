@@ -149,5 +149,83 @@ service cloud.firestore {
       // Audit logs are immutable - no updates or deletes
       allow update, delete: if false;
     }
+    
+    // =============================================
+    // ADVANCED FEATURES COLLECTIONS
+    // =============================================
+    
+    // TIME TRACKING
+    match /timeEntries/{entryId} {
+      // Users can read their own entries, admins can read all
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin()
+      );
+      
+      // Users can create/update their own entries
+      allow create, update: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      
+      // Only admins can delete entries
+      allow delete: if isAdmin();
+    }
+    
+    // CHAT CHANNELS - Admin-only creation, member-based read access
+    match /chatChannels/{channelId} {
+      // Anyone can read channels they're a member of
+      allow read: if isAuthenticated() && 
+        request.auth.uid in resource.data.members;
+      
+      // Only admins can create channels
+      allow create: if isAdmin();
+      
+      // Only admins can update or delete channels
+      allow update, delete: if isAdmin();
+    }
+    
+    // CHAT MESSAGES - Members can read/write in their channels
+    match /chatMessages/{messageId} {
+      // Can read messages from channels you're a member of
+      allow read: if isAuthenticated() && 
+        request.auth.uid in get(/databases/$(database)/documents/chatChannels/$(resource.data.channelId)).data.members;
+      
+      // Can create messages in channels you're a member of
+      allow create: if isAuthenticated() && 
+        request.auth.uid in get(/databases/$(database)/documents/chatChannels/$(request.resource.data.channelId)).data.members;
+      
+      // Can only update your own messages (for read receipts)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.senderId;
+      
+      // Can only delete your own messages
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.senderId;
+    }
+    
+    // COMPLIANCE EVENTS
+    match /complianceEvents/{eventId} {
+      // All authenticated users can read
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // TEMPLATES
+    match /templates/{templateId} {
+      // All authenticated users can read templates
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // WORKFLOWS
+    match /workflows/{workflowId} {
+      // All authenticated users can read workflows
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

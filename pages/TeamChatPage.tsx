@@ -31,10 +31,25 @@ const TeamChatPage: React.FC = () => {
 
     useEffect(() => {
         if (user) {
+            initializeUserChat();
             loadChannels();
             loadUsers();
         }
     }, [user]);
+
+    const initializeUserChat = async () => {
+        if (!user) return;
+
+        try {
+            // Ensure general channel exists
+            await ChatService.ensureGeneralChannel(user.uid);
+
+            // Add user to all public channels
+            await ChatService.addUserToPublicChannels(user.uid);
+        } catch (error) {
+            console.error('Error initializing user chat:', error);
+        }
+    };
 
     useEffect(() => {
         if (!selectedChannel) return;
