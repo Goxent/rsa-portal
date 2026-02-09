@@ -120,7 +120,15 @@ export const AuthService = {
 
     register: async (email: string, pass: string): Promise<UserProfile> => {
         try {
-            // Create Auth User
+            // STEP 1: Validate email is in staff directory
+            const staffSnapshot = await getDocs(collection(db, 'staff'));
+            const staffEmails = staffSnapshot.docs.map(doc => doc.data().email?.toLowerCase()).filter(Boolean);
+
+            if (!staffEmails.includes(email.toLowerCase())) {
+                throw new Error('This email is not authorized for signup. Only staff members listed in the directory can register.');
+            }
+
+            // STEP 2: Create Auth User
             const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             const uid = userCredential.user.uid;
 
