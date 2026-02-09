@@ -414,8 +414,8 @@ const AttendancePage: React.FC = () => {
     const exportPDF = () => {
         const doc = new jsPDF();
 
-        // -- Enhanced Letterhead with violet gradient --
-        doc.setFillColor(124, 58, 237); // Violet-600
+        // -- Enhanced Letterhead with navy gradient --
+        doc.setFillColor(15, 23, 42); // Navy-950 (slate-900)
         doc.rect(0, 0, 210, 40, 'F');
 
         doc.setFontSize(22);
@@ -424,7 +424,7 @@ const AttendancePage: React.FC = () => {
         doc.text("R. Sapkota & Associates", 105, 15, { align: "center" });
 
         doc.setFontSize(10);
-        doc.setTextColor(233, 213, 255); // Light violet
+        doc.setTextColor(148, 163, 184); // Slate-400
         doc.setFont("helvetica", "normal");
         doc.text("Chartered Accountants | Mid-Baneshwor, Kathmandu", 105, 23, { align: "center" });
 
@@ -435,7 +435,7 @@ const AttendancePage: React.FC = () => {
 
         // Report info
         doc.setFontSize(10);
-        doc.setTextColor(76, 29, 149); // Violet-900
+        doc.setTextColor(30, 41, 59); // Slate-800
         doc.setFont("helvetica", "normal");
         doc.text(`Period: ${filterStartDate} to ${filterEndDate}`, 14, 50);
         doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 56);
@@ -458,7 +458,7 @@ const AttendancePage: React.FC = () => {
             startY: 62,
             theme: 'grid',
             headStyles: {
-                fillColor: [124, 58, 237],  // Violet-600
+                fillColor: [30, 41, 59],    // Slate-800
                 textColor: [255, 255, 255], // White
                 fontStyle: 'bold',
                 halign: 'center'
@@ -467,11 +467,11 @@ const AttendancePage: React.FC = () => {
                 fontSize: 8,
                 cellPadding: 3,
                 overflow: 'linebreak',
-                fillColor: [250, 245, 255], // Light violet
-                textColor: [76, 29, 149]    // Violet-900
+                fillColor: [248, 250, 252], // Slate-50
+                textColor: [30, 41, 59]     // Slate-800
             },
             alternateRowStyles: {
-                fillColor: [237, 233, 254]  // Violet-100
+                fillColor: [241, 245, 249]  // Slate-100
             },
             columnStyles: {
                 0: { cellWidth: 20 },
@@ -486,7 +486,7 @@ const AttendancePage: React.FC = () => {
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
             doc.setFontSize(8);
-            doc.setTextColor(124, 58, 237);
+            doc.setTextColor(51, 65, 85); // Slate-700
             doc.text(`Page ${i} of ${pageCount}`, 196, 285, { align: 'right' });
             doc.text("Confidential System Report - RSA Portal", 14, 285);
         }
@@ -510,17 +510,17 @@ const AttendancePage: React.FC = () => {
             { width: 35 },  // Notes
         ];
 
-        // Violet color scheme
-        const violetBg = '7C3AED';
-        const lightViolet = 'EDE9FE';
-        const darkViolet = '4C1D95';
+        // Navy/Slate color scheme
+        const navyBg = '1E293B';      // Slate-800
+        const lightNavy = 'F1F5F9';   // Slate-100
+        const darkNavy = '0F172A';    // Slate-900
 
         // Company Name (Row 1)
         worksheet.mergeCells('A1:H1');
         const companyCell = worksheet.getCell('A1');
         companyCell.value = 'R. Sapkota & Associates';
         companyCell.font = { bold: true, size: 18, color: { argb: 'FFFFFF' } };
-        companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: violetBg } };
+        companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: navyBg } };
         companyCell.alignment = { horizontal: 'center', vertical: 'middle' };
         worksheet.getRow(1).height = 30;
 
@@ -528,8 +528,8 @@ const AttendancePage: React.FC = () => {
         worksheet.mergeCells('A2:H2');
         const addressCell = worksheet.getCell('A2');
         addressCell.value = 'Chartered Accountants | Mid-Baneshwor, Kathmandu';
-        addressCell.font = { size: 10, color: { argb: 'E9D5FF' } };
-        addressCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: violetBg } };
+        addressCell.font = { size: 10, color: { argb: 'CBD5E1' } }; // Slate-300
+        addressCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: navyBg } };
         addressCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
         // Empty row 3
@@ -539,7 +539,7 @@ const AttendancePage: React.FC = () => {
         worksheet.mergeCells('A4:H4');
         const titleCell = worksheet.getCell('A4');
         titleCell.value = 'Attendance & Activity Report';
-        titleCell.font = { bold: true, size: 14, color: { argb: darkViolet } };
+        titleCell.font = { bold: true, size: 14, color: { argb: darkNavy } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
         worksheet.getRow(4).height = 25;
 
@@ -566,11 +566,11 @@ const AttendancePage: React.FC = () => {
         headerRow.height = 22;
         headerRow.eachCell((cell) => {
             cell.font = { bold: true, color: { argb: 'FFFFFF' }, size: 10 };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: violetBg } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: navyBg } };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
             cell.border = {
-                top: { style: 'thin', color: { argb: violetBg } },
-                bottom: { style: 'thin', color: { argb: violetBg } },
+                top: { style: 'thin', color: { argb: navyBg } },
+                bottom: { style: 'thin', color: { argb: navyBg } },
             };
         });
 
@@ -587,13 +587,13 @@ const AttendancePage: React.FC = () => {
                 r.workDescription || r.notes || '-'
             ]);
 
-            const bgColor = index % 2 === 0 ? 'FAF5FF' : lightViolet;
+            const bgColor = index % 2 === 0 ? 'F8FAFC' : lightNavy; // Slate-50 and Slate-100
             row.eachCell((cell) => {
-                cell.font = { size: 9, color: { argb: darkViolet } };
+                cell.font = { size: 9, color: { argb: darkNavy } };
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
                 cell.alignment = { vertical: 'middle' };
                 cell.border = {
-                    bottom: { style: 'thin', color: { argb: 'DDD6FE' } },
+                    bottom: { style: 'thin', color: { argb: 'E2E8F0' } }, // Slate-200
                 };
             });
         });
