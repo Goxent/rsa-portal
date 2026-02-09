@@ -36,10 +36,9 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Filter Logic
-    const filteredClients = clients.filter(client =>
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.code.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredClients = clients.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleSelect = (clientId: string, e?: React.MouseEvent) => {
@@ -59,11 +58,9 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     };
 
     const getInitials = (name: string, code?: string) => {
-        // Use client code prefix if available (e.g., "CL-002" → "CL")
         if (code && code.includes('-')) {
             return code.split('-')[0].substring(0, 2).toUpperCase();
         }
-        // Otherwise use first 2 letters of name
         return name.substring(0, 2).toUpperCase();
     };
 
@@ -83,16 +80,16 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
 
             return (
                 <div className="flex flex-wrap gap-1.5">
-                    {selectedItems.map(client => (
-                        <span key={client.id} className="bg-brand-600/30 text-brand-200 px-2 py-0.5 rounded text-[11px] flex items-center border border-brand-500/30">
-                            {client.name}
+                    {selectedItems.map(c => (
+                        <span key={c.id} className="bg-brand-600/30 text-brand-200 px-2 py-0.5 rounded text-[11px] flex items-center border border-brand-500/30">
+                            {c.name}
                             {!disabled && (
                                 <X
                                     size={10}
                                     className="ml-1.5 cursor-pointer hover:text-white"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleSelect(client.id);
+                                        handleSelect(c.id);
                                     }}
                                 />
                             )}
@@ -134,59 +131,50 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                             <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
                             <input
                                 type="text"
-                                className="w-full bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 placeholder-gray-500"
                                 placeholder="Search clients..."
+                                className="w-full bg-black/40 text-white text-xs rounded-lg pl-9 pr-3 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                autoFocus
+                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
 
                     <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
-                        {filteredClients.length === 0 ? (
-                            <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
-                        ) : (
-                                const isSelected = multi
-                                ? (Array.isArray(value) && value.includes(client.id))
-                                : value === client.id;
-
-                        return (
-                        <div
-                            key={client.id}
-                            className={`px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-colors mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
-                            onClick={(e) => handleSelect(client.id, e)}
-                        >
-                            <div className="flex items-center flex-1 min-w-0">
-                                <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10 shrink-0">
-                                    {getInitials(client.name, client.code)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-sm text-white font-medium truncate">{client.name}</div>
-                                    <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
-                                        <span className="font-mono">{client.code}</span>
-                                        {client.status === 'Inactive' && (
-                                            <span className="text-red-400 flex items-center">
-                                                <AlertTriangle size={10} className="mr-0.5" /> Inactive
-                                            </span>
-                                        )}
-                                        {client.city && <span>• {client.city}</span>}
+                        {filteredClients.length > 0 ? (
+                            filteredClients.map(client => {
+                                const isSelected = Array.isArray(value) ? value.includes(client.id) : value === client.id;
+                                return (
+                                    <div
+                                        key={client.id}
+                                        className={`px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-colors mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
+                                        onClick={(e) => handleSelect(client.id, e)}
+                                    >
+                                        <div className="flex items-center">
+                                            <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10">
+                                                {getInitials(client.name, client.code)}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-white">{client.name}</span>
+                                                <div className="flex items-center text-[10px] text-gray-500 space-x-2">
+                                                    <span className="font-mono">{client.code}</span>
+                                                    {client.city && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span>{client.city}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {isSelected && <Check size={14} className="text-brand-400" />}
                                     </div>
-                                </div>
-                            </div>
-                            {isSelected && <Check size={14} className="text-brand-400 shrink-0" />}
-                        </div>
-                        );
+                                );
                             })
+                        ) : (
+                            <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
                         )}
                     </div>
-
-                    {multi && Array.isArray(value) && value.length > 0 && (
-                        <div className="p-2 border-t border-white/10 bg-white/5 text-xs text-gray-400 text-center">
-                            {value.length} Selected
-                        </div>
-                    )}
                 </div>
             )}
         </div>
