@@ -144,43 +144,40 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                         </div>
                     </div>
 
-                    <div className="max-h-60 overflow-y-auto">
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
                         {filteredClients.length === 0 ? (
                             <div className="p-4 text-center text-gray-500 text-xs">No clients found</div>
                         ) : (
-                            filteredClients.map((client) => {
                                 const isSelected = multi
-                                    ? (Array.isArray(value) && value.includes(client.id))
-                                    : value === client.id;
+                                ? (Array.isArray(value) && value.includes(client.id))
+                                : value === client.id;
 
-                                return (
-                                    <div
-                                        key={client.id}
-                                        className={`px-3 py-2.5 hover:bg-white/5 cursor-pointer transition-colors flex items-center justify-between group ${isSelected ? 'bg-brand-500/10' : ''}`}
-                                        onClick={() => handleSelect(client.id)}
-                                    >
-                                        <div className="flex items-center flex-1 min-w-0">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/10 shrink-0">
-                                                {getInitials(client.name, client.code)}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm text-gray-200 font-medium truncate">{client.name}</div>
-                                                <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
-                                                    <span className="font-mono">{client.code}</span>
-                                                    {client.status === 'Inactive' && (
-                                                        <span className="text-red-400 flex items-center">
-                                                            <AlertTriangle size={10} className="mr-0.5" /> Inactive
-                                                        </span>
-                                                    )}
-                                                    {client.city && <span>• {client.city}</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {isSelected && (
-                                            <Check size={16} className="text-brand-400 shrink-0 ml-2" />
+                        return (
+                        <div
+                            key={client.id}
+                            className={`px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-colors mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
+                            onClick={(e) => handleSelect(client.id, e)}
+                        >
+                            <div className="flex items-center flex-1 min-w-0">
+                                <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10 shrink-0">
+                                    {getInitials(client.name, client.code)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm text-white font-medium truncate">{client.name}</div>
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
+                                        <span className="font-mono">{client.code}</span>
+                                        {client.status === 'Inactive' && (
+                                            <span className="text-red-400 flex items-center">
+                                                <AlertTriangle size={10} className="mr-0.5" /> Inactive
+                                            </span>
                                         )}
+                                        {client.city && <span>• {client.city}</span>}
                                     </div>
-                                );
+                                </div>
+                            </div>
+                            {isSelected && <Check size={14} className="text-brand-400 shrink-0" />}
+                        </div>
+                        );
                             })
                         )}
                     </div>
