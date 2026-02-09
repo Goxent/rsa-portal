@@ -135,12 +135,11 @@ const CalendarPage: React.FC = () => {
                 // Update existing event
                 await AuthService.updateEvent(editingEvent.id, eventData, user.uid, user.role);
             } else {
-                // Create new event
-                const d = selectedDate ? new Date(year, month, selectedDate) : new Date();
+                // Create new event - use eventData.date directly to avoid timezone issues
                 const fullEvent: CalendarEvent = {
                     id: 'temp_' + Date.now(),
                     ...eventData as CalendarEvent,
-                    date: d.toISOString().split('T')[0],
+                    date: eventData.date!, // Use the date from the form (already in YYYY-MM-DD format)
                     createdBy: user.uid,
                 };
                 await AuthService.saveEvent(fullEvent);
