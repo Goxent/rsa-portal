@@ -482,10 +482,18 @@ export const AuthService = {
     saveEvent: async (event: CalendarEvent) => {
         const { id, ...data } = event;
 
+        // Filter out undefined values (Firestore doesn't accept undefined)
+        const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
+            if (value !== undefined) {
+                acc[key] = value;
+            }
+            return acc;
+        }, {} as any);
+
         // Add metadata
         const eventData = {
-            ...data,
-            createdAt: data.createdAt || new Date().toISOString(),
+            ...cleanedData,
+            createdAt: cleanedData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
 
