@@ -128,8 +128,9 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                 <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <div className="p-2 border-b border-white/10">
                         <div className="relative">
-                            <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                             <input
+                                autoFocus
                                 type="text"
                                 placeholder="Search clients..."
                                 className="w-full bg-black/40 text-white text-xs rounded-lg pl-9 pr-3 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
