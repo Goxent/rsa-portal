@@ -48,9 +48,9 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
     }, []);
 
     const filteredUsers = users.filter(u =>
-        u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.department.toLowerCase().includes(searchTerm.toLowerCase())
+        (u.displayName && u.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleSelect = (userId: string, e?: React.MouseEvent) => {

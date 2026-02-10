@@ -96,32 +96,20 @@ export interface Client {
   id: string;
   name: string;
   code: string;
-  serviceType: 'Audit' | 'Tax' | 'Accounting' | 'Consulting';
-  folderLink: string;
-  assignedStaffId?: string;
-  status: 'Active' | 'Inactive';
+  contactPerson?: string;
   email?: string;
   phone?: string;
+  pan?: string; // Tax ID
+  address?: string;
+  serviceType: 'Audit' | 'Tax' | 'Accounting' | 'Consulting' | 'Other';
+  status: 'Active' | 'Inactive';
+  auditorId?: string; // Linked Staff ID
+  fiscalYear?: string;
+  folderLink?: string;
 
-  // Extended Details
-  contactPersonName?: string;
-  contactPersonNumber?: string;
-  panNumber?: string;
-  address?: string; // Main Office Address
-  city?: string;
-
-  notes?: string;
-
-  // Classification
-  category?: 'A' | 'B' | 'C';
-  industry?: 'Hydropower' | 'Manufacturing' | 'Trading' | 'Consulting' | 'Security Broker' | 'Other';
-  riskProfile?: 'LOW' | 'MEDIUM' | 'HIGH';
-
-  // Audit & Billing Section
-  auditorSignatory?: string; // Flexible signatory (e.g. R. Sapkota & Associates, etc.)
-  billingAmount?: number;
-  isPaymentReceived?: boolean;
-  fiscalYear?: string; // e.g., "2080-81"
+  // Metadata
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LeaveRequest {

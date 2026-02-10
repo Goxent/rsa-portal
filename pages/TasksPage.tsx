@@ -11,6 +11,7 @@ import { AIService } from '../services/ai';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
 import StaffSelect from '../components/StaffSelect';
+import ClientSelect from '../components/ClientSelect';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
 
@@ -183,7 +184,8 @@ const TasksPage: React.FC = () => {
             status: TaskStatus.NOT_STARTED,
             priority: TaskPriority.MEDIUM,
             subtasks: [],
-            dueDate: localDate
+            dueDate: localDate,
+            clientIds: []
         });
         setIsModalOpen(true);
     };
@@ -206,7 +208,8 @@ const TasksPage: React.FC = () => {
                 createdBy: user?.uid || 'system',
                 createdAt: new Date().toISOString()
             })),
-            dueDate: new Date().toLocaleDateString('en-CA')
+            dueDate: new Date().toLocaleDateString('en-CA'),
+            clientIds: []
         });
         setIsModalOpen(true);
     };
@@ -573,13 +576,19 @@ const TasksPage: React.FC = () => {
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             <div className="space-y-4">
                                 {/* Client Selection - Removed temporarily */}
-                                {/* <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                                     <label className="block text-sm font-semibold text-gray-300 mb-2 flex items-center">
                                         <Briefcase size={16} className="mr-2 text-brand-400" />
                                         Client(s)
                                     </label>
-                                     <ClientSelect... /> 
-                                </div> */}
+                                    <ClientSelect
+                                        clients={clientsList}
+                                        value={currentTask.clientIds || []}
+                                        onChange={(val) => setCurrentTask({ ...currentTask, clientIds: val as string[] })}
+                                        multi={true}
+                                        placeholder="Select Clients..."
+                                    />
+                                </div>
 
                                 {/* Task Title */}
                                 <div>

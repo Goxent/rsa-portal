@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { useLocation } from 'react-router-dom';
 import StaffSelect from '../components/StaffSelect';
+import ClientSelect from '../components/ClientSelect';
 import { getCurrentBSDate, formatBSDate, convertADToBS } from '../utils/nepaliDate';
 import NepaliDate from 'nepali-date-converter';
 
@@ -29,8 +30,6 @@ const AttendancePage: React.FC = () => {
 
     // Daily Reporting State
     const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
-    const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
-    const clientDropdownRef = useRef<HTMLDivElement>(null);
     const [workDescription, setWorkDescription] = useState('');
 
     // Data State
@@ -101,18 +100,7 @@ const AttendancePage: React.FC = () => {
         return () => clearInterval(sessionTimer);
     }, [status]);
 
-    // Close client dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target as Node)) {
-                setIsClientDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [clientDropdownRef]);
+
 
     const loadData = async () => {
         if (!user) return; // Guard against unauthenticated calls
@@ -135,6 +123,9 @@ const AttendancePage: React.FC = () => {
             setHistory(attHistory);
             setLateCount(lCount);
             setLeavesList(lList);
+
+            console.log('DEBUG: Loaded Users:', uList);
+            console.log('DEBUG: Loaded History:', attHistory);
 
             // Check if already clocked in today (Local Time check)
             const today = new Date().toLocaleDateString('en-CA');
@@ -329,6 +320,9 @@ const AttendancePage: React.FC = () => {
             targetUsers = [user]; // Staff sees only themselves
         }
 
+        console.log('DEBUG: Report Target Users:', targetUsers);
+        console.log('DEBUG: Filter Params:', { start: filterStartDate, end: filterEndDate, staffId: filterStaffId });
+
         // 2. Generate Date Range Array
         const dates: string[] = [];
         const start = new Date(filterStartDate);
@@ -409,6 +403,9 @@ const AttendancePage: React.FC = () => {
         if (filterStatus !== 'ALL') {
             return fullRecords.filter(r => r.status === filterStatus);
         }
+
+        console.log('DEBUG: Generated Report Data:', fullRecords);
+
 
         // Sort by Date Descending, then Name
         return fullRecords.sort((a, b) => {
@@ -704,9 +701,14 @@ const AttendancePage: React.FC = () => {
 
                     <div className="space-y-4">
                         <div>
-                            {/* Client Selection - Removed temporarily */}
-                            {/* <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
-                            <ClientSelect... /> */}
+                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
+                            <ClientSelect
+                                clients={clientsList}
+                                value={selectedClientIds}
+                                onChange={(val) => setSelectedClientIds(val as string[])}
+                                multi={true}
+                                placeholder="Select Clients..."
+                            />
                         </div>
 
                         <div>

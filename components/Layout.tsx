@@ -24,7 +24,8 @@ import {
   AlertCircle,
   FileStack,
   BarChart3,
-  Workflow
+  Workflow,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -147,6 +148,7 @@ const Layout: React.FC = () => {
           <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Workspace</p>
             <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+            <SidebarItem to="/clients" icon={Building2} label="Clients" />
             <SidebarItem to="/attendance" icon={Clock} label="Attendance" />
             <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
             <SidebarItem to="/tasks" icon={CheckSquare} label="Tasks & Kanban" />
@@ -154,11 +156,9 @@ const Layout: React.FC = () => {
 
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Advanced</p>
             <SidebarItem to="/time-tracking" icon={Clock3} label="Time Tracking" />
-            <SidebarItem to="/team-chat" icon={MessageSquare} label="Team  Chat" />
             <SidebarItem to="/compliance" icon={AlertCircle} label="Compliance" />
             <SidebarItem to="/templates" icon={FileStack} label="Templates" />
-            <SidebarItem to="/analytics" icon={BarChart3} label="Analytics" />
-            <SidebarItem to="/workflow" icon={Workflow} label="Workflow Board" />
+
 
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Firm Data</p>
             <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
