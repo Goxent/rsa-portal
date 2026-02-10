@@ -8,7 +8,6 @@ import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask 
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AIService } from '../services/ai';
-import ClientSelect from '../components/ClientSelect';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
 import StaffSelect from '../components/StaffSelect';
@@ -573,21 +572,14 @@ const TasksPage: React.FC = () => {
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             <div className="space-y-4">
-                                {/* Client Selection - Top Section */}
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                {/* Client Selection - Removed temporarily */}
+                                {/* <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                                     <label className="block text-sm font-semibold text-gray-300 mb-2 flex items-center">
                                         <Briefcase size={16} className="mr-2 text-brand-400" />
                                         Client(s)
                                     </label>
-                                    <ClientSelect
-                                        clients={clientsList}
-                                        value={currentTask.clientIds || []}
-                                        onChange={(ids) => setCurrentTask({ ...currentTask, clientIds: ids as string[] })}
-                                        multi={true}
-                                        placeholder="Select Clients..."
-                                        disabled={!hasEditPermission}
-                                    />
-                                </div>
+                                     <ClientSelect... /> 
+                                </div> */}
 
                                 {/* Task Title */}
                                 <div>
@@ -696,29 +688,29 @@ const TasksPage: React.FC = () => {
                                     <button
                                         onClick={handleSaveTask}
                                         disabled={isSaving}
-                                className={`btn-primary flex items-center px-6 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className={`btn-primary flex items-center px-6 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
-                                {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
-                                {isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
-                            </button>
+                                        {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
+                                        {isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
+                                    </button>
                                 )}
+                            </div>
                         </div>
                     </div>
                 </div>
-                </div>
-    )
-}
+            )
+            }
 
-{
-    isTemplateModalOpen && (
-        <TaskTemplateModal
-            isOpen={isTemplateModalOpen}
-            onClose={() => setIsTemplateModalOpen(false)}
-            onSelectTemplate={handleTemplateSelect}
-        />
-    )
-}
-{ isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} /> }
+            {
+                isTemplateModalOpen && (
+                    <TaskTemplateModal
+                        isOpen={isTemplateModalOpen}
+                        onClose={() => setIsTemplateModalOpen(false)}
+                        onSelectTemplate={handleTemplateSelect}
+                    />
+                )
+            }
+            {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
         </div >
     );
 };

@@ -9,7 +9,6 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { useLocation } from 'react-router-dom';
-import ClientSelect from '../components/ClientSelect';
 import StaffSelect from '../components/StaffSelect';
 import { getCurrentBSDate, formatBSDate, convertADToBS } from '../utils/nepaliDate';
 import NepaliDate from 'nepali-date-converter';
@@ -705,15 +704,9 @@ const AttendancePage: React.FC = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
-                            <ClientSelect
-                                clients={clientsList}
-                                value={selectedClientIds}
-                                onChange={(val) => setSelectedClientIds(val as string[])}
-                                multi={true}
-                                placeholder="Select Clients..."
-                                disabled={status === 'CLOCKED_OUT'}
-                            />
+                            {/* Client Selection - Removed temporarily */}
+                            {/* <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
+                            <ClientSelect... /> */}
                         </div>
 
                         <div>

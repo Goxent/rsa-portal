@@ -58,16 +58,7 @@ const registerDefaultCommands = (
             category: 'navigation',
             action: () => navigate('/tasks'),
         },
-        {
-            id: 'nav-clients',
-            title: 'Go to Clients',
-            subtitle: 'Client directory and management',
-            icon: Users,
-            keywords: ['clients', 'customers', 'directory'],
-            shortcut: ['G', 'C'],
-            category: 'navigation',
-            action: () => navigate('/clients'),
-        },
+
         {
             id: 'nav-calendar',
             title: 'Go to Calendar',
@@ -129,15 +120,7 @@ const registerDefaultCommands = (
             category: 'action',
             action: () => navigate('/tasks?action=new'),
         },
-        {
-            id: 'action-new-client',
-            title: 'Add New Client',
-            subtitle: 'Register a new client',
-            icon: Plus,
-            keywords: ['new', 'create', 'add', 'client'],
-            category: 'action',
-            action: () => navigate('/clients?action=new'),
-        },
+
         {
             id: 'action-clock-in',
             title: 'Clock In / Out',

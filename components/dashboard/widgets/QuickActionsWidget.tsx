@@ -17,7 +17,6 @@ const QuickActionsWidget: React.FC<QuickActionsWidgetProps> = () => {
     const actions = [
         { icon: Plus, label: 'New Task', path: '/tasks', color: 'bg-brand-500 hover:bg-brand-400' },
         { icon: Clock, label: 'Clock In', path: '/attendance', color: 'bg-green-500 hover:bg-green-400' },
-        { icon: Users, label: 'Clients', path: '/clients', color: 'bg-purple-500 hover:bg-purple-400' },
         { icon: FileText, label: 'Resources', path: '/resources', color: 'bg-orange-500 hover:bg-orange-400' },
         { icon: Calendar, label: 'Calendar', path: '/calendar', color: 'bg-cyan-500 hover:bg-cyan-400' },
         { icon: CheckSquare, label: 'Tasks', path: '/tasks', color: 'bg-pink-500 hover:bg-pink-400' },
