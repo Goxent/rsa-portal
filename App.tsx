@@ -11,7 +11,6 @@ import Layout from './components/Layout';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AttendancePage = lazy(() => import('./pages/AttendancePage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
-const ClientsPage = lazy(() => import('./pages/ClientsPage'));
 const LeavePage = lazy(() => import('./pages/LeavePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
@@ -112,7 +111,6 @@ const App: React.FC = () => {
                 <Route path="tasks" element={<LazyPage><TasksPage /></LazyPage>} />
                 <Route path="calendar" element={<LazyPage><CalendarPage /></LazyPage>} />
                 <Route path="resources" element={<LazyPage><ResourcesPage /></LazyPage>} />
-                <Route path="clients" element={<LazyPage><ClientsPage /></LazyPage>} />
                 <Route path="knowledge-base" element={<LazyPage><KnowledgeBasePage /></LazyPage>} />
                 <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />
                 <Route path="staff" element={<LazyPage><StaffPage /></LazyPage>} />
