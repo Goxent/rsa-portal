@@ -163,23 +163,24 @@ const Layout: React.FC = () => {
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Firm Data</p>
             <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
 
-            <>
-              <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Administration</p>
-              <SidebarItem to="/staff" icon={UserCog} label="Staff Directory" />
-              <SidebarItem to="/performance" icon={Trophy} label="Performance Eval" />
+            {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+              <>
+                <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Administration</p>
+                <SidebarItem to="/staff" icon={UserCog} label="Staff Directory" />
+                <SidebarItem to="/performance" icon={Trophy} label="Performance Eval" />
 
-              {user?.role === UserRole.MASTER_ADMIN && (
-                <SidebarItem to="/settings" icon={Settings} label="System Settings" />
-              )}
+                {user?.role === UserRole.MASTER_ADMIN && (
+                  <SidebarItem to="/settings" icon={Settings} label="System Settings" />
+                )}
 
-              <div className="mt-4 mx-2 p-5 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border border-indigo-500/20 rounded-2xl backdrop-blur-sm shadow-inner">
-                <p className="text-xs text-indigo-200 mb-1 font-semibold flex items-center">
-                  <span className="w-2 h-2 bg-indigo-400 rounded-full mr-2 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]"></span>
-                  {user?.role === UserRole.MASTER_ADMIN ? 'Master Console' : 'Admin Console'}
-                </p>
-                <p className="text-[10px] text-gray-400 leading-relaxed">System access granted.</p>
-              </div>
-            </>
+                <div className="mt-4 mx-2 p-5 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border border-indigo-500/20 rounded-2xl backdrop-blur-sm shadow-inner">
+                  <p className="text-xs text-indigo-200 mb-1 font-semibold flex items-center">
+                    <span className="w-2 h-2 bg-indigo-400 rounded-full mr-2 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]"></span>
+                    {user?.role === UserRole.MASTER_ADMIN ? 'Master Console' : 'Admin Console'}
+                  </p>
+                  <p className="text-[10px] text-gray-400 leading-relaxed">System access granted.</p>
+                </div>
+              </>
             )}
           </nav>
 
