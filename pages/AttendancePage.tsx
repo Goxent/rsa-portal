@@ -379,20 +379,37 @@ const AttendancePage: React.FC = () => {
                                 workHours: 0
                             });
                         } else {
-                            // C. Absent
-                            // (Includes cases where leave is PENDING or REJECTED)
-                            fullRecords.push({
-                                id: `absent_${u.uid}_${dateStr}`,
-                                userId: u.uid,
-                                userName: u.displayName,
-                                date: dateStr,
-                                clockIn: '-',
-                                clockOut: '-',
-                                status: 'ABSENT',
-                                notes: '-',
-                                clientName: '-',
-                                workHours: 0
-                            });
+                            // C. Absent or Holiday
+                            // Check for Saturday
+                            const isSaturday = new Date(dateStr).getDay() === 6;
+
+                            if (isSaturday) {
+                                fullRecords.push({
+                                    id: `holiday_${u.uid}_${dateStr}`,
+                                    userId: u.uid,
+                                    userName: u.displayName,
+                                    date: dateStr,
+                                    clockIn: '-',
+                                    clockOut: '-',
+                                    status: 'HOLIDAY',
+                                    notes: 'Weekend (Saturday)',
+                                    clientName: 'HOLIDAY',
+                                    workHours: 0
+                                });
+                            } else {
+                                fullRecords.push({
+                                    id: `absent_${u.uid}_${dateStr}`,
+                                    userId: u.uid,
+                                    userName: u.displayName,
+                                    date: dateStr,
+                                    clockIn: '-',
+                                    clockOut: '-',
+                                    status: 'ABSENT',
+                                    notes: '-',
+                                    clientName: '-',
+                                    workHours: 0
+                                });
+                            }
                         }
                     }
                 }

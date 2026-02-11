@@ -234,6 +234,16 @@ const ClientsPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* Compliance Badges */}
+                            <div className="flex gap-2 flex-wrap">
+                                {client.vatReturn && (
+                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded border border-emerald-500/20 font-bold">VAT Registered</span>
+                                )}
+                                {client.itrReturn && (
+                                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20 font-bold">ITR Filer</span>
+                                )}
+                            </div>
+
                             <div className="mt-4 pt-3 border-t border-white/5">
                                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signing Authority</p>
                                 <div className="flex items-center text-sm text-gray-300">
@@ -417,6 +427,38 @@ const ClientsPage: React.FC = () => {
                                             <span className="text-sm text-gray-300">Inactive</span>
                                         </label>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Compliance Settings */}
+                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Compliance Services</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.vatReturn || false}
+                                            onChange={(e) => setFormData({ ...formData, vatReturn: e.target.checked })}
+                                            className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                        />
+                                        <div>
+                                            <span className="block text-sm font-bold text-gray-200">VAT Returns</span>
+                                            <span className="block text-xs text-gray-500">Auto-reminders on 25th</span>
+                                        </div>
+                                    </label>
+
+                                    <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.itrReturn || false}
+                                            onChange={(e) => setFormData({ ...formData, itrReturn: e.target.checked })}
+                                            className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                        />
+                                        <div>
+                                            <span className="block text-sm font-bold text-gray-200">Income Tax (ITR)</span>
+                                            <span className="block text-xs text-gray-500">Quarterly reminders</span>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
 

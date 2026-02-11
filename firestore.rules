@@ -52,9 +52,9 @@ service cloud.firestore {
       // Users can create tasks
       allow create: if isAuthenticated();
       
-      // Users can update tasks they created or are assigned to, admins can update any
+      // Users can update tasks ONLY if they are assigned to it or are Admin
+      // Removed 'createdBy' permission to enforce strict assignment-based editing
       allow update: if isAuthenticated() && (
-        request.auth.uid == resource.data.createdBy ||
         request.auth.uid in resource.data.assignedTo ||
         isAdmin()
       );
@@ -210,8 +210,8 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // TEMPLATES
-    match /templates/{templateId} {
+    // TEMPLATES (Corrected collection name)
+    match /task_templates/{templateId} {
       // All authenticated users can read templates
       allow read: if isAuthenticated();
       

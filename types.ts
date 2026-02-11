@@ -97,24 +97,35 @@ export interface Client {
   id: string;
   name: string;
   code: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  pan?: string; // Tax ID
-  address?: string;
-  serviceType: 'Audit' | 'Tax' | 'Accounting' | 'Consulting' | 'Other';
-  status: 'Active' | 'Inactive';
-  auditorId?: string; // Linked Staff ID
-  signingAuthority?: string; // NEW: Signing Authority (e.g., R. Sapkota & Associates)
-  fiscalYear?: string;
-  folderLink?: string;
+  pan?: string;       // New from previous refactor
+  phone?: string;     // New from previous refactor
+  email?: string;     // New from previous refactor
+  address?: string;   // New from previous refactor
 
-  // Metadata
+  // Services / Types
+  serviceType: 'Audit' | 'Tax' | 'Consulting' | 'Other';
+  industry: 'Manufacturing' | 'Trading' | 'Service' | 'Hydropower' | 'Bank' | 'Insurance' | 'Other';
+  category: 'A' | 'B' | 'C';
+  status: 'Active' | 'Inactive' | 'Pending';
+
+  // Tax & Compliance
+  vatReturn?: boolean; // New: Needs VAT Return (Every Nepali 25th)
+  itrReturn?: boolean; // New: Needs Income Tax Return
+
+  // Management
+  fiscalYear?: string;
+  signingAuthority?: string; // UID of the signee (Partner/Manager)
+  contactPerson?: string;
+  contactPersonRole?: string;
+
+  // Billing (New)
+  billingAmount?: number;
+  paymentStatus?: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
+
+  // System
+  auditorId?: string;
   createdAt?: string;
   updatedAt?: string;
-
-  // New Fields
-  industryType?: 'Hydropower' | 'Manufacturing' | 'Trading' | 'Service' | 'Bank' | 'Insurance' | 'Other';
 }
 
 export interface LeaveRequest {
@@ -226,6 +237,7 @@ export interface TaskTemplate {
   expectedDays?: number;
   createdAt: string;
   updatedAt?: string;
+  documentLink?: string;
   // Status-based automatic subtasks
   statusSubtasks?: {
     [key in TaskStatus]?: { title: string; minimumRequirement?: string; }[];

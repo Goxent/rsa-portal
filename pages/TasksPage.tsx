@@ -46,114 +46,46 @@ const TasksPage: React.FC = () => {
     const [filterPriority, setFilterPriority] = useState<string>('ALL');
     const [searchTerm, setSearchTerm] = useState('');
 
-    const onDragEnd = async (result: DropResult) => {
-        const { destination, source, draggableId } = result;
+    // New Filters
+    const [filterSignee, setFilterSignee] = useState<string>('ALL');
+    const [filterVat, setFilterVat] = useState<boolean>(false);
+    const [filterItr, setFilterItr] = useState<boolean>(false);
 
-        if (!destination) return;
-        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
-
-        const newStatus = destination.droppableId as TaskStatus;
-        const task = tasks.find(t => t.id === draggableId);
-
-        if (task && task.status !== newStatus) {
-            // Create updated task with new status
-            let updatedTask = { ...task, status: newStatus };
-
-            // Auto-add status-specific subtasks if they don't already exist
-            if (task.subtasks) {
-                const statusSubtasks: SubTask[] = [];
-
-                // Define default status-based subtasks
-                const defaultStatusSubtasks: Record<TaskStatus, string[]> = {
-                    [TaskStatus.NOT_STARTED]: [],
-                    [TaskStatus.IN_PROGRESS]: ['Review requirements', 'Start initial work'],
-                    [TaskStatus.HALTED]: ['Document blocker', 'Identify resolution path'],
-                    [TaskStatus.UNDER_REVIEW]: ['Prepare review documentation', 'Submit for approval'],
-                    [TaskStatus.COMPLETED]: ['Final quality check', 'Archive documentation']
-                };
-
-                const subtasksToAdd = defaultStatusSubtasks[newStatus] || [];
-                const existingTitles = task.subtasks.map(st => st.title.toLowerCase());
-
-                subtasksToAdd.forEach(title => {
-                    if (!existingTitles.includes(title.toLowerCase())) {
-                        statusSubtasks.push({
-                            id: `st_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                            title,
-                            isCompleted: false,
-                            createdBy: 'System',
-                            createdAt: new Date().toISOString()
-                        });
-                    }
-                });
-
-                if (statusSubtasks.length > 0) {
-                    updatedTask = {
-                        ...updatedTask,
-                        subtasks: [...task.subtasks, ...statusSubtasks]
-                    };
-                    toast.success(`Added ${statusSubtasks.length} status-specific subtask(s)`);
-                }
-            }
-
-            try {
-                // Optimistic Update
-                setTasks(prev => prev.map(t => t.id === draggableId ? updatedTask : t));
-                await AuthService.saveTask(updatedTask);
-            } catch (err) {
-                toast.error("Failed to move task");
-                fetchData(); // Rollback
-            }
-        }
-    };
-
-    useEffect(() => {
-        if (user) {
-            fetchData();
-        }
-
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsAssignDropdownOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [user]);
-
-    const fetchData = async () => {
-        if (!user) return;
-        const [u, c, t] = await Promise.all([
-            AuthService.getAllUsers(),
-            AuthService.getAllClients(),
-            AuthService.getAllTasks()
-        ]);
-        setUsersList(u);
-        setClientsList(c);
-        setTasks(t);
-    };
-
-    const getPriorityStyle = (p: TaskPriority) => {
-        switch (p) {
-            case TaskPriority.URGENT: return 'bg-red-500/10 text-red-400 border-red-500/20';
-            case TaskPriority.HIGH: return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
-            case TaskPriority.MEDIUM: return 'bg-brand-500/10 text-brand-400 border-brand-500/20';
-            default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-        }
-    };
-
-    const canEditTask = (task: Task | Partial<Task>) => {
-        if (user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN) return true;
-        if (task.assignedTo && user?.uid && task.assignedTo.includes(user.uid)) return true;
-        return false;
-    };
+    // Get unique signees from clients
+    const signees = React.useMemo(() => {
+        const uniqueSignees = new Set<string>();
+        clientsList.forEach(c => {
+            if (c.signingAuthority) uniqueSignees.add(c.signingAuthority);
+        });
+        return Array.from(uniqueSignees).map(uid => usersList.find(u => u.uid === uid)).filter(Boolean);
+    }, [clientsList, usersList]);
 
     const filteredTasks = tasks.filter(t => {
+        // existing filters
         if (boardMode === 'MY' && user) {
             if (!t.assignedTo.includes(user.uid)) return false;
         }
         if (filterPriority !== 'ALL' && t.priority !== filterPriority) return false;
         if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase()) && !t.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+
+        // New Filters Logic
+        if (filterSignee !== 'ALL' || filterVat || filterItr) {
+            // We need the client object for these filters. 
+            // In a real app, tasks should store client details or we lookup.
+            // Currently tasks store 'clientName' and 'clientIds' (newly added).
+            // Fallback: match by name if ID missing (legacy tasks)
+            const taskClient = clientsList.find(c =>
+                (t.clientIds && t.clientIds.includes(c.id)) ||
+                c.name === t.clientName
+            );
+
+            if (!taskClient) return false; // If filtering by client props but no client found, exclude.
+
+            if (filterSignee !== 'ALL' && taskClient.signingAuthority !== filterSignee) return false;
+            if (filterVat && !taskClient.vatReturn) return false;
+            if (filterItr && !taskClient.itrReturn) return false;
+        }
+
         return true;
     });
 
@@ -208,6 +140,56 @@ const TasksPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
+    // Drag and Drop Logic
+    const onDragEnd = async (result: DropResult) => {
+        const { destination, source, draggableId } = result;
+
+        if (!destination) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+        const newStatus = destination.droppableId as TaskStatus;
+        const task = tasks.find(t => t.id === draggableId);
+
+        if (task && task.status !== newStatus) {
+            let updatedTask = { ...task, status: newStatus };
+            // Optimistic Update
+            setTasks(prev => prev.map(t => t.id === draggableId ? updatedTask : t));
+            await AuthService.saveTask(updatedTask);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchData();
+        }
+    }, [user]);
+
+    const fetchData = async () => {
+        if (!user) return;
+        const [u, c, t] = await Promise.all([
+            AuthService.getAllUsers(),
+            AuthService.getAllClients(),
+            AuthService.getAllTasks()
+        ]);
+        setUsersList(u);
+        setClientsList(c);
+        setTasks(t);
+    };
+
+    const getPriorityStyle = (p: TaskPriority) => {
+        switch (p) {
+            case TaskPriority.URGENT: return 'bg-red-500/10 text-red-400 border-red-500/20';
+            case TaskPriority.HIGH: return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+            case TaskPriority.MEDIUM: return 'bg-brand-500/10 text-brand-400 border-brand-500/20';
+            default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+        }
+    };
+
+    const canEditTask = (task: Task | Partial<Task>) => {
+        if (user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN) return true;
+        if (task.assignedTo && user?.uid && task.assignedTo.includes(user.uid)) return true;
+        return false;
+    };
     const handleOpenEdit = (task: Task) => {
         setIsEditMode(true);
         setFormError('');
@@ -536,7 +518,35 @@ const TasksPage: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 overflow-x-auto pb-2 custom-scrollbar">
+                    {/* Signee Filter */}
+                    <div className="relative group">
+                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300">
+                            <span>Signee:</span>
+                            <select
+                                className="bg-transparent border-none outline-none text-brand-300 font-bold w-24"
+                                value={filterSignee}
+                                onChange={(e) => setFilterSignee(e.target.value)}
+                            >
+                                <option value="ALL">All</option>
+                                {signees.map(s => <option key={s?.uid} value={s?.uid}>{s?.displayName}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    {/* VAT/ITR Toggles */}
+                    <button
+                        onClick={() => setFilterVat(!filterVat)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filterVat ? 'bg-brand-600 text-white border-brand-500 shadow-lg' : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'}`}
+                    >
+                        VAT Clients
+                    </button>
+                    <button
+                        onClick={() => setFilterItr(!filterItr)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filterItr ? 'bg-brand-600 text-white border-brand-500 shadow-lg' : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'}`}
+                    >
+                        ITR Clients
+                    </button>
+
                     <div className="relative">
                         <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
                         <input className="pl-9 pr-4 py-2 glass-input text-sm" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />

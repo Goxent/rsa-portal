@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -32,6 +32,7 @@ import { useTheme } from '../context/ThemeContext';
 import { UserRole, AppNotification } from '../types';
 import { AuthService } from '../services/firebase';
 import CommandPalette from './CommandPalette';
+import { useAutoLogout } from '../hooks/useAutoLogout';
 
 const SidebarItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => {
   return (
@@ -54,54 +55,47 @@ const SidebarItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: 
   );
 };
 
-const Layout: React.FC = () => {
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
   const location = useLocation();
+
+  // Auto Logout Hook
+  useAutoLogout();
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Notification State
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    if (!user) return;
+  // Late Warning State
+  const [showLateWarning, setShowLateWarning] = useState(false);
 
-    // Subscribe to real-time notifications
-    const unsubscribe = AuthService.subscribeToNotifications(user.uid, (notifs: AppNotification[]) => {
-      setNotifications(notifs);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // Load late count separately as a persistent warning
   useEffect(() => {
     if (user) {
-      checkLateStatus();
+      const fetchLateStatus = async () => {
+        try {
+          const count = await AuthService.getLateCountLast30Days(user.uid);
+          if (count > 5) {
+            setShowLateWarning(true);
+          }
+        } catch (error) {
+          console.error("Failed to check late status", error);
+        }
+      };
+
+      fetchLateStatus();
+
+      const unsubscribe = AuthService.subscribeToNotifications(user.uid, (data) => {
+        setNotifications(data);
+        setUnreadCount(data.filter(n => !n.read).length);
+      });
+      return () => unsubscribe();
     }
   }, [user]);
-
-  const checkLateStatus = async () => {
-    if (!user) return;
-    const lateCount = await AuthService.getLateCountLast30Days(user.uid);
-    if (lateCount >= 5) {
-      // Manually add a local warning if not already present from backend
-      setNotifications(prev => {
-        if (prev.some(n => n.id === 'late_warn')) return prev;
-        return [{
-          id: 'late_warn',
-          userId: user.uid,
-          title: 'Attendance Warning',
-          message: `You have been late ${lateCount} times in the last 30 days.`,
-          type: 'WARNING',
-          category: 'SYSTEM',
-          read: false,
-          createdAt: new Date().toISOString()
-        }, ...prev];
-      });
-    }
-  };
 
   const getTitle = () => {
     switch (location.pathname.split('/')[1]) {
@@ -246,6 +240,21 @@ const Layout: React.FC = () => {
                 {showNotifications && (
                   <div className="absolute right-0 mt-3 w-80 glass-panel rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50 animate-in slide-in-from-top-2">
                     <div className="px-4 py-3 border-b border-white/10 bg-white/5">
+                      {/* Late Warning Banner */}
+                      {showLateWarning && (
+                        <div className="mb-6 bg-red-500/10 border border-red-500/40 p-3 rounded-xl flex items-center justify-between animate-in slide-in-from-top-2">
+                          <div className="flex items-center space-x-3">
+                            <AlertCircle className="text-red-500 shrink-0" size={20} />
+                            <div>
+                              <h3 className="font-bold text-red-400 text-sm">Attendance Warning</h3>
+                              <p className="text-xs text-red-200">
+                                You have exceeded 5 late arrivals this month.
+                              </p>
+                            </div>
+                          </div>
+                          <button onClick={() => setShowLateWarning(false)} className="text-red-400 hover:text-red-300"><X size={16} /></button>
+                        </div>
+                      )}
                       <h3 className="text-sm font-bold text-white">Notifications</h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">

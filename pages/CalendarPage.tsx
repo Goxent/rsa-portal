@@ -7,8 +7,9 @@ import { ComplianceEvent } from '../types/advanced';
 import { useAuth } from '../context/AuthContext';
 import EventModal from '../components/EventModal';
 import { generateRecurringInstances, canEditEvent, canDeleteEvent, getVisibilityBadge, formatEventTime } from '../utils/eventUtils';
-import { toBS } from '../utils/dateUtils';
+import { toBS, toAD } from '../utils/dateUtils';
 import { ComplianceService } from '../services/advanced';
+import NepaliDate from 'nepali-date-converter';
 
 // Helpers
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -61,6 +62,43 @@ const CalendarPage: React.FC = () => {
             // Load compliance events
             ComplianceService.getEvents().then(setComplianceEvents);
             AuthService.getAllUsers().then(setAllUsers);
+
+            // Fetch Clients for VAT/ITR Auto-Events
+            AuthService.getAllClients().then(clients => {
+                const autoEvents: ComplianceEvent[] = [];
+                // 1. VAT Returns (25th of every Nepali Month)
+                // We need to find the AD date for the 25th of the CURRENT Nepali month(s) that overlap with the current grid view
+
+                // Simple approach: Get current Nepali Year/Month
+                const npNow = new NepaliDate(new Date());
+                const currentNpYear = npNow.getYear();
+                const currentNpMonth = npNow.getMonth(); // 0-11
+
+                // Generate for current month and next month to be safe
+                for (let i = 0; i < 2; i++) {
+                    const targetMonth = currentNpMonth + i;
+                    // Handle year rollover if needed (basic implementation)
+                    const npDate = new NepaliDate(currentNpYear, targetMonth, 25);
+                    const adDate = npDate.toJsDate();
+                    const adDateStr = adDate.toISOString().split('T')[0];
+
+                    // Find clients with VAT Return enabled
+                    const vatClients = clients.filter(c => c.vatReturn);
+                    if (vatClients.length > 0) {
+                        autoEvents.push({
+                            id: `vat_${adDateStr}`,
+                            title: `VAT Return Deadline (${vatClients.length} Clients)`,
+                            dueDate: adDateStr,
+                            priority: 'CRITICAL',
+                            status: 'PENDING',
+                            assignedTo: [], // Auto-assigned
+                            description: `VAT Return for: ${vatClients.map(c => c.code).join(', ')}`
+                        });
+                    }
+                }
+
+                setComplianceEvents(prev => [...prev, ...autoEvents]);
+            });
         }
     }, [user, year, month]);
 
@@ -72,9 +110,19 @@ const CalendarPage: React.FC = () => {
     const getItemsForDay = (day: number) => {
         const taskItems = tasks.filter(task => {
             const taskDate = new Date(task.dueDate);
-            return taskDate.getDate() === day &&
+            const isSameDay = taskDate.getDate() === day &&
                 taskDate.getMonth() === month &&
                 taskDate.getFullYear() === year;
+
+            if (!isSameDay) return false;
+
+            // Filter for non-admins
+            if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN && user.role !== UserRole.MANAGER) {
+                if (!task.assignedTo || !task.assignedTo.includes(user.uid)) {
+                    return false;
+                }
+            }
+            return true;
         });
 
         let eventItems = events.filter(ev => {
@@ -245,8 +293,8 @@ const CalendarPage: React.FC = () => {
                             <div className="space-y-1 mt-1 overflow-hidden">
                                 {dayCompliance.map((comp, i) => (
                                     <div key={`comp-${i}`} className={`px-1.5 py-1 rounded text-[10px] truncate border-l-2 ${comp.priority === 'CRITICAL' ? 'bg-red-500/20 text-red-200 border-red-500' :
-                                            comp.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-200 border-orange-500' :
-                                                'bg-amber-500/20 text-amber-200 border-amber-500'
+                                        comp.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-200 border-orange-500' :
+                                            'bg-amber-500/20 text-amber-200 border-amber-500'
                                         }`} title={comp.title}>
                                         🔔 {comp.title}
                                     </div>

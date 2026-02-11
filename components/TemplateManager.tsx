@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Save, X, List, CheckCircle2, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
-import { TaskTemplate, TaskPriority } from '../types';
+import { TaskTemplate, TaskPriority, UserRole } from '../types';
 import { TemplateService } from '../services/templates';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+
     const [templates, setTemplates] = useState<TaskTemplate[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -13,7 +17,8 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         description: '',
         priority: TaskPriority.MEDIUM,
         category: 'Audit',
-        subtasks: []
+        subtasks: [],
+        documentLink: ''
     });
     const [newSubtask, setNewSubtask] = useState('');
 
@@ -35,6 +40,10 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isAdmin) {
+            toast.error("Only Admins can manage templates");
+            return;
+        }
         try {
             if (currentTemplate.id) {
                 await TemplateService.updateTemplate(currentTemplate.id, currentTemplate);
@@ -51,6 +60,10 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const handleDelete = async (id: string) => {
+        if (!isAdmin) {
+            toast.error("Only Admins can delete templates");
+            return;
+        }
         if (!window.confirm("Delete this template?")) return;
         try {
             await TemplateService.deleteTemplate(id);
@@ -100,15 +113,17 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                     {/* Left: Template List */}
                     <div className="w-full md:w-1/3 border-r border-white/5 overflow-y-auto custom-scrollbar p-4 bg-black/10">
-                        <button
-                            onClick={() => {
-                                setIsEditing(true);
-                                setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'Audit', subtasks: [], subtaskDetails: [], autoApplyRules: {} });
-                            }}
-                            className="w-full mb-4 py-3 border-2 border-dashed border-brand-500/30 rounded-xl text-brand-400 hover:border-brand-500/60 hover:bg-brand-500/5 transition-all flex items-center justify-center font-bold text-sm"
-                        >
-                            <Plus size={18} className="mr-2" /> New Template
-                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={() => {
+                                    setIsEditing(true);
+                                    setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'Audit', subtasks: [], subtaskDetails: [], autoApplyRules: {}, documentLink: '' });
+                                }}
+                                className="w-full mb-4 py-3 border-2 border-dashed border-brand-500/30 rounded-xl text-brand-400 hover:border-brand-500/60 hover:bg-brand-500/5 transition-all flex items-center justify-center font-bold text-sm"
+                            >
+                                <Plus size={18} className="mr-2" /> New Template
+                            </button>
+                        )}
 
                         {loading ? (
                             <div className="flex flex-col items-center justify-center h-40">
@@ -125,9 +140,11 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     >
                                         <div className="flex justify-between items-start">
                                             <span className="font-bold text-sm block truncate">{t.name}</span>
-                                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }} className="text-gray-500 hover:text-red-400"><Trash2 size={14} /></button>
-                                            </div>
+                                            {isAdmin && (
+                                                <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }} className="text-gray-500 hover:text-red-400"><Trash2 size={14} /></button>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex items-center mt-2 space-x-2">
                                             <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-400 border border-brand-500/20">{t.category}</span>
@@ -152,6 +169,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             value={currentTemplate.name}
                                             onChange={e => setCurrentTemplate({ ...currentTemplate, name: e.target.value })}
                                             placeholder="e.g. Annual Audit Baseline"
+                                            disabled={!isAdmin}
                                         />
                                     </div>
                                     <div className="col-span-2">
@@ -162,11 +180,22 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             value={currentTemplate.description}
                                             onChange={e => setCurrentTemplate({ ...currentTemplate, description: e.target.value })}
                                             placeholder="Overview of what this template covers..."
+                                            disabled={!isAdmin}
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Document Link (GDrive/PDF)</label>
+                                        <input
+                                            className="w-full glass-input"
+                                            value={currentTemplate.documentLink || ''}
+                                            onChange={e => setCurrentTemplate({ ...currentTemplate, documentLink: e.target.value })}
+                                            placeholder="https://drive.google.com/..."
+                                            disabled={!isAdmin}
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Category</label>
-                                        <select className="w-full glass-input" value={currentTemplate.category} onChange={e => setCurrentTemplate({ ...currentTemplate, category: e.target.value })}>
+                                        <select className="w-full glass-input" value={currentTemplate.category} onChange={e => setCurrentTemplate({ ...currentTemplate, category: e.target.value })} disabled={!isAdmin}>
                                             <option value="Audit">Audit</option>
                                             <option value="Tax">Tax</option>
                                             <option value="Compliance">Compliance</option>
@@ -175,7 +204,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Default Priority</label>
-                                        <select className="w-full glass-input" value={currentTemplate.priority} onChange={e => setCurrentTemplate({ ...currentTemplate, priority: e.target.value as TaskPriority })}>
+                                        <select className="w-full glass-input" value={currentTemplate.priority} onChange={e => setCurrentTemplate({ ...currentTemplate, priority: e.target.value as TaskPriority })} disabled={!isAdmin}>
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
@@ -184,7 +213,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 <div>
                                     <label className="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider flex items-center">
                                         Subtasks & Steps
-                                        <span className="ml-2 px-2 py-0.5 rounded-full bg-navy-800 text-gray-400 text-[10px]">{currentTemplate.subtasks?.length || 0} TOTAL</span>
+                                        <span className="ml-2 px-2 py-0.5 rounded-full bg-navy-800 text-gray-400 text-[10px]">{currentTemplate.subtaskDetails?.length || 0} TOTAL</span>
                                     </label>
                                     <div className="space-y-2 mb-4">
                                         {(currentTemplate.subtaskDetails || currentTemplate.subtasks?.map(t => ({ title: t, minimumRequirement: undefined })) || []).map((s, idx) => (
@@ -194,7 +223,9 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         {idx + 1}
                                                     </div>
                                                     <span className="flex-1 text-sm">{s.title}</span>
-                                                    <button type="button" onClick={() => removeSubtask(idx)} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1"><X size={14} /></button>
+                                                    {isAdmin && (
+                                                        <button type="button" onClick={() => removeSubtask(idx)} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1"><X size={14} /></button>
+                                                    )}
                                                 </div>
                                                 {s.minimumRequirement && (
                                                     <div className="ml-10 text-[10px] text-gray-500 italic flex items-center mt-1">
@@ -205,39 +236,42 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex space-x-2">
-                                            <input
-                                                className="flex-1 glass-input py-2 text-sm"
-                                                value={newSubtask}
-                                                onChange={e => setNewSubtask(e.target.value)}
-                                                placeholder="Add a step (e.g. Verify Fixed Assets)"
-                                                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
-                                            />
-                                            <input
-                                                className="w-1/3 glass-input py-2 text-sm"
-                                                value={newSubtaskRequirement}
-                                                onChange={e => setNewSubtaskRequirement(e.target.value)}
-                                                placeholder="Min Req (Optional)"
-                                                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={addSubtask}
-                                                className="px-4 py-2 bg-navy-800 hover:bg-navy-700 text-brand-400 rounded-lg transition-colors border border-brand-500/20"
-                                            >
-                                                Add
-                                            </button>
+                                    {isAdmin && (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex space-x-2">
+                                                <input
+                                                    className="flex-1 glass-input py-2 text-sm"
+                                                    value={newSubtask}
+                                                    onChange={e => setNewSubtask(e.target.value)}
+                                                    placeholder="Add a step (e.g. Verify Fixed Assets)"
+                                                    onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+                                                />
+                                                <input
+                                                    className="w-1/3 glass-input py-2 text-sm"
+                                                    value={newSubtaskRequirement}
+                                                    onChange={e => setNewSubtaskRequirement(e.target.value)}
+                                                    placeholder="Min Req (Optional)"
+                                                    onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={addSubtask}
+                                                    className="px-4 py-2 bg-navy-800 hover:bg-navy-700 text-brand-400 rounded-lg transition-colors border border-brand-500/20"
+                                                >
+                                                    Add
+                                                </button>
+                                            </div>
                                         </div>
+                                    )}
+                                </div>
+                                {isAdmin && (
+                                    <div className="pt-6 border-t border-white/5 flex justify-end space-x-3">
+                                        <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                                        <button type="submit" className="btn-primary flex items-center">
+                                            <Save size={18} className="mr-2" /> Save Template
+                                        </button>
                                     </div>
-                                </div>
-
-                                <div className="pt-6 border-t border-white/5 flex justify-end space-x-3">
-                                    <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
-                                    <button type="submit" className="btn-primary flex items-center">
-                                        <Save size={18} className="mr-2" /> Save Template
-                                    </button>
-                                </div>
+                                )}
                             </form>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-50">
