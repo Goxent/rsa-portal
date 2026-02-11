@@ -30,7 +30,8 @@ const ClientsPage: React.FC = () => {
     const initialFormState: Partial<Client> = {
         name: '',
         code: '',
-        serviceType: 'Audit',
+        serviceType: 'Statutory Audit',
+        industry: 'Others',
         status: 'Active',
         email: '',
         phone: '',
@@ -38,9 +39,7 @@ const ClientsPage: React.FC = () => {
         pan: '',
         contactPerson: '',
         auditorId: '',
-        signingAuthority: 'R. Sapkota & Associates', // Default
-        fiscalYear: '2080/81',
-        folderLink: ''
+        signingAuthority: 'R. Sapkota & Associates' // Default
     };
     const [formData, setFormData] = useState<Partial<Client>>(initialFormState);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -179,10 +178,12 @@ const ClientsPage: React.FC = () => {
                         onChange={(e) => setFilterService(e.target.value)}
                     >
                         <option value="ALL">All Services</option>
-                        <option value="Audit">Audit</option>
-                        <option value="Tax">Tax</option>
-                        <option value="Accounting">Accounting</option>
-                        <option value="Consulting">Consulting</option>
+                        <option value="Statutory Audit">Statutory Audit</option>
+                        <option value="Tax Filing">Tax Filing</option>
+                        <option value="Compliance Audit">Compliance Audit</option>
+                        <option value="Internal Audit">Internal Audit</option>
+                        <option value="Advisory Services">Advisory Services</option>
+                        <option value="Bookkeeping">Bookkeeping</option>
                     </select>
                 </div>
             </div>
@@ -227,9 +228,9 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">Fiscal Year</p>
+                                    <p className="text-xs text-gray-500 uppercase font-semibold">Client Type</p>
                                     <div className="flex items-center text-sm text-gray-300">
-                                        <Calendar size={14} className="mr-2 text-orange-400" /> {client.fiscalYear || 'N/A'}
+                                        <Building2 size={14} className="mr-2 text-orange-400" /> {client.industry || 'N/A'}
                                     </div>
                                 </div>
                             </div>
@@ -321,159 +322,182 @@ const ClientsPage: React.FC = () => {
                                         <input required type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm font-mono"
                                             value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="e.g. ACME-01" />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Service Type</label>
-                                        <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}>
-                                            <option value="Audit">Audit</option>
-                                            <option value="Tax">Tax</option>
-                                            <option value="Accounting">Accounting</option>
-                                            <option value="Consulting">Consulting</option>
-                                        </select>
-                                    </div>
-                                    <div className="col-span-2 md:col-span-1">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Fiscal Year</label>
-                                        <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.fiscalYear} onChange={e => setFormData({ ...formData, fiscalYear: e.target.value })} />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            <select
-                                                className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') ? formData.signingAuthority : 'Other'}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    if (val === 'Other') {
-                                                        setFormData({ ...formData, signingAuthority: '' });
-                                                    } else {
-                                                        setFormData({ ...formData, signingAuthority: val });
-                                                    }
-                                                }}
-                                            >
-                                                <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
-                                                <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
-                                                <option value="TN Acharya & Co.">TN Acharya & Co.</option>
-                                                <option value="NP Sharma & Co.">NP Sharma & Co.</option>
-                                                <option value="Other">Other (Manual Entry)</option>
-                                            </select>
-                                            {(!['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') || formData.signingAuthority === '') && (
-                                                <input
-                                                    type="text"
-                                                    placeholder="Enter Signing Authority Name"
-                                                    className="w-full glass-input rounded-lg px-4 py-2.5 text-sm animate-in fade-in slide-in-from-left-4"
-                                                    value={formData.signingAuthority}
-                                                    onChange={e => setFormData({ ...formData, signingAuthority: e.target.value })}
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Contact & Tax Info */}
-                            <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">PAN Number</label>
-                                        <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.pan} onChange={e => setFormData({ ...formData, pan: e.target.value })} placeholder="9-digit PAN" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Contact Person</label>
-                                        <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
-                                        <input type="tel" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
-                                        <input type="email" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Office Address</label>
-                                        <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Assignment */}
-                            <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Assignment</h3>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Auditor</label>
-                                    <StaffSelect
-                                        users={staffList}
-                                        value={formData.auditorId}
-                                        onChange={(val) => setFormData({ ...formData, auditorId: val as string })}
-                                        placeholder="Select Lead Auditor..."
-                                    />
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Assignment Type</label>
+                                    <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                        value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}>
+                                        <option value="Statutory Audit">Statutory Audit</option>
+                                        <option value="Tax Filing">Tax Filing</option>
+                                        <option value="Compliance Audit">Compliance Audit</option>
+                                        <option value="Internal Audit">Internal Audit</option>
+                                        <option value="Advisory Services">Advisory Services</option>
+                                        <option value="Bookkeeping">Bookkeeping</option>
+                                        <option value="VAT Filing">VAT Filing</option>
+                                        <option value="ITR Filing">ITR Filing</option>
+                                        <option value="Other">Other</option>
+                                    </select>
                                 </div>
-                                <div className="mt-4">
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="status" checked={formData.status === 'Active'} onChange={() => setFormData({ ...formData, status: 'Active' })} className="accent-blue-500" />
-                                            <span className="text-sm text-gray-300">Active</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="status" checked={formData.status === 'Inactive'} onChange={() => setFormData({ ...formData, status: 'Inactive' })} className="accent-red-500" />
-                                            <span className="text-sm text-gray-300">Inactive</span>
-                                        </label>
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Client Type</label>
+                                    <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                        value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value as any })}>
+                                        <option value="Airlines">Airlines</option>
+                                        <option value="Consulting">Consulting</option>
+                                        <option value="Co-operatives">Co-operatives</option>
+                                        <option value="Courier">Courier</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Hotel & Restaurant">Hotel & Restaurant</option>
+                                        <option value="Hydropower">Hydropower</option>
+                                        <option value="Investment">Investment</option>
+                                        <option value="IT Consulting">IT Consulting</option>
+                                        <option value="Joint Venture">Joint Venture</option>
+                                        <option value="Manufacturing">Manufacturing</option>
+                                        <option value="NGO/INGO">NGO/INGO</option>
+                                        <option value="NPO">NPO</option>
+                                        <option value="Securities Broker">Securities Broker</option>
+                                        <option value="Trading">Trading</option>
+                                        <option value="Others">Others</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <select
+                                            className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                            value={['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') ? formData.signingAuthority : 'Other'}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === 'Other') {
+                                                    setFormData({ ...formData, signingAuthority: '' });
+                                                } else {
+                                                    setFormData({ ...formData, signingAuthority: val });
+                                                }
+                                            }}
+                                        >
+                                            <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
+                                            <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
+                                            <option value="TN Acharya & Co.">TN Acharya & Co.</option>
+                                            <option value="NP Sharma & Co.">NP Sharma & Co.</option>
+                                            <option value="Other">Other (Manual Entry)</option>
+                                        </select>
+                                        {(!['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') || formData.signingAuthority === '') && (
+                                            <input
+                                                type="text"
+                                                placeholder="Enter Signing Authority Name"
+                                                className="w-full glass-input rounded-lg px-4 py-2.5 text-sm animate-in fade-in slide-in-from-left-4"
+                                                value={formData.signingAuthority}
+                                                onChange={e => setFormData({ ...formData, signingAuthority: e.target.value })}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Compliance Settings */}
-                            <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Compliance Services</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.vatReturn || false}
-                                            onChange={(e) => setFormData({ ...formData, vatReturn: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
-                                        />
-                                        <div>
-                                            <span className="block text-sm font-bold text-gray-200">VAT Returns</span>
-                                            <span className="block text-xs text-gray-500">Auto-reminders on 25th</span>
-                                        </div>
-                                    </label>
-
-                                    <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.itrReturn || false}
-                                            onChange={(e) => setFormData({ ...formData, itrReturn: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
-                                        />
-                                        <div>
-                                            <span className="block text-sm font-bold text-gray-200">Income Tax (ITR)</span>
-                                            <span className="block text-xs text-gray-500">Quarterly reminders</span>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>
-                                <button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center">
-                                    {isSaving ? <span className="animate-spin mr-2">⏳</span> : <Save size={18} className="mr-2" />}
-                                    {editingId ? 'Update Client' : 'Create Client'}
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                </div>
+
+                    {/* Contact & Tax Info */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">PAN Number</label>
+                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.pan} onChange={e => setFormData({ ...formData, pan: e.target.value })} placeholder="9-digit PAN" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Contact Person</label>
+                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
+                                <input type="tel" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+                                <input type="email" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Office Address</label>
+                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Assignment */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Assignment</h3>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Auditor</label>
+                            <StaffSelect
+                                users={staffList}
+                                value={formData.auditorId}
+                                onChange={(val) => setFormData({ ...formData, auditorId: val as string })}
+                                placeholder="Select Lead Auditor..."
+                            />
+                        </div>
+                        <div className="mt-4">
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="status" checked={formData.status === 'Active'} onChange={() => setFormData({ ...formData, status: 'Active' })} className="accent-blue-500" />
+                                    <span className="text-sm text-gray-300">Active</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="status" checked={formData.status === 'Inactive'} onChange={() => setFormData({ ...formData, status: 'Inactive' })} className="accent-red-500" />
+                                    <span className="text-sm text-gray-300">Inactive</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Compliance Settings */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Compliance Services</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.vatReturn || false}
+                                    onChange={(e) => setFormData({ ...formData, vatReturn: e.target.checked })}
+                                    className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                />
+                                <div>
+                                    <span className="block text-sm font-bold text-gray-200">VAT Returns</span>
+                                    <span className="block text-xs text-gray-500">Auto-reminders on 25th</span>
+                                </div>
+                            </label>
+
+                            <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.itrReturn || false}
+                                    onChange={(e) => setFormData({ ...formData, itrReturn: e.target.checked })}
+                                    className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                />
+                                <div>
+                                    <span className="block text-sm font-bold text-gray-200">Income Tax (ITR)</span>
+                                    <span className="block text-xs text-gray-500">Enable ITR Filing</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>
+                        <button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center">
+                            {isSaving ? <span className="animate-spin mr-2">⏳</span> : <Save size={18} className="mr-2" />}
+                            {editingId ? 'Update Client' : 'Create Client'}
+                        </button>
+                    </div>
+                </form>
+                    </div>
+                </div >
             )}
-        </div>
+        </div >
     );
 };
 

@@ -103,8 +103,8 @@ export interface Client {
   address?: string;   // New from previous refactor
 
   // Services / Types
-  serviceType: 'Audit' | 'Tax' | 'Consulting' | 'Other';
-  industry: 'Manufacturing' | 'Trading' | 'Service' | 'Hydropower' | 'Bank' | 'Insurance' | 'Other';
+  serviceType: 'Statutory Audit' | 'Tax Filing' | 'Compliance Audit' | 'Internal Audit' | 'Advisory Services' | 'Bookkeeping' | 'VAT Filing' | 'ITR Filing' | 'Other';
+  industry: 'Airlines' | 'Consulting' | 'Co-operatives' | 'Courier' | 'Education' | 'Hotel & Restaurant' | 'Hydropower' | 'Investment' | 'IT Consulting' | 'Joint Venture' | 'Manufacturing' | 'NGO/INGO' | 'NPO' | 'Others' | 'Securities Broker' | 'Trading';
   category: 'A' | 'B' | 'C';
   status: 'Active' | 'Inactive' | 'Pending';
 
@@ -113,7 +113,6 @@ export interface Client {
   itrReturn?: boolean; // New: Needs Income Tax Return
 
   // Management
-  fiscalYear?: string;
   signingAuthority?: string; // UID of the signee (Partner/Manager)
   contactPerson?: string;
   contactPersonRole?: string;
