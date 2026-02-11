@@ -774,20 +774,17 @@ const TasksPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    )
-            }
+                )}
 
-                    {
-                        isTemplateModalOpen && (
-                            <TaskTemplateModal
-                                isOpen={isTemplateModalOpen}
-                                onClose={() => setIsTemplateModalOpen(false)}
-                                onSelectTemplate={handleTemplateSelect}
-                            />
-                        )
-                    }
+                    {isTemplateModalOpen && (
+                        <TaskTemplateModal
+                            isOpen={isTemplateModalOpen}
+                            onClose={() => setIsTemplateModalOpen(false)}
+                            onSelectTemplate={handleTemplateSelect}
+                        />
+                    )}
                     {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
-                </div >
+                </div>
             );
 };
 
