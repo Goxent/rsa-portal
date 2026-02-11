@@ -87,7 +87,7 @@ service cloud.firestore {
       );
       
       // Users can create their own leave requests
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow create: if isAuthenticated();
       
       // Users can update their own pending requests, admins can update any
       allow update: if isAuthenticated() && (

@@ -65,9 +65,9 @@ export const AIService = {
 
   /**
    * Researches a concept related to a specific resource.
-   * Uses Claude's knowledge base (training data up to April 2024).
+   * Uses Claude's knowledge base and provided document content.
    */
-  async researchConcept(resourceTitle: string, userQuery: string): Promise<string> {
+  async researchConcept(resourceTitle: string, userQuery: string, documentContent?: string): Promise<string> {
     if (!anthropic) {
       return "🔑 **AI Research Assistant requires setup:**\n\n" +
         "Please ask your administrator to add the VITE_CLAUDE_API_KEY to the environment variables.\n" +
@@ -75,21 +75,28 @@ export const AIService = {
     }
 
     try {
+      const contentContext = documentContent
+        ? `Document Content:\n${documentContent.substring(0, 20000)}... (truncated)`
+        : "No specific document content provided.";
+
       const message = await anthropic.messages.create({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 2048,
         messages: [{
           role: "user",
           content: `I am reading a document titled "${resourceTitle}". 
-          Help me understand this concept: "${userQuery}".
-          Provide a clear, professional explanation suitable for an auditor or accountant. 
-          Include relevant regulations or standards if applicable (IFRS, GAAP, IAS, ISA, etc.).
+          
+          ${contentContext}
+
+          User Query: "${userQuery}"
+          
+          Provide a clear, professional explanation based on the document content above and your general knowledge.
+          If the answer is in the document, cite it. If not, provide general professional advice.
           
           Format your response in markdown with:
           - Clear headings
           - Bullet points for key concepts
-          - Examples where helpful
-          - References to standards when relevant`
+          - Examples where helpful`
         }]
       });
 

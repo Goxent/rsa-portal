@@ -2,12 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Filter, Search, Calendar, Trash2, X,
-    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Sparkles, Loader2, Wand2, Save
+    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
-import { AIService } from '../services/ai';
 import { TemplateService } from '../services/templates';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
@@ -36,11 +35,6 @@ const TasksPage: React.FC = () => {
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
     const [formError, setFormError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-
-    // AI State
-    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-    const [isAutoAssigning, setIsAutoAssigning] = useState(false);
-    const [assignSuggestion, setAssignSuggestion] = useState<string | null>(null);
 
     // Assignee Dropdown State
     const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
@@ -173,7 +167,6 @@ const TasksPage: React.FC = () => {
         if (!canCreateTask) return;
         setIsEditMode(false);
         setFormError('');
-        setAssignSuggestion(null);
 
         // Get local date string without timezone conversion
         const today = new Date();
@@ -196,7 +189,6 @@ const TasksPage: React.FC = () => {
         setIsTemplateModalOpen(false);
         setIsEditMode(false);
         setFormError('');
-        setAssignSuggestion(null);
         setCurrentTask({
             title: template.name,
             description: template.description || '',
@@ -219,7 +211,6 @@ const TasksPage: React.FC = () => {
     const handleOpenEdit = (task: Task) => {
         setIsEditMode(true);
         setFormError('');
-        setAssignSuggestion(null);
         setCurrentTask({ ...task });
         setIsModalOpen(true);
     };
@@ -287,50 +278,7 @@ const TasksPage: React.FC = () => {
         setNewSubtaskRequirement('');
     };
 
-    const generateAISubtasks = async () => {
-        if (!currentTask.title) return;
-        setIsGeneratingAI(true);
-        try {
-            const aiSuggestions = await AIService.generateSubtasks(currentTask.title, currentTask.description || '');
-            const newSubtasks: SubTask[] = aiSuggestions.map(title => ({
-                id: 'st_ai_' + Math.random().toString(36).substr(2, 9),
-                title,
-                isCompleted: false,
-                createdBy: 'Gemini AI',
-                createdAt: new Date().toISOString()
-            }));
 
-            setCurrentTask(prev => ({
-                ...prev,
-                subtasks: [...(prev.subtasks || []), ...newSubtasks]
-            }));
-        } catch (e) {
-            toast.error("AI Generation failed");
-        } finally {
-            setIsGeneratingAI(false);
-        }
-    };
-
-    const autoAssignStaff = async () => {
-        if (!currentTask.title) return;
-        setIsAutoAssigning(true);
-        try {
-            const result = await AIService.suggestStaffAssignment(
-                currentTask.title,
-                currentTask.priority || TaskPriority.MEDIUM,
-                usersList,
-                tasks
-            );
-            if (result && result.uid) {
-                setCurrentTask(prev => ({ ...prev, assignedTo: [result.uid] }));
-                setAssignSuggestion(result.reasoning);
-            }
-        } catch (e) {
-            toast.error("Auto-assign failed");
-        } finally {
-            setIsAutoAssigning(false);
-        }
-    };
 
     const toggleSubtask = (subId: string) => {
         setCurrentTask(prev => ({
@@ -676,18 +624,7 @@ const TasksPage: React.FC = () => {
                                 <div className="relative" ref={dropdownRef}>
                                     <div className="flex justify-between items-center mb-1">
                                         <label className="block text-sm font-medium text-gray-400">Assign Staff</label>
-                                        {hasEditPermission && (
-                                            <button onClick={autoAssignStaff} disabled={isAutoAssigning} className="text-[10px] text-brand-400 flex items-center hover:text-brand-300">
-                                                {isAutoAssigning ? <Loader2 size={10} className="animate-spin mr-1" /> : <Wand2 size={10} className="mr-1" />}
-                                                Auto-Assign
-                                            </button>
-                                        )}
                                     </div>
-                                    {assignSuggestion && (
-                                        <div className="text-[10px] bg-brand-500/10 p-2 rounded mb-2 border border-brand-500/20 text-brand-300">
-                                            {assignSuggestion}
-                                        </div>
-                                    )}
                                     <StaffSelect
                                         users={usersList}
                                         value={currentTask.assignedTo || []}
@@ -706,12 +643,6 @@ const TasksPage: React.FC = () => {
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
                                         <label className="text-sm font-bold text-gray-300">Subtasks</label>
-                                        {hasEditPermission && (
-                                            <button onClick={generateAISubtasks} disabled={isGeneratingAI} className="text-[10px] bg-brand-600/20 text-brand-300 px-2 py-1 rounded-full border border-brand-500/20 flex items-center">
-                                                {isGeneratingAI ? <Loader2 size={10} className="animate-spin mr-1" /> : <Sparkles size={10} className="mr-1" />}
-                                                AI Steps
-                                            </button>
-                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         {currentTask.subtasks?.map(st => (

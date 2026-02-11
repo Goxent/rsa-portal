@@ -104,8 +104,9 @@ const ResourcesPage: React.FC = () => {
     const handleAskAI = async () => {
         if (!aiQuery.trim() || !previewResource) return;
         setIsResearching(true);
-        const contentContext = previewResource.content || previewResource.title;
-        const response = await AIService.researchConcept(contentContext, aiQuery);
+        // Pass content OR link as context
+        const contentContext = previewResource.content || `Link to document: ${previewResource.link}`;
+        const response = await AIService.researchConcept(previewResource.title, aiQuery, contentContext);
         setAiResponse(response);
         setIsResearching(false);
     };
@@ -337,7 +338,35 @@ const ResourcesPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Category Tag</label>
-                                    <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newResource.category} onChange={e => setNewResource({ ...newResource, category: e.target.value })} placeholder="e.g. Audit, Tax..." />
+                                    <div className="relative">
+                                        <div className="flex gap-2">
+                                            <select
+                                                className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                                value={newResource.category}
+                                                onChange={e => {
+                                                    if (e.target.value === 'NEW') {
+                                                        setNewResource({ ...newResource, category: '' });
+                                                    } else {
+                                                        setNewResource({ ...newResource, category: e.target.value });
+                                                    }
+                                                }}
+                                            >
+                                                {Array.from(new Set(resources.map(r => r.category).filter(Boolean))).map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                                <option value="General">General</option>
+                                                <option value="NEW">+ Add New Category</option>
+                                            </select>
+                                        </div>
+                                        {(!newResource.category || !Array.from(new Set(resources.map(r => r.category))).includes(newResource.category)) && (
+                                            <input
+                                                className="w-full glass-input rounded-lg px-3 py-2 text-sm mt-2 animate-in fade-in slide-in-from-top-1"
+                                                value={newResource.category}
+                                                onChange={e => setNewResource({ ...newResource, category: e.target.value })}
+                                                placeholder="Enter new category name..."
+                                            />
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -443,7 +472,7 @@ const ResourcesPage: React.FC = () => {
                                     )
                                 ) : (
                                     <iframe
-                                        src={previewResource.link}
+                                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewResource.link || '')}&embedded=true`}
                                         className="w-full h-full border-none"
                                         title="Resource Preview"
                                     />

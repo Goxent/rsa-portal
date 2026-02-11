@@ -94,7 +94,7 @@ const LoginPage: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-fade-in-up">
         <div className="flex justify-center mb-6">
           <div className="p-4 bg-gradient-to-br from-brand-600 to-accent-cyan rounded-2xl shadow-2xl shadow-brand-500/20">
-            <Briefcase size={40} className="text-white" />
+            <img src="/rsa-logo.png" alt="RSA Logo" className="w-10 h-10 object-contain" />
           </div>
         </div>
         <h2 className="text-center text-4xl font-extrabold text-white font-heading tracking-tight mb-2">
@@ -165,7 +165,7 @@ const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
-                  className="glass-input block w-full pl-10 pr-3 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="glass-input block w-full pl-12 pr-3 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="name@company.com"
                 />
               </div>
@@ -199,7 +199,7 @@ const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  className="glass-input block w-full pl-10 pr-10 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="glass-input block w-full pl-12 pr-10 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="••••••••"
                 />
                 <button

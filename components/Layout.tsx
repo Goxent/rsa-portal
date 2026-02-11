@@ -136,7 +136,7 @@ const Layout: React.FC = () => {
           <div className="p-6 border-b border-white/5">
             <div className="flex items-center space-x-3">
               <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-900/40">
-                <Briefcase className="text-white" size={24} />
+                <img src="/rsa-logo.png" alt="RSA Logo" className="w-6 h-6 object-contain" />
               </div>
               <div>
                 <h1 className="text-lg font-bold leading-tight text-white tracking-wide">RSA Portal</h1>
@@ -148,7 +148,6 @@ const Layout: React.FC = () => {
           <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Workspace</p>
             <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-            <SidebarItem to="/clients" icon={Building2} label="Clients" />
             <SidebarItem to="/attendance" icon={Clock} label="Attendance" />
             <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
             <SidebarItem to="/tasks" icon={CheckSquare} label="Tasks & Kanban" />
@@ -166,6 +165,7 @@ const Layout: React.FC = () => {
             {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
               <>
                 <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Administration</p>
+                <SidebarItem to="/clients" icon={Building2} label="Clients" />
                 <SidebarItem to="/staff" icon={UserCog} label="Staff Directory" />
                 <SidebarItem to="/performance" icon={Trophy} label="Performance Eval" />
 
