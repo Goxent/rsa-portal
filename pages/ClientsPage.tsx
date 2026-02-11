@@ -392,106 +392,108 @@ const ClientsPage: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                    </div>
 
-                                {/* Contact & Tax Info */}
-                                <div className="space-y-4 pt-4 border-t border-white/5">
-                                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">PAN Number</label>
-                                            <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={formData.pan} onChange={e => setFormData({ ...formData, pan: e.target.value })} placeholder="9-digit PAN" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">Contact Person</label>
-                                            <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
-                                            <input type="tel" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
-                                            <input type="email" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">Office Address</label>
-                                            <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
-                                        </div>
-                                    </div>
+                    {/* Contact & Tax Info */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">PAN Number</label>
+                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.pan} onChange={e => setFormData({ ...formData, pan: e.target.value })} placeholder="9-digit PAN" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Contact Person</label>
+                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
+                                <input type="tel" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+                                <input type="email" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-medium text-gray-400 mb-1">Office Address</label>
+                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                    value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Assignment */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Assignment</h3>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Auditor</label>
+                            <StaffSelect
+                                users={staffList}
+                                value={formData.auditorId}
+                                onChange={(val) => setFormData({ ...formData, auditorId: val as string })}
+                                placeholder="Select Lead Auditor..."
+                            />
+                        </div>
+                        <div className="mt-4">
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="status" checked={formData.status === 'Active'} onChange={() => setFormData({ ...formData, status: 'Active' })} className="accent-blue-500" />
+                                    <span className="text-sm text-gray-300">Active</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="status" checked={formData.status === 'Inactive'} onChange={() => setFormData({ ...formData, status: 'Inactive' })} className="accent-red-500" />
+                                    <span className="text-sm text-gray-300">Inactive</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Compliance Settings */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Compliance Services</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.vatReturn || false}
+                                    onChange={(e) => setFormData({ ...formData, vatReturn: e.target.checked })}
+                                    className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                />
+                                <div>
+                                    <span className="block text-sm font-bold text-gray-200">VAT Returns</span>
+                                    <span className="block text-xs text-gray-500">Auto-reminders on 25th</span>
                                 </div>
+                            </label>
 
-                                {/* Assignment */}
-                                <div className="space-y-4 pt-4 border-t border-white/5">
-                                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Assignment</h3>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Auditor</label>
-                                        <StaffSelect
-                                            users={staffList}
-                                            value={formData.auditorId}
-                                            onChange={(val) => setFormData({ ...formData, auditorId: val as string })}
-                                            placeholder="Select Lead Auditor..."
-                                        />
-                                    </div>
-                                    <div className="mt-4">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                                        <div className="flex gap-4">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input type="radio" name="status" checked={formData.status === 'Active'} onChange={() => setFormData({ ...formData, status: 'Active' })} className="accent-blue-500" />
-                                                <span className="text-sm text-gray-300">Active</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input type="radio" name="status" checked={formData.status === 'Inactive'} onChange={() => setFormData({ ...formData, status: 'Inactive' })} className="accent-red-500" />
-                                                <span className="text-sm text-gray-300">Inactive</span>
-                                            </label>
-                                        </div>
-                                    </div>
+                            <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.itrReturn || false}
+                                    onChange={(e) => setFormData({ ...formData, itrReturn: e.target.checked })}
+                                    className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                />
+                                <div>
+                                    <span className="block text-sm font-bold text-gray-200">Income Tax (ITR)</span>
+                                    <span className="block text-xs text-gray-500">Enable ITR Filing</span>
                                 </div>
+                            </label>
+                        </div>
+                    </div>
 
-                                {/* Compliance Settings */}
-                                <div className="space-y-4 pt-4 border-t border-white/5">
-                                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Compliance Services</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.vatReturn || false}
-                                                onChange={(e) => setFormData({ ...formData, vatReturn: e.target.checked })}
-                                                className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
-                                            />
-                                            <div>
-                                                <span className="block text-sm font-bold text-gray-200">VAT Returns</span>
-                                                <span className="block text-xs text-gray-500">Auto-reminders on 25th</span>
-                                            </div>
-                                        </label>
-
-                                        <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.itrReturn || false}
-                                                onChange={(e) => setFormData({ ...formData, itrReturn: e.target.checked })}
-                                                className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
-                                            />
-                                            <div>
-                                                <span className="block text-sm font-bold text-gray-200">Income Tax (ITR)</span>
-                                                <span className="block text-xs text-gray-500">Enable ITR Filing</span>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
-                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>
-                                    <button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center">
-                                        {isSaving ? <span className="animate-spin mr-2">⏳</span> : <Save size={18} className="mr-2" />}
-                                        {editingId ? 'Update Client' : 'Create Client'}
-                                    </button>
-                                </div>
-                        </form>
+                    <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>
+                        <button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center">
+                            {isSaving ? <span className="animate-spin mr-2">⏳</span> : <Save size={18} className="mr-2" />}
+                            {editingId ? 'Update Client' : 'Create Client'}
+                        </button>
+                    </div>
+                </form>
                     </div>
                 </div >
             )}
