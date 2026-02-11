@@ -694,7 +694,7 @@ const TasksPage: React.FC = () => {
                             </div>
 
                             <div className="px-6 py-4 border-t border-white/10 flex justify-between bg-white/5">
-                                {isEditMode && hasEditPermission && (
+                                {isEditMode && hasEditPermission && (user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
                                     <button onClick={() => currentTask.id && handleDeleteTask(currentTask.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center">
                                         <Trash2 size={16} className="mr-2" /> Delete
                                     </button>

@@ -7,18 +7,23 @@ export const useAutoLogout = () => {
     useEffect(() => {
         const checkAutoLogout = () => {
             const now = new Date();
-            // Check if it's exactly 12:00 AM (00:00) with some tolerance
-            if (now.getHours() === 0 && now.getMinutes() === 0) {
-                // Ensure we only trigger once per day near midnight
-                // In production, you might want to store a flag in localStorage "logged_out_date"
-                const lastLogoutDate = localStorage.getItem('last_auto_logout');
+            // Check if it's between 12:00 AM (00:00) and 12:05 AM (00:05)
+            // This provides a 5-minute window to catch the event
+            if (now.getHours() === 0 && now.getMinutes() <= 5) {
                 const todayStr = now.toLocaleDateString();
+                const lastLogoutDate = localStorage.getItem('last_auto_logout');
 
                 if (lastLogoutDate !== todayStr) {
                     console.log("Auto-logout triggered at midnight");
                     localStorage.setItem('last_auto_logout', todayStr);
-                    logout();
-                    window.location.reload(); // Force full reload to clear state
+
+                    logout().then(() => {
+                        window.location.href = '/login';
+                    }).catch(err => {
+                        console.error("Logout failed", err);
+                        // Force redirect anyway
+                        window.location.href = '/login';
+                    });
                 }
             }
         };
@@ -26,7 +31,7 @@ export const useAutoLogout = () => {
         // Check every minute
         const interval = setInterval(checkAutoLogout, 60000);
 
-        // Also check on mount
+        // Also check immediately on mount
         checkAutoLogout();
 
         return () => clearInterval(interval);

@@ -81,6 +81,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           const count = await AuthService.getLateCountLast30Days(user.uid);
           if (count > 5) {
             setShowLateWarning(true);
+
+            // Check if we already sent a notification today
+            const todayStr = new Date().toLocaleDateString();
+            const lastNotifDate = localStorage.getItem('last_late_warning_date');
+
+            if (lastNotifDate !== todayStr) {
+              await AuthService.createNotification({
+                userId: user.uid,
+                title: 'Attendance Warning',
+                message: `You have been late ${count} times in the last 30 days. Please ensure punctuality.`,
+                type: 'WARNING',
+                category: 'SYSTEM',
+                link: '/attendance'
+              });
+              localStorage.setItem('last_late_warning_date', todayStr);
+            }
+
           }
         } catch (error) {
           console.error("Failed to check late status", error);
@@ -189,7 +206,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </div>
             </div>
             <button
-              onClick={() => logout()}
+              onClick={() => {
+                logout().then(() => {
+                  window.location.href = '/login';
+                });
+              }}
               className="w-full flex items-center justify-center space-x-2 bg-red-500/10 hover:bg-red-500/20 text-red-200 border border-red-500/20 py-2.5 rounded-xl transition-all duration-300 text-sm font-medium hover:shadow-lg hover:shadow-red-900/20"
             >
               <LogOut size={16} />
@@ -312,7 +333,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {user?.role === UserRole.ADMIN && <SidebarItem to="/staff" icon={UserCog} label="Staff Directory" />}
                 {user?.role === UserRole.ADMIN && <SidebarItem to="/performance" icon={Trophy} label="Performance" />}
               </nav>
-              <button onClick={() => logout()} className="mt-auto flex items-center justify-center space-x-2 text-red-300 py-4 border border-red-500/30 rounded-xl bg-red-500/10">
+              <button onClick={() => {
+                logout().then(() => {
+                  window.location.href = '/login';
+                });
+              }} className="mt-auto flex items-center justify-center space-x-2 text-red-300 py-4 border border-red-500/30 rounded-xl bg-red-500/10">
                 <LogOut size={20} /> <span>Sign Out</span>
               </button>
             </div>
