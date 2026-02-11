@@ -321,59 +321,74 @@ const ClientsPage: React.FC = () => {
                                         <label className="block text-xs font-medium text-gray-400 mb-1">Client Code *</label>
                                         <input required type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm font-mono"
                                             value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="e.g. ACME-01" />
-                                        <div className="col-span-2 md:col-span-1">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">Client Type</label>
-                                            <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value as any })}>
-                                                <option value="Airlines">Airlines</option>
-                                                <option value="Consulting">Consulting</option>
-                                                <option value="Co-operatives">Co-operatives</option>
-                                                <option value="Courier">Courier</option>
-                                                <option value="Education">Education</option>
-                                                <option value="Hotel & Restaurant">Hotel & Restaurant</option>
-                                                <option value="Hydropower">Hydropower</option>
-                                                <option value="Investment">Investment</option>
-                                                <option value="IT Consulting">IT Consulting</option>
-                                                <option value="Joint Venture">Joint Venture</option>
-                                                <option value="Manufacturing">Manufacturing</option>
-                                                <option value="NGO/INGO">NGO/INGO</option>
-                                                <option value="NPO">NPO</option>
-                                                <option value="Securities Broker">Securities Broker</option>
-                                                <option value="Trading">Trading</option>
-                                                <option value="Others">Others</option>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Assignment Type</label>
+                                        <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                            value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}>
+                                            <option value="Statutory Audit">Statutory Audit</option>
+                                            <option value="Tax Filing">Tax Filing</option>
+                                            <option value="Compliance Audit">Compliance Audit</option>
+                                            <option value="Internal Audit">Internal Audit</option>
+                                            <option value="Advisory Services">Advisory Services</option>
+                                            <option value="Bookkeeping">Bookkeeping</option>
+                                            <option value="VAT Filing">VAT Filing</option>
+                                            <option value="ITR Filing">ITR Filing</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Client Type</label>
+                                        <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                            value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value as any })}>
+                                            <option value="Airlines">Airlines</option>
+                                            <option value="Consulting">Consulting</option>
+                                            <option value="Co-operatives">Co-operatives</option>
+                                            <option value="Courier">Courier</option>
+                                            <option value="Education">Education</option>
+                                            <option value="Hotel & Restaurant">Hotel & Restaurant</option>
+                                            <option value="Hydropower">Hydropower</option>
+                                            <option value="Investment">Investment</option>
+                                            <option value="IT Consulting">IT Consulting</option>
+                                            <option value="Joint Venture">Joint Venture</option>
+                                            <option value="Manufacturing">Manufacturing</option>
+                                            <option value="NGO/INGO">NGO/INGO</option>
+                                            <option value="NPO">NPO</option>
+                                            <option value="Securities Broker">Securities Broker</option>
+                                            <option value="Trading">Trading</option>
+                                            <option value="Others">Others</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <select
+                                                className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                                value={['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') ? formData.signingAuthority : 'Other'}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'Other') {
+                                                        setFormData({ ...formData, signingAuthority: '' });
+                                                    } else {
+                                                        setFormData({ ...formData, signingAuthority: val });
+                                                    }
+                                                }}
+                                            >
+                                                <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
+                                                <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
+                                                <option value="TN Acharya & Co.">TN Acharya & Co.</option>
+                                                <option value="NP Sharma & Co.">NP Sharma & Co.</option>
+                                                <option value="Other">Other (Manual Entry)</option>
                                             </select>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                <select
-                                                    className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                    value={['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') ? formData.signingAuthority : 'Other'}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        if (val === 'Other') {
-                                                            setFormData({ ...formData, signingAuthority: '' });
-                                                        } else {
-                                                            setFormData({ ...formData, signingAuthority: val });
-                                                        }
-                                                    }}
-                                                >
-                                                    <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
-                                                    <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
-                                                    <option value="TN Acharya & Co.">TN Acharya & Co.</option>
-                                                    <option value="NP Sharma & Co.">NP Sharma & Co.</option>
-                                                    <option value="Other">Other (Manual Entry)</option>
-                                                </select>
-                                                {(!['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') || formData.signingAuthority === '') && (
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Enter Signing Authority Name"
-                                                        className="w-full glass-input rounded-lg px-4 py-2.5 text-sm animate-in fade-in slide-in-from-left-4"
-                                                        value={formData.signingAuthority}
-                                                        onChange={e => setFormData({ ...formData, signingAuthority: e.target.value })}
-                                                    />
-                                                )}
-                                            </div>
+                                            {(!['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') || formData.signingAuthority === '') && (
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter Signing Authority Name"
+                                                    className="w-full glass-input rounded-lg px-4 py-2.5 text-sm animate-in fade-in slide-in-from-left-4"
+                                                    value={formData.signingAuthority}
+                                                    onChange={e => setFormData({ ...formData, signingAuthority: e.target.value })}
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 </div>
