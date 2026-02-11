@@ -4,10 +4,11 @@ import {
     Plus, Filter, Search, Calendar, Trash2, X,
     LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Sparkles, Loader2, Wand2, Save
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask } from '../types';
+import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AIService } from '../services/ai';
+import { TemplateService } from '../services/templates';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
 import StaffSelect from '../components/StaffSelect';
@@ -24,6 +25,7 @@ const TasksPage: React.FC = () => {
     // Data State
     const [usersList, setUsersList] = useState<UserProfile[]>([]);
     const [clientsList, setClientsList] = useState<Client[]>([]);
+    const [templates, setTemplates] = useState<TaskTemplate[]>([]);
 
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -268,17 +270,21 @@ const TasksPage: React.FC = () => {
         }
     };
 
+    const [newSubtaskRequirement, setNewSubtaskRequirement] = useState('');
+
     const addSubtask = () => {
         if (!newSubtaskTitle.trim()) return;
         const sub: SubTask = {
             id: 'st_' + Date.now(),
             title: newSubtaskTitle,
+            minimumRequirement: newSubtaskRequirement.trim() || undefined,
             isCompleted: false,
             createdBy: user?.displayName || 'User',
             createdAt: new Date().toISOString()
         };
         setCurrentTask(prev => ({ ...prev, subtasks: [...(prev.subtasks || []), sub] }));
         setNewSubtaskTitle('');
+        setNewSubtaskRequirement('');
     };
 
     const generateAISubtasks = async () => {
@@ -509,6 +515,49 @@ const TasksPage: React.FC = () => {
         </div>
     );
 
+
+
+    const handleClientChange = (clientId: string) => {
+        const selectedClient = clientsList.find(c => c.id === clientId);
+        if (!selectedClient) return;
+
+        let newTaskState = {
+            ...currentTask,
+            clientIds: [clientId],
+            clientName: selectedClient.name
+        };
+
+        // Auto-Apply Logic
+        if (templates.length > 0) {
+            const matchingTemplate = templates.find(t =>
+                (t.autoApplyRules?.industryType && t.autoApplyRules.industryType === selectedClient.industryType) ||
+                (t.autoApplyRules?.serviceType && t.autoApplyRules.serviceType === selectedClient.serviceType)
+            );
+
+            if (matchingTemplate) {
+                const updatedSubtasks = matchingTemplate.subtaskDetails?.map(detail => ({
+                    id: `st_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    title: detail.title,
+                    minimumRequirement: detail.minimumRequirement,
+                    isCompleted: false,
+                    createdBy: 'System (Auto-Apply)',
+                    createdAt: new Date().toISOString()
+                })) || [];
+
+                newTaskState = {
+                    ...newTaskState,
+                    title: newTaskState.title || matchingTemplate.name,
+                    description: newTaskState.description || matchingTemplate.description,
+                    priority: matchingTemplate.priority,
+                    subtasks: [...(newTaskState.subtasks || []), ...updatedSubtasks]
+                };
+                toast.success(`Auto-applied template: ${matchingTemplate.name}`);
+            }
+        }
+
+        setCurrentTask(newTaskState);
+    };
+
     const hasEditPermission = canEditTask(currentTask);
 
     return (
@@ -583,10 +632,10 @@ const TasksPage: React.FC = () => {
                                     </label>
                                     <ClientSelect
                                         clients={clientsList}
-                                        value={currentTask.clientIds || []}
-                                        onChange={(val) => setCurrentTask({ ...currentTask, clientIds: val as string[] })}
-                                        multi={true}
-                                        placeholder="Select Clients..."
+                                        value={currentTask.clientIds?.[0] || ''}
+                                        onChange={(val) => handleClientChange(val as string)}
+                                        multi={false}
+                                        placeholder="Select Client..."
                                     />
                                 </div>
 
@@ -666,62 +715,80 @@ const TasksPage: React.FC = () => {
                                     </div>
                                     <div className="space-y-2">
                                         {currentTask.subtasks?.map(st => (
-                                            <div key={st.id} className="flex items-center space-x-2 bg-white/5 p-2 rounded-lg">
-                                                <button onClick={() => toggleSubtask(st.id)} className={st.isCompleted ? 'text-emerald-500' : 'text-gray-500'}>
-                                                    {st.isCompleted ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 border border-gray-500 rounded-full" />}
-                                                </button>
-                                                <span className={`text-xs flex-1 ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>{st.title}</span>
-                                                {hasEditPermission && <Trash2 size={14} className="text-gray-600 hover:text-red-400 cursor-pointer" onClick={() => deleteSubtask(st.id)} />}
+                                            <div key={st.id} className="flex flex-col space-y-1 bg-white/5 p-2 rounded-lg">
+                                                <div className="flex items-center space-x-2">
+                                                    <button onClick={() => toggleSubtask(st.id)} className={st.isCompleted ? 'text-emerald-500' : 'text-gray-500'}>
+                                                        {st.isCompleted ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 border border-gray-500 rounded-full" />}
+                                                    </button>
+                                                    <span className={`text-xs flex-1 ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>{st.title}</span>
+                                                    {hasEditPermission && <Trash2 size={14} className="text-gray-600 hover:text-red-400 cursor-pointer" onClick={() => deleteSubtask(st.id)} />}
+                                                </div>
+                                                {st.minimumRequirement && (
+                                                    <div className="ml-6 text-[10px] text-brand-400/80 italic flex items-center">
+                                                        <AlertCircle size={10} className="mr-1" />
+                                                        Req: {st.minimumRequirement}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                     {hasEditPermission && (
-                                        <div className="flex gap-2">
-                                            <input className="flex-1 glass-input text-xs" placeholder="New step..." value={newSubtaskTitle} onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubtask()} />
-                                            <button onClick={addSubtask} className="px-3 bg-white/10 rounded font-bold text-xs">Add</button>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <input className="flex-1 glass-input text-xs" placeholder="New step..." value={newSubtaskTitle}
+                                                    onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
+                                                />
+                                                <input
+                                                    className="w-1/3 glass-input text-xs"
+                                                    placeholder="Min Requirement (Opt)"
+                                                    value={newSubtaskRequirement}
+                                                    onChange={(e) => setNewSubtaskRequirement(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
+                                                />
+                                                <button onClick={addSubtask} className="px-3 bg-white/10 rounded font-bold text-xs">Add</button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="px-6 py-4 border-t border-white/10 flex justify-between bg-white/5">
-                            {isEditMode && hasEditPermission && (
-                                <button onClick={() => currentTask.id && handleDeleteTask(currentTask.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center">
-                                    <Trash2 size={16} className="mr-2" /> Delete
-                                </button>
-                            )}
-                            <div className="flex space-x-3 ml-auto">
-                                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
-                                {hasEditPermission && (
-                                    <button
-                                        onClick={handleSaveTask}
-                                        disabled={isSaving}
-                                        className={`btn-primary flex items-center px-6 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                        {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
-                                        {isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
+                            <div className="px-6 py-4 border-t border-white/10 flex justify-between bg-white/5">
+                                {isEditMode && hasEditPermission && (
+                                    <button onClick={() => currentTask.id && handleDeleteTask(currentTask.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center">
+                                        <Trash2 size={16} className="mr-2" /> Delete
                                     </button>
                                 )}
+                                <div className="flex space-x-3 ml-auto">
+                                    <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                                    {hasEditPermission && (
+                                        <button
+                                            onClick={handleSaveTask}
+                                            disabled={isSaving}
+                                            className={`btn-primary flex items-center px-6 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
+                                            {isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )
+                    )
             }
 
-            {
-                isTemplateModalOpen && (
-                    <TaskTemplateModal
-                        isOpen={isTemplateModalOpen}
-                        onClose={() => setIsTemplateModalOpen(false)}
-                        onSelectTemplate={handleTemplateSelect}
-                    />
-                )
-            }
-            {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
-        </div >
-    );
+                    {
+                        isTemplateModalOpen && (
+                            <TaskTemplateModal
+                                isOpen={isTemplateModalOpen}
+                                onClose={() => setIsTemplateModalOpen(false)}
+                                onSelectTemplate={handleTemplateSelect}
+                            />
+                        )
+                    }
+                    {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
+                </div >
+            );
 };
 
-export default TasksPage;
+            export default TasksPage;

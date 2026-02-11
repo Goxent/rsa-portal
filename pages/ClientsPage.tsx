@@ -38,6 +38,7 @@ const ClientsPage: React.FC = () => {
         pan: '',
         contactPerson: '',
         auditorId: '',
+        signingAuthority: 'R. Sapkota & Associates', // Default
         fiscalYear: '2080/81',
         folderLink: ''
     };
@@ -233,6 +234,14 @@ const ClientsPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            <div className="mt-4 pt-3 border-t border-white/5">
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signing Authority</p>
+                                <div className="flex items-center text-sm text-gray-300">
+                                    <Building2 size={14} className="mr-2 text-indigo-400" />
+                                    {client.signingAuthority || 'Not Specified'}
+                                </div>
+                            </div>
+
                             <div className="pt-4 border-t border-white/5 space-y-3">
                                 <div className="flex items-center text-sm text-gray-400">
                                     <BadgeCheck size={16} className="mr-3 text-blue-500" />
@@ -312,10 +321,42 @@ const ClientsPage: React.FC = () => {
                                             <option value="Consulting">Consulting</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div className="col-span-2 md:col-span-1">
                                         <label className="block text-xs font-medium text-gray-400 mb-1">Fiscal Year</label>
                                         <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.fiscalYear} onChange={e => setFormData({ ...formData, fiscalYear: e.target.value })} />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <select
+                                                className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                                                value={['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') ? formData.signingAuthority : 'Other'}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'Other') {
+                                                        setFormData({ ...formData, signingAuthority: '' });
+                                                    } else {
+                                                        setFormData({ ...formData, signingAuthority: val });
+                                                    }
+                                                }}
+                                            >
+                                                <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
+                                                <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
+                                                <option value="TN Acharya & Co.">TN Acharya & Co.</option>
+                                                <option value="NP Sharma & Co.">NP Sharma & Co.</option>
+                                                <option value="Other">Other (Manual Entry)</option>
+                                            </select>
+                                            {(!['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') || formData.signingAuthority === '') && (
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter Signing Authority Name"
+                                                    className="w-full glass-input rounded-lg px-4 py-2.5 text-sm animate-in fade-in slide-in-from-left-4"
+                                                    value={formData.signingAuthority}
+                                                    onChange={e => setFormData({ ...formData, signingAuthority: e.target.value })}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

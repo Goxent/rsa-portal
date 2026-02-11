@@ -66,6 +66,7 @@ export interface Attachment {
 export interface SubTask {
   id: string;
   title: string;
+  minimumRequirement?: string; // e.g., "Check invoices > 10k"
   isCompleted: boolean;
   createdBy: string; // Name of user who added it
   createdAt: string;
@@ -104,12 +105,16 @@ export interface Client {
   serviceType: 'Audit' | 'Tax' | 'Accounting' | 'Consulting' | 'Other';
   status: 'Active' | 'Inactive';
   auditorId?: string; // Linked Staff ID
+  signingAuthority?: string; // NEW: Signing Authority (e.g., R. Sapkota & Associates)
   fiscalYear?: string;
   folderLink?: string;
 
   // Metadata
   createdAt?: string;
   updatedAt?: string;
+
+  // New Fields
+  industryType?: 'Hydropower' | 'Manufacturing' | 'Trading' | 'Service' | 'Bank' | 'Insurance' | 'Other';
 }
 
 export interface LeaveRequest {
@@ -216,12 +221,18 @@ export interface TaskTemplate {
   description: string;
   priority: TaskPriority;
   category: string;
-  subtasks: string[]; // Standardized subtask titles
+  subtasks: string[]; // Deprecated: Use subtaskDetails instead if available
+  subtaskDetails?: { title: string; minimumRequirement?: string; }[]; // Enhanced subtasks
   expectedDays?: number;
   createdAt: string;
   updatedAt?: string;
   // Status-based automatic subtasks
   statusSubtasks?: {
-    [key in TaskStatus]?: string[]; // Subtasks to add when entering each status
+    [key in TaskStatus]?: { title: string; minimumRequirement?: string; }[];
+  };
+  // Auto-Apply Rules
+  autoApplyRules?: {
+    industryType?: string;
+    serviceType?: string; // e.g., Audit, Tax
   };
 }

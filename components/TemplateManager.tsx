@@ -61,19 +61,25 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
+    const [newSubtaskRequirement, setNewSubtaskRequirement] = useState('');
+
     const addSubtask = () => {
         if (!newSubtask.trim()) return;
+        const newDetail = { title: newSubtask.trim(), minimumRequirement: newSubtaskRequirement.trim() || undefined };
         setCurrentTemplate(prev => ({
             ...prev,
-            subtasks: [...(prev.subtasks || []), newSubtask.trim()]
+            subtasks: [...(prev.subtasks || []), newSubtask.trim()],
+            subtaskDetails: [...(prev.subtaskDetails || []), newDetail]
         }));
         setNewSubtask('');
+        setNewSubtaskRequirement('');
     };
 
     const removeSubtask = (index: number) => {
         setCurrentTemplate(prev => ({
             ...prev,
-            subtasks: prev.subtasks?.filter((_, i) => i !== index)
+            subtasks: prev.subtasks?.filter((_, i) => i !== index),
+            subtaskDetails: prev.subtaskDetails?.filter((_, i) => i !== index)
         }));
     };
 
@@ -97,7 +103,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <button
                             onClick={() => {
                                 setIsEditing(true);
-                                setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'Audit', subtasks: [] });
+                                setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'Audit', subtasks: [], subtaskDetails: [], autoApplyRules: {} });
                             }}
                             className="w-full mb-4 py-3 border-2 border-dashed border-brand-500/30 rounded-xl text-brand-400 hover:border-brand-500/60 hover:bg-brand-500/5 transition-all flex items-center justify-center font-bold text-sm"
                         >
@@ -181,31 +187,48 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         <span className="ml-2 px-2 py-0.5 rounded-full bg-navy-800 text-gray-400 text-[10px]">{currentTemplate.subtasks?.length || 0} TOTAL</span>
                                     </label>
                                     <div className="space-y-2 mb-4">
-                                        {currentTemplate.subtasks?.map((s, idx) => (
-                                            <div key={idx} className="flex items-center group bg-white/5 border border-white/5 rounded-lg p-2 hover:border-white/10 transition-colors">
-                                                <div className="w-6 h-6 rounded bg-navy-800 flex items-center justify-center text-[10px] text-gray-400 font-mono mr-3 border border-white/5">
-                                                    {idx + 1}
+                                        {(currentTemplate.subtaskDetails || currentTemplate.subtasks?.map(t => ({ title: t, minimumRequirement: undefined })) || []).map((s, idx) => (
+                                            <div key={idx} className="flex flex-col group bg-white/5 border border-white/5 rounded-lg p-2 hover:border-white/10 transition-colors">
+                                                <div className="flex items-center">
+                                                    <div className="w-6 h-6 rounded bg-navy-800 flex items-center justify-center text-[10px] text-gray-400 font-mono mr-3 border border-white/5">
+                                                        {idx + 1}
+                                                    </div>
+                                                    <span className="flex-1 text-sm">{s.title}</span>
+                                                    <button type="button" onClick={() => removeSubtask(idx)} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1"><X size={14} /></button>
                                                 </div>
-                                                <span className="flex-1 text-sm">{s}</span>
-                                                <button type="button" onClick={() => removeSubtask(idx)} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1"><X size={14} /></button>
+                                                {s.minimumRequirement && (
+                                                    <div className="ml-10 text-[10px] text-gray-500 italic flex items-center mt-1">
+                                                        <AlertCircle size={10} className="mr-1" />
+                                                        {s.minimumRequirement}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="flex space-x-2">
-                                        <input
-                                            className="flex-1 glass-input py-2 text-sm"
-                                            value={newSubtask}
-                                            onChange={e => setNewSubtask(e.target.value)}
-                                            placeholder="Add a step (e.g. Verify Fixed Assets)"
-                                            onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={addSubtask}
-                                            className="px-4 py-2 bg-navy-800 hover:bg-navy-700 text-brand-400 rounded-lg transition-colors border border-brand-500/20"
-                                        >
-                                            Add
-                                        </button>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex space-x-2">
+                                            <input
+                                                className="flex-1 glass-input py-2 text-sm"
+                                                value={newSubtask}
+                                                onChange={e => setNewSubtask(e.target.value)}
+                                                placeholder="Add a step (e.g. Verify Fixed Assets)"
+                                                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+                                            />
+                                            <input
+                                                className="w-1/3 glass-input py-2 text-sm"
+                                                value={newSubtaskRequirement}
+                                                onChange={e => setNewSubtaskRequirement(e.target.value)}
+                                                placeholder="Min Req (Optional)"
+                                                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={addSubtask}
+                                                className="px-4 py-2 bg-navy-800 hover:bg-navy-700 text-brand-400 rounded-lg transition-colors border border-brand-500/20"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 

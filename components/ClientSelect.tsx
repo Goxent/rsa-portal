@@ -57,8 +57,9 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                     {selectedIds.map(id => {
                         const client = clients.find(c => c.id === id);
                         return client ? (
-                            <span key={id} className="bg-blue-500/20 text-blue-200 text-xs px-2 py-0.5 rounded border border-blue-500/30">
-                                {client.code}
+                            <span key={id} className="bg-brand-500/20 text-brand-200 text-xs px-2 py-0.5 rounded border border-brand-500/30 flex items-center">
+                                {client.name}
+                                <span className="ml-1 opacity-50 text-[10px]">({client.code})</span>
                             </span>
                         ) : null;
                     })}
@@ -69,8 +70,8 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
             const client = clients.find(c => c.id === selectedIds[0]);
             return client ? (
                 <span className="text-white flex items-center">
-                    <span className="font-semibold mr-2">{client.code}</span>
-                    <span className="truncate opacity-80">{client.name}</span>
+                    <span className="font-semibold mr-2">{client.name}</span>
+                    <span className="text-xs text-gray-400 font-mono bg-white/10 px-1.5 rounded">{client.code}</span>
                 </span>
             ) : <span className="text-gray-400">{placeholder}</span>;
         }
