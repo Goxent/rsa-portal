@@ -393,68 +393,59 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            value={formData.pan} onChange={e => setFormData({ ...formData, pan: e.target.value })} placeholder="9-digit PAN" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Contact Person</label>
+                        <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                            value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
+                        <input type="tel" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                            value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+                        <input type="email" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                            value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                    </div>
+                    <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Office Address</label>
+                        <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
+                            value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                    </div>
+                </div>
                     </div>
 
-                    {/* Contact & Tax Info */}
-                    <div className="space-y-4 pt-4 border-t border-white/5">
-                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">PAN Number</label>
-                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                    value={formData.pan} onChange={e => setFormData({ ...formData, pan: e.target.value })} placeholder="9-digit PAN" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Contact Person</label>
-                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                    value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
-                                <input type="tel" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                    value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
-                                <input type="email" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                    value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Office Address</label>
-                                <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                    value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
-                            </div>
-                        </div>
-                    </div>
+                    {/* Assignment */ }
+    <div className="space-y-4 pt-4 border-t border-white/5">
+        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Assignment</h3>
+        <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Auditor</label>
+            <StaffSelect
+                users={staffList}
+                value={formData.auditorId}
+                onChange={(val) => setFormData({ ...formData, auditorId: val as string })}
+                placeholder="Select Lead Auditor..."
+            />
+        </div>
+        <div className="mt-4">
+            <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+            <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="status" checked={formData.status === 'Active'} onChange={() => setFormData({ ...formData, status: 'Active' })} className="accent-blue-500" />
+                    <span className="text-sm text-gray-300">Active</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="status" checked={formData.status === 'Inactive'} onChange={() => setFormData({ ...formData, status: 'Inactive' })} className="accent-red-500" />
+                    <span className="text-sm text-gray-300">Inactive</span>
+                </label>
+            </div>
+        </div>
+    </div>
 
-                    {/* Assignment */}
-                    <div className="space-y-4 pt-4 border-t border-white/5">
-                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Assignment</h3>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Auditor</label>
-                            <StaffSelect
-                                users={staffList}
-                                value={formData.auditorId}
-                                onChange={(val) => setFormData({ ...formData, auditorId: val as string })}
-                                placeholder="Select Lead Auditor..."
-                            />
-                        </div>
-                        <div className="mt-4">
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                            <div className="flex gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="status" checked={formData.status === 'Active'} onChange={() => setFormData({ ...formData, status: 'Active' })} className="accent-blue-500" />
-                                    <span className="text-sm text-gray-300">Active</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="status" checked={formData.status === 'Inactive'} onChange={() => setFormData({ ...formData, status: 'Inactive' })} className="accent-red-500" />
-                                    <span className="text-sm text-gray-300">Inactive</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Compliance Settings */}
+    {/* Compliance Settings */ }
                     <div className="space-y-4 pt-4 border-t border-white/5">
                         <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Compliance Services</h3>
                         <div className="grid grid-cols-2 gap-4">
@@ -493,8 +484,8 @@ const ClientsPage: React.FC = () => {
                             {editingId ? 'Update Client' : 'Create Client'}
                         </button>
                     </div>
-                </form>
-                    </div>
+                </form >
+                    </div >
                 </div >
             )}
         </div >
