@@ -388,8 +388,7 @@ const ClientsPage: React.FC = () => {
                                                         value={formData.signingAuthority}
                                                         onChange={e => setFormData({ ...formData, signingAuthority: e.target.value })}
                                                     />
-                                                )}
-                                            </div>
+                                    </div>
                                         </div>
                                     </div>
                                 </div>
