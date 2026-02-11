@@ -17,6 +17,7 @@ const TemplatesPage: React.FC = () => {
         type: '',
         content: '',
         tags: [] as string[],
+        driveLink: ''
     });
 
     useEffect(() => {
@@ -47,7 +48,9 @@ const TemplatesPage: React.FC = () => {
             category: 'TASK',
             type: '',
             content: '',
+            content: '',
             tags: [],
+            driveLink: ''
         });
         setIsModalOpen(false);
         await loadTemplates();
@@ -97,8 +100,8 @@ const TemplatesPage: React.FC = () => {
                             key={cat}
                             onClick={() => setCategoryFilter(cat)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${categoryFilter === cat
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                 }`}
                         >
                             {cat}
@@ -137,6 +140,17 @@ const TemplatesPage: React.FC = () => {
                                 </span>
                             ))}
                         </div>
+
+                        {template.driveLink && (
+                            <a
+                                href={template.driveLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full mb-3 bg-white/5 hover:bg-white/10 text-blue-300 border border-blue-500/30 py-2 rounded-lg text-sm font-medium text-center transition-all"
+                            >
+                                Open Google Drive File
+                            </a>
+                        )}
 
                         <button
                             onClick={() => handleUseTemplate(template)}
@@ -181,6 +195,18 @@ const TemplatesPage: React.FC = () => {
                                     onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
                                 />
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Google Drive Link (Optional)</label>
+                                <input
+                                    type="url"
+                                    placeholder="https://docs.google.com/..."
+                                    className="w-full rounded-lg px-3 py-2 text-blue-400"
+                                    value={newTemplate.driveLink}
+                                    onChange={(e) => setNewTemplate({ ...newTemplate, driveLink: e.target.value })}
+                                />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>

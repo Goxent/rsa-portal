@@ -765,17 +765,17 @@ const AttendancePage: React.FC = () => {
                     </div>
                     {user?.role === UserRole.ADMIN && (
                         <select className="bg-black/20 text-sm text-white rounded-lg p-2 border border-white/5 outline-none" value={filterStaffId} onChange={e => setFilterStaffId(e.target.value)}>
-                            <option value="ALL">All Staff</option>
-                            {usersList.map(u => <option key={u.uid} value={u.uid}>{u.displayName}</option>)}
+                            <option value="ALL" className="text-gray-900">All Staff</option>
+                            {usersList.map(u => <option key={u.uid} value={u.uid} className="text-gray-900">{u.displayName}</option>)}
                         </select>
                     )}
                     <select className="bg-black/20 text-sm text-white rounded-lg p-2 border border-white/5 outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                        <option value="ALL">All Status</option>
-                        <option value="PRESENT">Present</option>
-                        <option value="LATE">Late</option>
-                        <option value="ABSENT">Absent</option>
-                        <option value="ON LEAVE">On Leave</option>
-                        <option value="CORRECTED">Admin Corrected</option>
+                        <option value="ALL" className="text-gray-900">All Status</option>
+                        <option value="PRESENT" className="text-gray-900">Present</option>
+                        <option value="LATE" className="text-gray-900">Late</option>
+                        <option value="ABSENT" className="text-gray-900">Absent</option>
+                        <option value="ON LEAVE" className="text-gray-900">On Leave</option>
+                        <option value="CORRECTED" className="text-gray-900">Admin Corrected</option>
                     </select>
                 </div>
                 <div className="flex items-center gap-2">

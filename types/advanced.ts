@@ -128,6 +128,7 @@ export interface Template {
     createdAt: string;
     usageCount: number;
     lastUsed?: string;
+    driveLink?: string; // Google Drive or external file link
 }
 
 // Analytics Types

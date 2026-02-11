@@ -51,14 +51,14 @@ const TasksPage: React.FC = () => {
     const [filterVat, setFilterVat] = useState<boolean>(false);
     const [filterItr, setFilterItr] = useState<boolean>(false);
 
-    // Get unique signees from clients
+    // Get unique signees from clients (Strings)
     const signees = React.useMemo(() => {
         const uniqueSignees = new Set<string>();
         clientsList.forEach(c => {
             if (c.signingAuthority) uniqueSignees.add(c.signingAuthority);
         });
-        return Array.from(uniqueSignees).map(uid => usersList.find(u => u.uid === uid)).filter(Boolean);
-    }, [clientsList, usersList]);
+        return Array.from(uniqueSignees).sort();
+    }, [clientsList]);
 
     const filteredTasks = tasks.filter(t => {
         // existing filters
@@ -524,12 +524,12 @@ const TasksPage: React.FC = () => {
                         <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300">
                             <span>Signee:</span>
                             <select
-                                className="bg-transparent border-none outline-none text-brand-300 font-bold w-24"
+                                className="bg-transparent border-none outline-none text-brand-300 font-bold w-32"
                                 value={filterSignee}
                                 onChange={(e) => setFilterSignee(e.target.value)}
                             >
                                 <option value="ALL">All</option>
-                                {signees.map(s => <option key={s?.uid} value={s?.uid}>{s?.displayName}</option>)}
+                                {signees.map((s, i) => <option key={i} value={s}>{s}</option>)}
                             </select>
                         </div>
                     </div>

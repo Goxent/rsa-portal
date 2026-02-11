@@ -102,6 +102,61 @@ service cloud.firestore {
       );
     }
     
+    // TEMPLATES (Advanced)
+    match /templates/{templateId} {
+      allow read: if isAuthenticated();
+      // Allow creation/update by any auth user (or restrict to Admin if preferred)
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    // TASK TEMPLATES (Simple)
+    match /task_templates/{templateId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // WORKFLOWS
+    match /workflows/{workflowId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // EVENTS
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    // TIME ENTRIES
+    match /timeEntries/{entryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // CHAT CHANNELS
+    match /chatChannels/{channelId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin() || request.resource.data.members.hasAny([request.auth.uid]));
+      allow delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    // CHAT MESSAGES
+    match /chatMessages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || isAdmin());
+    }
+    
+    // COMPLIANCE EVENTS
+    match /complianceEvents/{eventId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
     // RESOURCES/KNOWLEDGE BASE COLLECTION
     match /resources/{resourceId} {
       // All authenticated users can read resources

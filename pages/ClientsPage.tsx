@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Users, Plus, Search, Filter, FileText, MoreVertical,
     Edit, Trash2, Phone, Mail, MapPin, BadgeCheck, Building2,
-    Briefcase, Calendar, X, Save
+    Briefcase, Calendar, X, Save, ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Client, UserRole, UserProfile } from '../types';
@@ -74,8 +74,16 @@ const ClientsPage: React.FC = () => {
 
         setIsSaving(true);
         try {
+            // Sanitize data: Remove undefined/null values
+            const cleanData = Object.entries(formData).reduce((acc, [key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    acc[key] = value;
+                }
+                return acc;
+            }, {} as any);
+
             const clientData: Client = {
-                ...formData as Client,
+                ...cleanData,
                 updatedAt: new Date().toISOString()
             };
 
@@ -86,7 +94,7 @@ const ClientsPage: React.FC = () => {
                 await AuthService.addClient({
                     ...clientData,
                     createdAt: new Date().toISOString(),
-                    id: crypto.randomUUID() // Fallback if backend doesn't generate
+                    id: crypto.randomUUID()
                 });
                 toast.success('Client created successfully');
             }
@@ -324,40 +332,46 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-400 mb-1">Assignment Type</label>
-                                        <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}>
-                                            <option value="Statutory Audit">Statutory Audit</option>
-                                            <option value="Tax Filing">Tax Filing</option>
-                                            <option value="Compliance Audit">Compliance Audit</option>
-                                            <option value="Internal Audit">Internal Audit</option>
-                                            <option value="Advisory Services">Advisory Services</option>
-                                            <option value="Bookkeeping">Bookkeeping</option>
-                                            <option value="VAT Filing">VAT Filing</option>
-                                            <option value="ITR Filing">ITR Filing</option>
-                                            <option value="Other">Other</option>
-                                        </select>
+                                        <div className="relative">
+                                            <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm appearance-none"
+                                                value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}>
+                                                <option value="Statutory Audit">Statutory Audit</option>
+                                                <option value="Tax Filing">Tax Filing</option>
+                                                <option value="Compliance Audit">Compliance Audit</option>
+                                                <option value="Internal Audit">Internal Audit</option>
+                                                <option value="Advisory Services">Advisory Services</option>
+                                                <option value="Bookkeeping">Bookkeeping</option>
+                                                <option value="VAT Filing">VAT Filing</option>
+                                                <option value="ITR Filing">ITR Filing</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-400 mb-1">Client Type</label>
-                                        <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                            value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value as any })}>
-                                            <option value="Airlines">Airlines</option>
-                                            <option value="Consulting">Consulting</option>
-                                            <option value="Co-operatives">Co-operatives</option>
-                                            <option value="Courier">Courier</option>
-                                            <option value="Education">Education</option>
-                                            <option value="Hotel & Restaurant">Hotel & Restaurant</option>
-                                            <option value="Hydropower">Hydropower</option>
-                                            <option value="Investment">Investment</option>
-                                            <option value="IT Consulting">IT Consulting</option>
-                                            <option value="Joint Venture">Joint Venture</option>
-                                            <option value="Manufacturing">Manufacturing</option>
-                                            <option value="NGO/INGO">NGO/INGO</option>
-                                            <option value="NPO">NPO</option>
-                                            <option value="Securities Broker">Securities Broker</option>
-                                            <option value="Trading">Trading</option>
-                                            <option value="Others">Others</option>
-                                        </select>
+                                        <div className="relative">
+                                            <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm appearance-none"
+                                                value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value as any })}>
+                                                <option value="Airlines">Airlines</option>
+                                                <option value="Consulting">Consulting</option>
+                                                <option value="Co-operatives">Co-operatives</option>
+                                                <option value="Courier">Courier</option>
+                                                <option value="Education">Education</option>
+                                                <option value="Hotel & Restaurant">Hotel & Restaurant</option>
+                                                <option value="Hydropower">Hydropower</option>
+                                                <option value="Investment">Investment</option>
+                                                <option value="IT Consulting">IT Consulting</option>
+                                                <option value="Joint Venture">Joint Venture</option>
+                                                <option value="Manufacturing">Manufacturing</option>
+                                                <option value="NGO/INGO">NGO/INGO</option>
+                                                <option value="NPO">NPO</option>
+                                                <option value="Securities Broker">Securities Broker</option>
+                                                <option value="Trading">Trading</option>
+                                                <option value="Others">Others</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
+                                        </div>
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
