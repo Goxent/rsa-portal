@@ -51,14 +51,14 @@ const TasksPage: React.FC = () => {
     const [filterVat, setFilterVat] = useState<boolean>(false);
     const [filterItr, setFilterItr] = useState<boolean>(false);
 
-    // Get unique signees from clients (Strings)
-    const signees = React.useMemo(() => {
-        const uniqueSignees = new Set<string>();
-        clientsList.forEach(c => {
-            if (c.signingAuthority) uniqueSignees.add(c.signingAuthority);
-        });
-        return Array.from(uniqueSignees).sort();
-    }, [clientsList]);
+    // Static Signees List
+    const signees = [
+        'R. Sapkota & Associates',
+        'TN Acharya & Co.',
+        'Pankaj Thapa Associates',
+        'NP Sharma & Co.',
+        'Others'
+    ];
 
     const filteredTasks = tasks.filter(t => {
         // existing filters
@@ -81,7 +81,13 @@ const TasksPage: React.FC = () => {
 
             if (!taskClient) return false; // If filtering by client props but no client found, exclude.
 
-            if (filterSignee !== 'ALL' && taskClient.signingAuthority !== filterSignee) return false;
+            if (filterSignee !== 'ALL') {
+                if (filterSignee === 'Others') {
+                    if (['R. Sapkota & Associates', 'TN Acharya & Co.', 'Pankaj Thapa Associates', 'NP Sharma & Co.'].includes(taskClient.signingAuthority || '')) return false;
+                } else {
+                    if (taskClient.signingAuthority !== filterSignee) return false;
+                }
+            }
             if (filterVat && !taskClient.vatReturn) return false;
             if (filterItr && !taskClient.itrReturn) return false;
         }
@@ -263,6 +269,7 @@ const TasksPage: React.FC = () => {
 
 
     const toggleSubtask = (subId: string) => {
+        if (!hasEditPermission) return;
         setCurrentTask(prev => ({
             ...prev,
             subtasks: prev.subtasks?.map(st => st.id === subId ? { ...st, isCompleted: !st.isCompleted } : st)
@@ -617,6 +624,7 @@ const TasksPage: React.FC = () => {
                                         onChange={(val) => handleClientChange(val as string)}
                                         multi={false}
                                         placeholder="Select Client..."
+                                        disabled={!hasEditPermission}
                                     />
                                 </div>
 
@@ -681,7 +689,11 @@ const TasksPage: React.FC = () => {
                                         {currentTask.subtasks?.map(st => (
                                             <div key={st.id} className="flex flex-col space-y-1 bg-white/5 p-2 rounded-lg">
                                                 <div className="flex items-center space-x-2">
-                                                    <button onClick={() => toggleSubtask(st.id)} className={st.isCompleted ? 'text-emerald-500' : 'text-gray-500'}>
+                                                    <button
+                                                        onClick={() => toggleSubtask(st.id)}
+                                                        disabled={!hasEditPermission}
+                                                        className={`${st.isCompleted ? 'text-emerald-500' : 'text-gray-500'} ${!hasEditPermission ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                    >
                                                         {st.isCompleted ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 border border-gray-500 rounded-full" />}
                                                     </button>
                                                     <span className={`text-xs flex-1 ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>{st.title}</span>

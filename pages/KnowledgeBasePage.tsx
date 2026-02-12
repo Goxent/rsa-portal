@@ -17,6 +17,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { UserRole, Resource } from '../types';
 import { KnowledgeService } from '../services/knowledge';
+import { StorageService } from '../services/storage';
+import { FileUploader } from '../components/common/FileUploader';
+import { DocumentViewer } from '../components/common/DocumentViewer';
 
 const CATEGORIES = [
     { id: 'ALL', label: 'All Resources', icon: FolderOpen },
@@ -39,9 +42,17 @@ const KnowledgeBasePage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentResource, setCurrentResource] = useState<Partial<Resource>>({
         type: 'pdf',
-        category: 'SOP'
+        category: 'SOP',
+        link: '',
+        title: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // File Upload State
+    const [isUploadMode, setIsUploadMode] = useState(false);
+
+    // Viewer State
+    const [viewDoc, setViewDoc] = useState<{ url: string; type: string; title: string; downloadUrl?: string } | null>(null);
 
     useEffect(() => {
         loadResources();
@@ -101,8 +112,24 @@ const KnowledgeBasePage: React.FC = () => {
     };
 
     const openCreateModal = () => {
-        setCurrentResource({ type: 'pdf', category: activeCategory === 'ALL' ? 'SOP' : activeCategory });
+        setCurrentResource({ type: 'pdf', category: activeCategory === 'ALL' ? 'SOP' : activeCategory, link: '', title: '' });
+        setIsUploadMode(false);
         setIsModalOpen(true);
+    };
+
+    const handleOpenResource = (res: Resource) => {
+        if (res.type === 'article' || res.link?.includes('docs.google.com') || res.type === 'folder') {
+            // For external links or folders (if we supported folders here), open in new tab
+            if (res.link) window.open(res.link, '_blank');
+        } else {
+            // Open in Viewer
+            setViewDoc({
+                url: res.link || '',
+                type: res.type,
+                title: res.title,
+                downloadUrl: res.downloadUrl
+            });
+        }
     };
 
     // Filter Logic
@@ -148,6 +175,14 @@ const KnowledgeBasePage: React.FC = () => {
                             <Plus size={18} className="mr-2" /> Add Resource
                         </button>
                     )}
+                    <DocumentViewer
+                        isOpen={!!viewDoc}
+                        onClose={() => setViewDoc(null)}
+                        url={viewDoc?.url || ''}
+                        type={viewDoc?.type || 'file'}
+                        title={viewDoc?.title || ''}
+                        downloadUrl={viewDoc?.downloadUrl}
+                    />
                 </div>
             </div>
 
@@ -160,8 +195,8 @@ const KnowledgeBasePage: React.FC = () => {
                             key={cat.id}
                             onClick={() => setActiveCategory(cat.id)}
                             className={`flex items-center w-full px-4 py-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeCategory === cat.id
-                                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-900/20'
-                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                ? 'bg-brand-600 text-white shadow-lg shadow-brand-900/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
                             <cat.icon size={18} className="mr-3" />
@@ -200,14 +235,13 @@ const KnowledgeBasePage: React.FC = () => {
                                     <h3 className="text-white font-bold mb-1 line-clamp-2 min-h-[3rem]">{resource.title}</h3>
                                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
                                         <span className="text-xs text-gray-500">{new Date(resource.updatedAt).toLocaleDateString()}</span>
-                                        <a
-                                            href={resource.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                        <span className="text-xs text-gray-500">{new Date(resource.updatedAt).toLocaleDateString()}</span>
+                                        <button
+                                            onClick={() => handleOpenResource(resource)}
                                             className="flex items-center text-xs font-bold text-brand-300 hover:text-brand-200"
                                         >
                                             OPEN <ExternalLink size={12} className="ml-1" />
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -263,18 +297,61 @@ const KnowledgeBasePage: React.FC = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">Link URL <span className="text-red-400">*</span></label>
-                                <div className="relative">
-                                    <input
-                                        required
-                                        className="w-full glass-input rounded-lg pl-9 pr-3 py-2 text-sm"
-                                        value={currentResource.link || ''}
-                                        onChange={e => setCurrentResource({ ...currentResource, link: e.target.value })}
-                                        placeholder="https://drive.google.com/..."
-                                    />
-                                    <ExternalLink size={14} className="absolute left-3 top-2.5 text-gray-500" />
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Content Source</label>
+
+                                <div className="flex bg-white/5 rounded-lg p-1 border border-white/10 mb-3 w-fit">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsUploadMode(false)}
+                                        className={`px-3 py-1 text-xs rounded-md transition-all ${!isUploadMode ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        External Link
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsUploadMode(true)}
+                                        className={`px-3 py-1 text-xs rounded-md transition-all ${isUploadMode ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        Upload File
+                                    </button>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">Paste Google Drive or external link here.</p>
+
+                                {isUploadMode ? (
+                                    <div className="border-2 border-dashed border-white/10 rounded-xl p-4 hover:border-brand-500/50 transition-colors">
+                                        <FileUploader
+                                            onUploadComplete={(fileData) => {
+                                                setCurrentResource({
+                                                    ...currentResource,
+                                                    title: currentResource.title || fileData.name,
+                                                    link: fileData.url,
+                                                    type: fileData.type as any,
+                                                    fileId: fileData.id,
+                                                    downloadUrl: StorageService.getDownloadUrl(fileData.id)
+                                                });
+                                            }}
+                                            accept={currentResource.type === 'pdf' ? '.pdf' : currentResource.type === 'image' ? 'image/*' : '.doc,.docx,.xls,.xlsx,.ppt,.pptx'}
+                                        />
+                                        {currentResource.fileId && (
+                                            <div className="mt-2 text-xs text-green-400 flex items-center">
+                                                <FileText size={12} className="mr-1" /> File uploaded successfully
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="relative">
+                                            <input
+                                                required={!isUploadMode}
+                                                className="w-full glass-input rounded-lg pl-9 pr-3 py-2 text-sm"
+                                                value={currentResource.link || ''}
+                                                onChange={e => setCurrentResource({ ...currentResource, link: e.target.value })}
+                                                placeholder="https://drive.google.com/..."
+                                            />
+                                            <ExternalLink size={14} className="absolute left-3 top-2.5 text-gray-500" />
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">Paste Google Drive or external link here.</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="pt-4 flex justify-end space-x-3">
