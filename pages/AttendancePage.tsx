@@ -108,7 +108,6 @@ const AttendancePage: React.FC = () => {
         setLoading(true);
         try {
             // Parallel Fetch
-            // Filter History: ADMIN gets all, STAFF gets only theirs.
             const fetchId = user.role === UserRole.ADMIN ? undefined : user.uid;
 
             const [uList, cList, attHistory, lCount, lList] = await Promise.all([
@@ -126,10 +125,10 @@ const AttendancePage: React.FC = () => {
                 id: 'INTERNAL',
                 name: 'Internal / Office',
                 code: 'INT',
-                serviceType: 'Internal',
-                status: 'Active',
-                category: 'A',
-                industry: 'Internal'
+                serviceType: 'Internal' as any,
+                status: 'Active' as any,
+                category: 'A' as any,
+                industry: 'Others' as any
             };
             setClientsList([internalClient, ...cList]);
 
@@ -137,20 +136,33 @@ const AttendancePage: React.FC = () => {
             setLateCount(lCount);
             setLeavesList(lList);
 
-            console.log('DEBUG: Loaded Users:', uList);
-            console.log('DEBUG: Loaded History:', attHistory);
-
             // Check if already clocked in today (Local Time check)
-            const today = new Date().toLocaleDateString('en-CA');
-            const todayRecord = attHistory.find(r => r.userId === user?.uid && r.date === today && !r.clockOut);
+            const todayStr = new Date().toLocaleDateString('en-CA');
+
+            // Robust check: Look for ANY record for today for this user
+            // We prioritize finding an "Open" session (no clockOut), but if there is a closed one, we know they are done.
+            const todayRecord = attHistory.find(r => r.userId === user?.uid && r.date === todayStr);
 
             if (todayRecord) {
-                setStatus('CLOCKED_IN');
-                setCurrentRecordId(todayRecord.id);
-                // Calculate session time
-                const startTime = new Date(`${today}T${todayRecord.clockIn}`);
-                const diff = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
-                setSessionTime(diff > 0 ? diff : 0);
+                if (!todayRecord.clockOut) {
+                    // Active Session
+                    setStatus('CLOCKED_IN');
+                    setCurrentRecordId(todayRecord.id);
+
+                    // Calculate session time
+                    // Handle "HH:MM:SS" or "HH:MM"
+                    const [h, m, s] = todayRecord.clockIn.split(':').map(Number);
+                    const startTime = new Date();
+                    startTime.setHours(h, m, s || 0, 0);
+
+                    const diff = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
+                    setSessionTime(diff > 0 ? diff : 0);
+                } else {
+                    // Completed Session
+                    setStatus('CLOCKED_OUT');
+                    setCurrentRecordId(todayRecord.id); // Valid record exists, but session closed
+                    // Optionally disable Clock In button if duplicates not allowed?
+                }
             } else {
                 setStatus('CLOCKED_OUT');
                 setCurrentRecordId(null);
@@ -175,14 +187,23 @@ const AttendancePage: React.FC = () => {
 
         // Validation
         const todayStr = new Date().toLocaleDateString('en-CA');
-        const hasRecordToday = history.some(r => r.userId === user?.uid && r.date === todayStr && r.clockOut); // Check only finished records
+        const hasRecordToday = history.some(r => r.userId === user?.uid && r.date === todayStr);
 
-        // If they have a finished record, block them? Or allow multiple?
-        // Requirement says "Multiple daily entries are not permitted" usually, but let's stick to existing logic
-        // Actually, if they clocked out, they are done.
-        if (hasRecordToday) {
-            alert("⛔ Access Denied: You have already completed your attendance for today.");
-            return;
+        // Allow Clock In if NO record exists.
+        // If record exists and has clockOut -> Block (already done)
+        // If record exists and NO clockOut -> Resume (should have been caught by loadData)
+
+        const existingRec = history.find(r => r.userId === user?.uid && r.date === todayStr);
+        if (existingRec) {
+            if (existingRec.clockOut) {
+                alert("⛔ Access Denied: You have already completed your attendance for today.");
+                return;
+            } else {
+                // Determine if we should just resume state locally or alert
+                alert("⚠️ Session Restored: You are already clocked in.");
+                loadData(); // Reload to sync state
+                return;
+            }
         }
 
         if (isLateEntry && !lateReason.trim()) {
@@ -215,6 +236,10 @@ const AttendancePage: React.FC = () => {
         } catch (error: any) {
             console.error(error);
             alert(error.message);
+            // If error says "already recorded", force reload
+            if (error.message.includes('already recorded')) {
+                await loadData();
+            }
         } finally {
             setIsSaving(false);
             setLoading(false);
@@ -275,7 +300,14 @@ const AttendancePage: React.FC = () => {
                 // So it WILL overwrite clockIn if we pass it.
                 // We MUST pass the correct original ClockIn.
 
-                clockIn: new Date(now.getTime() - sessionTime * 1000).toLocaleTimeString('en-US', { hour12: false }), // Re-calculate or use stored
+                clockIn: 'KEEP_EXISTING', // Hack: We'll need to check firebase.ts if it filters this. 
+                // Actually, looking at firebase.ts: "const { id, ...updateData } = record; await updateDoc(..., updateData);"
+                // This WILL overwrite clockIn.
+                // We MUST use the original clockIn.
+
+                // FIX: use sessionTime to derive approx, OR finding the record from history again.
+                // We have 'history' in state.
+
                 clockOut: timeStr,
                 workHours: Number((sessionTime / 3600).toFixed(2)),
                 status: isLateEntry ? 'LATE' : 'PRESENT',
@@ -285,6 +317,15 @@ const AttendancePage: React.FC = () => {
                 workLogs: finalLogs,
                 notes: lateReason ? `Late Reason: ${lateReason}` : ''
             };
+
+            // Re-find original clockIn to prevent overwrite
+            const originalRec = history.find(r => r.id === currentRecordId || (r.userId === user?.uid && r.date === todayStr));
+            if (originalRec) {
+                record.clockIn = originalRec.clockIn;
+            } else {
+                // Fallback if state is weird
+                record.clockIn = new Date(now.getTime() - sessionTime * 1000).toLocaleTimeString('en-US', { hour12: false });
+            }
 
             await AuthService.recordAttendance(record);
             setStatus('CLOCKED_OUT');
