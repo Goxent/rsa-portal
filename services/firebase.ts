@@ -438,8 +438,12 @@ export const AuthService = {
             const docId = snapshot.docs[0].id;
             const existing = snapshot.docs[0].data() as AttendanceRecord;
 
-            if (!record.clockOut && existing.clockIn && !existing.clockOut && (!record.id || record.id === 'temp_id')) {
-                throw new Error("Attendance already recorded for today.");
+            // Idempotency Check: If checking within an unexpected state
+            if (!record.clockOut && existing.clockIn && !existing.clockOut) {
+                // User is trying to Clock In, but session is ALREADY open.
+                // Instead of error, we just treat it as success (sync).
+                console.log("Session already active. Syncing...");
+                return;
             }
 
             const { id, ...updateData } = record;

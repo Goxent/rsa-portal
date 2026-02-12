@@ -165,10 +165,13 @@ const AttendanceWidget: React.FC<AttendanceWidgetProps> = () => {
             };
 
             await AuthService.recordAttendance(newRecord);
-            await loadData();
+            // Success
         } catch (error: any) {
-            alert(error.message);
+            // If error occurred (even if we suppressed it in service, net errors might exist)
+            // But specifically if it was "already recorded", we just need to reload.
+            console.error("Clock In Error (Recoverable):", error);
         } finally {
+            await loadData(); // Always reload to ensure state sync
             setLoading(false);
         }
     };
