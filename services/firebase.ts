@@ -120,12 +120,18 @@ export const AuthService = {
 
     register: async (email: string, pass: string): Promise<UserProfile> => {
         try {
-            // STEP 1: Validate email is in staff directory
-            const staffSnapshot = await getDocs(collection(db, 'staff'));
-            const staffEmails = staffSnapshot.docs.map(doc => doc.data().email?.toLowerCase()).filter(Boolean);
+            // STEP 1: Validate email is in users directory (Staff Directory)
+            const usersSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
 
-            if (!staffEmails.includes(email.toLowerCase())) {
+            if (usersSnapshot.empty) {
                 throw new Error('This email is not authorized for signup. Only staff members listed in the directory can register.');
+            }
+
+            const existingUserDoc = usersSnapshot.docs[0];
+            const existingUserData = existingUserDoc.data() as UserProfile;
+
+            if (existingUserData.status === 'Inactive') {
+                throw new Error('This account is marked as Inactive. Please contact the administrator.');
             }
 
             // STEP 2: Create Auth User

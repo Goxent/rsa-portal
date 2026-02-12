@@ -332,8 +332,13 @@ const AttendancePage: React.FC = () => {
         // 1. Identify Target Users
         let targetUsers: UserProfile[] = [];
         if (user?.role === UserRole.ADMIN) {
-            if (filterStaffId === 'ALL') targetUsers = usersList;
-            else targetUsers = usersList.filter(u => u.uid === filterStaffId);
+            if (filterStaffId === 'ALL') {
+                targetUsers = usersList
+                    .filter(u => u.status !== 'Inactive')
+                    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+            } else {
+                targetUsers = usersList.filter(u => u.uid === filterStaffId);
+            }
         } else if (user) {
             targetUsers = [user]; // Staff sees only themselves
         }
