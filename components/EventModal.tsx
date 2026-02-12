@@ -134,9 +134,18 @@ const EventModal: React.FC<EventModalProps> = ({
 
     if (!isOpen) return null;
 
-    const eventTypes: EventType[] = ['MEETING', 'DEADLINE', 'GENERAL', 'PERSONAL', 'FIRM_EVENT', 'HOLIDAY'];
+    const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN;
+
+    // Base types available to everyone
+    const baseEventTypes: EventType[] = ['MEETING', 'DEADLINE', 'GENERAL', 'PERSONAL'];
+
+    // Admin-only types
+    const eventTypes: EventType[] = isAdmin
+        ? [...baseEventTypes, 'FIRM_EVENT', 'HOLIDAY']
+        : baseEventTypes;
+
     const visibilityOptions: EventVisibility[] =
-        user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN
+        isAdmin
             ? ['PRIVATE', 'TEAM', 'DEPARTMENT', 'PUBLIC']
             : ['PRIVATE', 'TEAM'];
 
