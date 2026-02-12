@@ -6,6 +6,7 @@ import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole, CalendarEvent } from '../types';
 import { toBS } from '../utils/dateUtils';
 import WidgetContainer from '../components/dashboard/WidgetContainer';
+import AttendanceWidget from '../components/dashboard/AttendanceWidget';
 
 import { Client } from '../types';
 
@@ -244,6 +245,9 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Attendance Widget - Always Top */}
+            <AttendanceWidget />
 
             {/* Widget Container */}
             {user && (
