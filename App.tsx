@@ -22,7 +22,6 @@ const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const SystemSettingsPage = lazy(() => import('./pages/SystemSettingsPage'));
 const PerformancePage = lazy(() => import('./pages/PerformancePage'));
 const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage'));
-const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage'));
 const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 
