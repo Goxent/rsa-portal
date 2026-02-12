@@ -89,7 +89,10 @@ const AttendancePage: React.FC = () => {
         const start = new Date(filterStartDate);
         const end = new Date(filterEndDate);
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
 
         // Safety cap
         const MAX_DAYS = 62;
@@ -98,8 +101,8 @@ const AttendancePage: React.FC = () => {
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             if (dayCount++ > MAX_DAYS) break;
             const dateStr = d.toISOString().split('T')[0];
+            const isFuture = dateStr > todayStr;
             const dateObj = new Date(dateStr);
-            const isFuture = dateObj > today;
             const isSaturday = dateObj.getDay() === 6;
 
             targetUsers.forEach(u => {
@@ -410,10 +413,10 @@ const AttendancePage: React.FC = () => {
                                         </td>
                                         <td className="p-4 align-top">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold border ${record.status === 'PRESENT' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                                                    record.status === 'LATE' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                                                        record.status === 'ABSENT' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                            record.status === 'HOLIDAY' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                                'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                record.status === 'LATE' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                                    record.status === 'ABSENT' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                        record.status === 'HOLIDAY' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                                                            'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                                 }`}>
                                                 {record.status}
                                             </span>
