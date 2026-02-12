@@ -609,9 +609,17 @@ export const AuthService = {
             throw new Error('You do not have permission to edit this event');
         }
 
+        // Filter out undefined values
+        const cleanedUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+            if (value !== undefined) {
+                acc[key] = value;
+            }
+            return acc;
+        }, {} as any);
+
         // Update with timestamp
         const updateData = {
-            ...updates,
+            ...cleanedUpdates,
             updatedAt: new Date().toISOString(),
         };
 
