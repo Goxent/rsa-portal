@@ -4,6 +4,9 @@ import { AIService } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 import { UserRole, Resource } from '../types';
 import { AuthService } from '../services/firebase';
+import { StorageService } from '../services/storage';
+import { FileUploader } from '../components/common/FileUploader';
+import { DocumentViewer } from '../components/common/DocumentViewer';
 
 // Helper Icon Component
 const ResourceIcon = ({ type, size = 40 }: { type: string, size?: number }) => {
@@ -41,6 +44,10 @@ const ResourcesPage: React.FC = () => {
     const [newResource, setNewResource] = useState<Partial<Resource>>({
         title: '', type: 'folder', category: 'General', link: ''
     });
+
+    // File Upload State
+    const [isUploadMode, setIsUploadMode] = useState(false);
+    const [viewDoc, setViewDoc] = useState<{ url: string; type: string; title: string; downloadUrl?: string } | null>(null);
 
     useEffect(() => {
         loadResources();
@@ -92,12 +99,20 @@ const ResourcesPage: React.FC = () => {
         if (res.type === 'folder') {
             setCurrentFolderId(res.id);
             setSearchQuery(''); // Clear search on navigation
-        } else {
+        } else if (res.type === 'article') {
             setPreviewResource(res);
             setIsEditing(false);
             setShowAiPanel(false);
             setAiResponse('');
             setAiQuery('');
+        } else {
+            // Use DocumentViewer for files/links
+            setViewDoc({
+                url: res.link || '',
+                type: res.type,
+                title: res.title,
+                downloadUrl: res.downloadUrl
+            });
         }
     };
 
@@ -120,6 +135,8 @@ const ResourcesPage: React.FC = () => {
             type: newResource.type as any,
             category: newResource.category || 'General',
             link: newResource.link || '',
+            fileId: newResource.fileId,
+            downloadUrl: newResource.downloadUrl,
             content: newResource.content || '',
             parentId: currentFolderId, // Add to current folder
             updatedAt: new Date().toISOString().split('T')[0]
@@ -129,6 +146,7 @@ const ResourcesPage: React.FC = () => {
         await loadResources();
         setIsAddModalOpen(false);
         setNewResource({ title: '', type: 'folder', category: 'General', link: '' });
+        setIsUploadMode(false);
     };
 
     const handleSaveArticle = async (updatedContent: string) => {
@@ -212,6 +230,14 @@ const ResourcesPage: React.FC = () => {
                                 <Plus size={16} className="mr-2" /> New
                             </button>
                         )}
+                        <DocumentViewer
+                            isOpen={!!viewDoc}
+                            onClose={() => setViewDoc(null)}
+                            url={viewDoc?.url || ''}
+                            type={viewDoc?.type || 'file'}
+                            title={viewDoc?.title || ''}
+                            downloadUrl={viewDoc?.downloadUrl}
+                        />
                         <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl border border-white/10 shrink-0">
                             <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}><Grid size={18} /></button>
                             <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}><List size={18} /></button>
@@ -370,10 +396,52 @@ const ResourcesPage: React.FC = () => {
                                 </div>
                             </div>
 
+
                             {newResource.type !== 'folder' && newResource.type !== 'article' && (
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Link / URL</label>
-                                    <input required className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newResource.link} onChange={e => setNewResource({ ...newResource, link: e.target.value })} placeholder="https://..." />
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-xs font-semibold text-gray-400 uppercase">Content Source</label>
+                                        <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsUploadMode(false)}
+                                                className={`px-3 py-1 text-xs rounded-md transition-all ${!isUploadMode ? 'bg-brand-500 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                            >
+                                                External Link
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsUploadMode(true)}
+                                                className={`px-3 py-1 text-xs rounded-md transition-all ${isUploadMode ? 'bg-brand-500 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                            >
+                                                Upload File
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {isUploadMode ? (
+                                        <FileUploader
+                                            onUploadComplete={(fileData) => {
+                                                setNewResource({
+                                                    ...newResource,
+                                                    title: newResource.title || fileData.name,
+                                                    link: fileData.url,
+                                                    type: fileData.type as any,
+                                                    fileId: fileData.id,
+                                                    downloadUrl: StorageService.getDownloadUrl(fileData.id)
+                                                });
+                                            }}
+                                            accept={newResource.type === 'pdf' ? '.pdf' : newResource.type === 'image' ? 'image/*' : '.doc,.docx,.xls,.xlsx,.ppt,.pptx'}
+                                        />
+                                    ) : (
+                                        <input
+                                            required={!isUploadMode}
+                                            className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                            value={newResource.link}
+                                            onChange={e => setNewResource({ ...newResource, link: e.target.value })}
+                                            placeholder="https://..."
+                                        />
+                                    )}
                                 </div>
                             )}
 

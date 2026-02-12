@@ -123,7 +123,8 @@ export interface Client {
   itrReturn?: boolean; // New: Needs Income Tax Return
 
   // Management
-  signingAuthority?: string; // UID of the signee (Partner/Manager)
+  signingAuthorityId?: string; // UID of the signee (Partner/Manager)
+  signingAuthority?: string; // Display Name (Partner/Manager)
   contactPerson?: string;
   contactPersonRole?: string;
 
@@ -226,13 +227,15 @@ export interface AppNotification {
 export interface Resource {
   id: string;
   title: string;
-  type: 'folder' | 'pdf' | 'doc' | 'sheet' | 'article';
+  type: 'folder' | 'pdf' | 'doc' | 'sheet' | 'article' | 'image';
   category: string; // Keep for legacy/filtering
   updatedAt: string;
   link?: string; // Optional for folders/articles
   content?: string; // HTML/Markdown for articles
   parentId?: string | null; // For hierarchy
   previewLink?: string;
+  fileId?: string;
+  downloadUrl?: string; // For documents that need direct download
 }
 
 export interface TaskTemplate {

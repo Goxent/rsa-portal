@@ -27,6 +27,8 @@ import PerformanceWidget from './widgets/PerformanceWidget';
 import TeamWorkloadWidget from './widgets/TeamWorkloadWidget';
 import PendingActionsWidget from './widgets/PendingActionsWidget';
 import RecentActivityWidget from './widgets/RecentActivityWidget';
+import ClientStatsWidget from './widgets/ClientStatsWidget';
+import StaffStatsWidget from './widgets/StaffStatsWidget';
 
 interface WidgetContainerProps {
     userId: string;
@@ -141,6 +143,10 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <PendingActionsWidget {...props} />;
             case 'recent-activity':
                 return <RecentActivityWidget {...props} />;
+            case 'client-stats':
+                return <ClientStatsWidget widget={widget} clientStats={dashboardData.clientStats} />;
+            case 'staff-stats':
+                return <StaffStatsWidget widget={widget} staffStats={dashboardData.staffStats} />;
             default:
                 return <div className="text-gray-400 text-sm">Unknown widget type</div>;
         }

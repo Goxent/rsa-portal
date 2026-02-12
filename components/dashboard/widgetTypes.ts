@@ -8,7 +8,9 @@ export type WidgetType =
     | 'performance'
     | 'quick-actions'
     | 'recent-activity'
-    | 'task-stats';
+    | 'task-stats'
+    | 'client-stats'
+    | 'staff-stats';
 
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
 
@@ -97,6 +99,20 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         icon: 'Activity',
         defaultSize: 'md',
     },
+    {
+        type: 'client-stats',
+        title: 'Client Overview',
+        description: 'Client distribution and signing status',
+        icon: 'Briefcase',
+        defaultSize: 'sm',
+    },
+    {
+        type: 'staff-stats',
+        title: 'Department Overview',
+        description: 'Staff distribution by department',
+        icon: 'Users',
+        defaultSize: 'sm',
+    },
 ];
 
 // Default widget layout for new users
@@ -107,6 +123,8 @@ export const getDefaultWidgetConfig = (isAdmin: boolean): WidgetConfig[] => {
         { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 2, size: 'md', visible: true },
         { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 3, size: 'sm', visible: true },
         { id: 'w5', type: 'performance', title: 'Performance', position: 4, size: 'sm', visible: true },
+        { id: 'w8', type: 'client-stats', title: 'Client Overview', position: 5, size: 'sm', visible: true },
+        { id: 'w9', type: 'staff-stats', title: 'Department Overview', position: 6, size: 'sm', visible: true },
     ];
 
     if (isAdmin) {

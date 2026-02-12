@@ -788,19 +788,19 @@ const AttendancePage: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <select
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500"
-                                        value={log.clientId}
-                                        onChange={(e) => {
-                                            const newLogs = [...workLogs];
-                                            newLogs[index].clientId = e.target.value;
-                                            setWorkLogs(newLogs);
-                                        }}
-                                    >
-                                        <option value="">Select Client...</option>
-                                        <option value="INTERNAL">Internal / Admin</option>
-                                        {clientsList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
+                                    <div className="flex-1 min-w-[200px]">
+                                        <ClientSelect
+                                            clients={clientsList}
+                                            value={log.clientId}
+                                            onChange={(val) => {
+                                                const newLogs = [...workLogs];
+                                                newLogs[index].clientId = val as string;
+                                                setWorkLogs(newLogs);
+                                            }}
+                                            placeholder="Select Client..."
+                                            className="w-full"
+                                        />
+                                    </div>
 
                                     <textarea
                                         className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500 resize-none"
@@ -877,10 +877,14 @@ const AttendancePage: React.FC = () => {
                         <input type="date" className="bg-transparent text-sm text-white outline-none w-32" value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} />
                     </div>
                     {user?.role === UserRole.ADMIN && (
-                        <select className="bg-black/20 text-sm text-white rounded-lg p-2 border border-white/5 outline-none" value={filterStaffId} onChange={e => setFilterStaffId(e.target.value)}>
-                            <option value="ALL" className="text-gray-900">All Staff</option>
-                            {usersList.map(u => <option key={u.uid} value={u.uid} className="text-gray-900">{u.displayName}</option>)}
-                        </select>
+                        <div className="w-48">
+                            <StaffSelect
+                                users={[{ uid: 'ALL', displayName: 'All Staff', email: '', role: 'STAFF' } as any, ...usersList]}
+                                value={filterStaffId}
+                                onChange={(val) => setFilterStaffId(val as string)}
+                                placeholder="Filter by Staff..."
+                            />
+                        </div>
                     )}
                     <select className="bg-black/20 text-sm text-white rounded-lg p-2 border border-white/5 outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                         <option value="ALL" className="text-gray-900">All Status</option>
@@ -1070,20 +1074,17 @@ const AttendancePage: React.FC = () => {
                                         {manualForm.workLogs.map((log, index) => (
                                             <div key={log.id} className="grid grid-cols-12 gap-2 items-start border-b border-white/5 pb-2 mb-2 last:border-0 last:mb-0">
                                                 <div className="col-span-4">
-                                                    <select
-                                                        className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none"
+                                                    <ClientSelect
+                                                        clients={clientsList}
                                                         value={log.clientId}
-                                                        onChange={(e) => {
+                                                        onChange={(val) => {
                                                             const newLogs = [...manualForm.workLogs];
-                                                            newLogs[index].clientId = e.target.value;
+                                                            newLogs[index].clientId = val as string;
                                                             setManualForm({ ...manualForm, workLogs: newLogs });
                                                         }}
-                                                        required
-                                                    >
-                                                        <option value="">Client...</option>
-                                                        <option value="INTERNAL">Internal</option>
-                                                        {clientsList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                                    </select>
+                                                        placeholder="Client..."
+                                                        className="w-full"
+                                                    />
                                                 </div>
                                                 <div className="col-span-5">
                                                     <input

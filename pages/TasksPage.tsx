@@ -344,6 +344,22 @@ const TasksPage: React.FC = () => {
                                                                 <span className="truncate max-w-[200px] text-gray-300">{task.clientName || 'Internal'}</span>
                                                             </div>
 
+                                                            {/* Signing Authority Badge */}
+                                                            {(() => {
+                                                                const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
+                                                                if (taskClient && taskClient.signingAuthority) {
+                                                                    return (
+                                                                        <div className="mb-3 flex items-center bg-brand-900/40 px-2 py-1 rounded border border-brand-500/10">
+                                                                            <Sparkles size={10} className="text-amber-400 mr-1.5" />
+                                                                            <span className="text-[10px] text-brand-200 font-medium truncate">
+                                                                                {taskClient.signingAuthority}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
+
                                                             {totalSub > 0 && (
                                                                 <div className="mb-4">
                                                                     <div className="flex justify-between text-[10px] text-gray-400 mb-1">
@@ -397,6 +413,7 @@ const TasksPage: React.FC = () => {
                     <tr className="bg-navy-900/50 text-gray-400 uppercase tracking-wider text-xs border-b border-white/10">
                         <th className="px-6 py-4 font-heading font-bold">Task Name</th>
                         <th className="px-6 py-4 font-heading font-bold">Client</th>
+                        <th className="px-6 py-4 font-heading font-bold">Signee</th>
                         <th className="px-6 py-4 font-heading font-bold">Assigned</th>
                         <th className="px-6 py-4 font-heading font-bold">Due Date</th>
                         <th className="px-6 py-4 font-heading font-bold">Status</th>
@@ -407,6 +424,12 @@ const TasksPage: React.FC = () => {
                         <tr key={task.id} onClick={() => handleOpenEdit(task)} className="hover:bg-white/5 transition-colors cursor-pointer group">
                             <td className="px-6 py-4 font-medium text-white group-hover:text-brand-300 transition-colors">{task.title}</td>
                             <td className="px-6 py-4 text-brand-200">{task.clientName}</td>
+                            <td className="px-6 py-4 text-xs text-amber-200/80 font-medium">
+                                {(() => {
+                                    const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
+                                    return taskClient?.signingAuthority || '-';
+                                })()}
+                            </td>
                             <td className="px-6 py-4">
                                 <div className="flex flex-col gap-1">
                                     <div className="flex -space-x-2">
@@ -460,7 +483,7 @@ const TasksPage: React.FC = () => {
         // Auto-Apply Logic
         if (templates.length > 0) {
             const matchingTemplate = templates.find(t =>
-                (t.autoApplyRules?.industryType && t.autoApplyRules.industryType === selectedClient.industryType) ||
+                (t.autoApplyRules?.industryType && t.autoApplyRules.industryType === selectedClient.industry) ||
                 (t.autoApplyRules?.serviceType && t.autoApplyRules.serviceType === selectedClient.serviceType)
             );
 

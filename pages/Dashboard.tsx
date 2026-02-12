@@ -7,6 +7,8 @@ import { UserProfile, Task, UserRole, CalendarEvent } from '../types';
 import { toBS } from '../utils/dateUtils';
 import WidgetContainer from '../components/dashboard/WidgetContainer';
 
+import { Client } from '../types';
+
 // Helper interface for the unified schedule list
 interface ScheduleItem {
     id: string;
@@ -26,9 +28,13 @@ const Dashboard: React.FC = () => {
     const [taskData, setTaskData] = useState<{ name: string; value: number }[]>([]);
     const [recentTasks, setRecentTasks] = useState<Task[]>([]);
     const [upcomingSchedule, setUpcomingSchedule] = useState<ScheduleItem[]>([]);
-    const [staffStats, setStaffStats] = useState<{ busy: (UserProfile & { taskCount: number })[]; free: UserProfile[] }>({ busy: [], free: [] });
+    const [staffStats, setStaffStats] = useState<{ busy: (UserProfile & { taskCount: number })[]; free: UserProfile[]; byDepartment: Record<string, number> }>({ busy: [], free: [], byDepartment: {} });
     const [userMap, setUserMap] = useState<Record<string, UserProfile>>({});
     const [staffPerformance, setStaffPerformance] = useState({ completed: 0, pending: 0, lateCount: 0 });
+
+    // Client Stats
+    const [clientStats, setClientStats] = useState({ total: 0, active: 0, mySigned: 0, byService: {} as Record<string, number> });
+
     const [isLoading, setIsLoading] = useState(true);
 
     // Modal State for Staff Details
@@ -52,6 +58,7 @@ const Dashboard: React.FC = () => {
             const allUsers = isAdmin ? await AuthService.getAllUsers() : [user];
             const allTasks = await AuthService.getAllTasks();
             const allEvents = await AuthService.getAllEvents();
+            const allClients = await AuthService.getAllClients();
 
             // Build User Map
             const userMapData: Record<string, UserProfile> = {};
@@ -135,6 +142,14 @@ const Dashboard: React.FC = () => {
             });
             setUpcomingSchedule(mergedSchedule);
 
+            // Staff Stats Processing
+            const activeStaffList = allUsers.filter(u => u.status !== 'Inactive');
+            const deptStats: Record<string, number> = {};
+            activeStaffList.forEach(u => {
+                const dept = u.department || 'Unassigned';
+                deptStats[dept] = (deptStats[dept] || 0) + 1;
+            });
+
             // Staff Availability (Admin only)
             if (isAdmin) {
                 const activeTasksList = allTasks.filter(t => t.status !== 'COMPLETED');
@@ -154,7 +169,9 @@ const Dashboard: React.FC = () => {
                         freeList.push(u);
                     }
                 });
-                setStaffStats({ busy: busyList, free: freeList });
+                setStaffStats({ busy: busyList, free: freeList, byDepartment: deptStats });
+            } else {
+                setStaffStats({ busy: [], free: [], byDepartment: deptStats });
             }
 
             // User's own performance
@@ -163,6 +180,22 @@ const Dashboard: React.FC = () => {
             const myPending = myTasks.filter(t => t.status !== 'COMPLETED').length;
             const lateCount = await AuthService.getLateCountLast30Days(user.uid);
             setStaffPerformance({ completed: myCompleted, pending: myPending, lateCount });
+
+            // Client Stats Processing
+            const activeClients = allClients.filter(c => c.status === 'Active');
+            const mySignedClients = allClients.filter(c => c.signingAuthorityId === user.uid || c.signingAuthority === user.displayName);
+
+            const serviceDist: Record<string, number> = {};
+            activeClients.forEach(c => {
+                serviceDist[c.serviceType] = (serviceDist[c.serviceType] || 0) + 1;
+            });
+
+            setClientStats({
+                total: allClients.length,
+                active: activeClients.length,
+                mySigned: mySignedClients.length,
+                byService: serviceDist
+            });
 
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -180,6 +213,7 @@ const Dashboard: React.FC = () => {
         staffStats,
         userMap,
         staffPerformance,
+        clientStats, // Passed to widgets
         isLoading,
     };
 

@@ -122,89 +122,6 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // EVENTS
-    match /events/{eventId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
-    }
-
-    // TIME ENTRIES
-    match /timeEntries/{entryId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-    }
-
-    // CHAT CHANNELS
-    match /chatChannels/{channelId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin() || request.resource.data.members.hasAny([request.auth.uid]));
-      allow delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
-    }
-
-    // CHAT MESSAGES
-    match /chatMessages/{messageId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || isAdmin());
-    }
-    
-    // COMPLIANCE EVENTS
-    match /complianceEvents/{eventId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // RESOURCES/KNOWLEDGE BASE COLLECTION
-    match /resources/{resourceId} {
-      // All authenticated users can read resources
-      allow read: if isAuthenticated();
-      
-      // Only admins can create, update, or delete resources
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // EVENTS/CALENDAR COLLECTION
-    match /events/{eventId} {
-      // All authenticated users can read events
-      allow read: if isAuthenticated();
-      
-      // Only admins can create, update, or delete events
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // NOTIFICATIONS COLLECTION
-    match /notifications/{notificationId} {
-      // Users can only read their own notifications or system-wide notifications
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
-        resource.data.userId == 'ALL'
-      );
-      
-      // System can create notifications (from Cloud Functions)
-      allow create: if isAuthenticated();
-      
-      // Users can update (mark as read) their own notifications
-      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      
-      // Only admins can delete notifications
-      allow delete: if isAdmin();
-    }
-    
-    // AUDIT LOGS COLLECTION (new)
-    match /audit_logs/{logId} {
-      // Only admins can read audit logs
-      allow read: if isAdmin();
-      
-      // Anyone authenticated can create audit logs (automatically)
-      allow create: if isAuthenticated();
-      
-      // Audit logs are immutable - no updates or deletes
-      allow update, delete: if false;
-    }
-    
     // =============================================
     // ADVANCED FEATURES COLLECTIONS
     // =============================================
@@ -234,12 +151,14 @@ service cloud.firestore {
       allow create: if isAdmin();
       
       // Only admins can update or delete channels
+      // Allow members to update ONLY if adding themselves (joining) - omitted for now as logic is complex
       allow update, delete: if isAdmin();
     }
     
     // CHAT MESSAGES - Members can read/write in their channels
     match /chatMessages/{messageId} {
       // Can read messages from channels you're a member of
+      // Note: This requires a get() call which costs 1 read. 
       allow read: if isAuthenticated() && 
         request.auth.uid in get(/databases/$(database)/documents/chatChannels/$(resource.data.channelId)).data.members;
       
@@ -281,6 +200,21 @@ service cloud.firestore {
       
       // Only admins can create, update, or delete
       allow create, update, delete: if isAdmin();
+    }
+    
+    // EVENTS (Consolidated Rule)
+    match /events/{eventId} {
+      // All authenticated users can read events
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can create events
+      allow create: if isAuthenticated();
+      
+      // Creators can update/delete their own events, Admins can do anything
+      allow update, delete: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid || 
+        isAdmin()
+      );
     }
   }
 }

@@ -39,6 +39,7 @@ const ClientsPage: React.FC = () => {
         pan: '',
         contactPerson: '',
         auditorId: '',
+        signingAuthorityId: '',
         signingAuthority: 'R. Sapkota & Associates' // Default
     };
     const [formData, setFormData] = useState<Partial<Client>>(initialFormState);
@@ -142,6 +143,17 @@ const ClientsPage: React.FC = () => {
         if (!id) return 'Unassigned';
         return staffList.find(s => s.uid === id)?.displayName || 'Unknown';
     };
+
+    const getSigningAuthorityName = (client: Client) => {
+        if (client.signingAuthorityId) {
+            return staffList.find(s => s.uid === client.signingAuthorityId)?.displayName || client.signingAuthority;
+        }
+        return client.signingAuthority || 'Not Specified';
+    };
+
+    const signingAuthorities = staffList.filter(s =>
+        [UserRole.MASTER_ADMIN, UserRole.ADMIN, UserRole.MANAGER].includes(s.role)
+    );
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-20">
@@ -256,8 +268,8 @@ const ClientsPage: React.FC = () => {
                             <div className="mt-4 pt-3 border-t border-white/5">
                                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signing Authority</p>
                                 <div className="flex items-center text-sm text-gray-300">
-                                    <Building2 size={14} className="mr-2 text-indigo-400" />
-                                    {client.signingAuthority || 'Not Specified'}
+                                    <BadgeCheck size={14} className="mr-2 text-indigo-400" />
+                                    {getSigningAuthorityName(client)}
                                 </div>
                             </div>
 
@@ -375,30 +387,48 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            <select
-                                                className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
-                                                value={['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') ? formData.signingAuthority : 'Other'}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    if (val === 'Other') {
-                                                        setFormData({ ...formData, signingAuthority: '' });
-                                                    } else {
-                                                        setFormData({ ...formData, signingAuthority: val });
-                                                    }
-                                                }}
-                                            >
-                                                <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
-                                                <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
-                                                <option value="TN Acharya & Co.">TN Acharya & Co.</option>
-                                                <option value="NP Sharma & Co.">NP Sharma & Co.</option>
-                                                <option value="Other">Other (Manual Entry)</option>
-                                            </select>
-                                            {(!['R. Sapkota & Associates', 'Pankaj Thapa Associates', 'TN Acharya & Co.', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') || formData.signingAuthority === '') && (
+                                        <div className="space-y-3">
+                                            {/* Toggle between Staff Select and Manual Text */}
+                                            <div className="flex items-center space-x-4 mb-2">
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input
+                                                        type="radio"
+                                                        checked={!!formData.signingAuthorityId}
+                                                        onChange={() => setFormData({ ...formData, signingAuthorityId: user?.uid, signingAuthority: user?.displayName })}
+                                                        className="accent-blue-500"
+                                                    />
+                                                    <span className="text-sm text-gray-300">Select Staff</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input
+                                                        type="radio"
+                                                        checked={!formData.signingAuthorityId}
+                                                        onChange={() => setFormData({ ...formData, signingAuthorityId: '', signingAuthority: '' })}
+                                                        className="accent-blue-500"
+                                                    />
+                                                    <span className="text-sm text-gray-300">Manual Entry</span>
+                                                </label>
+                                            </div>
+
+                                            {formData.signingAuthorityId !== undefined && formData.signingAuthorityId !== '' ? (
+                                                <StaffSelect
+                                                    users={signingAuthorities}
+                                                    value={formData.signingAuthorityId}
+                                                    onChange={(val) => {
+                                                        const selected = signingAuthorities.find(s => s.uid === val);
+                                                        setFormData({
+                                                            ...formData,
+                                                            signingAuthorityId: val as string,
+                                                            signingAuthority: selected?.displayName
+                                                        });
+                                                    }}
+                                                    placeholder="Select Signing Partner..."
+                                                />
+                                            ) : (
                                                 <input
                                                     type="text"
-                                                    placeholder="Enter Signing Authority Name"
-                                                    className="w-full glass-input rounded-lg px-4 py-2.5 text-sm animate-in fade-in slide-in-from-left-4"
+                                                    placeholder="Enter Signing Authority Name (e.g. Firm Name)"
+                                                    className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                                     value={formData.signingAuthority}
                                                     onChange={e => setFormData({ ...formData, signingAuthority: e.target.value })}
                                                 />

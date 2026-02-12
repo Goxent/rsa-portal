@@ -28,6 +28,7 @@ import {
     onSnapshot
 } from 'firebase/firestore';
 import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification } from '../types';
+import { EmailService } from './email';
 
 // Load Config from Environment Variables
 const firebaseConfig = {
@@ -361,6 +362,7 @@ export const AuthService = {
 
     saveTask: async (task: Task) => {
         let taskId = task.id;
+        let isNew = false;
         if (task.id && !task.id.startsWith('t_')) {
             const { id, ...data } = task;
             await updateDoc(doc(db, 'tasks', id), data);
@@ -368,11 +370,13 @@ export const AuthService = {
             const { id, ...data } = task;
             const docRef = await addDoc(collection(db, 'tasks'), { ...data, createdAt: new Date().toISOString() });
             taskId = docRef.id;
+            isNew = true;
         }
 
-        // Notify assigned users
-        if (task.assignedTo && task.assignedTo.length > 0) {
+        // Notify assigned users (Only on creation for now to avoid spam)
+        if (isNew && task.assignedTo && task.assignedTo.length > 0) {
             for (const uid of task.assignedTo) {
+                // In-App Notification
                 await AuthService.createNotification({
                     userId: uid,
                     title: 'New Task Assignment',
@@ -381,6 +385,24 @@ export const AuthService = {
                     category: 'TASK',
                     link: '/workflow'
                 });
+
+                // Email Notification
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', uid));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data() as UserProfile;
+                        if (userData.email) {
+                            await EmailService.sendTaskAssignment(
+                                userData.email,
+                                userData.displayName || 'Staff Member',
+                                task.title,
+                                `${window.location.origin}/#/workflow`
+                            );
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to send email notif", err);
+                }
             }
         }
     },
@@ -524,6 +546,26 @@ export const AuthService = {
                     category: 'EVENT',
                     link: '/calendar'
                 });
+
+                // Email Notification
+                try {
+                    // Actual lookup
+                    const pDoc = await getDoc(doc(db, 'users', participantId));
+                    if (pDoc.exists()) {
+                        const pData = pDoc.data() as UserProfile;
+                        if (pData.email) {
+                            await EmailService.sendEventInvitation(
+                                pData.email,
+                                pData.displayName || 'Colleague',
+                                event.title,
+                                event.date + ' ' + (event.time || ''),
+                                `${window.location.origin}/#/calendar`
+                            );
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to send event email", err);
+                }
             }
         }
 
