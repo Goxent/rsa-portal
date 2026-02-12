@@ -80,7 +80,11 @@ const CalendarPage: React.FC = () => {
                     // Handle year rollover if needed (basic implementation)
                     const npDate = new NepaliDate(currentNpYear, targetMonth, 25);
                     const adDate = npDate.toJsDate();
-                    const adDateStr = adDate.toISOString().split('T')[0];
+                    // Use local date components to avoid UTC shift
+                    const year = adDate.getFullYear();
+                    const month = String(adDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(adDate.getDate()).padStart(2, '0');
+                    const adDateStr = `${year}-${month}-${day}`;
 
                     // Find clients with VAT Return enabled
                     const vatClients = clients.filter(c => c.vatReturn);

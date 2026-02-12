@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Clock, MapPin, AlertTriangle, FileText, Download, UserCog, Check, X, Filter, FileDown, CalendarRange, Users, Briefcase, AlertOctagon, CalendarOff, Palmtree, Plus, Save, Search, ChevronDown } from 'lucide-react';
+import { Clock, MapPin, AlertTriangle, FileText, Download, UserCog, Check, X, Filter, FileDown, CalendarRange, Users, Briefcase, AlertOctagon, CalendarOff, Palmtree, Plus, Save, Search, ChevronDown, Play, Square, Timer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AttendanceRecord, UserRole, UserProfile, Client, LeaveRequest } from '../types';
 import { AuthService } from '../services/firebase';
@@ -19,6 +19,7 @@ const AttendancePage: React.FC = () => {
     const location = useLocation(); // Hook to access navigation state
     const [currentTime, setCurrentTime] = useState(new Date());
     const [status, setStatus] = useState<'CLOCKED_OUT' | 'CLOCKED_IN'>('CLOCKED_OUT');
+    const [currentRecordId, setCurrentRecordId] = useState<string | null>(null); // Track the Active Doc ID
     const [sessionTime, setSessionTime] = useState(0);
     const [loading, setLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -119,7 +120,19 @@ const AttendancePage: React.FC = () => {
             ]);
 
             setUsersList(uList);
-            setClientsList(cList);
+
+            // Inject "Internal / Office" client
+            const internalClient: Client = {
+                id: 'INTERNAL',
+                name: 'Internal / Office',
+                code: 'INT',
+                serviceType: 'Internal',
+                status: 'Active',
+                category: 'A',
+                industry: 'Internal'
+            };
+            setClientsList([internalClient, ...cList]);
+
             setHistory(attHistory);
             setLateCount(lCount);
             setLeavesList(lList);
@@ -133,10 +146,15 @@ const AttendancePage: React.FC = () => {
 
             if (todayRecord) {
                 setStatus('CLOCKED_IN');
+                setCurrentRecordId(todayRecord.id);
                 // Calculate session time
                 const startTime = new Date(`${today}T${todayRecord.clockIn}`);
                 const diff = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
                 setSessionTime(diff > 0 ? diff : 0);
+            } else {
+                setStatus('CLOCKED_OUT');
+                setCurrentRecordId(null);
+                setSessionTime(0);
             }
         } catch (err) {
             console.error(err);
@@ -152,113 +170,136 @@ const AttendancePage: React.FC = () => {
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    const handleClockAction = async () => {
-        // Prevent duplicate submissions
+    const handleClockIn = async () => {
         if (isSaving || loading) return;
 
-        // 0. Single Clock-In Check
-        if (status === 'CLOCKED_OUT') {
-            const todayStr = new Date().toLocaleDateString('en-CA');
-            // Search local history state (which should be up to date) for a record today
-            const hasRecordToday = history.some(r => r.userId === user?.uid && r.date === todayStr);
-            if (hasRecordToday) {
-                alert("⛔ Access Denied: You have already clocked in and out for today. Multiple daily entries are not permitted.");
-                return;
-            }
+        // Validation
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        const hasRecordToday = history.some(r => r.userId === user?.uid && r.date === todayStr && r.clockOut); // Check only finished records
+
+        // If they have a finished record, block them? Or allow multiple?
+        // Requirement says "Multiple daily entries are not permitted" usually, but let's stick to existing logic
+        // Actually, if they clocked out, they are done.
+        if (hasRecordToday) {
+            alert("⛔ Access Denied: You have already completed your attendance for today.");
+            return;
         }
 
-        // 1. Late Validation
-        if (status === 'CLOCKED_OUT' && isLateEntry && !lateReason.trim()) {
+        if (isLateEntry && !lateReason.trim()) {
             alert("You are arriving after 10:15 AM. You must provide a reason for being late.");
             return;
         }
 
-        // 2. Clock Out Validation
-        if (status === 'CLOCKED_IN') {
-            const validLogs = workLogs.filter(l => l.clientId && l.description);
-            if (validLogs.length === 0) {
-                alert("⚠️ Please add at least one valid Work Log (Client + Description) before clocking out.");
-                return;
-            }
-        }
-
-        setLoading(true);
         setIsSaving(true);
-        proceedClockAction(undefined);
+        setLoading(true);
+
+        try {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+
+            const newRecord: AttendanceRecord = {
+                id: 'temp_id', // Service will handle ID or we can generate one if using addDoc directly in service
+                userId: user?.uid || '',
+                userName: user?.displayName || 'User',
+                date: todayStr,
+                clockIn: timeStr,
+                status: isLateEntry ? 'LATE' : 'PRESENT',
+                notes: isLateEntry ? `Late Reason: ${lateReason}` : '',
+                workHours: 0
+            };
+
+            await AuthService.recordAttendance(newRecord);
+            // Reload to get the ID and update state
+            await loadData();
+
+        } catch (error: any) {
+            console.error(error);
+            alert(error.message);
+        } finally {
+            setIsSaving(false);
+            setLoading(false);
+        }
     };
 
-    const proceedClockAction = async (coords: any) => {
+    const handleClockOut = async () => {
+        if (isSaving || loading) return;
+
+        // Validation
+        const validLogs = workLogs.filter(l => l.clientId && l.description);
+        if (validLogs.length === 0) {
+            alert("⚠️ Please add at least one valid Work Log (Client + Description) before clocking out.");
+            return;
+        }
+
+        setIsSaving(true);
+        setLoading(true);
+
         try {
             const now = new Date();
             const todayStr = now.toLocaleDateString('en-CA');
             const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
 
-            if (status === 'CLOCKED_OUT') {
-                // Clocking IN
-                const newRecord: AttendanceRecord = {
-                    id: 'temp_id',
-                    userId: user?.uid || '',
-                    userName: user?.displayName || 'User',
-                    date: todayStr,
-                    clockIn: timeStr,
-                    status: isLateEntry ? 'LATE' : 'PRESENT',
-                    notes: isLateEntry ? `Late Reason: ${lateReason}` : '',
-                    workHours: 0,
-                    ...(coords ? { location: { lat: coords.latitude, lng: coords.longitude } } : {})
-                };
+            // Filter empty logs
+            const finalLogs = workLogs.filter(l => l.clientId && l.description);
 
-                await AuthService.recordAttendance(newRecord);
-                setStatus('CLOCKED_IN');
-                setSessionTime(0);
+            const clientIds = Array.from(new Set(finalLogs.map(l => l.clientId)));
+            const clientNames = finalLogs.map(l => {
+                const c = clientsList.find(cl => cl.id === l.clientId);
+                return c ? c.name : 'Unknown';
+            }).join(', ');
 
-                // Refresh history
-                loadData();
-            } else {
-                // Clocking OUT
-                // Filter empty logs
-                const finalLogs = workLogs.filter(l => l.clientId && l.description);
+            const combinedDesc = finalLogs.map(l => `${l.clientId ? clientsList.find(c => c.id === l.clientId)?.name : '?'}: ${l.description} (${l.duration}h)`).join('\n');
 
-                // Calculate total work hours from logs if provided, OR use session time?
-                // Strategy: Use session time for "Presence", but save logs for "Billable".
-                // Actually, let's trust session time for the main record.
+            // We need to update the EXISTING record, avoiding "No Permission" on create
+            // The service 'recordAttendance' handles the "Update if exists" logic based on Date + User.
+            // But we must be careful with permissions.
+            // Since we updated rules to allow user to update their own, this should work.
 
-                const clientIds = Array.from(new Set(finalLogs.map(l => l.clientId)));
-                const clientNames = finalLogs.map(l => {
-                    const c = clientsList.find(cl => cl.id === l.clientId);
-                    return c ? c.name : 'Unknown';
-                }).join(', ');
+            const record: AttendanceRecord = {
+                id: currentRecordId || '', // Pass ID if known, otherwise service finds it by date
+                userId: user?.uid || '',
+                userName: user?.displayName || 'User',
+                date: todayStr,
+                clockIn: '00:00:00', // Service won't overwrite existing clockIn if we don't pass it? 
+                // Wait, AuthService.recordAttendance overwrites everything if we pass it.
+                // We need to fetch the existing clockIn to calculate hours correctly, OR trust the Service checks.
+                // Service logic: "if (!record.clockOut && existing.clockIn ...)"
+                // It does: "await updateDoc(doc(db, 'attendance', docId), updateData);"
+                // So we should construct the full object or partial. 
+                // Let's pass the FULL object but we need the original ClockIn time.
 
-                const combinedDesc = finalLogs.map(l => `${l.clientId ? clientsList.find(c => c.id === l.clientId)?.name : '?'}: ${l.description} (${l.duration}h)`).join('\n');
+                // We can rely on `sessionTime` to calculate approximate clockIn, OR just pass current time as clockOut.
+                // Better: Let's assume the service handles the merge? 
+                // Looking at `firebase.ts`: 
+                // It does `const { id, ...updateData } = record; await updateDoc(..., updateData);`
+                // So it WILL overwrite clockIn if we pass it.
+                // We MUST pass the correct original ClockIn.
 
-                const record: AttendanceRecord = {
-                    id: '', // Auto
-                    userId: user?.uid || '',
-                    userName: user?.displayName || 'User',
-                    date: todayStr,
-                    clockIn: new Date(now.getTime() - sessionTime * 1000).toLocaleTimeString('en-US', { hour12: false }),
-                    clockOut: timeStr,
-                    workHours: Number((sessionTime / 3600).toFixed(2)),
-                    status: isLateEntry ? 'LATE' : 'PRESENT',
-                    clientIds: clientIds,
-                    clientName: clientNames || 'Internal',
-                    workDescription: dailyDescription || combinedDesc, // Use daily desc or auto-gen
-                    workLogs: finalLogs,
-                    notes: lateReason ? `Late Reason: ${lateReason}` : ''
-                };
+                clockIn: new Date(now.getTime() - sessionTime * 1000).toLocaleTimeString('en-US', { hour12: false }), // Re-calculate or use stored
+                clockOut: timeStr,
+                workHours: Number((sessionTime / 3600).toFixed(2)),
+                status: isLateEntry ? 'LATE' : 'PRESENT',
+                clientIds: clientIds,
+                clientName: clientNames || 'Internal',
+                workDescription: dailyDescription || combinedDesc,
+                workLogs: finalLogs,
+                notes: lateReason ? `Late Reason: ${lateReason}` : ''
+            };
 
-                await AuthService.recordAttendance(record);
-                setStatus('CLOCKED_OUT');
-                setWorkLogs([{ id: '1', clientId: '', description: '', duration: 0, billable: true }]);
-                setDailyDescription('');
-                setLateReason('');
-                loadData();
-            }
+            await AuthService.recordAttendance(record);
+            setStatus('CLOCKED_OUT');
+            setCurrentRecordId(null);
+            setWorkLogs([{ id: '1', clientId: '', description: '', duration: 0, billable: true }]);
+            setDailyDescription('');
+            setLateReason('');
+            await loadData();
+
         } catch (error: any) {
             console.error(error);
-            alert(error.message || "Error processing attendance.");
+            alert(error.message);
         } finally {
-            setLoading(false);
             setIsSaving(false);
+            setLoading(false);
         }
     };
 
@@ -276,6 +317,8 @@ const AttendancePage: React.FC = () => {
         try {
             const selectedUser = usersList.find(u => u.uid === manualForm.userId);
 
+            if (!selectedUser) throw new Error("User not found");
+
             // Calculate Duration roughly
             const start = new Date(`${manualForm.date}  ${manualForm.clockIn}`);
             const end = new Date(`${manualForm.date}  ${manualForm.clockOut}`);
@@ -292,7 +335,7 @@ const AttendancePage: React.FC = () => {
             const record: AttendanceRecord = {
                 id: '', // Generated by service
                 userId: manualForm.userId,
-                userName: selectedUser?.displayName || 'Unknown',
+                userName: selectedUser.displayName || 'Unknown',
                 date: manualForm.date,
                 clockIn: manualForm.clockIn + ':00',
                 clockOut: manualForm.clockOut + ':00',
@@ -342,9 +385,6 @@ const AttendancePage: React.FC = () => {
         } else if (user) {
             targetUsers = [user]; // Staff sees only themselves
         }
-
-        console.log('DEBUG: Report Target Users:', targetUsers);
-        console.log('DEBUG: Filter Params:', { start: filterStartDate, end: filterEndDate, staffId: filterStaffId });
 
         // 2. Generate Date Range Array
         const dates: string[] = [];
@@ -443,8 +483,6 @@ const AttendancePage: React.FC = () => {
         if (filterStatus !== 'ALL') {
             return fullRecords.filter(r => r.status === filterStatus);
         }
-
-        console.log('DEBUG: Generated Report Data:', fullRecords);
 
         // Sort: Group By Staff OR Date Descending
         if (groupByStaff) {
@@ -703,79 +741,112 @@ const AttendancePage: React.FC = () => {
             )}
 
             {/* Clock In/Out Section */}
-            <div className="glass-panel p-8 rounded-xl flex flex-col lg:flex-row items-start justify-between shadow-xl gap-8">
-                <div className="flex-1 w-full">
-                    <h2 className="text-2xl font-bold text-white mb-2">Today's Attendance</h2>
-                    <div className="flex items-center space-x-2 mb-4">
-                        <p className="text-gray-300 font-medium">Office Time: 10:00 AM - 5:00 PM</p>
+            <div className="glass-panel p-8 rounded-xl flex flex-col xl:flex-row items-center justify-between shadow-xl gap-8">
+
+                {/* Status Column */}
+                <div className="flex-1 w-full space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-2xl font-bold text-white mb-1">Today's Attendance</h2>
+                            <p className="text-gray-400 text-sm">Office Time: 10:00 - 17:00</p>
+                        </div>
                         {isLateEntry && status === 'CLOCKED_OUT' && (
-                            <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded border border-orange-500/30">LATE ENTRY</span>
+                            <div className="flex items-center text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
+                                <AlertTriangle size={14} className="mr-2" />
+                                <span className="text-xs font-bold">LATE ENTRY</span>
+                            </div>
                         )}
                     </div>
-                    <div className="text-5xl font-mono font-bold text-blue-400 tracking-wider drop-shadow-lg mb-2">
-                        {currentTime.toLocaleTimeString()}
-                    </div>
-                    <div className="text-lg font-medium text-violet-400 mb-4">
-                        📅 {new NepaliDate().format('DD MMMM YYYY')} <span className="text-gray-500 text-sm">(BS)</span>
-                    </div>
 
-                    {status === 'CLOCKED_IN' ? (
-                        <div className="mt-2 text-green-400 font-medium flex items-center bg-green-500/10 p-4 rounded-xl border border-green-500/20 max-w-md">
-                            <span className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></span>
-                            <div>
-                                <p className="text-sm text-green-200">Session Active</p>
-                                <p className="text-xl font-bold">Duration: {formatDuration(sessionTime)}</p>
+                    {/* Clock Display */}
+                    <div className="bg-black/20 p-6 rounded-2xl border border-white/5 flex items-center justify-between">
+                        <div>
+                            <div className="text-5xl font-mono font-bold text-blue-400 tracking-wider drop-shadow-lg">
+                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div className="text-lg font-medium text-violet-400 mt-1">
+                                {new NepaliDate().format('DD MMMM YYYY')} <span className="text-gray-500 text-sm">(BS)</span>
                             </div>
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {/* Late Reason Input */}
-                            {isLateEntry && (
-                                <div className="animate-in slide-in-from-top-2">
-                                    <label className="block text-sm font-bold text-orange-400 mb-2 flex items-center">
-                                        <AlertTriangle size={16} className="mr-2" />
-                                        Late Reason Required (&gt; 10:15 AM)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full glass-input rounded-xl px-4 py-3 text-sm border-orange-500/50 focus:border-orange-500"
-                                        placeholder="Why are you late today?"
-                                        value={lateReason}
-                                        onChange={(e) => setLateReason(e.target.value)}
-                                    />
-                                </div>
-                            )}
+                        <div className="hidden sm:block">
+                            <div className={`w-24 h-24 rounded-full flex items-center justify-center border-4 ${status === 'CLOCKED_IN' ? 'border-green-500/30 bg-green-500/10' : 'border-gray-500/30 bg-gray-500/10'}`}>
+                                <Timer size={40} className={status === 'CLOCKED_IN' ? 'text-green-400 animate-pulse' : 'text-gray-500'} />
+                            </div>
+                        </div>
+                    </div>
 
-                            <button
-                                onClick={handleClockAction}
-                                disabled={loading}
-                                className={`
-                            w-full lg:w-auto flex items-center justify-center space-x-2 py-4 px-8 rounded-xl text-lg font-bold shadow-lg transition-all active:scale-95
-                            ${loading ? 'opacity-70 cursor-not-allowed' : ''}
-                            bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-blue-500/30
-                        `}
-                            >
-                                <Clock size={20} />
-                                <span>{loading ? 'Processing...' : 'Clock In'}</span>
-                            </button>
-                            <p className="text-xs text-gray-500 italic mt-2">* Note: You can only clock in once per day.</p>
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={handleClockIn}
+                            disabled={status === 'CLOCKED_IN' || loading}
+                            className={`
+                                flex flex-col items-center justify-center p-6 rounded-xl border border-white/10 transition-all
+                                ${status === 'CLOCKED_IN'
+                                    ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed opacity-50'
+                                    : 'bg-gradient-to-br from-green-600 to-emerald-700 text-white hover:shadow-lg hover:shadow-green-500/20 active:scale-95'}
+                            `}
+                        >
+                            <Play size={32} className="mb-2" fill={status !== 'CLOCKED_IN' ? "currentColor" : "none"} />
+                            <span className="font-bold text-lg">Clock In</span>
+                        </button>
+
+                        <button
+                            onClick={handleClockOut}
+                            disabled={status === 'CLOCKED_OUT' || loading}
+                            className={`
+                                flex flex-col items-center justify-center p-6 rounded-xl border border-white/10 transition-all
+                                ${status === 'CLOCKED_OUT'
+                                    ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed opacity-50'
+                                    : 'bg-gradient-to-br from-red-600 to-rose-700 text-white hover:shadow-lg hover:shadow-red-500/20 active:scale-95'}
+                            `}
+                        >
+                            <Square size={32} className="mb-2" fill={status === 'CLOCKED_IN' ? "currentColor" : "none"} />
+                            <span className="font-bold text-lg">Clock Out</span>
+                        </button>
+                    </div>
+
+                    {/* Late Reason Input */}
+                    {isLateEntry && status === 'CLOCKED_OUT' && (
+                        <div className="animate-in slide-in-from-top-2 bg-orange-500/10 p-3 rounded-lg border border-orange-500/20">
+                            <label className="block text-xs font-bold text-orange-400 mb-1">
+                                Late Reason Required
+                            </label>
+                            <input
+                                type="text"
+                                className="w-full bg-black/20 rounded-lg px-3 py-2 text-sm text-white outline-none border border-orange-500/30 focus:border-orange-500"
+                                placeholder="Why are you late today?"
+                                value={lateReason}
+                                onChange={(e) => setLateReason(e.target.value)}
+                            />
                         </div>
                     )}
                 </div>
 
-                {/* Daily Reporting Form (New Work Logs) */}
-                <div className={`w-full lg:w-[500px] bg-white/5 rounded-xl p-6 border border-white/10 transition-opacity duration-300 ${status === 'CLOCKED_OUT' ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
+                {/* Work Log / Session Panel */}
+                <div className={`w-full xl:w-[500px] bg-white/5 rounded-xl p-6 border border-white/10 transition-all duration-300 relative overflow-hidden ${status === 'CLOCKED_OUT' ? 'opacity-50 grayscale' : 'opacity-100'}`}>
+
+                    {/* Overlay for Clocked Out */}
+                    {status === 'CLOCKED_OUT' && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                            <div className="text-center">
+                                <Briefcase className="mx-auto text-gray-400 mb-2" size={32} />
+                                <p className="text-gray-300 font-medium">Clock In to Start Work</p>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="mb-4 flex items-center justify-between text-blue-300">
                         <div className="flex items-center">
                             <Briefcase size={20} className="mr-2" />
-                            <h3 className="font-bold">Work Logs</h3>
+                            <h3 className="font-bold">Today's Work Log</h3>
                         </div>
-                        <button onClick={() => setWorkLogs([...workLogs, { id: Date.now().toString(), clientId: '', description: '', duration: 0, billable: true }])} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded flex items-center">
-                            <Plus size={12} className="mr-1" /> Add Row
-                        </button>
+                        <div className="text-xs bg-blue-500/20 px-2 py-1 rounded text-blue-200 border border-blue-500/30">
+                            Session: {formatDuration(sessionTime)}
+                        </div>
                     </div>
 
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
+                    <div className="space-y-3 max-h-[320px] overflow-y-auto px-1 custom-scrollbar">
                         {workLogs.map((log, index) => (
                             <div key={log.id} className="bg-black/20 p-3 rounded-lg border border-white/5 animate-in slide-in-from-right-2">
                                 <div className="flex justify-between items-start mb-2">
@@ -797,7 +868,7 @@ const AttendancePage: React.FC = () => {
                                                 newLogs[index].clientId = val as string;
                                                 setWorkLogs(newLogs);
                                             }}
-                                            placeholder="Select Client..."
+                                            placeholder="Select Client / Internal..."
                                             className="w-full"
                                         />
                                     </div>
@@ -816,7 +887,7 @@ const AttendancePage: React.FC = () => {
 
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1 flex items-center bg-white/5 rounded-lg border border-white/10 px-2">
-                                            <span className="text-gray-500 text-xs mr-2">Hours:</span>
+                                            <span className="text-gray-500 text-xs mr-2">Duration (Hrs):</span>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -830,12 +901,14 @@ const AttendancePage: React.FC = () => {
                                                 }}
                                             />
                                         </div>
-                                        <div className="flex items-center space-x-2 bg-white/5 rounded-lg border border-white/10 px-2 py-1.5 cursor-pointer" onClick={() => {
+                                        <div className="flex items-center space-x-2 bg-white/5 rounded-lg border border-white/10 px-2 py-1.5 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => {
                                             const newLogs = [...workLogs];
                                             newLogs[index].billable = !newLogs[index].billable;
                                             setWorkLogs(newLogs);
                                         }}>
-                                            <div className={`w-3 h-3 rounded-sm border ${log.billable ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}></div>
+                                            <div className={`w-3 h-3 rounded-sm border flex items-center justify-center ${log.billable ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
+                                                {log.billable && <Check size={10} className="text-white" />}
+                                            </div>
                                             <span className="text-xs text-gray-400">Billable</span>
                                         </div>
                                     </div>
@@ -844,26 +917,14 @@ const AttendancePage: React.FC = () => {
                         ))}
                     </div>
 
-                    <div className="mt-4">
-                        <textarea
-                            className="w-full text-xs rounded-lg p-3 bg-black/20 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none text-white resize-none"
-                            placeholder="Overall comments (optional)..."
-                            rows={2}
-                            value={dailyDescription}
-                            onChange={(e) => setDailyDescription(e.target.value)}
-                        />
-                    </div>
-
-                    {status === 'CLOCKED_IN' && (
+                    <div className="mt-3 flex gap-2">
                         <button
-                            onClick={handleClockAction}
-                            disabled={loading}
-                            className="w-full flex items-center justify-center space-x-2 py-4 rounded-xl text-lg font-bold shadow-lg transition-all active:scale-95 bg-gradient-to-r from-red-600 to-rose-600 text-white hover:shadow-red-500/30 mt-4"
+                            onClick={() => setWorkLogs([...workLogs, { id: Date.now().toString(), clientId: '', description: '', duration: 0, billable: true }])}
+                            className="flex-1 text-xs bg-white/10 hover:bg-white/20 py-2 rounded-lg flex items-center justify-center text-gray-300 transition-colors border border-white/5"
                         >
-                            <Clock size={20} />
-                            <span>{loading ? 'Processing...' : 'Clock Out'}</span>
+                            <Plus size={14} className="mr-1" /> Add Activity
                         </button>
-                    )}
+                    </div>
                 </div>
             </div>
 
@@ -944,13 +1005,13 @@ const AttendancePage: React.FC = () => {
                                         {record.workLogs && record.workLogs.length > 0 ? (
                                             <div className="space-y-2">
                                                 {record.workLogs.map((log: any, i: number) => (
-                                                    <div key={i} className="text-xs bg-white/5 p-2 rounded border border-white/5">
+                                                    <div key={i} className="text-xs bg-white/5 p-2 rounded border border-white/5 shadow-sm">
                                                         <div className="flex justify-between font-bold text-gray-400 mb-0.5">
                                                             <span>{log.clientName || 'Unknown'}</span>
                                                             {log.duration > 0 && <span>{log.duration}h</span>}
                                                         </div>
                                                         <div className="text-gray-300">{log.description}</div>
-                                                        {log.billable && <div className="text-[10px] text-green-500 mt-0.5">Billable</div>}
+                                                        {log.billable && <div className="text-[10px] text-green-500 mt-0.5 flex items-center"><Check size={10} className="mr-1" /> Billable</div>}
                                                     </div>
                                                 ))}
                                                 {record.workDescription && <div className="text-xs text-gray-500 mt-1 italic border-t border-white/5 pt-1">{record.workDescription}</div>}
@@ -1007,13 +1068,13 @@ const AttendancePage: React.FC = () => {
             {/* Manual Entry Modal (Admin Only) */}
             {isManualModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-xl w-full max-w-2xl overflow-hidden flex flex-col shadow-2xl border border-white/10">
+                    <div className="glass-modal rounded-xl w-full max-w-2xl overflow-hidden flex flex-col shadow-2xl border border-white/10 max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                             <h3 className="text-lg font-bold text-white font-heading">Manual Attendance Entry</h3>
                             <button onClick={() => setIsManualModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
                         </div>
 
-                        <form onSubmit={handleManualSubmit} className="p-6">
+                        <form onSubmit={handleManualSubmit} className="p-6 overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div className="col-span-1 md:col-span-2">
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Staff Member</label>

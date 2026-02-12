@@ -71,8 +71,11 @@ service cloud.firestore {
         isAdmin()
       );
       
-      // Users can create/update their own attendance
-      allow create, update: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      // Users can create/update their own attendance, Admins can do for anyone
+      allow create, update: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.userId ||
+        isAdmin()
+      );
       
       // Only admins can delete attendance records
       allow delete: if isAdmin();

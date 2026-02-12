@@ -76,9 +76,9 @@ const ClientsPage: React.FC = () => {
 
         setIsSaving(true);
         try {
-            // Sanitize data: Remove undefined/null values
+            // Sanitize data: Remove undefined/null values but KEEP empty strings (to allow clearing fields)
             const cleanData = Object.entries(formData).reduce((acc, [key, value]) => {
-                if (value !== undefined && value !== null && value !== '') {
+                if (value !== undefined && value !== null) {
                     acc[key] = value;
                 }
                 return acc;
@@ -105,9 +105,9 @@ const ClientsPage: React.FC = () => {
             setEditingId(null);
             setFormData(initialFormState);
             loadData();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Save error:', error);
-            toast.error('Failed to save client');
+            toast.error('Failed to save client: ' + (error.message || 'Unknown error'));
         } finally {
             setIsSaving(false);
         }
@@ -346,12 +346,16 @@ const ClientsPage: React.FC = () => {
                                 <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Basic Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Client Name *</label>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">
+                                            Client Name <span className="text-red-400">*</span>
+                                        </label>
                                         <input required type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Acme Corp Pvt Ltd" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Client Code *</label>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">
+                                            Client Code <span className="text-red-400">*</span>
+                                        </label>
                                         <input required type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm font-mono"
                                             value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="e.g. ACME-01" />
                                     </div>

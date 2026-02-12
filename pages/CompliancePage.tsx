@@ -7,15 +7,7 @@ import { ComplianceService } from '../services/advanced';
 const CompliancePage: React.FC = () => {
     const { user } = useAuth();
     const [events, setEvents] = useState<ComplianceEvent[]>([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [filter, setFilter] = useState<string>('ALL');
-    const [newEvent, setNewEvent] = useState({
-        title: '',
-        description: '',
-        category: 'TAX' as const,
-        dueDate: '',
-        priority: 'MEDIUM' as const,
-    });
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     useEffect(() => {
         if (user) loadEvents();
@@ -26,17 +18,23 @@ const CompliancePage: React.FC = () => {
         setEvents(data);
     };
 
-    const handleCreateEvent = async () => {
+    const handleSaveEvent = async () => {
         if (!user || !newEvent.title || !newEvent.dueDate) return;
 
-        await ComplianceService.createEvent({
-            ...newEvent,
-            status: 'UPCOMING',
-            assignedTo: [user.uid],
-            isRecurring: false,
-            createdBy: user.uid,
-            createdAt: new Date().toISOString(),
-        });
+        if (editingId) {
+            await ComplianceService.updateEvent(editingId, {
+                ...newEvent,
+            });
+        } else {
+            await ComplianceService.createEvent({
+                ...newEvent,
+                status: 'UPCOMING',
+                assignedTo: [user.uid],
+                isRecurring: false,
+                createdBy: user.uid,
+                createdAt: new Date().toISOString(),
+            });
+        }
 
         setNewEvent({
             title: '',
@@ -45,7 +43,26 @@ const CompliancePage: React.FC = () => {
             dueDate: '',
             priority: 'MEDIUM',
         });
+        setEditingId(null);
         setIsModalOpen(false);
+        await loadEvents();
+    };
+
+    const handleEdit = (event: ComplianceEvent) => {
+        setNewEvent({
+            title: event.title,
+            description: event.description || '',
+            category: event.category,
+            dueDate: event.dueDate,
+            priority: event.priority,
+        });
+        setEditingId(event.id);
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this compliance event?')) return;
+        await ComplianceService.deleteEvent(id);
         await loadEvents();
     };
 
@@ -73,19 +90,33 @@ const CompliancePage: React.FC = () => {
         return colors[category as keyof typeof colors] || 'text-gray-400 bg-gray-500/20';
     };
 
+    const canEdit = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN' || user?.role === 'MANAGER';
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-20">
             <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Compliance Calendar</h1>
                     <p className="text-sm text-gray-400">Track tax and audit deadlines</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center"
-                >
-                    <Plus size={16} className="mr-2" /> Add Event
-                </button>
+                {canEdit && (
+                    <button
+                        onClick={() => {
+                            setEditingId(null);
+                            setNewEvent({
+                                title: '',
+                                description: '',
+                                category: 'TAX',
+                                dueDate: '',
+                                priority: 'MEDIUM',
+                            });
+                            setIsModalOpen(true);
+                        }}
+                        className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center transition-all hover:scale-105"
+                    >
+                        <Plus size={16} className="mr-2" /> Add Event
+                    </button>
+                )}
             </div>
 
             {/* Stats */}
@@ -134,14 +165,14 @@ const CompliancePage: React.FC = () => {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-2">
                 {['ALL', 'UPCOMING', 'DUE_SOON', 'OVERDUE', 'COMPLETED'].map((f) => (
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === f
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${filter === f
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
                             }`}
                     >
                         {f.replace('_', ' ')}
@@ -154,12 +185,12 @@ const CompliancePage: React.FC = () => {
                 {filteredEvents.map((event) => (
                     <div
                         key={event.id}
-                        className="glass-panel p-5 rounded-xl hover:bg-white/5 transition-all"
+                        className="glass-panel p-5 rounded-xl hover:bg-white/5 transition-all group"
                     >
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <h3 className="font-bold text-white">{event.title}</h3>
+                                <div className="flex items-center space-x-2 mb-2 flex-wrap gap-y-1">
+                                    <h3 className="font-bold text-white mr-2">{event.title}</h3>
                                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${getCategoryColor(event.category)}`}>
                                         {event.category}
                                     </span>
@@ -175,14 +206,32 @@ const CompliancePage: React.FC = () => {
                                     {event.clientName && <span>Client: {event.clientName}</span>}
                                 </div>
                             </div>
-                            {event.status !== 'COMPLETED' && (
-                                <button
-                                    onClick={() => handleComplete(event.id)}
-                                    className="bg-green-500/20 hover:bg-green-500/30 text-green-400 px-3 py-1.5 rounded-lg text-sm border border-green-500/30"
-                                >
-                                    Mark Complete
-                                </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {event.status !== 'COMPLETED' && (
+                                    <button
+                                        onClick={() => handleComplete(event.id)}
+                                        className="bg-green-500/20 hover:bg-green-500/30 text-green-400 px-3 py-1.5 rounded-lg text-sm border border-green-500/30 transition-colors"
+                                    >
+                                        Mark Complete
+                                    </button>
+                                )}
+                                {canEdit && (
+                                    <>
+                                        <button
+                                            onClick={() => handleEdit(event)}
+                                            className="bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-lg text-sm border border-white/10 transition-colors"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(event.id)}
+                                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg text-sm border border-red-500/20 transition-colors"
+                                        >
+                                            Delete
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -194,29 +243,33 @@ const CompliancePage: React.FC = () => {
                 )}
             </div>
 
-            {/* Create Modal */}
+            {/* Create/Edit Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                    <div className="glass-modal rounded-2xl w-full max-w-md border border-white/10">
-                        <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between">
-                            <h3 className="text-lg font-bold text-white">New Compliance Event</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white">×</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="glass-modal rounded-2xl w-full max-w-md border border-white/10 shadow-2xl">
+                        <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center rounded-t-2xl">
+                            <h3 className="text-lg font-bold text-white flex items-center">
+                                {editingId ? 'Edit Event' : 'New Compliance Event'}
+                            </h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">×</button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Title</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Title <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
-                                    className="w-full rounded-lg px-3 py-2"
+                                    className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
                                     value={newEvent.title}
+                                    placeholder="e.g. Q3 VAT Return"
                                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
                                 <textarea
-                                    className="w-full rounded-lg px-3 py-2"
+                                    className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
                                     rows={3}
+                                    placeholder="Add details..."
                                     value={newEvent.description}
                                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                                 />
@@ -225,7 +278,7 @@ const CompliancePage: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
                                     <select
-                                        className="w-full rounded-lg px-3 py-2"
+                                        className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
                                         value={newEvent.category}
                                         onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value as any })}
                                     >
@@ -238,7 +291,7 @@ const CompliancePage: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-2">Priority</label>
                                     <select
-                                        className="w-full rounded-lg px-3 py-2"
+                                        className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
                                         value={newEvent.priority}
                                         onChange={(e) => setNewEvent({ ...newEvent, priority: e.target.value as any })}
                                     >
@@ -250,19 +303,19 @@ const CompliancePage: React.FC = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Due Date</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Due Date <span className="text-red-400">*</span></label>
                                 <input
                                     type="date"
-                                    className="w-full rounded-lg px-3 py-2"
+                                    className="w-full glass-input rounded-lg px-3 py-2.5 text-sm"
                                     value={newEvent.dueDate}
                                     onChange={(e) => setNewEvent({ ...newEvent, dueDate: e.target.value })}
                                 />
                             </div>
                             <button
-                                onClick={handleCreateEvent}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold"
+                                onClick={handleSaveEvent}
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20"
                             >
-                                Create Event
+                                {editingId ? 'Update Event' : 'Create Event'}
                             </button>
                         </div>
                     </div>

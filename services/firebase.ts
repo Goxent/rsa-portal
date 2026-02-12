@@ -452,13 +452,25 @@ export const AuthService = {
     },
 
     getLateCountLast30Days: async (userId: string): Promise<number> => {
+        // Calculate date 30 days ago
+        const date = new Date();
+        date.setDate(date.getDate() - 30);
+        const dateStr = date.toISOString().split('T')[0];
+
         const q = query(
             collection(db, 'attendance'),
             where('userId', '==', userId),
-            where('status', '==', 'LATE')
+            where('date', '>=', dateStr)
         );
+
         const snapshot = await getDocs(q);
-        return snapshot.size;
+        // Filter for 'LATE' status in memory to avoid complex index requirements
+        const lateDocs = snapshot.docs.filter(doc => {
+            const data = doc.data();
+            return data.status === 'LATE';
+        });
+
+        return lateDocs.length;
     },
 
     // --- EVENTS (Enhanced) ---
