@@ -62,7 +62,15 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             toast.success('File uploaded successfully!');
         } catch (error: any) {
             console.error("Upload failed", error);
-            const msg = error.message || 'Upload failed';
+
+            let msg = error.message || 'Upload failed';
+
+            // Handle Appwrite Permission Errors
+            if (error.code === 401 || error.code === 403) {
+                msg = "Upload failed. Check Appwrite Storage Permissions (Read/Create/Update/Delete).";
+                console.warn("Permission Error: Please ensure the Storage Bucket has 'Any' or 'Users' role with full permissions.");
+            }
+
             toast.error(msg);
             onError?.(error);
         } finally {

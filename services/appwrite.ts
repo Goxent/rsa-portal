@@ -26,7 +26,7 @@ export const AppwriteService = {
      * @returns Promise resolving to the file ID
      */
     uploadFile: async (file: File): Promise<string> => {
-        if (!BUCKET_ID) throw new Error("Appwrite Bucket ID not configured");
+        if (!BUCKET_ID) throw new Error("Appwrite Bucket ID not configured. Check VITE_APPWRITE_BUCKET_ID in .env or Vercel settings.");
 
         try {
             const response = await storage.createFile(
@@ -64,7 +64,7 @@ export const AppwriteService = {
      * @param fileId ID of the file to delete
      */
     deleteFile: async (fileId: string): Promise<void> => {
-        if (!BUCKET_ID) throw new Error("Appwrite Bucket ID not configured");
+        if (!BUCKET_ID) throw new Error("Appwrite Bucket ID not configured. Check VITE_APPWRITE_BUCKET_ID in .env or Vercel settings.");
         try {
             await storage.deleteFile(BUCKET_ID, fileId);
         } catch (error) {
