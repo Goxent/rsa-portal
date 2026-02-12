@@ -8,7 +8,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import StaffSelect from '../components/StaffSelect';
 import ClientSelect from '../components/ClientSelect';
 import { getCurrentBSDate, formatBSDate, convertADToBS } from '../utils/nepaliDate';
@@ -28,9 +28,9 @@ const AttendancePage: React.FC = () => {
     const [lateReason, setLateReason] = useState('');
     const [isLateEntry, setIsLateEntry] = useState(false);
 
-    // Daily Reporting State
-    const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
-    const [workDescription, setWorkDescription] = useState('');
+    // Work Log State (Replaces simple description)
+    const [workLogs, setWorkLogs] = useState<any[]>([{ id: '1', clientId: '', description: '', duration: 0, billable: true }]);
+    const [dailyDescription, setDailyDescription] = useState(''); // General day summary if needed, or derived
 
     // Data State
     const [usersList, setUsersList] = useState<UserProfile[]>([]);
@@ -43,6 +43,7 @@ const AttendancePage: React.FC = () => {
     const [filterStaffId, setFilterStaffId] = useState<string>('ALL');
     const [filterStartDate, setFilterStartDate] = useState<string>('');
     const [filterEndDate, setFilterEndDate] = useState<string>('');
+    const [groupByStaff, setGroupByStaff] = useState(false); // New grouping toggle
 
     // Manual Entry Modal State (Admin Only)
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -51,8 +52,7 @@ const AttendancePage: React.FC = () => {
         date: new Date().toLocaleDateString('en-CA'),
         clockIn: '10:00',
         clockOut: '17:00',
-        clientId: '',
-        description: '',
+        workLogs: [] as any[], // manual entry logs
         reason: ''
     });
 
@@ -175,12 +175,9 @@ const AttendancePage: React.FC = () => {
 
         // 2. Clock Out Validation
         if (status === 'CLOCKED_IN') {
-            if (selectedClientIds.length === 0) {
-                alert("⚠️ Please select at least one Client or Site you worked on before clocking out.");
-                return;
-            }
-            if (!workDescription.trim()) {
-                alert("⚠️ Please provide a description of the work completed today before clocking out.");
+            const validLogs = workLogs.filter(l => l.clientId && l.description);
+            if (validLogs.length === 0) {
+                alert("⚠️ Please add at least one valid Work Log (Client + Description) before clocking out.");
                 return;
             }
         }
@@ -218,8 +215,20 @@ const AttendancePage: React.FC = () => {
                 loadData();
             } else {
                 // Clocking OUT
-                const selectedClients = clientsList.filter(c => selectedClientIds.includes(c.id));
-                const clientNames = selectedClients.map(c => c.name).join(', ');
+                // Filter empty logs
+                const finalLogs = workLogs.filter(l => l.clientId && l.description);
+
+                // Calculate total work hours from logs if provided, OR use session time?
+                // Strategy: Use session time for "Presence", but save logs for "Billable".
+                // Actually, let's trust session time for the main record.
+
+                const clientIds = Array.from(new Set(finalLogs.map(l => l.clientId)));
+                const clientNames = finalLogs.map(l => {
+                    const c = clientsList.find(cl => cl.id === l.clientId);
+                    return c ? c.name : 'Unknown';
+                }).join(', ');
+
+                const combinedDesc = finalLogs.map(l => `${l.clientId ? clientsList.find(c => c.id === l.clientId)?.name : '?'}: ${l.description} (${l.duration}h)`).join('\n');
 
                 const record: AttendanceRecord = {
                     id: '', // Auto
@@ -230,16 +239,17 @@ const AttendancePage: React.FC = () => {
                     clockOut: timeStr,
                     workHours: Number((sessionTime / 3600).toFixed(2)),
                     status: isLateEntry ? 'LATE' : 'PRESENT',
-                    clientIds: selectedClientIds,
+                    clientIds: clientIds,
                     clientName: clientNames || 'Internal',
-                    workDescription: workDescription,
+                    workDescription: dailyDescription || combinedDesc, // Use daily desc or auto-gen
+                    workLogs: finalLogs,
                     notes: lateReason ? `Late Reason: ${lateReason}` : ''
                 };
 
                 await AuthService.recordAttendance(record);
                 setStatus('CLOCKED_OUT');
-                setWorkDescription('');
-                setSelectedClientIds([]);
+                setWorkLogs([{ id: '1', clientId: '', description: '', duration: 0, billable: true }]);
+                setDailyDescription('');
                 setLateReason('');
                 loadData();
             }
@@ -265,12 +275,19 @@ const AttendancePage: React.FC = () => {
         setIsSaving(true);
         try {
             const selectedUser = usersList.find(u => u.uid === manualForm.userId);
-            const clientObj = clientsList.find(c => c.id === manualForm.clientId);
 
             // Calculate Duration roughly
             const start = new Date(`${manualForm.date}  ${manualForm.clockIn}`);
             const end = new Date(`${manualForm.date}  ${manualForm.clockOut}`);
             const hours = (end.getTime() - start.getTime()) / (1000 * 3600);
+
+            // Manual logs or basic note
+            const finalLogs = manualForm.workLogs || [];
+            const clientIds = Array.from(new Set(finalLogs.map(l => l.clientId)));
+            const clientNames = finalLogs.map(l => {
+                const c = clientsList.find(cl => cl.id === l.clientId);
+                return c ? c.name : 'Unknown';
+            }).join(', ');
 
             const record: AttendanceRecord = {
                 id: '', // Generated by service
@@ -281,9 +298,11 @@ const AttendancePage: React.FC = () => {
                 clockOut: manualForm.clockOut + ':00',
                 workHours: Math.max(0, parseFloat(hours.toFixed(2))),
                 status: 'CORRECTED', // Use CORRECTED for manual entries
-                clientId: manualForm.clientId || 'INTERNAL',
-                clientName: clientObj ? clientObj.name : 'Admin Correction',
-                workDescription: manualForm.description || 'Manual Entry by Admin',
+                clientId: clientIds[0] || 'INTERNAL',
+                clientIds: clientIds,
+                clientName: clientNames || 'Admin Correction',
+                workDescription: 'Manual Entry by Admin',
+                workLogs: finalLogs,
                 notes: manualForm.reason ? `Admin Correction: ${manualForm.reason}` : 'Manual Entry'
             };
 
@@ -295,8 +314,7 @@ const AttendancePage: React.FC = () => {
                 date: new Date().toLocaleDateString('en-CA'),
                 clockIn: '10:00',
                 clockOut: '17:00',
-                clientId: '',
-                description: '',
+                workLogs: [],
                 reason: ''
             });
         } catch (error: any) {
@@ -423,15 +441,23 @@ const AttendancePage: React.FC = () => {
 
         console.log('DEBUG: Generated Report Data:', fullRecords);
 
+        // Sort: Group By Staff OR Date Descending
+        if (groupByStaff) {
+            return fullRecords.sort((a, b) => {
+                const nameComp = a.userName.localeCompare(b.userName);
+                if (nameComp !== 0) return nameComp;
+                return b.date.localeCompare(a.date);
+            });
+        }
 
-        // Sort by Date Descending, then Name
+        // Default: Sort by Date Descending, then Name
         return fullRecords.sort((a, b) => {
             const dateComp = b.date.localeCompare(a.date);
             if (dateComp !== 0) return dateComp;
             return a.userName.localeCompare(b.userName);
         });
 
-    }, [history, leavesList, usersList, filterStartDate, filterEndDate, filterStaffId, user, filterStatus]);
+    }, [history, leavesList, usersList, filterStartDate, filterEndDate, filterStaffId, user, filterStatus, groupByStaff]);
 
     const exportPDF = () => {
         const doc = new jsPDF();
@@ -464,15 +490,25 @@ const AttendancePage: React.FC = () => {
 
         // -- Table with violet styling --
         const tableColumn = ["Date", "Name", "Client / Activity", "In", "Out", "Hr", "Status"];
-        const tableRows = reportData.map(r => [
-            r.date,
-            r.userName,
-            r.clientName || '-',
-            r.clockIn,
-            r.clockOut || '-',
-            r.workHours.toString(),
-            r.status
-        ]);
+        const tableRows = reportData.map(r => {
+            // Construct details string
+            let details = '';
+            if (r.workLogs && r.workLogs.length > 0) {
+                details = r.workLogs.map((l: any) => `${l.clientName || 'Unknown'} (${l.duration}h): ${l.description}`).join('\n');
+            } else {
+                details = `${r.clientName || '-'}\n${r.workDescription || ''}`;
+            }
+
+            return [
+                r.date,
+                r.userName,
+                details,
+                r.clockIn,
+                r.clockOut || '-',
+                r.workHours.toString(),
+                r.status
+            ];
+        });
 
         autoTable(doc, {
             head: [tableColumn],
@@ -598,22 +634,35 @@ const AttendancePage: React.FC = () => {
 
         // Data rows
         reportData.forEach((r, index) => {
+            // Construct detailed client/activity string from logs or fallback
+            let activityDetails = '';
+            if (r.workLogs && r.workLogs.length > 0) {
+                activityDetails = r.workLogs.map((l: any) => {
+                    const client = l.clientName || 'Unknown';
+                    const duration = l.duration > 0 ? `(${l.duration}h)` : '';
+                    const desc = l.description ? `- ${l.description}` : '';
+                    return `${client} ${duration} ${desc}`;
+                }).join('\n');
+            } else {
+                activityDetails = `${r.clientName || ''}\n${r.workDescription || r.notes || ''}`;
+            }
+
             const row = worksheet.addRow([
                 r.date,
                 r.userName,
-                r.clientName || '-',
+                activityDetails.trim(),
                 r.clockIn,
                 r.clockOut || '-',
                 r.workHours,
                 r.status,
-                r.workDescription || r.notes || '-'
+                r.notes || '-'
             ]);
 
             const bgColor = index % 2 === 0 ? 'F8FAFC' : lightNavy; // Slate-50 and Slate-100
             row.eachCell((cell) => {
                 cell.font = { size: 9, color: { argb: darkNavy } };
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-                cell.alignment = { vertical: 'middle' };
+                cell.alignment = { vertical: 'middle', wrapText: true };
                 cell.border = {
                     bottom: { style: 'thin', color: { argb: 'E2E8F0' } }, // Slate-200
                 };
@@ -709,48 +758,107 @@ const AttendancePage: React.FC = () => {
                     )}
                 </div>
 
-                {/* Daily Reporting Form */}
-                <div className={`w-full lg:w-[450px] bg-white/5 rounded-xl p-6 border border-white/10 transition-opacity duration-300 ${status === 'CLOCKED_OUT' ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
-                    <div className="mb-4 flex items-center text-blue-300">
-                        <Briefcase size={20} className="mr-2" />
-                        <h3 className="font-bold">Daily Activity Reporting</h3>
+                {/* Daily Reporting Form (New Work Logs) */}
+                <div className={`w-full lg:w-[500px] bg-white/5 rounded-xl p-6 border border-white/10 transition-opacity duration-300 ${status === 'CLOCKED_OUT' ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
+                    <div className="mb-4 flex items-center justify-between text-blue-300">
+                        <div className="flex items-center">
+                            <Briefcase size={20} className="mr-2" />
+                            <h3 className="font-bold">Work Logs</h3>
+                        </div>
+                        <button onClick={() => setWorkLogs([...workLogs, { id: Date.now().toString(), clientId: '', description: '', duration: 0, billable: true }])} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded flex items-center">
+                            <Plus size={12} className="mr-1" /> Add Row
+                        </button>
                     </div>
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site (Select Multiple)</label>
-                            <ClientSelect
-                                clients={clientsList}
-                                value={selectedClientIds}
-                                onChange={(val) => setSelectedClientIds(val as string[])}
-                                multi={true}
-                                placeholder="Select Clients..."
-                            />
-                        </div>
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
+                        {workLogs.map((log, index) => (
+                            <div key={log.id} className="bg-black/20 p-3 rounded-lg border border-white/5 animate-in slide-in-from-right-2">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-xs font-bold text-gray-500">Entry #{index + 1}</span>
+                                    {workLogs.length > 1 && (
+                                        <button onClick={() => setWorkLogs(workLogs.filter(l => l.id !== log.id))} className="text-gray-600 hover:text-red-400">
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Work Description / Report</label>
-                            <textarea
-                                className="w-full text-sm rounded-lg p-3 bg-black/20 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none text-white resize-none"
-                                placeholder="Describe the work done today..."
-                                rows={3}
-                                value={workDescription}
-                                onChange={(e) => setWorkDescription(e.target.value)}
-                                disabled={status === 'CLOCKED_OUT'}
-                            />
-                        </div>
+                                <div className="space-y-2">
+                                    <select
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500"
+                                        value={log.clientId}
+                                        onChange={(e) => {
+                                            const newLogs = [...workLogs];
+                                            newLogs[index].clientId = e.target.value;
+                                            setWorkLogs(newLogs);
+                                        }}
+                                    >
+                                        <option value="">Select Client...</option>
+                                        <option value="INTERNAL">Internal / Admin</option>
+                                        {clientsList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
 
-                        {status === 'CLOCKED_IN' && (
-                            <button
-                                onClick={handleClockAction}
-                                disabled={loading}
-                                className="w-full flex items-center justify-center space-x-2 py-4 rounded-xl text-lg font-bold shadow-lg transition-all active:scale-95 bg-gradient-to-r from-red-600 to-rose-600 text-white hover:shadow-red-500/30 mt-2"
-                            >
-                                <Clock size={20} />
-                                <span>{loading ? 'Processing...' : 'Clock Out'}</span>
-                            </button>
-                        )}
+                                    <textarea
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500 resize-none"
+                                        rows={2}
+                                        placeholder="What did you work on?"
+                                        value={log.description}
+                                        onChange={(e) => {
+                                            const newLogs = [...workLogs];
+                                            newLogs[index].description = e.target.value;
+                                            setWorkLogs(newLogs);
+                                        }}
+                                    />
+
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 flex items-center bg-white/5 rounded-lg border border-white/10 px-2">
+                                            <span className="text-gray-500 text-xs mr-2">Hours:</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.5"
+                                                className="w-full bg-transparent py-1.5 text-xs text-white outline-none"
+                                                value={log.duration}
+                                                onChange={(e) => {
+                                                    const newLogs = [...workLogs];
+                                                    newLogs[index].duration = parseFloat(e.target.value);
+                                                    setWorkLogs(newLogs);
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex items-center space-x-2 bg-white/5 rounded-lg border border-white/10 px-2 py-1.5 cursor-pointer" onClick={() => {
+                                            const newLogs = [...workLogs];
+                                            newLogs[index].billable = !newLogs[index].billable;
+                                            setWorkLogs(newLogs);
+                                        }}>
+                                            <div className={`w-3 h-3 rounded-sm border ${log.billable ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}></div>
+                                            <span className="text-xs text-gray-400">Billable</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
+
+                    <div className="mt-4">
+                        <textarea
+                            className="w-full text-xs rounded-lg p-3 bg-black/20 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none text-white resize-none"
+                            placeholder="Overall comments (optional)..."
+                            rows={2}
+                            value={dailyDescription}
+                            onChange={(e) => setDailyDescription(e.target.value)}
+                        />
+                    </div>
+
+                    {status === 'CLOCKED_IN' && (
+                        <button
+                            onClick={handleClockAction}
+                            disabled={loading}
+                            className="w-full flex items-center justify-center space-x-2 py-4 rounded-xl text-lg font-bold shadow-lg transition-all active:scale-95 bg-gradient-to-r from-red-600 to-rose-600 text-white hover:shadow-red-500/30 mt-4"
+                        >
+                            <Clock size={20} />
+                            <span>{loading ? 'Processing...' : 'Clock Out'}</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -780,6 +888,14 @@ const AttendancePage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                     {user?.role === UserRole.ADMIN && (
+                        <div className="flex items-center space-x-2 mr-2">
+                            <label className="text-white text-xs cursor-pointer flex items-center">
+                                <input type="checkbox" checked={groupByStaff} onChange={e => setGroupByStaff(e.target.checked)} className="mr-1.5 rounded border-white/20 bg-white/5" />
+                                Group by Staff
+                            </label>
+                        </div>
+                    )}
+                    {user?.role === UserRole.ADMIN && (
                         <button
                             onClick={() => setIsManualModalOpen(true)}
                             className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm flex items-center border border-brand-500/30 font-medium shadow-lg"
@@ -801,8 +917,7 @@ const AttendancePage: React.FC = () => {
                             <tr className="bg-white/5 text-gray-400 uppercase tracking-wider text-xs border-b border-white/10">
                                 <th className="px-6 py-4">Date</th>
                                 <th className="px-6 py-4">Name</th>
-                                <th className="px-6 py-4">Client / Type</th>
-                                <th className="px-6 py-4">Work Description / Notes</th>
+                                <th className="px-6 py-4">Work Logs / Clients</th>
                                 <th className="px-6 py-4">Timing</th>
                                 <th className="px-6 py-4">Status</th>
                             </tr>
@@ -810,13 +925,38 @@ const AttendancePage: React.FC = () => {
                         <tbody className="divide-y divide-white/5">
                             {reportData.map((record) => (
                                 <tr key={record.id || Math.random()} className="hover:bg-white/5 transition-colors">
-                                    <td className="px-6 py-4 font-medium">{record.date}</td>
-                                    <td className="px-6 py-4">{record.userName}</td>
-                                    <td className="px-6 py-4 text-blue-300">{record.clientName || 'Internal'}</td>
-                                    <td className="px-6 py-4 text-gray-400 truncate max-w-xs">{record.workDescription || record.notes}</td>
-                                    <td className="px-6 py-4 text-xs">
-                                        <div>In: {record.clockIn}</div>
-                                        {record.clockOut && <div>Out: {record.clockOut}</div>}
+                                    <td className="px-6 py-4 font-medium tabular-nums">{record.date}</td>
+                                    <td className="px-6 py-4">
+                                        <Link to={`/staff/${record.userId}`} className="hover:text-blue-400 hover:underline flex items-center">
+                                            {record.userName}
+                                        </Link>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {record.workLogs && record.workLogs.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {record.workLogs.map((log: any, i: number) => (
+                                                    <div key={i} className="text-xs bg-white/5 p-2 rounded border border-white/5">
+                                                        <div className="flex justify-between font-bold text-gray-400 mb-0.5">
+                                                            <span>{log.clientName || 'Unknown'}</span>
+                                                            {log.duration > 0 && <span>{log.duration}h</span>}
+                                                        </div>
+                                                        <div className="text-gray-300">{log.description}</div>
+                                                        {log.billable && <div className="text-[10px] text-green-500 mt-0.5">Billable</div>}
+                                                    </div>
+                                                ))}
+                                                {record.workDescription && <div className="text-xs text-gray-500 mt-1 italic border-t border-white/5 pt-1">{record.workDescription}</div>}
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs">
+                                                <div className="text-blue-300 font-semibold mb-1">{record.clientName || 'Internal'}</div>
+                                                <div className="text-gray-400 max-w-xs">{record.workDescription || record.notes}</div>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-xs tabular-nums">
+                                        <div className="text-gray-300">In: {record.clockIn}</div>
+                                        {record.clockOut && <div className="text-gray-400">Out: {record.clockOut}</div>}
+                                        {record.workHours > 0 && <div className="text-emerald-500 font-bold mt-1">Total: {record.workHours}h</div>}
                                     </td>
                                     <td className="px-6 py-4">
                                         {record.status === 'ABSENT' && (
@@ -909,28 +1049,74 @@ const AttendancePage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="col-span-1 md:col-span-2">
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Client / Site</label>
-                                    <select
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                        value={manualForm.clientId}
-                                        onChange={(e) => setManualForm({ ...manualForm, clientId: e.target.value })}
-                                    >
-                                        <option value="">Select Client (Optional)...</option>
-                                        <option value="INTERNAL">Internal Office Work</option>
-                                        {clientsList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
+                                <div className="col-span-1 md:col-span-2 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <label className="block text-xs font-semibold text-gray-400 uppercase">Work Logs</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setManualForm({ ...manualForm, workLogs: [...manualForm.workLogs, { id: Date.now().toString(), clientId: '', description: '', duration: 0, billable: true }] })}
+                                            className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded flex items-center text-gray-300"
+                                        >
+                                            <Plus size={12} className="mr-1" /> Add
+                                        </button>
+                                    </div>
 
-                                <div className="col-span-1 md:col-span-2">
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Work Description</label>
-                                    <textarea
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm resize-none"
-                                        rows={2}
-                                        value={manualForm.description}
-                                        onChange={(e) => setManualForm({ ...manualForm, description: e.target.value })}
-                                        placeholder="Describe work done..."
-                                    />
+                                    <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar bg-black/20 p-2 rounded-lg">
+                                        {manualForm.workLogs.map((log, index) => (
+                                            <div key={log.id} className="grid grid-cols-12 gap-2 items-start border-b border-white/5 pb-2 mb-2 last:border-0 last:mb-0">
+                                                <div className="col-span-4">
+                                                    <select
+                                                        className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none"
+                                                        value={log.clientId}
+                                                        onChange={(e) => {
+                                                            const newLogs = [...manualForm.workLogs];
+                                                            newLogs[index].clientId = e.target.value;
+                                                            setManualForm({ ...manualForm, workLogs: newLogs });
+                                                        }}
+                                                        required
+                                                    >
+                                                        <option value="">Client...</option>
+                                                        <option value="INTERNAL">Internal</option>
+                                                        {clientsList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-5">
+                                                    <input
+                                                        className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none"
+                                                        placeholder="Description"
+                                                        value={log.description}
+                                                        onChange={(e) => {
+                                                            const newLogs = [...manualForm.workLogs];
+                                                            newLogs[index].description = e.target.value;
+                                                            setManualForm({ ...manualForm, workLogs: newLogs });
+                                                        }}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <input
+                                                        type="number" step="0.5"
+                                                        className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none"
+                                                        placeholder="Hrs"
+                                                        value={log.duration}
+                                                        onChange={(e) => {
+                                                            const newLogs = [...manualForm.workLogs];
+                                                            newLogs[index].duration = parseFloat(e.target.value);
+                                                            setManualForm({ ...manualForm, workLogs: newLogs });
+                                                        }}
+                                                        required
+                                                    />
+                                                </div>
+                                                <button type="button" onClick={() => {
+                                                    const newLogs = manualForm.workLogs.filter(l => l.id !== log.id);
+                                                    setManualForm({ ...manualForm, workLogs: newLogs });
+                                                }} className="col-span-1 text-gray-500 hover:text-red-400 flex justify-center mt-1">
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {manualForm.workLogs.length === 0 && <p className="text-xs text-gray-500 text-center py-2">No logs added yet.</p>}
+                                    </div>
                                 </div>
 
                                 <div className="col-span-1 md:col-span-2">

@@ -22,7 +22,7 @@ const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const SystemSettingsPage = lazy(() => import('./pages/SystemSettingsPage'));
 const PerformancePage = lazy(() => import('./pages/PerformancePage'));
 const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage'));
-const TimeTrackingPage = lazy(() => import('./pages/TimeTrackingPage'));
+const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage'));
 const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 
@@ -116,8 +116,7 @@ const App: React.FC = () => {
                 <Route path="staff" element={<LazyPage><StaffPage /></LazyPage>} />
                 <Route path="performance" element={<LazyPage><PerformancePage /></LazyPage>} />
                 <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />
-                <Route path="time-tracking" element={<LazyPage><TimeTrackingPage /></LazyPage>} />
-                <Route path="time-tracking" element={<LazyPage><TimeTrackingPage /></LazyPage>} />
+                <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />
                 <Route path="compliance" element={<LazyPage><CompliancePage /></LazyPage>} />
                 <Route path="templates" element={<LazyPage><TemplatesPage /></LazyPage>} />
 

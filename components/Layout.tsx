@@ -165,7 +165,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <SidebarItem to="/leaves" icon={Calendar} label="Leaves" />
 
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Advanced</p>
-            <SidebarItem to="/time-tracking" icon={Clock3} label="Time Tracking" />
+            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Advanced</p>
             <SidebarItem to="/compliance" icon={AlertCircle} label="Compliance" />
             <SidebarItem to="/templates" icon={FileStack} label="Templates" />
 

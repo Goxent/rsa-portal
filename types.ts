@@ -39,6 +39,16 @@ export interface AttendanceRecord {
   clientName?: string;
   clientIds?: string[]; // Multiple clients
   workDescription?: string;
+  workLogs?: WorkLog[]; // Detailed work breakdown
+}
+
+export interface WorkLog {
+  id: string;
+  clientId: string;
+  clientName: string;
+  description: string;
+  duration: number;   // in hours
+  billable: boolean;
 }
 
 export enum TaskStatus {
