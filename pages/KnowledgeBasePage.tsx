@@ -14,7 +14,8 @@ import {
     FileType,
     Loader2,
     Palette,
-    Check
+    Check,
+    X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole, Resource, Category } from '../types';
