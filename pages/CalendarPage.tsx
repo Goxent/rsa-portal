@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X, Edit, Trash2, Eye, EyeOff, Repeat, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X, Edit, Trash2, Eye, EyeOff, Repeat, List, FileDown } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { Task, CalendarEvent, UserRole, UserProfile } from '../types';
 import { ComplianceEvent } from '../types/advanced';
@@ -23,14 +23,116 @@ const monthNames = [
 
 const CalendarPage: React.FC = () => {
     const { user } = useAuth();
-    // List View State
+
+    // Core Calendar State
+    const [month, setMonth] = useState(new NepaliDate().getMonth());
+    const [year, setYear] = useState(new NepaliDate().getYear());
+    const [selectedDate, setSelectedDate] = useState<number | null>(new NepaliDate().getDate());
+    const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showOnlyMyEvents, setShowOnlyMyEvents] = useState(false);
+
+    // UI State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
+
+    // List View Filtering State
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
     const [creatorFilter, setCreatorFilter] = useState<string>('ALL');
 
-    // ... (keep existing effects)
+    useEffect(() => {
+        fetchItems();
+    }, [month, year, user]);
+
+    const fetchItems = async () => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const [fetchedEvents, users] = await Promise.all([
+                AuthService.getAllEventsForUser(user.uid, user.role, user.department || 'GENERAL'),
+                AuthService.getAllUsers()
+            ]);
+            setEvents(fetchedEvents);
+            setAllUsers(users);
+        } catch (error) {
+            console.error("Failed to fetch calendar data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const changeMonth = (delta: number) => {
+        let newMonth = month + delta;
+        let newYear = year;
+        if (newMonth < 0) {
+            newMonth = 11;
+            newYear--;
+        } else if (newMonth > 11) {
+            newMonth = 0;
+            newYear++;
+        }
+        setMonth(newMonth);
+        setYear(newYear);
+        setSelectedDate(null);
+    };
+
+    const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
+        if (!user) return;
+        setIsSaving(true);
+        try {
+            if (editingEvent) {
+                await AuthService.updateEvent(editingEvent.id, eventData, user.uid, user.role);
+            } else {
+                await AuthService.saveEvent({
+                    ...eventData as CalendarEvent,
+                    createdBy: user.uid,
+                    createdAt: new Date().toISOString()
+                });
+            }
+            setIsModalOpen(false);
+            setEditingEvent(undefined);
+            fetchItems();
+        } catch (error) {
+            console.error("Failed to save event:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteEvent = async (event: CalendarEvent, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!user || !confirm('Are you sure you want to delete this event?')) return;
+        try {
+            await AuthService.deleteEvent(event.id, user.uid, user.role);
+            fetchItems();
+        } catch (error) {
+            console.error("Failed to delete event:", error);
+        }
+    };
+
+    const handleEditEvent = (event: CalendarEvent, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingEvent(event);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEventModal = (day?: number) => {
+        if (day) setSelectedDate(day);
+        setEditingEvent(undefined);
+        setIsModalOpen(true);
+    };
+
+    const addToGoogleCalendar = (title: string, date: string, desc: string) => {
+        const adDate = toAD(date);
+        const start = adDate ? adDate.toISOString().split('T')[0].replace(/-/g, '') : '';
+        const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${start}&details=${encodeURIComponent(desc)}`;
+        window.open(url, '_blank');
+    };
 
     // Bulk Actions
     const handleSelectEvent = (eventId: string) => {
@@ -115,6 +217,67 @@ const CalendarPage: React.FC = () => {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Calendar Audit");
         XLSX.writeFile(workbook, `RSA_Calendar_Log_${monthNames[month]}_${year}.xlsx`);
+    };
+
+    const getItemsForDay = (day: number) => {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayEvents = events.filter(ev => ev.date === dateStr);
+        const dayTasks = [] as Task[]; // Tasks might be fetched separately if needed
+
+        return { events: dayEvents, tasks: dayTasks };
+    };
+
+    const { events: selectedDayEvents, tasks: selectedDayTasks } = selectedDate ? getItemsForDay(selectedDate) : { events: [], tasks: [] };
+
+    const renderCalendarGrid = () => {
+        const daysInMonth = getDaysInMonth(year, month);
+        const firstDay = getFirstDayOfMonth(year, month);
+        const blanks = Array(firstDay).fill(null);
+        const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+        const totalSlots = [...blanks, ...days];
+
+        return (
+            <div className="grid grid-cols-7 gap-2 lg:gap-4">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+                    <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-red-400' : 'text-gray-500'}`}>
+                        {d}
+                    </div>
+                ))}
+                {totalSlots.map((day, index) => {
+                    if (!day) return <div key={`blank-${index}`} className="h-24 lg:h-32 rounded-xl bg-white/2 border border-white/5"></div>;
+
+                    const { events: dayEvents } = getItemsForDay(day);
+                    const isToday = day === new NepaliDate().getDate() && month === new NepaliDate().getMonth() && year === new NepaliDate().getYear();
+                    const isSelected = day === selectedDate;
+
+                    return (
+                        <div
+                            key={day}
+                            onClick={() => setSelectedDate(day)}
+                            className={`relative min-h-[100px] p-2 rounded-xl border-2 transition-all duration-200 cursor-pointer ${isToday
+                                ? 'border-emerald-500 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 shadow-lg shadow-emerald-500/20'
+                                : isSelected
+                                    ? 'border-brand-500 bg-brand-500/10 shadow-lg shadow-brand-500/20'
+                                    : 'border-white/5 hover:border-brand-400/30 hover:bg-white/5'
+                                }`}
+                        >
+                            <div className="flex justify-between items-start mb-1">
+                                <span className={`text-sm font-bold ${isToday ? 'text-emerald-300' : isSelected ? 'text-brand-300' : 'text-gray-300'}`}>
+                                    {day}
+                                </span>
+                            </div>
+                            <div className="space-y-1 mt-1 overflow-hidden">
+                                {dayEvents.map((ev, i) => (
+                                    <div key={`ev-${i}`} className="px-1.5 py-1 rounded bg-purple-500/20 text-[10px] text-purple-200 truncate border-l-2 border-purple-500">
+                                        {ev.title}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
 
     const renderListView = () => {

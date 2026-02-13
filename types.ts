@@ -21,6 +21,7 @@ export interface UserProfile {
   position?: string;
   status?: 'Active' | 'Inactive';
   gender?: 'Male' | 'Female' | 'Other';
+  leaveAdjustment?: number; // Manual correction for leave balance
 }
 
 export interface AttendanceRecord {

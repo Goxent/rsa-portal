@@ -8,109 +8,60 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to get user role
+    // HELPERS
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : 'STAFF';
     }
     
-    // Helper function to check if user is admin
     function isAdmin() {
-      return isAuthenticated() && getUserRole() in ['ADMIN', 'MASTER_ADMIN'];
+      return isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
     }
-    
-    // Helper function to check if user is master admin
-    function isMasterAdmin() {
-      return isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
-    }
-    
+
     // USERS COLLECTION
     match /users/{userId} {
-      // Anyone authenticated can read user profiles (for staff directory)
       allow read: if isAuthenticated();
-      
-      // Users can update their own profile, admins can update anyone
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      
-      // Only master admins can create/delete users
-      allow create, delete: if isMasterAdmin();
+      allow create, delete: if isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
     }
     
     // CLIENTS COLLECTION
     match /clients/{clientId} {
-      // All authenticated users can read clients (for dropdown selection)
       allow read: if isAuthenticated();
-      
-      // Only admins can create, update, or delete clients
       allow create, update, delete: if isAdmin();
     }
-    
-    // TASKS COLLECTION
-    match /tasks/{taskId} {
-      // All authenticated users can read tasks
-      allow read: if isAuthenticated();
-      
-      // Users can create tasks
-      allow create: if isAuthenticated();
-      
-      // Users can update tasks ONLY if they are assigned to it or are Admin
-      // Removed 'createdBy' permission to enforce strict assignment-based editing
-      allow update: if isAuthenticated() && (
-        request.auth.uid in resource.data.assignedTo ||
-        isAdmin() ||
-        getUserRole() == 'MANAGER'
-      );
-      
-      // Only admins can delete tasks
-      allow delete: if isAdmin();
-    }
-    
+
     // ATTENDANCE COLLECTION
     match /attendance/{attendanceId} {
-      // Users can read their own attendance, admins can read all
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
-        isAdmin()
-      );
-      
-      // Users can create/update their own attendance, Admins can do for anyone
-      allow create, update: if isAuthenticated() && (
-        request.auth.uid == request.resource.data.userId ||
-        isAdmin()
-      );
-      
-      // Only admins can delete attendance records
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isAdmin());
       allow delete: if isAdmin();
     }
     
     // LEAVE REQUESTS COLLECTION
     match /leaves/{leaveId} {
-      // Users can read their own leave requests, admins can read all
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
-        isAdmin()
-      );
-      
-      // Users can create their own leave requests
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if isAuthenticated();
-      
-      // Users can update their own pending requests, admins can update any
+      allow update: if isAuthenticated() && ((request.auth.uid == resource.data.userId && resource.data.status == 'PENDING') || isAdmin());
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+    }
+
+    // TASKS COLLECTION
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (
-        (request.auth.uid == resource.data.userId && resource.data.status == 'PENDING') ||
-        isAdmin()
+        request.auth.uid in resource.data.assignedTo ||
+        resource.data.createdBy == request.auth.uid ||
+        isAdmin() ||
+        getUserRole() == 'MANAGER'
       );
-      
-      // Only the user or admins can delete leave requests
-      allow delete: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
-        isAdmin()
-      );
+      allow delete: if isAdmin();
     }
 
     // NOTIFICATIONS COLLECTION
     match /notifications/{notificationId} {
-        // Users can read their own notifications and system-wide notifications
         allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == 'ALL');
-        // Users can delete/update only their own notifications
+        allow create: if isAuthenticated();
         allow delete, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
@@ -253,6 +204,18 @@ service cloud.firestore {
     match /resource_categories/{categoryId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
+    }
+
+    // PERFORMANCE COLLECTIONS
+    match /performance_cycles/{cycleId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /peer_reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
   }
 }
