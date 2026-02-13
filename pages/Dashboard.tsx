@@ -29,6 +29,7 @@ const Dashboard: React.FC = () => {
     const [activeStaffCount, setActiveStaffCount] = useState(0);
     const [taskData, setTaskData] = useState<{ name: string; value: number }[]>([]);
     const [recentTasks, setRecentTasks] = useState<Task[]>([]);
+    const [recentCompletedTasks, setRecentCompletedTasks] = useState<Task[]>([]); // Added State
     const [upcomingSchedule, setUpcomingSchedule] = useState<ScheduleItem[]>([]);
     const [staffStats, setStaffStats] = useState<{ busy: (UserProfile & { taskCount: number })[]; free: UserProfile[]; byDepartment: Record<string, number> }>({ busy: [], free: [], byDepartment: {} });
     const [userMap, setUserMap] = useState<Record<string, UserProfile>>({});
@@ -103,6 +104,13 @@ const Dashboard: React.FC = () => {
                 return (pMap[b.priority] || 0) - (pMap[a.priority] || 0);
             }).slice(0, 5);
             setRecentTasks(sortedTasks);
+
+            // Recent Completed Tasks (for Activity Feed)
+            const completedRecent = [...relevantTasks]
+                .filter(t => t.status === 'COMPLETED')
+                .sort((a, b) => new Date(b.completedAt || b.createdAt || 0).getTime() - new Date(a.completedAt || a.createdAt || 0).getTime())
+                .slice(0, 10);
+            setRecentCompletedTasks(completedRecent);
 
             // Upcoming Schedule
             const now = new Date();
@@ -215,7 +223,8 @@ const Dashboard: React.FC = () => {
         staffStats,
         userMap,
         staffPerformance,
-        clientStats, // Passed to widgets
+        clientStats,
+        recentCompletedTasks,
         isLoading,
     };
 

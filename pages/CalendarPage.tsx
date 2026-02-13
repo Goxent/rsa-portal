@@ -242,14 +242,14 @@ const CalendarPage: React.FC = () => {
         const totalSlots = [...blanks, ...days];
 
         return (
-            <div className="grid grid-cols-7 gap-2 lg:gap-4">
+            <div className="grid grid-cols-7 gap-3 lg:gap-4 auto-rows-fr">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                    <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-red-400' : 'text-gray-500'}`}>
+                    <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-3 ${i === 6 ? 'text-rose-400' : 'text-blue-300/70'}`}>
                         {d}
                     </div>
                 ))}
                 {totalSlots.map((day, index) => {
-                    if (!day) return <div key={`blank-${index}`} className="h-24 lg:h-32 rounded-xl bg-white/2 border border-white/5"></div>;
+                    if (!day) return <div key={`blank-${index}`} className="min-h-[120px] rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm"></div>;
 
                     const { events: dayEvents } = getItemsForDay(day);
                     const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
@@ -263,27 +263,43 @@ const CalendarPage: React.FC = () => {
                         <div
                             key={day}
                             onClick={() => setSelectedDate(day)}
-                            className={`relative min-h-[100px] p-2 rounded-xl border-2 transition-all duration-200 cursor-pointer ${isToday
-                                ? 'border-emerald-500 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 shadow-lg shadow-emerald-500/20'
+                            className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
+                                ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                                 : isSelected
-                                    ? 'border-brand-500 bg-brand-500/10 shadow-lg shadow-brand-500/20'
-                                    : 'border-white/5 hover:border-brand-400/30 hover:bg-white/5'
+                                    ? 'border-blue-500/50 bg-gradient-to-br from-blue-600/20 to-indigo-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
+                                    : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
                                 }`}
                         >
-                            <div className="flex justify-between items-start mb-1">
-                                <span className={`text-sm font-bold ${isToday ? 'text-emerald-300' : isSelected ? 'text-brand-300' : 'text-gray-300'}`}>
+                            {/* Hover Effect Light */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+                            <div className="flex justify-between items-start mb-2 relative z-10">
+                                <span className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday
+                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                    : isSelected
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                        : 'text-gray-300 group-hover:bg-white/10'}`}>
                                     {day}
                                 </span>
-                                <span className="text-[10px] text-gray-500 font-medium">
+                                <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 rounded-full bg-black/20 border border-white/5">
                                     {bsDay}
                                 </span>
                             </div>
-                            <div className="space-y-1 mt-1 overflow-hidden">
-                                {dayEvents.map((ev, i) => (
-                                    <div key={`ev-${i}`} className="px-1.5 py-1 rounded bg-purple-500/20 text-[10px] text-purple-200 truncate border-l-2 border-purple-500">
-                                        {ev.title}
+
+                            <div className="space-y-1.5 mt-1 overflow-hidden flex-1 relative z-10">
+                                {dayEvents.slice(0, 3).map((ev, i) => (
+                                    <div key={`ev-${i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ev.color || '#fff' }}></div>
+                                        <div className="text-[10px] text-gray-300 truncate font-medium leading-none">
+                                            {ev.title}
+                                        </div>
                                     </div>
                                 ))}
+                                {dayEvents.length > 3 && (
+                                    <div className="text-[10px] text-gray-400 font-medium px-1">
+                                        +{dayEvents.length - 3} more
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
@@ -305,22 +321,28 @@ const CalendarPage: React.FC = () => {
         const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         return (
-            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full">
+            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full border border-white/10">
                 {/* Advanced Filter Toolbar */}
-                <div className="p-4 border-b border-white/10 bg-white/5 space-y-4">
+                <div className="p-4 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent space-y-4">
                     <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1 w-full">
-                            <input
-                                type="text"
-                                placeholder="Search events..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="bg-navy-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white w-full max-w-sm focus:border-brand-500 transition-all outline-none"
-                            />
+                        <div className="flex items-center gap-3 flex-1 w-full">
+                            <div className="relative flex-1 max-w-md group">
+                                <input
+                                    type="text"
+                                    placeholder="Search events..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white w-full focus:border-brand-500 focus:bg-black/40 transition-all outline-none placeholder:text-gray-500"
+                                />
+                                <div className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-brand-400 transition-colors">
+                                    <List size={16} />
+                                </div>
+                            </div>
+
                             <select
                                 value={typeFilter}
                                 onChange={(e) => setTypeFilter(e.target.value)}
-                                className="bg-navy-900/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none"
+                                className="bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-brand-500 transition-all cursor-pointer hover:bg-black/30"
                             >
                                 <option value="ALL">All Types</option>
                                 <option value="MEETING">Meeting</option>
@@ -333,9 +355,10 @@ const CalendarPage: React.FC = () => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={exportToCSV}
-                                className="flex items-center gap-2 px-4 py-2 bg-brand-600/20 text-brand-400 border border-brand-500/30 rounded-xl text-sm font-bold hover:bg-brand-600/30 transition-all"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-brand-600/10 text-brand-300 border border-brand-500/20 rounded-xl text-sm font-bold hover:bg-brand-600/20 hover:border-brand-500/40 transition-all shadow-lg shadow-brand-500/5 group"
                             >
-                                <FileDown size={16} /> Export Audit Log
+                                <FileDown size={16} className="group-hover:scale-110 transition-transform" />
+                                <span>Export Log</span>
                             </button>
                         </div>
                     </div>
@@ -345,52 +368,53 @@ const CalendarPage: React.FC = () => {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleSelectAll}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedEventIds.size === events.length && events.length > 0 ? 'bg-brand-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedEventIds.size === events.length && events.length > 0 ? 'bg-brand-500 border-brand-400 text-white shadow-lg shadow-brand-500/20' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'}`}
                             >
                                 {selectedEventIds.size === events.length ? 'Deselect All' : 'Select All'}
                             </button>
 
                             {selectedEventIds.size > 0 && (
-                                <div className="flex items-center gap-2 p-1 bg-brand-500/10 rounded-xl border border-brand-500/20">
-                                    <span className="text-[10px] text-brand-400 font-bold px-2 uppercase">Bulk Actions:</span>
+                                <div className="flex items-center gap-2 p-1 bg-brand-500/10 rounded-xl border border-brand-500/20 animate-in fade-in slide-in-from-left-4 duration-300">
+                                    <span className="text-[10px] text-brand-300 font-bold px-3 uppercase tracking-wider">Bulk Actions:</span>
+                                    <div className="h-4 w-px bg-brand-500/20"></div>
                                     <button
                                         onClick={() => handleBulkVisibility('PUBLIC')}
-                                        className="px-2 py-1 hover:bg-white/10 rounded text-[10px] text-blue-400 font-bold uppercase transition-all"
+                                        className="px-3 py-1 hover:bg-brand-500/20 rounded-lg text-[10px] text-blue-300 font-bold uppercase transition-all"
                                     >
                                         Make Public
                                     </button>
                                     <button
                                         onClick={() => handleBulkVisibility('PRIVATE')}
-                                        className="px-2 py-1 hover:bg-white/10 rounded text-[10px] text-gray-400 font-bold uppercase transition-all"
+                                        className="px-3 py-1 hover:bg-brand-500/20 rounded-lg text-[10px] text-gray-300 font-bold uppercase transition-all"
                                     >
                                         Make Private
                                     </button>
                                     <button
                                         onClick={handleBulkDelete}
-                                        className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 rounded text-[10px] text-red-400 font-bold uppercase transition-all flex items-center gap-1"
+                                        className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-[10px] text-red-400 font-bold uppercase transition-all flex items-center gap-1.5 border border-red-500/10 hover:border-red-500/30 ml-1"
                                     >
                                         <Trash2 size={10} /> Delete ({selectedEventIds.size})
                                     </button>
                                 </div>
                             )}
                         </div>
-                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/5">
                             Showing {filteredEvents.length} of {events.length} events
                         </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto flex-1 h-[60vh] custom-scrollbar">
+                <div className="overflow-x-auto flex-1 h-[60vh] custom-scrollbar bg-black/10">
                     <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 z-10 bg-navy-900">
-                            <tr className="bg-white/5 border-b border-white/10 text-[10px] text-gray-500 uppercase font-black tracking-widest">
-                                <th className="p-4 w-10"></th>
-                                <th className="p-4">Date</th>
-                                <th className="p-4">Title</th>
-                                <th className="p-4">Type</th>
-                                <th className="p-4">Visibility</th>
-                                <th className="p-4">Creator</th>
-                                <th className="p-4 text-right">Actions</th>
+                        <thead className="sticky top-0 z-10 bg-[#0f172a] shadow-xl">
+                            <tr className="border-b border-white/10 text-[10px] text-brand-200 uppercase font-black tracking-widest">
+                                <th className="p-4 w-12 bg-white/5 backdrop-blur-md"></th>
+                                <th className="p-4 bg-white/5 backdrop-blur-md">Date</th>
+                                <th className="p-4 bg-white/5 backdrop-blur-md">Title</th>
+                                <th className="p-4 bg-white/5 backdrop-blur-md">Type</th>
+                                <th className="p-4 bg-white/5 backdrop-blur-md">Visibility</th>
+                                <th className="p-4 bg-white/5 backdrop-blur-md">Creator</th>
+                                <th className="p-4 text-right bg-white/5 backdrop-blur-md">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -398,51 +422,69 @@ const CalendarPage: React.FC = () => {
                                 const canEdit = user && canEditEvent(event, user);
                                 const isSelected = selectedEventIds.has(event.id);
                                 return (
-                                    <tr key={event.id} className={`hover:bg-white/5 transition-all group ${isSelected ? 'bg-brand-500/10' : ''}`}>
+                                    <tr key={event.id} className={`hover:bg-white/[0.03] transition-all group ${isSelected ? 'bg-brand-900/10' : ''}`}>
                                         <td className="p-4">
-                                            <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={() => handleSelectEvent(event.id)}
-                                                className="rounded-lg border-white/10 bg-black/30 text-brand-500 focus:ring-brand-500 transition-all cursor-pointer"
-                                            />
+                                            <div className="flex items-center justify-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => handleSelectEvent(event.id)}
+                                                    className="w-4 h-4 rounded border-brand-500/30 bg-black/20 text-brand-500 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer transition-all"
+                                                />
+                                            </div>
                                         </td>
                                         <td className="p-4 text-sm text-gray-300 font-mono whitespace-nowrap">
-                                            <span className="block font-bold text-white">{event.date}</span>
-                                            <span className="text-[10px] text-gray-500">{event.time || 'All Day'}</span>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]`} style={{ color: event.color || '#8b5cf6', backgroundColor: 'currentColor' }}></div>
-                                                <span className="font-bold text-white group-hover:text-brand-400 transition-colors">{event.title}</span>
-                                                {event.isRecurring && <Repeat size={12} className="text-emerald-400" />}
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-white tracking-tight">{event.date}</span>
+                                                <span className="text-[10px] text-gray-500 font-medium bg-white/5 w-fit px-1.5 rounded mt-0.5">{event.time || 'All Day'}</span>
                                             </div>
-                                            {event.description && <p className="text-xs text-gray-500 mt-1 line-clamp-1 max-w-sm">{event.description}</p>}
                                         </td>
                                         <td className="p-4">
-                                            <span className="px-2 py-1 bg-white/5 rounded-lg text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ring-2 ring-white/5`} style={{ color: event.color || '#8b5cf6', backgroundColor: 'currentColor' }}></div>
+                                                <div>
+                                                    <span className="font-bold text-white group-hover:text-brand-300 transition-colors block">{event.title}</span>
+                                                    {event.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1 max-w-xs">{event.description}</p>}
+                                                </div>
+                                                {event.isRecurring && <Repeat size={14} className="text-emerald-400 shrink-0 opacity-70" />}
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="px-2.5 py-1 bg-white/5 rounded-lg text-[10px] text-gray-300 font-bold uppercase tracking-tight border border-white/5 group-hover:border-white/10 transition-colors">
                                                 {event.type.toLowerCase().replace('_', ' ')}
                                             </span>
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${getVisibilityBadge(event.visibility || 'PUBLIC').color}`}>
+                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold border shadow-sm ${getVisibilityBadge(event.visibility || 'PUBLIC').color}`}>
                                                 {getVisibilityBadge(event.visibility || 'PUBLIC').text}
                                             </span>
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] font-bold text-brand-400 border border-brand-500/20">
+                                                <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] font-bold text-brand-300 border border-brand-500/20 shadow-inner">
                                                     {(allUsers.find(u => u.uid === event.createdBy)?.displayName || 'S')[0]}
                                                 </div>
                                                 <span className="text-xs text-gray-400">{allUsers.find(u => u.uid === event.createdBy)?.displayName || 'System'}</span>
                                             </div>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
+                                            <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                                 {canEdit && (
-                                                    <button onClick={(e) => handleEditEvent(event, e)} className="p-2 hover:bg-brand-500/20 rounded-lg text-brand-400 transition-all" title="Edit"><Edit size={14} /></button>
+                                                    <button
+                                                        onClick={(e) => handleEditEvent(event, e)}
+                                                        className="p-1.5 hover:bg-blue-500/20 rounded-lg text-gray-400 hover:text-blue-300 transition-all border border-transparent hover:border-blue-500/20"
+                                                        title="Edit"
+                                                    >
+                                                        <Edit size={14} />
+                                                    </button>
                                                 )}
-                                                <button onClick={() => addToGoogleCalendar(event.title, event.date, event.description || '')} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all" title="Add to G-Cal"><ExternalLink size={14} /></button>
+                                                <button
+                                                    onClick={() => addToGoogleCalendar(event.title, event.date, event.description || '')}
+                                                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all border border-transparent hover:border-white/10"
+                                                    title="Add to G-Cal"
+                                                >
+                                                    <ExternalLink size={14} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -456,37 +498,42 @@ const CalendarPage: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-white">Firm Calendar</h1>
-                    <p className="text-sm text-gray-400">Track task deadlines, meetings, and events</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                    {/* View Toggle */}
-                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-2">
-                        <button
-                            onClick={() => setViewMode('GRID')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'GRID' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                            title="Grid View"
-                        >
-                            <CalendarIcon size={18} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('LIST')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'LIST' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                            title="List View"
-                        >
-                            <List size={18} />
-                        </button>
-                    </div>
+        <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500 pb-10">
+            {/* Header Section */}
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-900 to-indigo-900 shadow-2xl border border-white/10 shrink-0">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
 
-                    <div className="flex flex-col items-center bg-white/5 px-4 py-1 rounded-xl border border-white/10">
-                        <div className="flex items-center space-x-4">
+                <div className="relative p-6 md:p-8 flex flex-col xl:flex-row justify-between items-center z-10 gap-6">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white font-heading tracking-tight mb-2">Firm Calendar</h1>
+                        <p className="text-blue-100 max-w-xl text-lg opacity-80">
+                            Track task deadlines, meetings, and important firm events.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {/* View Toggle */}
+                        <div className="flex bg-white/10 p-1.5 rounded-xl border border-white/10 backdrop-blur-md">
+                            <button
+                                onClick={() => setViewMode('GRID')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'GRID' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+                            >
+                                <CalendarIcon size={16} /> <span className="hidden sm:inline">Grid</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode('LIST')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'LIST' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+                            >
+                                <List size={16} /> <span className="hidden sm:inline">List</span>
+                            </button>
+                        </div>
+
+                        {/* Month Navigation */}
+                        <div className="flex items-center bg-black/20 p-1.5 rounded-xl border border-white/10 backdrop-blur-md">
                             <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronLeft size={20} /></button>
-                            <div className="flex flex-col items-center w-32">
-                                <span className="text-lg font-bold text-white select-none">{monthNames[month]} {year}</span>
-                                <span className="text-[10px] text-brand-400 font-medium tracking-wider uppercase">
+                            <div className="flex flex-col items-center px-4 min-w-[140px]">
+                                <span className="text-lg font-bold text-white leading-none">{monthNames[month]} {year}</span>
+                                <span className="text-[10px] text-brand-300 font-bold uppercase tracking-wider mt-1">
                                     {(() => {
                                         const bs = toBS(new Date(year, month, 1)).split('-');
                                         return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[0]}`;
@@ -506,127 +553,153 @@ const CalendarPage: React.FC = () => {
                         {renderCalendarGrid()}
                     </div>
 
-                    <div className="w-full lg:w-80 glass-panel rounded-2xl p-6 flex flex-col shadow-2xl h-fit">
-                        <div className="flex flex-col border-b border-white/10 pb-4 mb-4">
-                            <div className="flex items-center justify-between mb-1">
-                                <h3 className="text-lg font-bold text-white flex items-center">
-                                    <CalendarIcon size={18} className="mr-2 text-blue-400" />
+                    <div className="w-full lg:w-96 glass-panel rounded-2xl flex flex-col shadow-2xl h-[calc(100vh-280px)] sticky top-6 border border-white/10 shrink-0">
+                        {/* Sidebar Header */}
+                        <div className="p-6 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <CalendarIcon size={64} />
+                            </div>
+                            <div className="flex items-center justify-between mb-2 relative z-10">
+                                <h3 className="text-xl font-bold text-white flex items-center tracking-tight">
                                     {selectedDate ? `${monthNames[month]} ${selectedDate}` : 'Select a date'}
                                 </h3>
                                 <button
                                     onClick={() => handleOpenEventModal(selectedDate || undefined)}
-                                    className="p-2 bg-brand-600 rounded-lg text-white hover:bg-brand-500 transition-colors shadow-lg"
+                                    className="p-2.5 bg-gradient-to-r from-brand-600 to-brand-500 rounded-xl text-white hover:from-brand-500 hover:to-brand-400 transition-all shadow-lg shadow-brand-500/30 transform hover:scale-105 active:scale-95"
                                     title="Create event"
                                 >
-                                    <Plus size={16} />
+                                    <Plus size={18} strokeWidth={3} />
                                 </button>
                             </div>
                             {selectedDate && (
-                                <span className="text-[10px] text-brand-400 font-bold uppercase tracking-widest ml-7">
-                                    {(() => {
-                                        const bs = toBS(new Date(year, month, selectedDate)).split('-');
-                                        return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[2]}, ${bs[0]}`;
-                                    })()}
-                                </span>
+                                <div className="flex items-center gap-2 relative z-10">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-brand-400"></div>
+                                    <span className="text-xs text-brand-200 font-bold uppercase tracking-widest">
+                                        {(() => {
+                                            const bs = toBS(new Date(year, month, selectedDate)).split('-');
+                                            return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[2]}, ${bs[0]}`;
+                                        })()}
+                                    </span>
+                                </div>
                             )}
                         </div>
 
                         {/* Toggle for showing only my events */}
-                        <div className="mb-4">
+                        <div className="px-6 py-3 border-b border-white/5 bg-black/10">
                             <button
                                 onClick={() => setShowOnlyMyEvents(!showOnlyMyEvents)}
-                                className="flex items-center text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                                className="flex items-center text-xs font-bold text-gray-400 hover:text-white transition-colors w-full"
                             >
-                                {showOnlyMyEvents ? <Eye size={14} className="mr-1" /> : <EyeOff size={14} className="mr-1" />}
-                                {showOnlyMyEvents ? 'Show all events' : 'Show only my events'}
+                                <div className={`w-8 h-4 rounded-full mr-3 relative transition-colors ${showOnlyMyEvents ? 'bg-brand-500' : 'bg-gray-700'}`}>
+                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${showOnlyMyEvents ? 'left-4.5' : 'left-0.5'}`}></div>
+                                </div>
+                                {showOnlyMyEvents ? 'Showing only my events' : 'Showing all events'}
                             </button>
                         </div>
 
-                        <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px] custom-scrollbar">
+                        <div className="space-y-4 flex-1 overflow-y-auto p-4 custom-scrollbar">
                             {/* Event Items */}
-                            {selectedDayEvents.map((ev, i) => {
-                                // Add defaults for old events without new fields
-                                const eventWithDefaults = {
-                                    ...ev,
-                                    visibility: ev.visibility || 'PUBLIC',
-                                    createdBy: ev.createdBy || 'system',
-                                    type: ev.type || 'GENERAL'
-                                };
+                            {selectedDayEvents.length === 0 && selectedDayTasks.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-48 text-gray-500 text-center">
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                                        <CalendarIcon size={24} className="opacity-50" />
+                                    </div>
+                                    <p className="text-sm font-medium">No events for this date</p>
+                                    <p className="text-xs opacity-60 mt-1">Click + to add an event</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {selectedDayEvents.map((ev, i) => {
+                                        const eventWithDefaults = {
+                                            ...ev,
+                                            visibility: ev.visibility || 'PUBLIC',
+                                            createdBy: ev.createdBy || 'system',
+                                            type: ev.type || 'GENERAL'
+                                        };
 
-                                const badge = getVisibilityBadge(eventWithDefaults.visibility);
-                                const canEdit = user && canEditEvent(eventWithDefaults, user);
-                                const canDelete = user && canDeleteEvent(eventWithDefaults, user);
+                                        const badge = getVisibilityBadge(eventWithDefaults.visibility);
+                                        const canEdit = user && canEditEvent(eventWithDefaults, user);
+                                        const canDelete = user && canDeleteEvent(eventWithDefaults, user);
 
-                                return (
-                                    <div key={i} className="group flex flex-col p-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 transition-colors border border-purple-500/20">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex-1">
-                                                <h4 className="text-sm font-semibold text-purple-200">{eventWithDefaults.title}</h4>
-                                                <p className="text-[10px] text-gray-400">{formatEventTime(eventWithDefaults)} • {eventWithDefaults.type.replace('_', ' ')}</p>
-                                                {eventWithDefaults.isRecurring && (
-                                                    <p className="text-[10px] text-emerald-400 flex items-center mt-1">
-                                                        <Repeat size={10} className="mr-1" /> Recurring
-                                                    </p>
-                                                )}
+                                        return (
+                                            <div key={i} className="group relative p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all shadow-lg">
+                                                <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-lg" style={{ backgroundColor: ev.color || '#8b5cf6' }}></div>
+
+                                                <div className="pl-3">
+                                                    <div className="flex items-start justify-between mb-1">
+                                                        <h4 className="text-sm font-bold text-white leading-tight">{eventWithDefaults.title}</h4>
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            {canEdit && (
+                                                                <button
+                                                                    onClick={(e) => handleEditEvent(eventWithDefaults, e)}
+                                                                    className="p-1.5 hover:bg-blue-500/20 rounded text-blue-400 transition-colors"
+                                                                >
+                                                                    <Edit size={12} />
+                                                                </button>
+                                                            )}
+                                                            {canDelete && (
+                                                                <button
+                                                                    onClick={(e) => handleDeleteEvent(eventWithDefaults, e)}
+                                                                    className="p-1.5 hover:bg-red-500/20 rounded text-red-400 transition-colors"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-2 text-[10px] text-gray-400 mb-3 items-center">
+                                                        <span className="flex items-center bg-black/30 px-1.5 py-0.5 rounded text-gray-300">
+                                                            <Clock size={10} className="mr-1" />
+                                                            {formatEventTime(eventWithDefaults)}
+                                                        </span>
+                                                        <span className="uppercase font-bold tracking-wider">{eventWithDefaults.type.replace('_', ' ')}</span>
+                                                        {eventWithDefaults.isRecurring && (
+                                                            <span className="text-emerald-400 flex items-center font-bold">
+                                                                <Repeat size={10} className="mr-1" /> Recurring
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                                                        <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold border ${badge.color}`}>
+                                                            {badge.text}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => addToGoogleCalendar(eventWithDefaults.title, eventWithDefaults.date, eventWithDefaults.description || '')}
+                                                            className="text-[10px] text-gray-400 hover:text-white flex items-center hover:underline transition-colors"
+                                                        >
+                                                            <ExternalLink size={10} className="mr-1" /> export
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                {canEdit && (
-                                                    <button
-                                                        onClick={(e) => handleEditEvent(eventWithDefaults, e)}
-                                                        className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
-                                                        title="Edit event"
-                                                    >
-                                                        <Edit size={14} />
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button
-                                                        onClick={(e) => handleDeleteEvent(eventWithDefaults, e)}
-                                                        className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                                                        title="Delete event"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                )}
+                                        );
+                                    })}
+
+                                    {selectedDayTasks.map((task, i) => (
+                                        <div key={i} className="group flex flex-col p-4 rounded-xl bg-gradient-to-br from-blue-900/10 to-blue-900/5 hover:bg-blue-900/20 border border-blue-500/10 hover:border-blue-500/30 transition-all">
+                                            <div className="flex items-start space-x-3 mb-3">
+                                                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                                                    <CheckCircle2 size={16} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">{task.title}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[10px] bg-blue-500/10 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/20 font-medium">TASK</span>
+                                                        <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.clientName}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${badge.color}`}>
-                                                {badge.text}
-                                            </span>
                                             <button
-                                                onClick={() => addToGoogleCalendar(eventWithDefaults.title, eventWithDefaults.date, eventWithDefaults.description || '')}
-                                                className="text-[10px] text-purple-300 hover:underline flex items-center"
+                                                onClick={() => addToGoogleCalendar(task.title, task.dueDate, `Client: ${task.clientName}`)}
+                                                className="mt-1 text-xs flex items-center justify-center w-full py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-300 rounded-lg border border-blue-500/20 transition-all font-bold hover:shadow-lg hover:shadow-blue-500/10"
                                             >
-                                                <ExternalLink size={10} className="mr-1" /> G-Cal
+                                                <ExternalLink size={12} className="mr-2" /> Add to G-Cal
                                             </button>
                                         </div>
-                                    </div>
-                                );
-                            })}
-
-                            {selectedDayTasks.map((task, i) => (
-                                <div key={i} className="group flex flex-col p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
-                                    <div className="flex items-start space-x-3 mb-2">
-                                        <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_currentColor]"></div>
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-gray-200 group-hover:text-white">{task.title}</h4>
-                                            <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.clientName}</span>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => addToGoogleCalendar(task.title, task.dueDate, `Client: ${task.clientName}`)}
-                                        className="mt-2 text-xs flex items-center justify-center w-full py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-300 rounded-lg border border-blue-500/20 transition-colors"
-                                    >
-                                        <ExternalLink size={12} className="mr-2" /> Add to G-Cal
-                                    </button>
-                                </div>
-                            ))}
-
-                            {selectedDayTasks.length === 0 && selectedDayEvents.length === 0 && (
-                                <div className="text-center py-10 text-gray-500">
-                                    <p className="text-sm">No items for this date.</p>
-                                </div>
+                                    ))}
+                                </>
                             )}
                         </div>
                     </div>

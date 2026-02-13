@@ -123,10 +123,22 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         setShowWidgetPicker(false);
     };
 
+    import ImpactStatsWidget from './widgets/ImpactStatsWidget';
+    import AiInsightWidget from './widgets/AiInsightWidget';
+    import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
+
+    // ... existing imports
+
     const renderWidget = (widget: WidgetConfig) => {
         const props = { ...dashboardData, widget };
 
         switch (widget.type) {
+            case 'impact-stats':
+                return <ImpactStatsWidget {...props} />;
+            case 'ai-insight':
+                return <AiInsightWidget />;
+            case 'compliance-countdown':
+                return <ComplianceCountdownWidget />;
             case 'task-stats':
                 return <TaskStatsWidget {...props} />;
             case 'my-tasks':

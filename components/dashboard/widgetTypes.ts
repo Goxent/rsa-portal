@@ -10,7 +10,10 @@ export type WidgetType =
     | 'recent-activity'
     | 'task-stats'
     | 'client-stats'
-    | 'staff-stats';
+    | 'staff-stats'
+    | 'impact-stats'
+    | 'compliance-countdown'
+    | 'ai-insight';
 
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
 
@@ -41,6 +44,27 @@ export interface WidgetMeta {
 }
 
 export const WIDGET_REGISTRY: WidgetMeta[] = [
+    {
+        type: 'impact-stats',
+        title: 'Impact Stats',
+        description: 'High-level business numbers (Revenue, Clients, Deadlines)',
+        icon: 'BarChart2',
+        defaultSize: 'full',
+    },
+    {
+        type: 'ai-insight',
+        title: 'AI Daily Insight',
+        description: 'Smart tips and task suggestions',
+        icon: 'Sparkles',
+        defaultSize: 'full',
+    },
+    {
+        type: 'compliance-countdown',
+        title: 'Tax Deadlines',
+        description: 'Countdown to major compliance dates',
+        icon: 'Clock',
+        defaultSize: 'md',
+    },
     {
         type: 'my-tasks',
         title: 'My Tasks',
@@ -118,19 +142,19 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
 // Default widget layout for new users
 export const getDefaultWidgetConfig = (isAdmin: boolean): WidgetConfig[] => {
     const baseWidgets: WidgetConfig[] = [
-        { id: 'w1', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
-        { id: 'w2', type: 'my-tasks', title: 'My Tasks', position: 1, size: 'md', visible: true },
-        { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 2, size: 'md', visible: true },
-        { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 3, size: 'sm', visible: true },
-        { id: 'w5', type: 'performance', title: 'Performance', position: 4, size: 'sm', visible: true },
-        { id: 'w8', type: 'client-stats', title: 'Client Overview', position: 5, size: 'sm', visible: true },
-        { id: 'w9', type: 'staff-stats', title: 'Department Overview', position: 6, size: 'sm', visible: true },
+        { id: 'w_impact', type: 'impact-stats', title: 'Impact Stats', position: 0, size: 'full', visible: true },
+        { id: 'w_ai', type: 'ai-insight', title: 'AI Insight', position: 1, size: 'full', visible: true },
+        { id: 'w1', type: 'task-stats', title: 'Task Statistics', position: 2, size: 'md', visible: true },
+        { id: 'w2', type: 'my-tasks', title: 'My Tasks', position: 3, size: 'md', visible: true },
+        { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 4, size: 'md', visible: true },
+        { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 5, size: 'sm', visible: true },
+        { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 6, size: 'md', visible: true },
     ];
 
     if (isAdmin) {
         baseWidgets.push(
-            { id: 'w6', type: 'team-workload', title: 'Team Workload', position: 5, size: 'md', visible: true },
-            { id: 'w7', type: 'pending-actions', title: 'Pending Actions', position: 6, size: 'sm', visible: true }
+            { id: 'w6', type: 'team-workload', title: 'Team Workload', position: 7, size: 'md', visible: true },
+            { id: 'w7', type: 'pending-actions', title: 'Pending Actions', position: 8, size: 'sm', visible: true }
         );
     }
 

@@ -1,70 +1,107 @@
-import React from 'react';
-import { Activity, CheckCircle, Clock, UserPlus, Edit, Trash } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Activity, CheckCircle, UserPlus, FileText, MessageSquare } from 'lucide-react';
+import { Task } from '../../../types';
+import { formatDistanceToNow } from 'date-fns';
 
 interface RecentActivityWidgetProps {
-    recentActivity?: Array<{
-        id: string;
-        type: 'task_completed' | 'task_created' | 'user_joined' | 'task_updated' | 'task_deleted';
-        message: string;
-        time: string;
-        user?: string;
-    }>;
+    recentCompletedTasks?: Task[];
+    isLoading?: boolean;
 }
 
-const activityConfig = {
-    task_completed: { icon: CheckCircle, color: 'text-green-400' },
-    task_created: { icon: Clock, color: 'text-blue-400' },
-    user_joined: { icon: UserPlus, color: 'text-purple-400' },
-    task_updated: { icon: Edit, color: 'text-yellow-400' },
-    task_deleted: { icon: Trash, color: 'text-red-400' },
-};
+// Mock Activity Type
+interface ActivityItem {
+    id: string;
+    type: 'TASK_COMPLETE' | 'CLIENT_ADDED' | 'NEW_RESOURCE' | 'COMMENT';
+    title: string;
+    description: string;
+    timestamp: Date;
+    user: string;
+}
 
-// Mock data since we don't have activity tracking yet
-const mockActivity = [
-    { id: '1', type: 'task_completed' as const, message: 'Completed annual audit review', time: '2 hours ago', user: 'You' },
-    { id: '2', type: 'task_created' as const, message: 'New task assigned: Q4 Report', time: '4 hours ago', user: 'Admin' },
-    { id: '3', type: 'task_updated' as const, message: 'Updated tax filing deadline', time: 'Yesterday', user: 'You' },
-];
+const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ recentCompletedTasks, isLoading }) => {
+    const [activities, setActivities] = useState<ActivityItem[]>([]);
 
-const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
-    recentActivity = mockActivity
-}) => {
-    if (recentActivity.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                <Activity size={32} className="mb-2 opacity-50" />
-                <p className="text-sm">No recent activity</p>
-            </div>
+    useEffect(() => {
+        // In a real app, we'd fetch a dedicated activity feed.
+        // For now, we simulate it using recent tasks and some fake data.
+
+        const generated: ActivityItem[] = [];
+
+        // Add Recent Tasks
+        recentCompletedTasks?.forEach(t => {
+            generated.push({
+                id: `task-${t.id}`,
+                type: 'TASK_COMPLETE',
+                title: 'Task Completed',
+                description: `${t.title} for ${t.clientName}`,
+                timestamp: new Date(t.completedAt || t.createdAt || new Date()),
+                user: 'System'
+            });
+        });
+
+        // Mock some other events
+        generated.push(
+            {
+                id: 'mock-1',
+                type: 'CLIENT_ADDED',
+                title: 'New Client Onboarded',
+                description: 'Apex Industries Pvt Ltd',
+                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+                user: 'Admin'
+            },
+            {
+                id: 'mock-2',
+                type: 'NEW_RESOURCE',
+                title: 'Resource Update',
+                description: 'Added "Tax Audit Guide 2081"',
+                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
+                user: 'Manager'
+            }
         );
-    }
+
+        // Sort by time
+        generated.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        setActivities(generated.slice(0, 5));
+
+    }, [recentCompletedTasks]);
+
+    if (isLoading) return <div className="space-y-3 p-2">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-white/5 rounded-lg animate-pulse" />)}</div>;
+
+    const getIcon = (type: string) => {
+        switch (type) {
+            case 'TASK_COMPLETE': return <CheckCircle size={16} className="text-emerald-400" />;
+            case 'CLIENT_ADDED': return <UserPlus size={16} className="text-blue-400" />;
+            case 'NEW_RESOURCE': return <FileText size={16} className="text-purple-400" />;
+            default: return <MessageSquare size={16} className="text-gray-400" />;
+        }
+    };
 
     return (
-        <div className="space-y-3">
-            {recentActivity.slice(0, 5).map((activity) => {
-                const config = activityConfig[activity.type];
-                const Icon = config?.icon || Activity;
-                const color = config?.color || 'text-gray-400';
-
-                return (
-                    <div key={activity.id} className="flex gap-3">
-                        <div className={`p-1.5 rounded-lg bg-white/5 ${color}`}>
-                            <Icon size={14} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-300 truncate">{activity.message}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-gray-500">{activity.time}</span>
-                                {activity.user && (
-                                    <>
-                                        <span className="text-gray-600">•</span>
-                                        <span className="text-xs text-gray-500">{activity.user}</span>
-                                    </>
-                                )}
+        <div className="h-full overflow-y-auto custom-scrollbar pr-2 -mr-2">
+            {activities.length > 0 ? (
+                <div className="relative border-l border-white/10 ml-3 space-y-6 py-2">
+                    {activities.map((item, idx) => (
+                        <div key={item.id} className="relative pl-6 group">
+                            <div className="absolute -left-[9px] top-1 p-1 bg-navy-900 border border-white/10 rounded-full group-hover:border-brand-500/50 transition-colors">
+                                {getIcon(item.type)}
+                            </div>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-sm font-medium text-white group-hover:text-brand-300 transition-colors">{item.title}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.description}</p>
+                                </div>
+                                <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
+                                    {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                                </span>
                             </div>
                         </div>
-                    </div>
-                );
-            })}
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center text-gray-500 py-8 text-sm">
+                    No recent activity
+                </div>
+            )}
         </div>
     );
 };

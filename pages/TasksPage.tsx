@@ -345,35 +345,37 @@ const TasksPage: React.FC = () => {
     const KanbanBoard = () => {
         return (
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex space-x-6 overflow-x-auto pb-6 h-full custom-scrollbar items-start">
+                <div className="flex space-x-6 overflow-x-auto pb-6 h-full custom-scrollbar items-start px-2">
                     {Object.values(TaskStatus).map(status => (
                         <Droppable key={status} droppableId={status}>
                             {(provided, snapshot) => (
                                 <div
                                     {...provided.droppableProps}
                                     ref={provided.innerRef}
-                                    className={`flex-shrink-0 w-80 rounded-2xl p-4 transition-all border-2 ${snapshot.isDraggingOver ? 'bg-brand-500/5 ring-2 ring-brand-500/20' :
-                                        status === TaskStatus.NOT_STARTED ? 'bg-blue-500/5 border-blue-500/30' :
-                                            status === TaskStatus.IN_PROGRESS ? 'bg-brand-500/5 border-brand-500/30' :
-                                                status === TaskStatus.HALTED ? 'bg-red-500/5 border-red-500/30' :
-                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-yellow-500/5 border-yellow-500/30' :
-                                                        'bg-emerald-500/5 border-emerald-500/30'
+                                    className={`flex-shrink-0 w-80 rounded-2xl p-4 transition-all border-2 flex flex-col max-h-full ${snapshot.isDraggingOver ? 'bg-white/5 border-brand-500/50 shadow-brand-500/20 shadow-lg' :
+                                        status === TaskStatus.NOT_STARTED ? 'bg-white/5 border-white/5' :
+                                            status === TaskStatus.IN_PROGRESS ? 'bg-blue-500/5 border-blue-500/10' :
+                                                status === TaskStatus.HALTED ? 'bg-red-500/5 border-red-500/10' :
+                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500/5 border-amber-500/10' :
+                                                        'bg-emerald-500/5 border-emerald-500/10'
                                         }`}
                                 >
-                                    <div className="flex items-center justify-between mb-4 px-2">
-                                        <div className="flex items-center space-x-2">
-                                            <div className={`w-2 h-2 rounded-full ${status === TaskStatus.NOT_STARTED ? 'bg-blue-500' :
-                                                status === TaskStatus.IN_PROGRESS ? 'bg-brand-500' :
-                                                    status === TaskStatus.HALTED ? 'bg-red-500' :
-                                                        status === TaskStatus.UNDER_REVIEW ? 'bg-yellow-500' :
-                                                            'bg-emerald-500'
+                                    <div className="flex items-center justify-between mb-4 px-2 shrink-0">
+                                        <div className="flex items-center space-x-3">
+                                            <div className={`w-3 h-3 rounded-full shadow-sm ${status === TaskStatus.NOT_STARTED ? 'bg-gray-400' :
+                                                status === TaskStatus.IN_PROGRESS ? 'bg-blue-500 shadow-blue-500/50' :
+                                                    status === TaskStatus.HALTED ? 'bg-red-500 shadow-red-500/50' :
+                                                        status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500 shadow-amber-500/50' :
+                                                            'bg-emerald-500 shadow-emerald-500/50'
                                                 }`} />
-                                            <h3 className="font-bold text-gray-300 text-xs uppercase tracking-widest">{status.replace('_', ' ')}</h3>
+                                            <h3 className="font-bold text-white text-sm tracking-wide">{status.replace('_', ' ')}</h3>
                                         </div>
-                                        <span className="bg-navy-800 text-gray-400 text-[10px] px-2 py-0.5 rounded-full font-bold">{filteredTasks.filter(t => t.status === status).length}</span>
+                                        <span className="bg-white/10 text-white text-xs px-2.5 py-1 rounded-lg font-bold border border-white/5 shadow-sm">
+                                            {filteredTasks.filter(t => t.status === status).length}
+                                        </span>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
                                         {filteredTasks.filter(t => t.status === status).map((task, idx) => {
                                             const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
                                             const totalSub = task.subtasks?.length || 0;
@@ -388,66 +390,77 @@ const TasksPage: React.FC = () => {
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
                                                             onClick={() => handleOpenEdit(task)}
-                                                            className={`glass-panel p-5 rounded-xl hover:border-brand-500/40 hover:bg-navy-700 transition-all group relative overflow-hidden shadow-lg border border-white/5 ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50' : ''}`}
+                                                            className={`glass-panel p-4 rounded-xl group relative overflow-hidden transition-all duration-300 border border-white/5 hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-900/20 active:scale-95 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50 bg-navy-800' : 'bg-navy-900/40'}`}
                                                         >
-                                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                                            <div className="flex justify-between items-start mb-3">
-                                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
-                                                                <div className="text-[10px] text-gray-400 font-mono">
-                                                                    <span>{task.dueDate}</span>
-                                                                </div>
-                                                            </div>
+                                                            {/* Hover Gradient Overlay */}
+                                                            <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 via-brand-500/0 to-brand-500/0 group-hover:from-brand-500/5 group-hover:to-purple-500/5 transition-all duration-500"></div>
 
-                                                            <h4 className="font-bold text-gray-100 text-sm mb-2 leading-snug group-hover:text-brand-300 transition-colors">{task.title}</h4>
-                                                            <div className="flex items-center text-xs text-gray-400 mb-4">
-                                                                <Briefcase size={12} className="mr-1.5 text-brand-500" />
-                                                                <span className="truncate max-w-[200px] text-gray-300">{task.clientName || 'Internal'}</span>
-                                                            </div>
-
-                                                            {/* Signing Authority Badge */}
-                                                            {(() => {
-                                                                const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
-                                                                if (taskClient && taskClient.signingAuthority) {
-                                                                    return (
-                                                                        <div className="mb-3 flex items-center bg-brand-900/40 px-2 py-1 rounded border border-brand-500/10">
-                                                                            <Sparkles size={10} className="text-amber-400 mr-1.5" />
-                                                                            <span className="text-[10px] text-brand-200 font-medium truncate">
-                                                                                {taskClient.signingAuthority}
-                                                                            </span>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            })()}
-
-                                                            {totalSub > 0 && (
-                                                                <div className="mb-4">
-                                                                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                                                                        <span>{Math.round(subtaskProgress)}%</span>
-                                                                    </div>
-                                                                    <div className="w-full h-1.5 bg-navy-900 rounded-full overflow-hidden">
-                                                                        <div className={`h-full rounded-full ${progressColor} transition-all duration-500`} style={{ width: `${subtaskProgress}%` }}></div>
+                                                            <div className="relative z-10">
+                                                                <div className="flex justify-between items-start mb-3">
+                                                                    <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
+                                                                    <div className="text-[10px] text-gray-400 font-mono bg-black/20 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                                        <Calendar size={10} />
+                                                                        <span>{task.dueDate}</span>
                                                                     </div>
                                                                 </div>
-                                                            )}
 
-                                                            <div className="pt-3 border-t border-white/5">
-                                                                <div className="text-[9px] text-gray-500 mb-1.5 uppercase tracking-wide">Assigned To</div>
-                                                                <div className="flex flex-wrap gap-1.5">
-                                                                    {task.assignedTo.map(uid => {
-                                                                        const u = usersList.find(user => user.uid === uid);
+                                                                <h4 className="font-bold text-white text-sm mb-2 leading-snug group-hover:text-brand-300 transition-colors line-clamp-2">{task.title}</h4>
+
+                                                                <div className="flex items-center text-xs text-gray-400 mb-3 bg-white/5 p-1.5 rounded-lg border border-white/5">
+                                                                    <Briefcase size={12} className="mr-2 text-brand-400 shrink-0" />
+                                                                    <span className="truncate text-gray-300 font-medium">{task.clientName || 'Internal'}</span>
+                                                                </div>
+
+                                                                {/* Signing Authority Badge */}
+                                                                {(() => {
+                                                                    const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
+                                                                    if (taskClient && taskClient.signingAuthority) {
                                                                         return (
-                                                                            <div key={uid} className="flex items-center bg-navy-800/50 px-2 py-1 rounded border border-white/5">
-                                                                                <div className="w-4 h-4 rounded-full bg-navy-700 border border-navy-600 flex items-center justify-center text-[8px] font-bold text-gray-300 mr-1.5">
-                                                                                    {getInitials(u?.displayName || '?')}
-                                                                                </div>
-                                                                                <span className="text-[10px] text-gray-300">{u?.displayName || 'Unknown'}</span>
+                                                                            <div className="mb-3 flex items-center bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 w-fit">
+                                                                                <Sparkles size={10} className="text-amber-400 mr-1.5" />
+                                                                                <span className="text-[10px] text-amber-200 font-medium truncate max-w-[150px]">
+                                                                                    {taskClient.signingAuthority}
+                                                                                </span>
                                                                             </div>
                                                                         );
-                                                                    })}
-                                                                </div>
-                                                                <div className="text-[10px] text-gray-500 flex items-center">
-                                                                    <Calendar size={10} className="mr-1" /> {task.createdAt.split('T')[0]}
+                                                                    }
+                                                                    return null;
+                                                                })()}
+
+                                                                {totalSub > 0 && (
+                                                                    <div className="mb-4">
+                                                                        <div className="flex justify-between text-[10px] text-gray-400 mb-1.5">
+                                                                            <span>Progress</span>
+                                                                            <span className="font-mono text-brand-300">{Math.round(subtaskProgress)}%</span>
+                                                                        </div>
+                                                                        <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                                                            <div className={`h-full rounded-full ${progressColor} shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-700 ease-out`} style={{ width: `${subtaskProgress}%` }}></div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="pt-3 border-t border-white/5 flex justify-between items-center group-hover:border-white/10 transition-colors">
+                                                                    <div className="flex -space-x-2">
+                                                                        {task.assignedTo.slice(0, 3).map((uid, i) => {
+                                                                            const u = usersList.find(user => user.uid === uid);
+                                                                            return (
+                                                                                <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-800 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-white shadow-sm hover:scale-110 transition-transform z-0 hover:z-10 relative">
+                                                                                    {getInitials(u?.displayName || '?')}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                        {task.assignedTo.length > 3 && (
+                                                                            <div className="w-6 h-6 rounded-full bg-navy-900 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-gray-400 z-10">
+                                                                                +{task.assignedTo.length - 3}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <div className="bg-brand-500 text-white p-1 rounded-md shadow-lg shadow-brand-500/20">
+                                                                            <CheckSquare size={12} />
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -465,10 +478,6 @@ const TasksPage: React.FC = () => {
             </DragDropContext>
         );
     };
-
-
-
-
 
     const toggleTaskSelection = (taskId: string) => {
         setSelectedTaskIds(prev =>
@@ -511,134 +520,176 @@ const TasksPage: React.FC = () => {
     };
 
     const ListView = () => (
-        <div className="glass-panel rounded-xl overflow-hidden animate-fade-in-up relative">
+        <div className="glass-panel rounded-2xl overflow-hidden animate-fade-in-up relative border border-white/10 shadow-xl mx-1">
             {/* Floating Bulk Action Bar */}
             {selectedTaskIds.length > 0 && (
-                <div className="absolute top-0 left-0 w-full bg-brand-900/95 backdrop-blur-md z-10 p-2 px-4 flex justify-between items-center border-b border-brand-500/30 animate-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-0 left-0 w-full bg-brand-600/95 backdrop-blur-md z-20 p-3 px-6 flex justify-between items-center shadow-lg animate-in slide-in-from-top-2 duration-300">
                     <div className="flex items-center space-x-4">
-                        <span className="text-white font-bold text-sm">{selectedTaskIds.length} selected</span>
-                        <button onClick={() => setSelectedTaskIds([])} className="text-xs text-gray-300 hover:text-white underline">Clear selection</button>
+                        <span className="text-white font-bold text-sm bg-white/20 px-3 py-1 rounded-full">{selectedTaskIds.length} selected</span>
+                        <button onClick={() => setSelectedTaskIds([])} className="text-xs text-white/80 hover:text-white underline decoration-white/30 hover:decoration-white transition-all">Clear selection</button>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                         <select
-                            className="bg-navy-800 text-xs text-white border border-white/10 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-brand-500"
+                            className="bg-black/20 text-xs text-white border border-white/10 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-white/50 cursor-pointer font-medium"
                             onChange={(e) => {
                                 if (e.target.value) handleBulkStatusUpdate(e.target.value as TaskStatus);
                                 e.target.value = ''; // Reset select
                             }}
                         >
-                            <option value="">Change Status...</option>
-                            {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                            <option value="" className="bg-navy-900">Change Status...</option>
+                            {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-navy-900 text-white">{s.replace('_', ' ')}</option>)}
                         </select>
                         {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
                             <button
                                 onClick={handleBulkDelete}
-                                className="flex items-center px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-200 text-xs font-bold rounded-lg border border-red-500/20 transition-all"
+                                className="flex items-center px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-bold rounded-lg border border-red-500/30 transition-all shadow-sm"
                             >
-                                <Trash2 size={12} className="mr-1.5" /> Delete Selected
+                                <Trash2 size={12} className="mr-1.5" /> Delete
                             </button>
                         )}
                     </div>
                 </div>
             )}
 
-            <table className="w-full text-left text-sm text-gray-300">
-                <thead>
-                    <tr className="bg-navy-900/50 text-gray-400 uppercase tracking-wider text-xs border-b border-white/10">
-                        <th className="px-4 py-4 w-10">
-                            <input
-                                type="checkbox"
-                                className="rounded border-gray-600 bg-navy-700 text-brand-600 focus:ring-brand-500"
-                                checked={filteredTasks.length > 0 && selectedTaskIds.length === filteredTasks.length}
-                                onChange={toggleSelectAll}
-                            />
-                        </th>
-                        <th className="px-6 py-4 font-heading font-bold">Task Name</th>
-                        <th className="px-6 py-4 font-heading font-bold">Client</th>
-                        <th className="px-6 py-4 font-heading font-bold">Signee</th>
-                        <th className="px-6 py-4 font-heading font-bold">Assigned</th>
-                        <th className="px-6 py-4 font-heading font-bold">Due Date</th>
-                        <th className="px-6 py-4 font-heading font-bold">Status</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                    {filteredTasks.map((task) => (
-                        <tr key={task.id} className={`hover:bg-white/5 transition-colors cursor-pointer group ${selectedTaskIds.includes(task.id!) ? 'bg-brand-500/5' : ''}`}>
-                            <td className="px-4 py-4">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-gray-300">
+                    <thead>
+                        <tr className="bg-navy-900/40 text-gray-400 uppercase tracking-wider text-xs border-b border-white/5">
+                            <th className="px-6 py-4 w-12 text-center">
                                 <input
                                     type="checkbox"
-                                    className="rounded border-gray-600 bg-navy-700 text-brand-600 focus:ring-brand-500"
-                                    checked={selectedTaskIds.includes(task.id!)}
-                                    onChange={(e) => {
-                                        e.stopPropagation();
-                                        toggleTaskSelection(task.id!);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
+                                    className="rounded border-gray-600 bg-navy-800 text-brand-500 focus:ring-brand-500/50 cursor-pointer"
+                                    checked={filteredTasks.length > 0 && selectedTaskIds.length === filteredTasks.length}
+                                    onChange={toggleSelectAll}
                                 />
-                            </td>
-                            <td className="px-6 py-4 font-medium text-white group-hover:text-brand-300 transition-colors" onClick={() => handleOpenEdit(task)}>{task.title}</td>
-                            <td className="px-6 py-4 text-brand-200" onClick={() => handleOpenEdit(task)}>{task.clientName}</td>
-                            <td className="px-6 py-4 text-xs text-amber-200/80 font-medium" onClick={() => handleOpenEdit(task)}>
-                                {(() => {
-                                    const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
-                                    return taskClient?.signingAuthority || '-';
-                                })()}
-                            </td>
-                            <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex -space-x-2">
-                                        {task.assignedTo.slice(0, 3).map((uid, i) => {
-                                            const u = usersList.find(user => user.uid === uid);
-                                            return (
-                                                <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-700 border border-navy-900 flex items-center justify-center text-[9px] font-bold text-white">
-                                                    {getInitials(u?.displayName || '?')}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <div className="flex flex-wrap gap-1">
-                                        {task.assignedTo.slice(0, 2).map(uid => {
-                                            const u = usersList.find(user => user.uid === uid);
-                                            return u ? (
-                                                <span key={uid} className="text-[10px] text-gray-400">{u.displayName}</span>
-                                            ) : null;
-                                        })}
-                                        {task.assignedTo.length > 2 && (
-                                            <span className="text-[10px] text-gray-500">+{task.assignedTo.length - 2}</span>
+                            </th>
+                            <th className="px-6 py-4 font-heading font-bold text-gray-300">Task Name</th>
+                            <th className="px-6 py-4 font-heading font-bold text-gray-300">Client</th>
+                            <th className="px-6 py-4 font-heading font-bold text-gray-300">Signee</th>
+                            <th className="px-6 py-4 font-heading font-bold text-gray-300">Assigned</th>
+                            <th className="px-6 py-4 font-heading font-bold text-gray-300">Due Date</th>
+                            <th className="px-6 py-4 font-heading font-bold text-gray-300">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {filteredTasks.map((task, index) => (
+                            <tr
+                                key={task.id}
+                                className={`group hover:bg-white/5 transition-all cursor-pointer ${selectedTaskIds.includes(task.id!) ? 'bg-brand-500/10 hover:bg-brand-500/20' : index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent'}`}
+                            >
+                                <td className="px-6 py-4 text-center">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-600 bg-navy-800 text-brand-500 focus:ring-brand-500/50 cursor-pointer"
+                                        checked={selectedTaskIds.includes(task.id!)}
+                                        onChange={(e) => {
+                                            e.stopPropagation();
+                                            toggleTaskSelection(task.id!);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                </td>
+                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
+                                    <div className="font-bold text-white group-hover:text-brand-300 transition-colors text-base mb-0.5">{task.title}</div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
+                                        {task.subtasks && task.subtasks.length > 0 && (
+                                            <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                                                <CheckSquare size={10} /> {task.subtasks.filter(s => s.isCompleted).length}/{task.subtasks.length}
+                                            </span>
                                         )}
                                     </div>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4 text-xs font-mono" onClick={() => handleOpenEdit(task)}>{task.dueDate}</td>
-                            <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
-                                <span className={`px-2 py-0.5 rounded border text-[10px] uppercase font-bold ${getPriorityStyle(task.priority)}`}>
-                                    {task.status.replace('_', ' ')}
-                                </span>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                                </td>
+                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
+                                    <div className="flex items-center text-brand-200 font-medium">
+                                        <Briefcase size={14} className="mr-2 opacity-50" />
+                                        {task.clientName}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
+                                    {(() => {
+                                        const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
+                                        return taskClient?.signingAuthority ? (
+                                            <div className="flex items-center gap-1.5 text-amber-200/90 bg-amber-500/10 px-2 py-1 rounded w-fit text-xs font-medium border border-amber-500/10">
+                                                <Sparkles size={12} className="text-amber-400" />
+                                                {taskClient.signingAuthority}
+                                            </div>
+                                        ) : <span className="text-gray-600">-</span>;
+                                    })()}
+                                </td>
+                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
+                                    <div className="flex -space-x-2 hover:space-x-1 transition-all duration-300">
+                                        {task.assignedTo.length === 0 ? (
+                                            <span className="text-xs text-gray-500 italic">Unassigned</span>
+                                        ) : (
+                                            task.assignedTo.slice(0, 4).map((uid, i) => {
+                                                const u = usersList.find(user => user.uid === uid);
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        title={u?.displayName}
+                                                        className="w-8 h-8 rounded-full bg-navy-800 border-2 border-navy-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-2 ring-transparent group-hover:ring-brand-500/30 transition-all hover:scale-110 hover:z-10 relative"
+                                                    >
+                                                        {getInitials(u?.displayName || '?')}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                        {task.assignedTo.length > 4 && (
+                                            <div className="w-8 h-8 rounded-full bg-navy-700 border-2 border-navy-900 flex items-center justify-center text-[10px] font-bold text-gray-300 shadow-sm">
+                                                +{task.assignedTo.length - 4}
+                                            </div>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
+                                    <div className="flex items-center text-gray-300 bg-white/5 px-2 py-1 rounded-lg w-fit border border-white/5">
+                                        <Calendar size={14} className="mr-2 text-brand-400" />
+                                        <span className="font-mono text-xs">{task.dueDate}</span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
+                                    <span className={`px-3 py-1 rounded-full border text-[10px] uppercase font-bold tracking-wide shadow-sm flex items-center w-fit gap-1.5 ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' :
+                                            task.status === TaskStatus.COMPLETED ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
+                                                task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' :
+                                                    'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                                        }`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
+                                                task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
+                                                    task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500' :
+                                                        'bg-amber-500'
+                                            }`}></div>
+                                        {task.status.replace('_', ' ')}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
 
-            {/* Load More Button */}
-            {hasMore && (
-                <div className="p-4 flex justify-center border-t border-white/5">
-                    <button
-                        onClick={loadMoreTasks}
-                        disabled={isMoreLoading}
-                        className="flex items-center space-x-2 px-4 py-2 bg-navy-800 hover:bg-navy-700 text-brand-300 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isMoreLoading ? (
-                            <>
-                                <Loader2 size={16} className="animate-spin" />
-                                <span>Loading more...</span>
-                            </>
-                        ) : (
-                            <span>Load More Tasks</span>
-                        )}
-                    </button>
-                </div>
-            )}
+                {/* Load More Button */}
+                {hasMore && (
+                    <div className="p-6 flex justify-center border-t border-white/5 bg-navy-900/30">
+                        <button
+                            onClick={loadMoreTasks}
+                            disabled={isMoreLoading}
+                            className="flex items-center space-x-2 px-6 py-3 bg-navy-800 hover:bg-navy-700 text-brand-300 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-brand-500/20 hover:border-brand-500/40 shadow-lg"
+                        >
+                            {isMoreLoading ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    <span>Loading more tasks...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Load More Tasks</span>
+                                    <ChevronDown size={16} />
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 
@@ -688,85 +739,131 @@ const TasksPage: React.FC = () => {
     const hasEditPermission = canEditTask(currentTask);
 
     return (
-        <div className="flex flex-col h-full space-y-6">
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-white font-heading">Workflow</h1>
-                    <p className="text-sm text-gray-400">Manage tasks and track progress</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex space-x-1">
-                        <button onClick={() => setBoardMode('ALL')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${boardMode === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>Firm View</button>
-                        <button onClick={() => setBoardMode('MY')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center ${boardMode === 'MY' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}><UserCircle2 size={14} className="mr-1" /> My Board</button>
+        <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
+            {/* Header Section */}
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-900 to-indigo-900 shadow-2xl border border-white/10 shrink-0">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+
+                <div className="relative p-6 md:p-8 flex flex-col xl:flex-row justify-between items-center z-10 gap-6">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white font-heading tracking-tight mb-2">Workflow & Tasks</h1>
+                        <p className="text-blue-100 max-w-xl text-lg opacity-80">
+                            Manage projects, track deadlines, and collaborate with your team.
+                        </p>
                     </div>
-                    {canCreateTask && (
-                        <button onClick={handleOpenCreate} className="bg-brand-600 hover:bg-brand-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all border border-brand-500/30 transform hover:-translate-y-0.5"><Plus size={16} className="mr-2" /> New Task</button>
-                    )}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="bg-white/10 p-1.5 rounded-xl border border-white/10 flex space-x-1 backdrop-blur-md">
+                            <button
+                                onClick={() => setBoardMode('ALL')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+                            >
+                                <Briefcase size={16} /> Firm View
+                            </button>
+                            <button
+                                onClick={() => setBoardMode('MY')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+                            >
+                                <UserCircle2 size={16} /> My Board
+                            </button>
+                        </div>
+                        {canCreateTask && (
+                            <button
+                                onClick={handleOpenCreate}
+                                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-emerald-900/20 transition-all transform hover:-translate-y-0.5"
+                            >
+                                <Plus size={20} className="mr-2" /> New Task
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-4 rounded-xl shadow-xl border-white/5">
-                <div className="flex bg-navy-900/50 p-1.5 rounded-xl border border-white/10">
-                    <button onClick={() => setViewMode('KANBAN')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all ${viewMode === 'KANBAN' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                        <LayoutGrid size={16} className="mr-2" /> Board
+            {/* Filter Bar */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-2 rounded-xl border-white/5 shrink-0">
+                <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+                    <button
+                        onClick={() => setViewMode('KANBAN')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <LayoutGrid size={16} /> Board
                     </button>
-                    <button onClick={() => setViewMode('LIST')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all ${viewMode === 'LIST' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                        <ListIcon size={16} className="mr-2" /> List
+                    <button
+                        onClick={() => setViewMode('LIST')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <ListIcon size={16} /> List
                     </button>
                 </div>
 
-                <div className="flex items-center space-x-3 overflow-x-auto pb-2 custom-scrollbar">
+                <div className="flex items-center space-x-3 overflow-x-auto pb-2 md:pb-0 custom-scrollbar w-full md:w-auto px-2">
                     {/* Signee Filter */}
                     <div className="relative group">
-                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300">
-                            <span>Auditor:</span>
+                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-sm text-gray-300 transition-colors">
+                            <Sparkles size={14} className="text-amber-400" />
+                            <span className="font-medium text-xs uppercase tracking-wider text-gray-400">Auditor</span>
+                            <div className="h-4 w-px bg-white/10 mx-2"></div>
                             <select
-                                className="bg-transparent border-none outline-none text-brand-300 font-bold w-32"
+                                className="bg-transparent border-none outline-none text-white font-bold cursor-pointer min-w-[100px]"
                                 value={filterSignee}
                                 onChange={(e) => setFilterSignee(e.target.value)}
                             >
-                                <option value="ALL">All</option>
-                                {signees.map((s, i) => <option key={i} value={s}>{s}</option>)}
+                                <option value="ALL" className="bg-navy-900 text-gray-300">All Auditors</option>
+                                {signees.map((s, i) => <option key={i} value={s} className="bg-navy-900 text-white">{s}</option>)}
                             </select>
                         </div>
                     </div>
-                    {/* VAT/ITR Toggles */}
-                    <button
-                        onClick={() => setFilterVat(!filterVat)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filterVat ? 'bg-brand-600 text-white border-brand-500 shadow-lg' : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'}`}
-                    >
-                        VAT Clients
-                    </button>
-                    <button
-                        onClick={() => setFilterItr(!filterItr)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${filterItr ? 'bg-brand-600 text-white border-brand-500 shadow-lg' : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'}`}
-                    >
-                        ITR Clients
-                    </button>
 
-                    {/* Staff Filter (Replaces Search) */}
+                    {/* Quick Filters */}
+                    <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
+                        <button
+                            onClick={() => setFilterVat(!filterVat)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${filterVat ? 'bg-brand-500/20 text-brand-300 border-brand-500/50 shadow-inner' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            VAT
+                        </button>
+                        <button
+                            onClick={() => setFilterItr(!filterItr)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${filterItr ? 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-inner' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            ITR
+                        </button>
+                    </div>
+
+                    {/* Staff Filter */}
                     <div className="relative group">
-                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300">
-                            <Filter size={14} className="text-gray-400" />
-                            <span>Staff:</span>
+                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-sm text-gray-300 transition-colors">
+                            <Filter size={14} className="text-blue-400" />
+                            <span className="font-medium text-xs uppercase tracking-wider text-gray-400">Staff</span>
+                            <div className="h-4 w-px bg-white/10 mx-2"></div>
                             <select
-                                className="bg-transparent border-none outline-none text-brand-300 font-bold w-32"
+                                className="bg-transparent border-none outline-none text-white font-bold cursor-pointer min-w-[100px]"
                                 value={filterStaff}
                                 onChange={(e) => setFilterStaff(e.target.value)}
                             >
-                                <option value="ALL">All Staff</option>
-                                {usersList.map((u) => <option key={u.uid} value={u.uid}>{u.displayName}</option>)}
+                                <option value="ALL" className="bg-navy-900 text-gray-300">All Staff</option>
+                                {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-navy-900 text-white">{u.displayName}</option>)}
                             </select>
                         </div>
                     </div>
 
+                    <div className="h-6 w-px bg-white/10 mx-2"></div>
+
                     {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                        <button onClick={() => setIsTemplateManagerOpen(true)} className="px-4 py-2 bg-navy-800 text-brand-300 border border-brand-500/20 rounded-xl text-sm font-bold hover:bg-navy-700 transition-all flex items-center">
-                            <Sparkles size={16} className="mr-2" /> Manage Templates
+                        <button
+                            onClick={() => setIsTemplateManagerOpen(true)}
+                            className="bg-navy-800/80 hover:bg-navy-700 text-brand-300 border border-brand-500/20 rounded-xl p-2.5 transition-all"
+                            title="Manage Templates"
+                        >
+                            <Sparkles size={18} />
                         </button>
                     )}
-                    <button onClick={() => setIsTemplateModalOpen(true)} className="px-4 py-2 bg-white/5 text-gray-300 border border-white/10 rounded-xl text-sm font-bold hover:bg-white/10 transition-all flex items-center">
-                        <CheckSquare size={16} className="mr-2" /> Use Template
+                    <button
+                        onClick={() => setIsTemplateModalOpen(true)}
+                        className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold transition-all flex items-center gap-2"
+                    >
+                        <CheckSquare size={16} />
+                        <span className="hidden xl:inline">Templates</span>
                     </button>
                 </div>
             </div>
