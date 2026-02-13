@@ -9,6 +9,7 @@ import { Client, UserRole, UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
 import { toast } from 'react-hot-toast';
 import StaffSelect from '../components/StaffSelect';
+import { ClientCardSkeleton } from '../components/ui/LoadingSkeleton';
 
 const ClientsPage: React.FC = () => {
     const { user } = useAuth();
@@ -93,11 +94,7 @@ const ClientsPage: React.FC = () => {
                 await AuthService.updateClient({ ...clientData, id: editingId });
                 toast.success('Client updated successfully');
             } else {
-                await AuthService.addClient({
-                    ...clientData,
-                    createdAt: new Date().toISOString(),
-                    id: crypto.randomUUID()
-                });
+                await AuthService.addClient(clientData as Client);
                 toast.success('Client created successfully');
             }
 
@@ -313,9 +310,7 @@ const ClientsPage: React.FC = () => {
             </div>
 
             {loading && (
-                <div className="flex justify-center py-20">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
+                <ClientCardSkeleton count={6} />
             )}
 
             {!loading && filteredClients.length === 0 && (

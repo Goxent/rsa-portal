@@ -1,16 +1,19 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
-    Plus, Filter, Search, Calendar, Trash2, X,
-    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles
+    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search, Calendar, Trash2, X
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { TemplateService } from '../services/templates';
+import { getCurrentDateUTC } from '../utils/dates';
+import { SIGNING_AUTHORITIES } from '../constants/firmData';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
 import StaffSelect from '../components/StaffSelect';
+import { TaskListSkeleton } from '../components/ui/LoadingSkeleton';
 import ClientSelect from '../components/ClientSelect';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
@@ -18,8 +21,15 @@ import { toast } from 'react-hot-toast';
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN'>('KANBAN');
     const [boardMode, setBoardMode] = useState<'ALL' | 'MY'>('ALL');
+    const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+
+    // Pagination State
+    const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [isMoreLoading, setIsMoreLoading] = useState(false);
 
     // Data State
     const [usersList, setUsersList] = useState<UserProfile[]>([]);
@@ -52,13 +62,8 @@ const TasksPage: React.FC = () => {
     const [filterItr, setFilterItr] = useState<boolean>(false);
 
     // Static Signees List
-    const signees = [
-        'R. Sapkota & Associates',
-        'TN Acharya & Co.',
-        'Pankaj Thapa Associates',
-        'NP Sharma & Co.',
-        'Others'
-    ];
+    // Static Signees List
+    const signees = SIGNING_AUTHORITIES;
 
     const filteredTasks = tasks.filter(t => {
         // existing filters
@@ -74,16 +79,16 @@ const TasksPage: React.FC = () => {
             // In a real app, tasks should store client details or we lookup.
             // Currently tasks store 'clientName' and 'clientIds' (newly added).
             // Fallback: match by name if ID missing (legacy tasks)
-            const taskClient = clientsList.find(c =>
-                (t.clientIds && t.clientIds.includes(c.id)) ||
-                c.name === t.clientName
-            );
+            const taskClient = clientsList.find(c => t.clientIds && t.clientIds.includes(c.id));
 
             if (!taskClient) return false; // If filtering by client props but no client found, exclude.
 
             if (filterSignee !== 'ALL') {
                 if (filterSignee === 'Others') {
-                    if (['R. Sapkota & Associates', 'TN Acharya & Co.', 'Pankaj Thapa Associates', 'NP Sharma & Co.'].includes(taskClient.signingAuthority || '')) return false;
+                    // Check if signingAuthority is meant to be in the 'Others' bucket (i.e. NOT in the main list)
+                    // The main list excludes 'Others'
+                    const mainAuthorities = SIGNING_AUTHORITIES.filter(s => s !== 'Others');
+                    if (mainAuthorities.includes(taskClient.signingAuthority || '')) return false;
                 } else {
                     if (taskClient.signingAuthority !== filterSignee) return false;
                 }
@@ -107,8 +112,7 @@ const TasksPage: React.FC = () => {
         setFormError('');
 
         // Get local date string without timezone conversion
-        const today = new Date();
-        const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const localDate = getCurrentDateUTC();
 
         setCurrentTask({
             title: '',
@@ -140,7 +144,7 @@ const TasksPage: React.FC = () => {
                 createdBy: user?.uid || 'system',
                 createdAt: new Date().toISOString()
             })),
-            dueDate: new Date().toLocaleDateString('en-CA'),
+            dueDate: getCurrentDateUTC(),
             clientIds: []
         });
         setIsModalOpen(true);
@@ -157,10 +161,19 @@ const TasksPage: React.FC = () => {
         const task = tasks.find(t => t.id === draggableId);
 
         if (task && task.status !== newStatus) {
-            let updatedTask = { ...task, status: newStatus };
+            const previousTasks = [...tasks];
+            const updatedTask = { ...task, status: newStatus };
+
             // Optimistic Update
             setTasks(prev => prev.map(t => t.id === draggableId ? updatedTask : t));
-            await AuthService.saveTask(updatedTask);
+
+            try {
+                await AuthService.saveTask(updatedTask);
+            } catch (error) {
+                console.error("Failed to update task status:", error);
+                toast.error("Failed to move task. Reverting...");
+                setTasks(previousTasks); // Rollback
+            }
         }
     };
 
@@ -172,15 +185,49 @@ const TasksPage: React.FC = () => {
 
     const fetchData = async () => {
         if (!user) return;
-        const [u, c, t] = await Promise.all([
-            AuthService.getAllUsers(),
-            AuthService.getAllClients(),
-            AuthService.getAllTasks()
-        ]);
-        setUsersList(u);
-        setClientsList(c);
-        setTasks(t);
+        setLoading(true);
+        try {
+            const [fetchedUsers, fetchedClients, fetchedTemplates] = await Promise.all([
+                AuthService.getAllUsers(),
+                AuthService.getAllClients(),
+                TemplateService.getAllTemplates()
+            ]);
+
+            // Initial Page Load
+            const { tasks: initialTasks, lastVisible: last } = await AuthService.getPaginatedTasks(undefined, 20); // Page size 20
+
+            setTasks(initialTasks);
+            setLastVisible(last);
+            setHasMore(!!last);
+
+            setUsersList(fetchedUsers);
+            setClientsList(fetchedClients);
+            setTemplates(fetchedTemplates);
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to load data");
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const loadMoreTasks = async () => {
+        if (!lastVisible || isMoreLoading) return;
+        setIsMoreLoading(true);
+        try {
+            const { tasks: nextTasks, lastVisible: nextLast } = await AuthService.getPaginatedTasks(lastVisible, 20);
+
+            setTasks(prev => [...prev, ...nextTasks]);
+            setLastVisible(nextLast);
+            setHasMore(!!nextLast);
+        } catch (error) {
+            console.error("Failed to load more tasks", error);
+            toast.error("Failed to load more tasks");
+        } finally {
+            setIsMoreLoading(false);
+        }
+    };
+
 
     const getPriorityStyle = (p: TaskPriority) => {
         switch (p) {
@@ -413,11 +460,93 @@ const TasksPage: React.FC = () => {
         );
     };
 
+
+
+
+
+    const toggleTaskSelection = (taskId: string) => {
+        setSelectedTaskIds(prev =>
+            prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedTaskIds.length === filteredTasks.length) {
+            setSelectedTaskIds([]);
+        } else {
+            setSelectedTaskIds(filteredTasks.map(t => t.id).filter(Boolean) as string[]);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} tasks?`)) return;
+
+        try {
+            await Promise.all(selectedTaskIds.map(id => AuthService.deleteTask(id)));
+            toast.success(`${selectedTaskIds.length} tasks deleted successfully`);
+            setSelectedTaskIds([]);
+            fetchData();
+        } catch (error) {
+            console.error('Bulk delete failed:', error);
+            toast.error('Failed to delete some tasks');
+        }
+    };
+
+    const handleBulkStatusUpdate = async (newStatus: TaskStatus) => {
+        try {
+            await Promise.all(selectedTaskIds.map(id => AuthService.updateTask(id, { status: newStatus })));
+            toast.success(`${selectedTaskIds.length} tasks updated to ${newStatus.replace('_', ' ')}`);
+            setSelectedTaskIds([]);
+            fetchData();
+        } catch (error) {
+            console.error('Bulk update failed:', error);
+            toast.error('Failed to update tasks');
+        }
+    };
+
     const ListView = () => (
-        <div className="glass-panel rounded-xl overflow-hidden animate-fade-in-up">
+        <div className="glass-panel rounded-xl overflow-hidden animate-fade-in-up relative">
+            {/* Floating Bulk Action Bar */}
+            {selectedTaskIds.length > 0 && (
+                <div className="absolute top-0 left-0 w-full bg-brand-900/95 backdrop-blur-md z-10 p-2 px-4 flex justify-between items-center border-b border-brand-500/30 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center space-x-4">
+                        <span className="text-white font-bold text-sm">{selectedTaskIds.length} selected</span>
+                        <button onClick={() => setSelectedTaskIds([])} className="text-xs text-gray-300 hover:text-white underline">Clear selection</button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <select
+                            className="bg-navy-800 text-xs text-white border border-white/10 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-brand-500"
+                            onChange={(e) => {
+                                if (e.target.value) handleBulkStatusUpdate(e.target.value as TaskStatus);
+                                e.target.value = ''; // Reset select
+                            }}
+                        >
+                            <option value="">Change Status...</option>
+                            {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                        </select>
+                        {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="flex items-center px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-200 text-xs font-bold rounded-lg border border-red-500/20 transition-all"
+                            >
+                                <Trash2 size={12} className="mr-1.5" /> Delete Selected
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <table className="w-full text-left text-sm text-gray-300">
                 <thead>
                     <tr className="bg-navy-900/50 text-gray-400 uppercase tracking-wider text-xs border-b border-white/10">
+                        <th className="px-4 py-4 w-10">
+                            <input
+                                type="checkbox"
+                                className="rounded border-gray-600 bg-navy-700 text-brand-600 focus:ring-brand-500"
+                                checked={filteredTasks.length > 0 && selectedTaskIds.length === filteredTasks.length}
+                                onChange={toggleSelectAll}
+                            />
+                        </th>
                         <th className="px-6 py-4 font-heading font-bold">Task Name</th>
                         <th className="px-6 py-4 font-heading font-bold">Client</th>
                         <th className="px-6 py-4 font-heading font-bold">Signee</th>
@@ -428,16 +557,28 @@ const TasksPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                     {filteredTasks.map((task) => (
-                        <tr key={task.id} onClick={() => handleOpenEdit(task)} className="hover:bg-white/5 transition-colors cursor-pointer group">
-                            <td className="px-6 py-4 font-medium text-white group-hover:text-brand-300 transition-colors">{task.title}</td>
-                            <td className="px-6 py-4 text-brand-200">{task.clientName}</td>
-                            <td className="px-6 py-4 text-xs text-amber-200/80 font-medium">
+                        <tr key={task.id} className={`hover:bg-white/5 transition-colors cursor-pointer group ${selectedTaskIds.includes(task.id!) ? 'bg-brand-500/5' : ''}`}>
+                            <td className="px-4 py-4">
+                                <input
+                                    type="checkbox"
+                                    className="rounded border-gray-600 bg-navy-700 text-brand-600 focus:ring-brand-500"
+                                    checked={selectedTaskIds.includes(task.id!)}
+                                    onChange={(e) => {
+                                        e.stopPropagation();
+                                        toggleTaskSelection(task.id!);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </td>
+                            <td className="px-6 py-4 font-medium text-white group-hover:text-brand-300 transition-colors" onClick={() => handleOpenEdit(task)}>{task.title}</td>
+                            <td className="px-6 py-4 text-brand-200" onClick={() => handleOpenEdit(task)}>{task.clientName}</td>
+                            <td className="px-6 py-4 text-xs text-amber-200/80 font-medium" onClick={() => handleOpenEdit(task)}>
                                 {(() => {
                                     const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
                                     return taskClient?.signingAuthority || '-';
                                 })()}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
                                 <div className="flex flex-col gap-1">
                                     <div className="flex -space-x-2">
                                         {task.assignedTo.slice(0, 3).map((uid, i) => {
@@ -462,8 +603,8 @@ const TasksPage: React.FC = () => {
                                     </div>
                                 </div>
                             </td>
-                            <td className="px-6 py-4 text-xs font-mono">{task.dueDate}</td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 text-xs font-mono" onClick={() => handleOpenEdit(task)}>{task.dueDate}</td>
+                            <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
                                 <span className={`px-2 py-0.5 rounded border text-[10px] uppercase font-bold ${getPriorityStyle(task.priority)}`}>
                                     {task.status.replace('_', ' ')}
                                 </span>
@@ -472,6 +613,26 @@ const TasksPage: React.FC = () => {
                     ))}
                 </tbody>
             </table>
+
+            {/* Load More Button */}
+            {hasMore && (
+                <div className="p-4 flex justify-center border-t border-white/5">
+                    <button
+                        onClick={loadMoreTasks}
+                        disabled={isMoreLoading}
+                        className="flex items-center space-x-2 px-4 py-2 bg-navy-800 hover:bg-navy-700 text-brand-300 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isMoreLoading ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Loading more...</span>
+                            </>
+                        ) : (
+                            <span>Load More Tasks</span>
+                        )}
+                    </button>
+                </div>
+            )}
         </div>
     );
 

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { AuthService, auth, db } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -37,32 +37,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // User is signed in, fetch their profile from Firestore
         setEmailVerified(firebaseUser.emailVerified);
         try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
-            setUser(userData);
-          } else {
-            console.error("User authenticated but no profile found in Firestore");
-            // Create a default profile if missing
-            const defaultProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              role: 'STAFF' as any,
-              department: 'General',
-              isSetupComplete: false,
-              status: 'Active',
-              phoneNumber: '',
-              address: '',
-              position: 'Staff',
-              dateOfJoining: new Date().toLocaleDateString('en-CA'),
-              gender: 'Other'
-            };
-            await AuthService.updateUserProfile(firebaseUser.uid, defaultProfile);
-            setUser(defaultProfile);
-          }
+          // Use transaction to prevent race conditions
+          await runTransaction(db, async (transaction) => {
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await transaction.get(userRef);
+
+            if (userDoc.exists()) {
+              const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
+              setUser(userData);
+            } else {
+              console.warn("User authenticated but no profile found in Firestore. Creating default.");
+              // Create a default profile if missing
+              const defaultProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                role: 'STAFF' as any,
+                department: 'General',
+                isSetupComplete: false,
+                status: 'Active',
+                phoneNumber: '',
+                address: '',
+                position: 'Staff',
+                dateOfJoining: new Date().toLocaleDateString('en-CA'),
+                gender: 'Other'
+              };
+              transaction.set(userRef, defaultProfile);
+              setUser(defaultProfile);
+            }
+          });
         } catch (err) {
-          console.error("Error fetching user profile:", err);
+          console.error("Error fetching/creating user profile:", err);
         }
       } else {
         // User is signed out

@@ -2,16 +2,25 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Briefcase, AlertCircle, Mail, ArrowRight, Lock, UserPlus, Eye, EyeOff, CheckCircle, X, KeyRound } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginFormValues } from '../utils/validationSchemas';
 import { AuthService } from '../services/firebase';
 
 const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: ''
+    }
+  });
 
   // Reset Password State
   const [isResetOpen, setIsResetOpen] = useState(false);
@@ -21,21 +30,20 @@ const LoginPage: React.FC = () => {
   const { login, signup, googleLogin } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginFormValues) => {
     setError('');
     setSuccess('');
     setLoading(true);
 
     try {
       if (mode === 'SIGNUP') {
-        await signup(email, password);
+        await signup(data.email, data.password);
         setSuccess('Account created successfully! Redirecting to setup...');
         setTimeout(() => {
           navigate('/setup-profile');
         }, 1500);
       } else {
-        await login(email, password);
+        await login(data.email, data.password);
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => {
           navigate('/dashboard');
@@ -115,6 +123,7 @@ const LoginPage: React.FC = () => {
                   setMode('LOGIN');
                   setError('');
                   setSuccess('');
+                  reset();
                 }}
                 className={`px-6 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${mode === 'LOGIN' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
               >
@@ -125,6 +134,7 @@ const LoginPage: React.FC = () => {
                   setMode('SIGNUP');
                   setError('');
                   setSuccess('');
+                  reset();
                 }}
                 className={`px-6 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${mode === 'SIGNUP' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
               >
@@ -147,28 +157,26 @@ const LoginPage: React.FC = () => {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
                 Email address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-500" />
+                  <Mail className={`h-5 w-5 ${errors.email ? 'text-red-500' : 'text-gray-500'}`} />
                 </div>
                 <input
                   id="email"
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register('email')}
                   disabled={loading}
-                  className="glass-input block w-full pl-12 pr-3 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`glass-input block w-full pl-12 pr-3 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder="name@company.com"
                 />
               </div>
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
             </div>
 
             <div>
@@ -188,18 +196,15 @@ const LoginPage: React.FC = () => {
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-500" />
+                  <Lock className={`h-5 w-5 ${errors.password ? 'text-red-500' : 'text-gray-500'}`} />
                 </div>
                 <input
                   id="password"
-                  name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete={mode === 'LOGIN' ? "current-password" : "new-password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register('password')}
                   disabled={loading}
-                  className="glass-input block w-full pl-12 pr-10 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`glass-input block w-full pl-12 pr-10 py-3 rounded-xl sm:text-sm placeholder-gray-500 focus:ring-2 focus:ring-brand-500 transition-all text-white bg-navy-900/50 disabled:opacity-50 disabled:cursor-not-allowed ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder="••••••••"
                 />
                 <button
@@ -211,6 +216,7 @@ const LoginPage: React.FC = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
               {mode === 'SIGNUP' && (
                 <p className="mt-2 text-xs text-gray-400">
                   Password should be at least 6 characters long

@@ -219,5 +219,15 @@ service cloud.firestore {
         isAdmin()
       );
     }
+
+    // RESOURCES COLLECTION
+    match /resources/{resourceId} {
+      // All authenticated users can read resources
+      allow read: if isAuthenticated();
+      
+      // Admins and Managers can create, update, or delete
+      // Using a custom check for Manager if needed, or just isAdmin() for now
+      allow create, update, delete: if isAdmin() || (isAuthenticated() && getUserRole() == 'MANAGER');
+    }
   }
 }

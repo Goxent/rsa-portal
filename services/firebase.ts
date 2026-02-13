@@ -25,10 +25,16 @@ import {
     query,
     where,
     orderBy,
-    onSnapshot
+    onSnapshot,
+    enableIndexedDbPersistence,
+    limit,
+    startAfter,
+    QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification } from '../types';
+import { getCurrentDateUTC } from '../utils/dates';
 import { EmailService } from './email';
+import { toast } from 'react-hot-toast';
 
 // Load Config from Environment Variables
 const firebaseConfig = {
@@ -59,6 +65,16 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Enable Offline Persistence
+enableIndexedDbPersistence(db)
+    .catch((err) => {
+        if (err.code == 'failed-precondition') {
+            console.warn('Persistence failed: Multiple tabs open');
+        } else if (err.code == 'unimplemented') {
+            console.warn('Persistence not supported by browser');
+        }
+    });
+
 // Action Code Settings for Email Verification
 const getActionCodeSettings = (): ActionCodeSettings => {
     // Get the current URL or use a default
@@ -70,7 +86,11 @@ const getActionCodeSettings = (): ActionCodeSettings => {
 };
 
 // Helper to convert Firestore doc to Typed Object
-const docConverter = <T>(doc: any): T => ({ id: doc.id, ...doc.data() });
+// Helper to convert Firestore doc to Typed Object - Ensure doc.id is prioritized and not overwritten by data.id
+const docConverter = <T>(doc: any): T => {
+    const data = doc.data();
+    return { ...data, id: doc.id } as T;
+};
 
 export const AuthService = {
     // --- AUTHENTICATION ---
@@ -97,7 +117,7 @@ export const AuthService = {
                     phoneNumber: '',
                     address: '',
                     position: 'Staff',
-                    dateOfJoining: new Date().toLocaleDateString('en-CA'),
+                    dateOfJoining: getCurrentDateUTC(),
                     gender: 'Other'
                 };
                 await setDoc(doc(db, 'users', uid), newUser);
@@ -139,36 +159,44 @@ export const AuthService = {
             const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             const uid = userCredential.user.uid;
 
-            // Create Initial Profile in Firestore
-            const newUser: UserProfile = {
-                uid,
-                email,
-                displayName: email.split('@')[0],
-                role: UserRole.STAFF,
-                department: 'General',
-                isSetupComplete: false,
-                status: 'Active',
-                phoneNumber: '',
-                address: '',
-                position: 'Staff',
-                dateOfJoining: new Date().toLocaleDateString('en-CA'),
-                gender: 'Other'
-            };
-
-            await setDoc(doc(db, 'users', uid), newUser);
-
-            // Send Verification Email with better error handling
             try {
-                const actionCodeSettings = getActionCodeSettings();
-                await sendEmailVerification(userCredential.user, actionCodeSettings);
-                console.log('Verification email sent successfully');
-            } catch (emailError: any) {
-                console.error("Failed to send verification email:", emailError);
-                // Don't throw error here - user is still created
-                // They can resend verification later
-            }
+                // Create Initial Profile in Firestore
+                const newUser: UserProfile = {
+                    uid,
+                    email,
+                    displayName: email.split('@')[0],
+                    role: UserRole.STAFF,
+                    department: 'General',
+                    isSetupComplete: false,
+                    status: 'Active',
+                    phoneNumber: '',
+                    address: '',
+                    position: 'Staff',
+                    dateOfJoining: getCurrentDateUTC(),
+                    gender: 'Other'
+                };
 
-            return newUser;
+                await setDoc(doc(db, 'users', uid), newUser);
+
+                // Send Verification Email with better error handling
+                try {
+                    const actionCodeSettings = getActionCodeSettings();
+                    await sendEmailVerification(userCredential.user, actionCodeSettings);
+                    console.log('Verification email sent successfully');
+                } catch (emailError: any) {
+                    console.error("Failed to send verification email:", emailError);
+                    // Don't throw error here - user is still created
+                    // They can resend verification later
+                }
+
+                return newUser;
+
+            } catch (firestoreError) {
+                // ROLLBACK: If Firestore profile creation fails, delete the Auth User
+                console.error("Firestore profile creation failed. Rolling back Auth User.", firestoreError);
+                await userCredential.user.delete();
+                throw new Error("Registration failed due to system error. Please try again.");
+            }
         } catch (error: any) {
             // Provide user-friendly error messages
             if (error.code === 'auth/email-already-in-use') {
@@ -230,7 +258,7 @@ export const AuthService = {
                     phoneNumber: user.phoneNumber || '',
                     address: '',
                     position: 'Staff',
-                    dateOfJoining: new Date().toLocaleDateString('en-CA'),
+                    dateOfJoining: getCurrentDateUTC(),
                     gender: 'Other'
                 };
                 await setDoc(userDocRef, newUser);
@@ -339,7 +367,11 @@ export const AuthService = {
     },
 
     addClient: async (client: Client) => {
-        const ref = await addDoc(collection(db, 'clients'), client);
+        const { id, ...data } = client;
+        const ref = await addDoc(collection(db, 'clients'), {
+            ...data,
+            createdAt: new Date().toISOString()
+        });
         return ref.id;
     },
 
@@ -349,6 +381,17 @@ export const AuthService = {
     },
 
     deleteClient: async (id: string) => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+
+        // Permission Check
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+            const role = userDoc.data().role;
+            if (role !== UserRole.ADMIN && role !== UserRole.MASTER_ADMIN) {
+                throw new Error("Unauthorized: Only Admins can delete clients.");
+            }
+        }
+
         // Soft delete: Mark as Inactive
         await updateDoc(doc(db, 'clients', id), { status: 'Inactive' });
     },
@@ -360,7 +403,23 @@ export const AuthService = {
         return snapshot.docs.map(d => docConverter<Task>(d));
     },
 
+    getPaginatedTasks: async (lastDoc?: QueryDocumentSnapshot, pageSize: number = 20): Promise<{ tasks: Task[], lastVisible: QueryDocumentSnapshot | null }> => {
+        let q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(pageSize));
+
+        if (lastDoc) {
+            q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(pageSize));
+        }
+
+        const snapshot = await getDocs(q);
+        const tasks = snapshot.docs.map(d => docConverter<Task>(d));
+        const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+
+        return { tasks, lastVisible };
+    },
+
     saveTask: async (task: Task) => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+
         let taskId = task.id;
         let isNew = false;
         if (task.id && !task.id.startsWith('t_')) {
@@ -368,7 +427,10 @@ export const AuthService = {
             await updateDoc(doc(db, 'tasks', id), data);
         } else {
             const { id, ...data } = task;
-            const docRef = await addDoc(collection(db, 'tasks'), { ...data, createdAt: new Date().toISOString() });
+            const docRef = await addDoc(collection(db, 'tasks'), {
+                ...data,
+                createdAt: new Date().toISOString()
+            });
             taskId = docRef.id;
             isNew = true;
         }
@@ -408,7 +470,23 @@ export const AuthService = {
     },
 
     deleteTask: async (taskId: string) => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+
+        // Permission Check
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+            const role = userDoc.data().role;
+            if (role !== UserRole.ADMIN && role !== UserRole.MASTER_ADMIN) {
+                throw new Error("Unauthorized: Only Admins can delete tasks.");
+            }
+        }
+
         await deleteDoc(doc(db, 'tasks', taskId));
+    },
+
+    updateTask: async (taskId: string, updates: Partial<Task>) => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+        await updateDoc(doc(db, 'tasks', taskId), updates);
     },
 
     // --- ATTENDANCE ---
@@ -778,25 +856,58 @@ export const AuthService = {
     },
 
     // Real-time listener
+    // Real-time listener with Retry Logic
     subscribeToNotifications: (userId: string, callback: (notifications: AppNotification[]) => void) => {
-        const q = query(
-            collection(db, 'notifications'),
-            where('userId', 'in', [userId, 'ALL']), // 'ALL' for global events
-            orderBy('createdAt', 'desc')
-        );
+        let unsubscribe: () => void = () => { };
+        let retryTimeout: any = null;
+        let attempt = 0;
+        const maxAttempts = 5;
 
-        return onSnapshot(q,
-            (snapshot) => {
-                const notifs = snapshot.docs.map(d => docConverter<AppNotification>(d));
-                callback(notifs);
-            },
-            (error) => {
-                console.error("Firestore Notification Listener Error:", error);
-                if (error.code === 'failed-precondition') {
-                    console.warn("Notification index is still building. Please wait...");
+        const setupListener = () => {
+            const q = query(
+                collection(db, 'notifications'),
+                where('userId', 'in', [userId, 'ALL']),
+                orderBy('createdAt', 'desc')
+            );
+
+            unsubscribe = onSnapshot(q,
+                (snapshot) => {
+                    // Reset attempts on success
+                    attempt = 0;
+                    const notifs = snapshot.docs.map(d => docConverter<AppNotification>(d));
+                    callback(notifs);
+                },
+                (error) => {
+                    console.error("Firestore Notification Listener Error:", error);
+
+                    if (error.code === 'failed-precondition') {
+                        const delay = Math.min(1000 * Math.pow(2, attempt), 30000); // Max 30s delay
+
+                        if (attempt < maxAttempts) {
+                            console.warn(`Index building... Retrying in ${delay}ms (Attempt ${attempt + 1}/${maxAttempts})`);
+                            toast.loading(`System updating indexes. Retrying in ${Math.round(delay / 1000)}s...`, { id: 'auth-index-building' });
+
+                            retryTimeout = setTimeout(() => {
+                                attempt++;
+                                setupListener();
+                            }, delay);
+                        } else {
+                            toast.error("System update taking longer than expected. Please refresh later.", { id: 'auth-index-building' });
+                        }
+                    } else {
+                        toast.error("Connection interrupted. Reconnecting...");
+                    }
                 }
-            }
-        );
+            );
+        };
+
+        setupListener();
+
+        // Return a wrapper unsubscribe that cleans up everything
+        return () => {
+            if (unsubscribe) unsubscribe();
+            if (retryTimeout) clearTimeout(retryTimeout);
+        };
     }
 };
 

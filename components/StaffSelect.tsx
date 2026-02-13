@@ -12,6 +12,7 @@ interface StaffSelectProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
+    showAllOption?: boolean;
 }
 
 const StaffSelect: React.FC<StaffSelectProps> = ({
@@ -21,7 +22,8 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
     multi = false,
     placeholder = "Select Staff...",
     className = "",
-    disabled = false
+    disabled = false,
+    showAllOption = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -52,6 +54,10 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+
+    const allOptions = showAllOption
+        ? [{ uid: 'ALL', displayName: 'All Staff Members', email: '', role: 'SYSTEM' as any, department: 'ALL' } as UserProfile, ...filteredUsers]
+        : filteredUsers;
 
     const handleSelect = (userId: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
@@ -111,7 +117,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         }
 
         const selectedId = Array.isArray(value) ? value[0] : value;
-        const selectedUser = users.find(u => u.uid === selectedId);
+        const selectedUser = users.find(u => u.uid === selectedId) || (showAllOption && selectedId === 'ALL' ? { displayName: 'All Staff Members' } : null);
 
         return selectedUser ? (
             <span className="text-gray-200 flex items-center">
@@ -153,8 +159,8 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
                     </div>
 
                     <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
-                        {filteredUsers.length > 0 ? (
-                            filteredUsers.map(user => {
+                        {allOptions.length > 0 ? (
+                            allOptions.map(user => {
                                 const isSelected = Array.isArray(value) ? value.includes(user.uid) : value === user.uid;
                                 return (
                                     <div
@@ -163,16 +169,24 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
                                         onClick={(e) => handleSelect(user.uid, e)}
                                     >
                                         <div className="flex items-center">
-                                            <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10">
-                                                {getInitials(user.displayName)}
-                                            </div>
+                                            {user.uid === 'ALL' ? (
+                                                <div className="w-8 h-8 rounded-full bg-brand-600/20 flex items-center justify-center text-[10px] font-bold mr-3 border border-brand-500/20 text-brand-400">
+                                                    ALL
+                                                </div>
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10">
+                                                    {getInitials(user.displayName)}
+                                                </div>
+                                            )}
                                             <div className="flex flex-col">
                                                 <span className="font-medium text-white">{user.displayName}</span>
-                                                <div className="flex items-center text-[10px] text-gray-500 space-x-2">
-                                                    <span>{user.position || user.role}</span>
-                                                    <span>•</span>
-                                                    <span>{user.department}</span>
-                                                </div>
+                                                {user.uid !== 'ALL' && (
+                                                    <div className="flex items-center text-[10px] text-gray-500 space-x-2">
+                                                        <span>{user.position || user.role}</span>
+                                                        <span>•</span>
+                                                        <span>{user.department}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         {isSelected && <Check size={14} className="text-brand-400" />}

@@ -7,6 +7,7 @@ import { UserProfile, Task, UserRole, CalendarEvent } from '../types';
 import { toBS } from '../utils/dateUtils';
 import WidgetContainer from '../components/dashboard/WidgetContainer';
 import AttendanceWidget from '../components/dashboard/AttendanceWidget';
+import { DashboardSkeleton } from '../components/ui/LoadingSkeleton';
 
 import { Client } from '../types';
 
@@ -250,12 +251,16 @@ const Dashboard: React.FC = () => {
             <AttendanceWidget />
 
             {/* Widget Container */}
-            {user && (
-                <WidgetContainer
-                    userId={user.uid}
-                    isAdmin={user.role === UserRole.ADMIN}
-                    dashboardData={dashboardData}
-                />
+            {isLoading ? (
+                <DashboardSkeleton />
+            ) : (
+                user && (
+                    <WidgetContainer
+                        userId={user.uid}
+                        isAdmin={user.role === UserRole.ADMIN}
+                        dashboardData={dashboardData}
+                    />
+                )
             )}
 
             {/* Staff Detail Modal (preserved from original) */}

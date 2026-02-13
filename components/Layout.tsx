@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { WifiOff } from 'lucide-react';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -33,6 +34,7 @@ import { UserRole, AppNotification } from '../types';
 import { AuthService } from '../services/firebase';
 import CommandPalette from './CommandPalette';
 import { useAutoLogout } from '../hooks/useAutoLogout';
+import { getCurrentDateUTC } from '../utils/dates';
 
 const SidebarItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => {
   return (
@@ -73,6 +75,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   // Late Warning State
   const [showLateWarning, setShowLateWarning] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     if (user) {
@@ -83,7 +86,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             setShowLateWarning(true);
 
             // Check if we already sent a notification today
-            const todayStr = new Date().toLocaleDateString();
+            const todayStr = getCurrentDateUTC();
             const lastNotifDate = localStorage.getItem('last_late_warning_date');
 
             if (lastNotifDate !== todayStr) {
@@ -110,9 +113,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         setNotifications(data);
         setUnreadCount(data.filter(n => !n.read).length);
       });
-      return () => unsubscribe();
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const getTitle = () => {
     switch (location.pathname.split('/')[1]) {
@@ -345,6 +365,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
           {/* Scrollable Content */}
           <main className="flex-1 overflow-auto p-4 md:p-6 scroll-smooth custom-scrollbar">
+            {!isOnline && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-2 rounded-lg mb-4 flex items-center justify-center animate-pulse">
+                <WifiOff size={18} className="mr-2" />
+                <span className="text-sm font-medium">You are currently offline. Changes will sync when connection is restored.</span>
+              </div>
+            )}
             <Outlet />
           </main>
         </div>

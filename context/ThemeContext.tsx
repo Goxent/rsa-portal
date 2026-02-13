@@ -40,3 +40,38 @@ export const useTheme = () => {
     }
     return context;
 };
+
+// Themed Toaster Component
+import { Toaster } from 'react-hot-toast';
+
+export const ThemedToaster: React.FC = () => {
+    const { theme } = useTheme();
+
+    return (
+        <Toaster
+            position="top-right"
+            toastOptions={{
+                className: '',
+                style: {
+                    background: theme === 'dark' ? 'rgba(30, 41, 59, 0.95)' : '#ffffff',
+                    color: theme === 'dark' ? '#fff' : '#0f172a',
+                    backdropFilter: 'blur(8px)',
+                    border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                },
+                success: {
+                    iconTheme: {
+                        primary: '#10B981',
+                        secondary: 'white',
+                    },
+                },
+                error: {
+                    iconTheme: {
+                        primary: '#EF4444',
+                        secondary: 'white',
+                    },
+                },
+            }}
+        />
+    );
+};
