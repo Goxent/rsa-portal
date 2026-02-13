@@ -267,7 +267,7 @@ const AttendancePage: React.FC = () => {
             </div>
 
             {/* Filters Section */}
-            <div className="glass-panel p-6 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end border border-white/10 shadow-xl bg-navy-900/40">
+            <div className="glass-panel p-6 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end border border-white/10 shadow-xl bg-navy-900/40 relative z-20">
                 {isAdmin && (
                     <div className="space-y-2 lg:col-span-1">
                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">

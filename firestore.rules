@@ -82,7 +82,7 @@ service cloud.firestore {
     }
     
     // LEAVE REQUESTS COLLECTION
-    match /leave_requests/{leaveId} {
+    match /leaves/{leaveId} {
       // Users can read their own leave requests, admins can read all
       allow read: if isAuthenticated() && (
         request.auth.uid == resource.data.userId ||
@@ -103,6 +103,16 @@ service cloud.firestore {
         request.auth.uid == resource.data.userId ||
         isAdmin()
       );
+    }
+
+    // NOTIFICATIONS COLLECTION
+    match /notifications/{notificationId} {
+        // Users can read/delete their own notifications
+        allow read, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+        // Anyone (system/users) can create notifications for others
+        allow create: if isAuthenticated();
+        // Users can update (mark as read) their own notifications
+        allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
     
     // TEMPLATES (Advanced)
@@ -205,6 +215,15 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
+    // KNOWLEDGE BASE (Resources)
+    match /knowledge_base/{resourceId} {
+      // All authenticated users can read
+      allow read: if isAuthenticated();
+      
+      // Admins and Managers can create, update, or delete
+      allow create, update, delete: if isAdmin() || (isAuthenticated() && getUserRole() == 'MANAGER');
+    }
+
     // EVENTS (Consolidated Rule)
     match /events/{eventId} {
       // All authenticated users can read events
