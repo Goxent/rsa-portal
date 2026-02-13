@@ -8,6 +8,15 @@ const CompliancePage: React.FC = () => {
     const { user } = useAuth();
     const [events, setEvents] = useState<ComplianceEvent[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [filter, setFilter] = useState('ALL');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newEvent, setNewEvent] = useState({
+        title: '',
+        description: '',
+        category: 'TAX',
+        dueDate: '',
+        priority: 'MEDIUM',
+    });
 
     useEffect(() => {
         if (user) loadEvents();
