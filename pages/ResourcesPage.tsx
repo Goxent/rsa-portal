@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Folder, FileText, Search, ExternalLink, Grid, List, BookOpen, Shield, Calculator, FileCheck, Users, Eye, X, Mail, Sparkles, Send, Bot, Plus, ChevronRight, Home, PenTool, Save, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { AIService } from '../services/ai';
+import { AiService } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 import { UserRole, Resource } from '../types';
 import { AuthService } from '../services/firebase';
@@ -122,7 +122,7 @@ const ResourcesPage: React.FC = () => {
         setIsResearching(true);
         // Pass content OR link as context
         const contentContext = previewResource.content || `Link to document: ${previewResource.link}`;
-        const response = await AIService.researchConcept(previewResource.title, aiQuery, contentContext);
+        const response = await AiService.researchConcept(previewResource.title, aiQuery, contentContext);
         setAiResponse(response);
         setIsResearching(false);
     };

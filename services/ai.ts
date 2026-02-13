@@ -41,6 +41,11 @@ export const AiService = {
     throw new Error('Invalid Provider');
   },
 
+  researchConcept: async (topic: string, question: string, context: string): Promise<string> => {
+    const fullPrompt = `Topic: ${topic}\nQuestion: ${question}`;
+    return AiService.generateContent(fullPrompt, context);
+  },
+
   callOpenAI: async (apiKey: string, system: string, userMsg: string): Promise<string> => {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
