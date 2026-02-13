@@ -268,3 +268,134 @@ export interface Category {
   color?: string; // Hex or Tailwind class for styling
   createdAt: string;
 }
+
+// --- Performance Evaluation System Types ---
+
+export interface ScoringComponents {
+  completion_rate: number;
+  on_time_delivery: number;
+  punctuality: number;
+  task_quality: number;
+  task_difficulty: number;
+}
+
+export interface FinalizedPerformanceScore {
+  user_id: string;
+  user_name: string;
+  total_score: number;
+  rank: number;
+  components: ScoringComponents;
+  eligibility: {
+    qualified: boolean;
+    reason?: string;
+    failed_criteria?: string[];
+  };
+}
+
+export interface PerformanceCycle {
+  id: string;
+  tenant_id: string;
+  month: string; // "2026-02"
+  status: 'ACTIVE' | 'FINALIZED' | 'ARCHIVED';
+  finalized_at: string; // ISO Timestamp
+  staff_scores: Record<string, FinalizedPerformanceScore>;
+  staff_of_month: {
+    user_id: string;
+    score: number;
+    rank: 1;
+    reason: string;
+  };
+  team_stats: {
+    avg_score: number;
+    median_score: number;
+    total_tasks: number;
+  };
+}
+
+export interface PerformanceGoal {
+  id: string;
+  user_id: string;
+  month: string;
+  metric: 'TOTAL_SCORE' | 'COMPLETION_RATE' | 'PUNCTUALITY' | 'ON_TIME_RATE';
+  target: number;
+  current: number;
+  status: 'ON_TRACK' | 'AT_RISK' | 'OFF_TRACK';
+  progress: number; // 0-100%
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  points: number;
+  rarity: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+  icon: string;
+  earnedAt?: string;
+}
+
+export interface PointsBreakdown {
+  user_id: string;
+  month: string;
+  total_points: number;
+  breakdown: {
+    tasks_completed: number;
+    early_completions: number;
+    perfect_weeks: number;
+    helping_others: number;
+    learning_activities: number;
+    zero_late_days: number;
+  };
+}
+
+export interface Streaks {
+  user_id: string;
+  perfect_days: {
+    current: number;
+    longest: number;
+    started_at: string;
+  };
+  on_time_tasks: {
+    current: number;
+    longest: number;
+  };
+  zero_late_attendance: {
+    current: number;
+    longest: number;
+  };
+}
+
+export interface PeerReview {
+  id: string;
+  cycle_id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  ratings: {
+    teamwork: number;         // 1-5
+    communication: number;    // 1-5
+    technical_skills: number; // 1-5
+    reliability: number;      // 1-5
+    helpfulness: number;      // 1-5
+  };
+  strengths: string[];
+  areas_for_improvement: string[];
+  specific_feedback: string;
+  would_work_with_again: boolean;
+  is_anonymous: boolean;
+  submitted_at: string;
+}
+
+export interface PeerFeedbackSummary {
+  reviewee_id: string;
+  cycle_id: string;
+  total_reviews: number;
+  avg_ratings: {
+    teamwork: number;
+    communication: number;
+    technical_skills: number;
+    reliability: number;
+    helpfulness: number;
+  };
+  common_strengths: string[];
+  common_improvements: string[];
+  overall_sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+}

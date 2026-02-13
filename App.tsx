@@ -29,11 +29,13 @@ const PerformancePage = lazy(() => import('./pages/PerformancePage'));
 const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage'));
 const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
+const MyPerformancePage = lazy(() => import('./pages/MyPerformancePage'));
+const PeerReviewPage = lazy(() => import('./pages/PeerReviewPage'));
 
 
 // Suspense wrapper for lazy-loaded components
 // Suspense wrapper for lazy-loaded components with Error Boundary
-const LazyPage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const LazyPage = ({ children }: { children: React.ReactNode }) => (
   <PageErrorBoundary>
     <Suspense fallback={<PageLoader />}>
       {children}
@@ -139,6 +141,8 @@ const App: React.FC = () => {
                     <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />
                     <Route path="compliance" element={<LazyPage><CompliancePage /></LazyPage>} />
                     <Route path="templates" element={<LazyPage><TemplatesPage /></LazyPage>} />
+                    <Route path="my-performance" element={<LazyPage><MyPerformancePage /></LazyPage>} />
+                    <Route path="peer-reviews" element={<LazyPage><PeerReviewPage /></LazyPage>} />
 
                   </Route>
 

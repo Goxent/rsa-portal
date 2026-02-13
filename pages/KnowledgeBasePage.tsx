@@ -462,7 +462,13 @@ const KnowledgeBasePage: React.FC = () => {
                                                     downloadUrl: StorageService.getDownloadUrl(fileData.id)
                                                 });
                                             }}
-                                            accept={currentResource.type === 'pdf' ? '.pdf' : currentResource.type === 'image' ? 'image/*' : '.doc,.docx,.xls,.xlsx,.ppt,.pptx'}
+                                            accept={
+                                                currentResource.type === 'pdf'
+                                                    ? '.pdf,application/pdf'
+                                                    : currentResource.type === 'image'
+                                                        ? 'image/*'
+                                                        : '.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                                            }
                                         />
                                         {currentResource.fileId && (
                                             <div className="mt-2 text-xs text-green-400 flex items-center">

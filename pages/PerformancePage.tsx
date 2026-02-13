@@ -2,21 +2,32 @@ import React, { useState, useEffect } from 'react';
 import {
     Trophy, TrendingUp, Clock, CheckCircle2, User,
     Calendar, ArrowUpRight, ArrowDownRight, Loader2,
-    BarChart3, Award, Star, FileDown, AlertTriangle, Zap
+    BarChart3, Award, Star, FileDown, AlertTriangle, Zap,
+    CheckCircle, XCircle, Info, HelpCircle, Lock, Unlock
 } from 'lucide-react';
+import { db } from '../services/firebase';
+import { collection, query, where, getDocs, doc, getDoc, limit } from 'firebase/firestore';
+import { toast } from 'react-hot-toast';
+import { PerformanceCycle } from '../types';
 import { PerformanceService, PerformanceStats } from '../services/performance';
 import { AuthService } from '../services/firebase';
 import { UserProfile } from '../types';
 import { format, subMonths } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../context/AuthContext';
 
 const PerformancePage: React.FC = () => {
+    const { user } = useAuth();
     const [staff, setStaff] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [performanceData, setPerformanceData] = useState<Record<string, PerformanceStats>>({});
     const [staffOfTheMonth, setStaffOfTheMonth] = useState<{ profile: UserProfile, score: number } | null>(null);
-    const [selectedMonth, setSelectedMonth] = useState(0); // 0 = current month
+    const [selectedMonth, setSelectedMonth] = useState(0);
+    const [finalizedCycle, setFinalizedCycle] = useState<PerformanceCycle | null>(null);
+    const [activeTab, setActiveTab] = useState<'roster' | 'leaderboard'>('roster');
+    const [isFinalizing, setIsFinalizing] = useState(false);
+    const [showScoringInfo, setShowScoringInfo] = useState(false);
 
     useEffect(() => {
         fetchInitialData();
@@ -28,47 +39,111 @@ const PerformancePage: React.FC = () => {
             const users = await AuthService.getAllStaff();
             setStaff(users);
 
-            const scores: Record<string, PerformanceStats> = {};
-            let topStaffRef = null;
-            let topScore = -1;
+            // Check if month is finalized
+            const monthKey = subMonths(new Date(), selectedMonth).toISOString().substring(0, 7);
+            const cycleDoc = await getDoc(doc(db, 'performance_cycles', `${monthKey}_default`));
 
-            for (const user of users) {
-                const stats = await PerformanceService.getStaffPerformance(user.uid, selectedMonth);
-                scores[user.uid] = stats;
+            if (cycleDoc.exists()) {
+                const cycleData = cycleDoc.data() as PerformanceCycle;
+                setFinalizedCycle(cycleData);
 
-                // For Staff of the Month, check previous month
-                if (selectedMonth === 0) {
-                    const lastMonthStats = await PerformanceService.getStaffPerformance(user.uid, 1);
-                    if (lastMonthStats.totalScore > topScore && lastMonthStats.totalTasks > 0) {
-                        topScore = lastMonthStats.totalScore;
-                        topStaffRef = { profile: user, score: topScore };
+                const scores: Record<string, PerformanceStats> = {};
+                Object.entries(cycleData.staff_scores).forEach(([uid, s]: [string, any]) => {
+                    scores[uid] = {
+                        totalTasks: s.metrics?.total_tasks || 0,
+                        completedTasks: s.metrics?.completed_tasks || 0,
+                        onTimeTasks: s.metrics?.on_time_tasks || 0,
+                        overdueTasks: 0, // Not stored in past
+                        completionRate: s.components.completion_rate,
+                        onTimeRate: s.components.on_time_delivery,
+                        punctualityScore: s.components.punctuality,
+                        qualityScore: s.components.task_quality,
+                        difficultyBonus: s.components.task_difficulty,
+                        totalScore: s.total_score,
+                        eligibility: {
+                            qualified: s.eligibility.qualified,
+                            failedCriteria: s.eligibility.failed_criteria || []
+                        },
+                        highPriorityTasks: 0,
+                        highPriorityCompleted: 0,
+                        highPriorityRate: 0,
+                        avgWorkHours: 0,
+                        presentDays: s.metrics?.present_days || 0,
+                        lateDays: 0,
+                        absentDays: 0,
+                        benchmark: null,
+                        performanceTier: s.total_score >= 90 ? 'Exceptional' : s.total_score >= 75 ? 'Strong' : s.total_score >= 60 ? 'Meeting Expectations' : s.total_score >= 40 ? 'Needs Improvement' : 'Critical'
+                    };
+                });
+                setPerformanceData(scores);
+            } else {
+                setFinalizedCycle(null);
+                const scores: Record<string, PerformanceStats> = {};
+                for (const user of users) {
+                    const stats = await PerformanceService.getStaffPerformance(user.uid, selectedMonth);
+                    scores[user.uid] = stats;
+                }
+                setPerformanceData(scores);
+            }
+
+            // Staff of the month logic
+            if (selectedMonth === 0) {
+                const som = await PerformanceService.getStaffOfTheMonth();
+                if (som) {
+                    const profile = users.find(u => u.uid === som.staffId);
+                    if (profile) {
+                        setStaffOfTheMonth({ profile, score: som.score });
                     }
                 }
             }
 
-            // Calculate benchmarks
-            const allScores = Object.values(scores).map(s => s.totalScore).sort((a, b) => b - a);
-            const avgScore = allScores.reduce((sum, s) => sum + s, 0) / allScores.length;
+            // Calculate benchmarks (live only for current month or if cycle doesn't have them)
+            const scoresList = Object.values(performanceData);
+            if (scoresList.length > 0) {
+                const allScores = scoresList.map(s => s.totalScore).sort((a, b) => b - a);
+                const avgScore = allScores.reduce((sum, s) => sum + s, 0) / allScores.length;
 
-            Object.keys(scores).forEach((uid) => {
-                const rank = allScores.indexOf(scores[uid].totalScore) + 1;
-                scores[uid] = {
-                    ...scores[uid],
-                    benchmark: {
-                        isAboveAverage: scores[uid].totalScore > avgScore,
-                        rank,
-                        totalStaff: allScores.length,
-                        percentile: Math.round(((allScores.length - rank + 1) / allScores.length) * 100)
-                    }
-                };
-            });
+                setPerformanceData(prev => {
+                    const updated = { ...prev };
+                    Object.keys(updated).forEach(uid => {
+                        const rank = allScores.indexOf(updated[uid].totalScore) + 1;
+                        updated[uid] = {
+                            ...updated[uid],
+                            benchmark: {
+                                isAboveAverage: updated[uid].totalScore > avgScore,
+                                rank,
+                                totalStaff: allScores.length,
+                                percentile: Math.round(((allScores.length - rank + 1) / allScores.length) * 100)
+                            }
+                        };
+                    });
+                    return updated;
+                });
+            }
 
-            setPerformanceData(scores);
-            setStaffOfTheMonth(topStaffRef);
         } catch (error) {
             console.error("Failed to load performance data", error);
+            toast.error("Error loading performance metrics");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleFinalize = async () => {
+        if (!window.confirm("Are you sure you want to finalize performance for the PREVIOUS month? This will freeze all scores and identify the Staff of the Month.")) return;
+
+        setIsFinalizing(true);
+        try {
+            const lastMonth = subMonths(new Date(), 1);
+            const monthKey = lastMonth.toISOString().substring(0, 7);
+            await PerformanceService.finalizeMonthlyPerformance(monthKey, 'default');
+            toast.success(`Performance finalized for ${format(lastMonth, 'MMMM yyyy')}!`);
+            fetchInitialData();
+        } catch (error) {
+            console.error("Finalization failed", error);
+            toast.error("Failed to finalize performance");
+        } finally {
+            setIsFinalizing(false);
         }
     };
 
@@ -206,9 +281,47 @@ const PerformancePage: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white font-heading">Performance Evaluation</h1>
-                    <p className="text-sm text-gray-400">Comprehensive staff performance metrics and benchmarking</p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm text-gray-400">Comprehensive staff performance metrics and benchmarking</p>
+                        <button
+                            onClick={() => setShowScoringInfo(!showScoringInfo)}
+                            className="text-gray-500 hover:text-brand-400 transition-colors"
+                        >
+                            <HelpCircle size={14} />
+                        </button>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-4">
+                        <button
+                            onClick={() => setActiveTab('roster')}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'roster' ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20' : 'text-gray-400'}`}
+                        >
+                            Staff Roster
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('leaderboard')}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'leaderboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20' : 'text-gray-400'}`}
+                        >
+                            Leaderboard
+                        </button>
+                    </div>
+                    {AuthService.isAdmin(user?.role) && selectedMonth === 0 && !finalizedCycle && (
+                        <button
+                            onClick={handleFinalize}
+                            disabled={isFinalizing}
+                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all"
+                        >
+                            {isFinalizing ? <Loader2 size={16} className="animate-spin mr-2" /> : <Lock size={16} className="mr-2" />}
+                            Finalize {format(subMonths(new Date(), 1), 'MMM')} Performance
+                        </button>
+                    )}
+                    {finalizedCycle && (
+                        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
+                            <Lock size={14} className="text-emerald-400" />
+                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-tight">Finalized</span>
+                        </div>
+                    )}
                     <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -227,6 +340,29 @@ const PerformancePage: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {showScoringInfo && (
+                <div className="glass-panel p-6 rounded-2xl border border-brand-500/30 bg-brand-500/5 animate-in slide-in-from-top duration-300">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                        <Info size={20} className="mr-2 text-brand-400" /> Weighted Scoring Algorithm
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        {[
+                            { label: 'Completion Rate', weight: '30%', desc: 'Tasks completed vs assigned' },
+                            { label: 'On-Time Delivery', weight: '25%', desc: 'Completed before due date' },
+                            { label: 'Punctuality', weight: '20%', desc: 'Clock-in consistency' },
+                            { label: 'Quality Score', weight: '15%', desc: 'Accuracy and feedback' },
+                            { label: 'Difficulty Bonus', weight: '10%', desc: 'Complexity and priority' },
+                        ].map((item, i) => (
+                            <div key={i} className="space-y-1 text-center md:text-left">
+                                <p className="text-sm font-bold text-white">{item.label}</p>
+                                <p className="text-2xl font-black text-brand-400">{item.weight}</p>
+                                <p className="text-[10px] text-gray-500">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Staff of the Month Section */}
             {staffOfTheMonth && selectedMonth === 0 && (
@@ -270,7 +406,8 @@ const PerformancePage: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Team Benchmark Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -300,103 +437,83 @@ const PerformancePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Detailed Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {staff.map((member) => {
-                    const stats = performanceData[member.uid];
-                    if (!stats) return null;
+            {/* Main Content Area */}
+            {activeTab === 'roster' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+                    {staff.map((member) => {
+                        const stats = performanceData[member.uid];
+                        if (!stats) return null;
 
-                    return (
-                        <div key={member.uid} className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-brand-500/40 transition-all hover:bg-white/[0.02]">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-navy-800 flex items-center justify-center font-bold text-white border border-white/5">
-                                    {member.displayName?.[0]}
+                        return (
+                            <div key={member.uid} className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-brand-500/40 transition-all hover:bg-white/[0.02]">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-12 h-12 rounded-xl bg-navy-800 flex items-center justify-center font-bold text-white border border-white/5">
+                                        {member.displayName?.[0]}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-white">{member.displayName}</h3>
+                                        <p className="text-xs text-gray-500 capitalize">{member.role.replace('_', ' ')}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className={`text-lg font-mono font-bold ${stats.totalScore > 85 ? 'text-emerald-400' : stats.totalScore > 60 ? 'text-brand-400' : 'text-orange-400'}`}>
+                                            {stats.totalScore.toFixed(0)}
+                                        </span>
+                                        <span className="text-[10px] text-gray-600 font-bold">/100</span>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-white">{member.displayName}</h3>
-                                    <p className="text-xs text-gray-500 capitalize">{member.role.replace('_', ' ')}</p>
-                                </div>
-                                <div className="text-right">
-                                    <span className={`text-lg font-mono font-bold ${stats.totalScore > 85 ? 'text-emerald-400' : stats.totalScore > 60 ? 'text-brand-400' : 'text-orange-400'}`}>
-                                        {stats.totalScore.toFixed(0)}
-                                    </span>
-                                    <span className="text-[10px] text-gray-600 font-bold">/100</span>
-                                </div>
-                            </div>
 
-                            {/* Performance Tier Badge */}
-                            <div className="mb-4">
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${getTierColor(stats.performanceTier)}`}>
-                                    {stats.performanceTier}
-                                </span>
-                                {stats.benchmark && (
-                                    <span className="ml-2 text-[10px] text-gray-500">
-                                        Rank #{stats.benchmark.rank} of {stats.benchmark.totalStaff}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="space-y-3">
-                                {/* Completion Rate */}
-                                <div className="space-y-1">
+                                <div className="space-y-3">
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400 flex items-center"><CheckCircle2 size={12} className="mr-1" /> Completion Rate</span>
-                                        <span className="text-white font-mono">{stats.completionRate.toFixed(0)}%</span>
+                                        <span className="text-gray-400">Total Score</span>
+                                        <span className="text-white font-mono">{stats.totalScore.toFixed(1)}%</span>
                                     </div>
                                     <div className="h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-brand-500 rounded-full" style={{ width: `${stats.completionRate}%` }} />
+                                        <div className="h-full bg-brand-500 rounded-full" style={{ width: `${stats.totalScore}%` }} />
                                     </div>
                                 </div>
-
-                                {/* Punctuality Score */}
-                                <div className="space-y-1">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400 flex items-center"><Clock size={12} className="mr-1" /> Punctuality Score</span>
-                                        <span className="text-white font-mono">{stats.punctualityScore.toFixed(0)}%</span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${stats.punctualityScore}%` }} />
-                                    </div>
-                                </div>
-
-                                {/* High Priority Handling */}
-                                <div className="space-y-1">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400 flex items-center"><Zap size={12} className="mr-1" /> Priority Handling</span>
-                                        <span className="text-white font-mono">{stats.highPriorityRate.toFixed(0)}%</span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-orange-500 rounded-full" style={{ width: `${stats.highPriorityRate}%` }} />
-                                    </div>
-                                </div>
-
-                                {/* Extended Stats Grid */}
-                                <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/5">
-                                    <div className="bg-black/20 p-2 rounded-lg text-center">
-                                        <p className="text-[9px] text-gray-500 uppercase">Tasks</p>
-                                        <p className="text-sm font-bold text-white">{stats.completedTasks}/{stats.totalTasks}</p>
-                                    </div>
-                                    <div className="bg-black/20 p-2 rounded-lg text-center">
-                                        <p className="text-[9px] text-gray-500 uppercase">Avg Hours</p>
-                                        <p className="text-sm font-bold text-white">{stats.avgWorkHours.toFixed(1)}</p>
-                                    </div>
-                                    <div className="bg-black/20 p-2 rounded-lg text-center">
-                                        <p className="text-[9px] text-gray-500 uppercase">Late Days</p>
-                                        <p className="text-sm font-bold text-orange-400">{stats.lateDays}</p>
-                                    </div>
-                                </div>
-
-                                {stats.overdueTasks > 0 && (
-                                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 flex items-center text-xs text-red-400">
-                                        <AlertTriangle size={12} className="mr-2" />
-                                        {stats.overdueTasks} overdue task{stats.overdueTasks > 1 ? 's' : ''}
-                                    </div>
-                                )}
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="glass-panel p-8 rounded-3xl border border-white/10 animate-in fade-in zoom-in-95 duration-500">
+                    <div className="space-y-4">
+                        {staff
+                            .sort((a, b) => (performanceData[b.uid]?.totalScore || 0) - (performanceData[a.uid]?.totalScore || 0))
+                            .map((member, index) => {
+                                const stats = performanceData[member.uid];
+                                if (!stats) return null;
+                                return (
+                                    <div key={member.uid} className="flex items-center gap-6 p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/[0.08] transition-all group">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg ${index === 0 ? 'bg-yellow-500 text-black' : index === 1 ? 'bg-gray-400 text-black' : index === 2 ? 'bg-amber-600 text-black' : 'text-gray-500'}`}>
+                                            {index + 1}
+                                        </div>
+                                        <div className="flex-1 flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center font-bold text-white border border-white/5">
+                                                {member.displayName?.[0]}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-white">{member.displayName}</h4>
+                                                <p className="text-[10px] text-gray-500 uppercase font-black">{member.department || 'General'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-8">
+                                            <div className="text-right">
+                                                <p className="text-[10px] text-gray-500 uppercase font-bold">Total Score</p>
+                                                <p className="text-lg font-mono font-bold text-white">{stats.totalScore.toFixed(1)}%</p>
+                                            </div>
+                                            <div className="w-24">
+                                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-brand-500" style={{ width: `${stats.totalScore}%` }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

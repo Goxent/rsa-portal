@@ -92,6 +92,10 @@ const docConverter = <T>(doc: any): T => {
 
 export const AuthService = {
     // --- AUTHENTICATION ---
+    isAdmin: (role?: UserRole): boolean => {
+        if (!role) return false;
+        return role === UserRole.ADMIN || role === UserRole.MASTER_ADMIN;
+    },
 
     login: async (email: string, pass: string): Promise<UserProfile> => {
         try {

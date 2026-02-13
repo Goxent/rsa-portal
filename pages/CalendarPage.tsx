@@ -10,6 +10,7 @@ import { generateRecurringInstances, canEditEvent, canDeleteEvent, getVisibility
 import { toBS, toAD } from '../utils/dateUtils';
 import { ComplianceService } from '../services/advanced';
 import NepaliDate from 'nepali-date-converter';
+import * as XLSX from 'xlsx';
 
 // Helpers
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -25,6 +26,9 @@ const CalendarPage: React.FC = () => {
     // List View State
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState<string>('ALL');
+    const [creatorFilter, setCreatorFilter] = useState<string>('ALL');
 
     // ... (keep existing effects)
 
@@ -53,7 +57,6 @@ const CalendarPage: React.FC = () => {
 
         setIsSaving(true);
         try {
-            // Extract unique master IDs (handle recurring instances like "id_date")
             const masterIds = new Set<string>();
             selectedEventIds.forEach(id => {
                 masterIds.add(id.split('_')[0]);
@@ -64,57 +67,147 @@ const CalendarPage: React.FC = () => {
             );
 
             await Promise.all(promises);
-
-            // Refresh
-            const rawEvents = await AuthService.getAllEventsForUser(user.uid, user.role, user.department);
-            const startOfMonth = new Date(year, month, 1);
-            const endOfMonth = new Date(year, month + 1, 0);
-
-            const expandedEvents: CalendarEvent[] = [];
-            rawEvents.forEach(ev => {
-                if (ev.isRecurring && ev.recurrenceRule) {
-                    expandedEvents.push(...generateRecurringInstances(ev, startOfMonth, endOfMonth));
-                } else {
-                    expandedEvents.push(ev);
-                }
-            });
-            setEvents(expandedEvents);
+            fetchItems(); // Refresh
             setSelectedEventIds(new Set());
-            alert("Events deleted successfully");
+            toast.success("Events deleted successfully");
         } catch (error: any) {
-            alert("Failed to delete some events: " + error.message);
+            toast.error("Failed to delete some events");
         } finally {
             setIsSaving(false);
         }
     };
 
+    const handleBulkVisibility = async (visibility: string) => {
+        if (!user || selectedEventIds.size === 0) return;
+
+        setIsSaving(true);
+        try {
+            const masterIds = new Set<string>();
+            selectedEventIds.forEach(id => masterIds.add(id.split('_')[0]));
+
+            const promises = Array.from(masterIds).map(id =>
+                AuthService.updateEvent(id, { visibility: visibility as any })
+            );
+
+            await Promise.all(promises);
+            fetchItems();
+            setSelectedEventIds(new Set());
+            toast.success(`Updated visibility to ${visibility.toLowerCase()}`);
+        } catch (error) {
+            toast.error("Failed to update visibility");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const exportToCSV = () => {
+        const data = events.map(ev => ({
+            Date: ev.date,
+            Time: ev.time || 'All Day',
+            Title: ev.title,
+            Type: ev.type,
+            Visibility: ev.visibility || 'PUBLIC',
+            Creator: allUsers.find(u => u.uid === ev.createdBy)?.displayName || 'System',
+            Description: ev.description || ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Calendar Audit");
+        XLSX.writeFile(workbook, `RSA_Calendar_Log_${monthNames[month]}_${year}.xlsx`);
+    };
+
     const renderListView = () => {
-        // Sort events by date
-        const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        // Filter and Sort events
+        const filteredEvents = events.filter(ev => {
+            const matchesSearch = ev.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                ev.description?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesType = typeFilter === 'ALL' || ev.type === typeFilter;
+            const matchesCreator = creatorFilter === 'ALL' || ev.createdBy === creatorFilter;
+            return matchesSearch && matchesType && matchesCreator;
+        });
+
+        const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         return (
-            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl">
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={handleSelectAll}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedEventIds.size === events.length && events.length > 0 ? 'bg-brand-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-                        >
-                            {selectedEventIds.size === events.length ? 'Deselect All' : 'Select All'}
-                        </button>
-                        {selectedEventIds.size > 0 && (
-                            <button
-                                onClick={handleBulkDelete}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full">
+                {/* Advanced Filter Toolbar */}
+                <div className="p-4 border-b border-white/10 bg-white/5 space-y-4">
+                    <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1 w-full">
+                            <input
+                                type="text"
+                                placeholder="Search events..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-navy-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white w-full max-w-sm focus:border-brand-500 transition-all outline-none"
+                            />
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                className="bg-navy-900/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none"
                             >
-                                <Trash2 size={14} /> Delete Selected ({selectedEventIds.size})
+                                <option value="ALL">All Types</option>
+                                <option value="MEETING">Meeting</option>
+                                <option value="DEADLINE">Deadline</option>
+                                <option value="GENERAL">General</option>
+                                <option value="PERSONAL">Personal</option>
+                                <option value="FIRM_EVENT">Firm Event</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={exportToCSV}
+                                className="flex items-center gap-2 px-4 py-2 bg-brand-600/20 text-brand-400 border border-brand-500/30 rounded-xl text-sm font-bold hover:bg-brand-600/30 transition-all"
+                            >
+                                <FileDown size={16} /> Export Audit Log
                             </button>
-                        )}
+                        </div>
+                    </div>
+
+                    {/* Bulk Actions Bar */}
+                    <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={handleSelectAll}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedEventIds.size === events.length && events.length > 0 ? 'bg-brand-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                            >
+                                {selectedEventIds.size === events.length ? 'Deselect All' : 'Select All'}
+                            </button>
+
+                            {selectedEventIds.size > 0 && (
+                                <div className="flex items-center gap-2 p-1 bg-brand-500/10 rounded-xl border border-brand-500/20">
+                                    <span className="text-[10px] text-brand-400 font-bold px-2 uppercase">Bulk Actions:</span>
+                                    <button
+                                        onClick={() => handleBulkVisibility('PUBLIC')}
+                                        className="px-2 py-1 hover:bg-white/10 rounded text-[10px] text-blue-400 font-bold uppercase transition-all"
+                                    >
+                                        Make Public
+                                    </button>
+                                    <button
+                                        onClick={() => handleBulkVisibility('PRIVATE')}
+                                        className="px-2 py-1 hover:bg-white/10 rounded text-[10px] text-gray-400 font-bold uppercase transition-all"
+                                    >
+                                        Make Private
+                                    </button>
+                                    <button
+                                        onClick={handleBulkDelete}
+                                        className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 rounded text-[10px] text-red-400 font-bold uppercase transition-all flex items-center gap-1"
+                                    >
+                                        <Trash2 size={10} /> Delete ({selectedEventIds.size})
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                            Showing {filteredEvents.length} of {events.length} events
+                        </div>
                     </div>
                 </div>
-                <div className="overflow-x-auto">
+
+                <div className="overflow-x-auto flex-1 h-[60vh] custom-scrollbar">
                     <table className="w-full text-left border-collapse">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-navy-900">
                             <tr className="bg-white/5 border-b border-white/10 text-[10px] text-gray-500 uppercase font-black tracking-widest">
                                 <th className="p-4 w-10"></th>
                                 <th className="p-4">Date</th>
@@ -130,55 +223,56 @@ const CalendarPage: React.FC = () => {
                                 const canEdit = user && canEditEvent(event, user);
                                 const isSelected = selectedEventIds.has(event.id);
                                 return (
-                                    <tr key={event.id} className={`hover:bg-white/5 transition-all ${isSelected ? 'bg-brand-500/10' : ''}`}>
+                                    <tr key={event.id} className={`hover:bg-white/5 transition-all group ${isSelected ? 'bg-brand-500/10' : ''}`}>
                                         <td className="p-4">
                                             <input
                                                 type="checkbox"
                                                 checked={isSelected}
                                                 onChange={() => handleSelectEvent(event.id)}
-                                                className="rounded border-gray-600 bg-black/30 text-brand-500 focus:ring-brand-500"
+                                                className="rounded-lg border-white/10 bg-black/30 text-brand-500 focus:ring-brand-500 transition-all cursor-pointer"
                                             />
                                         </td>
                                         <td className="p-4 text-sm text-gray-300 font-mono whitespace-nowrap">
-                                            {event.date}
-                                            <span className="ml-2 text-xs text-gray-500">{event.time}</span>
+                                            <span className="block font-bold text-white">{event.date}</span>
+                                            <span className="text-[10px] text-gray-500">{event.time || 'All Day'}</span>
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: event.color || '#8b5cf6' }}></div>
-                                                <span className="font-medium text-white">{event.title}</span>
-                                                {event.isRecurring && <Repeat size={12} className="text-gray-500" />}
+                                                <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]`} style={{ color: event.color || '#8b5cf6', backgroundColor: 'currentColor' }}></div>
+                                                <span className="font-bold text-white group-hover:text-brand-400 transition-colors">{event.title}</span>
+                                                {event.isRecurring && <Repeat size={12} className="text-emerald-400" />}
                                             </div>
-                                            {event.description && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{event.description}</p>}
+                                            {event.description && <p className="text-xs text-gray-500 mt-1 line-clamp-1 max-w-sm">{event.description}</p>}
                                         </td>
-                                        <td className="p-4 text-xs text-gray-400 capitalize">{event.type.toLowerCase().replace('_', ' ')}</td>
+                                        <td className="p-4">
+                                            <span className="px-2 py-1 bg-white/5 rounded-lg text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                                                {event.type.toLowerCase().replace('_', ' ')}
+                                            </span>
+                                        </td>
                                         <td className="p-4">
                                             <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${getVisibilityBadge(event.visibility || 'PUBLIC').color}`}>
                                                 {getVisibilityBadge(event.visibility || 'PUBLIC').text}
                                             </span>
                                         </td>
-                                        <td className="p-4 text-xs text-gray-400">
-                                            {allUsers.find(u => u.uid === event.createdBy)?.displayName || 'System'}
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] font-bold text-brand-400 border border-brand-500/20">
+                                                    {(allUsers.find(u => u.uid === event.createdBy)?.displayName || 'S')[0]}
+                                                </div>
+                                                <span className="text-xs text-gray-400">{allUsers.find(u => u.uid === event.createdBy)?.displayName || 'System'}</span>
+                                            </div>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
+                                            <div className="flex items-center justify-end gap-1">
                                                 {canEdit && (
-                                                    <>
-                                                        <button onClick={(e) => handleEditEvent(event, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-blue-400 transition-colors"><Edit size={14} /></button>
-                                                        <button onClick={(e) => handleDeleteEvent(event, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-red-400 transition-colors"><Trash2 size={14} /></button>
-                                                    </>
+                                                    <button onClick={(e) => handleEditEvent(event, e)} className="p-2 hover:bg-brand-500/20 rounded-lg text-brand-400 transition-all" title="Edit"><Edit size={14} /></button>
                                                 )}
-                                                <button onClick={() => addToGoogleCalendar(event.title, event.date, event.description || '')} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><ExternalLink size={14} /></button>
+                                                <button onClick={() => addToGoogleCalendar(event.title, event.date, event.description || '')} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all" title="Add to G-Cal"><ExternalLink size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
                                 );
                             })}
-                            {sortedEvents.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="p-10 text-center text-gray-500">No events found for this month.</td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
                 </div>

@@ -132,7 +132,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                                 Click to upload or drag and drop
                             </p>
                             <p className="text-xs text-gray-500 mt-1">
-                                PDF, Images, Word (max {maxSizeMB}MB)
+                                PDF, Excel, Word, Images (max {maxSizeMB}MB)
                             </p>
                         </div>
                     </>
