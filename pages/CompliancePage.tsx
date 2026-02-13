@@ -117,36 +117,33 @@ const CompliancePage: React.FC = () => {
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-20">
             {/* Header Section */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-900 to-indigo-900 shadow-2xl border border-white/10">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-
-                <div className="relative p-8 flex flex-col md:flex-row justify-between items-center z-10 gap-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white font-heading tracking-tight mb-2">Compliance Calendar</h1>
-                        <p className="text-blue-100 max-w-xl text-lg">
-                            Track statutory deadlines, tax filings, and audit schedules.
-                        </p>
-                    </div>
-                    {canEdit && (
-                        <button
-                            onClick={() => {
-                                setEditingId(null);
-                                setNewEvent({
-                                    title: '',
-                                    description: '',
-                                    category: 'TAX',
-                                    dueDate: '',
-                                    priority: 'MEDIUM',
-                                });
-                                setIsModalOpen(true);
-                            }}
-                            className="bg-white text-blue-900 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 shadow-lg flex items-center transition-all hover:scale-105 active:scale-95"
-                        >
-                            <Plus size={20} className="mr-2" /> Add Event
-                        </button>
-                    )}
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <CalIcon className="text-blue-400" />
+                        Compliance Calendar
+                    </h1>
+                    <p className="text-sm text-gray-400">Track statutory deadlines, tax filings, and audit schedules.</p>
                 </div>
+                {canEdit && (
+                    <button
+                        onClick={() => {
+                            setEditingId(null);
+                            setNewEvent({
+                                title: '',
+                                description: '',
+                                category: 'TAX',
+                                dueDate: '',
+                                priority: 'MEDIUM',
+                            });
+                            setIsModalOpen(true);
+                        }}
+                        className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
+                    >
+                        <Plus size={16} className="mr-2" /> Add Event
+                    </button>
+                )}
             </div>
 
             {/* Next Deadline Timer */}

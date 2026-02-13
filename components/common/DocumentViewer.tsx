@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, ExternalLink, Download, FileText } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, Bot } from 'lucide-react';
+import { AiDocumentAssistant } from './AiDocumentAssistant';
 
 interface DocumentViewerProps {
     url: string;
@@ -30,11 +31,13 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     const isOffice = !isImage && !isPdf;
     const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(downloadUrl || url)}&embedded=true`;
 
+    const [isAiOpen, setIsAiOpen] = useState(false);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="relative w-full max-w-5xl h-[85vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+            <div className={`relative w-full ${isAiOpen ? 'max-w-[95vw]' : 'max-w-5xl'} h-[85vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+                <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg text-primary">
                             <FileText size={20} />
@@ -46,6 +49,18 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsAiOpen(!isAiOpen)}
+                            className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${isAiOpen
+                                ? 'bg-brand-600 text-white shadow-lg'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Bot size={18} />
+                            <span className="hidden sm:inline">Ask AI</span>
+                        </button>
+                        <div className="w-px h-8 bg-gray-200 mx-2"></div>
+
                         {downloadUrl && (
                             <a
                                 href={downloadUrl}
@@ -74,29 +89,42 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-hidden bg-gray-100 relative items-center justify-center flex">
-                    {isImage && (
-                        <img
-                            src={url}
-                            alt={title}
-                            className="max-w-full max-h-full object-contain p-4"
-                        />
-                    )}
+                {/* Content Container */}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Document View */}
+                    <div className="flex-1 bg-gray-100 relative items-center justify-center flex overflow-hidden">
+                        {isImage && (
+                            <img
+                                src={url}
+                                alt={title}
+                                className="max-w-full max-h-full object-contain p-4"
+                            />
+                        )}
 
-                    {isPdf && (
-                        <iframe
-                            src={url}
-                            className="w-full h-full border-0"
-                            title="PDF Viewer"
-                        />
-                    )}
+                        {isPdf && (
+                            <iframe
+                                src={url}
+                                className="w-full h-full border-0"
+                                title="PDF Viewer"
+                            />
+                        )}
 
-                    {isOffice && (
-                        <iframe
-                            src={googleDocsUrl}
-                            className="w-full h-full border-0"
-                            title="Office Document Viewer"
+                        {isOffice && (
+                            <iframe
+                                src={googleDocsUrl}
+                                className="w-full h-full border-0"
+                                title="Office Document Viewer"
+                            />
+                        )}
+                    </div>
+
+                    {/* AI Assistant Sidebar */}
+                    {isAiOpen && (
+                        <AiDocumentAssistant
+                            documentTitle={title}
+                            documentType={type}
+                            isOpen={isAiOpen}
+                            onClose={() => setIsAiOpen(false)}
                         />
                     )}
                 </div>

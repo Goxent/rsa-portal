@@ -650,14 +650,14 @@ const TasksPage: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
                                     <span className={`px-3 py-1 rounded-full border text-[10px] uppercase font-bold tracking-wide shadow-sm flex items-center w-fit gap-1.5 ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' :
-                                            task.status === TaskStatus.COMPLETED ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
-                                                task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' :
-                                                    'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                                        task.status === TaskStatus.COMPLETED ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
+                                            task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' :
+                                                'bg-amber-500/10 text-amber-300 border-amber-500/20'
                                         }`}>
                                         <div className={`w-1.5 h-1.5 rounded-full ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
-                                                task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
-                                                    task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500' :
-                                                        'bg-amber-500'
+                                            task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
+                                                task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500' :
+                                                    'bg-amber-500'
                                             }`}></div>
                                         {task.status.replace('_', ' ')}
                                     </span>
@@ -741,41 +741,37 @@ const TasksPage: React.FC = () => {
     return (
         <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
             {/* Header Section */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-900 to-indigo-900 shadow-2xl border border-white/10 shrink-0">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-
-                <div className="relative p-6 md:p-8 flex flex-col xl:flex-row justify-between items-center z-10 gap-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white font-heading tracking-tight mb-2">Workflow & Tasks</h1>
-                        <p className="text-blue-100 max-w-xl text-lg opacity-80">
-                            Manage projects, track deadlines, and collaborate with your team.
-                        </p>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                <div>
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <CheckSquare className="text-blue-400" />
+                        Workflow & Tasks
+                    </h1>
+                    <p className="text-sm text-gray-400">Manage projects, track deadlines, and collaborate with your team.</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex space-x-1 backdrop-blur-md">
+                        <button
+                            onClick={() => setBoardMode('ALL')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-white text-blue-900 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <Briefcase size={14} /> Firm View
+                        </button>
+                        <button
+                            onClick={() => setBoardMode('MY')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-white text-blue-900 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <UserCircle2 size={14} /> My Board
+                        </button>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="bg-white/10 p-1.5 rounded-xl border border-white/10 flex space-x-1 backdrop-blur-md">
-                            <button
-                                onClick={() => setBoardMode('ALL')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
-                            >
-                                <Briefcase size={16} /> Firm View
-                            </button>
-                            <button
-                                onClick={() => setBoardMode('MY')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
-                            >
-                                <UserCircle2 size={16} /> My Board
-                            </button>
-                        </div>
-                        {canCreateTask && (
-                            <button
-                                onClick={handleOpenCreate}
-                                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-emerald-900/20 transition-all transform hover:-translate-y-0.5"
-                            >
-                                <Plus size={20} className="mr-2" /> New Task
-                            </button>
-                        )}
-                    </div>
+                    {canCreateTask && (
+                        <button
+                            onClick={handleOpenCreate}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-0.5"
+                        >
+                            <Plus size={18} className="mr-2" /> New Task
+                        </button>
+                    )}
                 </div>
             </div>
 

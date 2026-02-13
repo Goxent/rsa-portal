@@ -7,6 +7,13 @@ interface AIConfig {
 
 const STORAGE_KEY = 'rsa_ai_config';
 
+export class QuotaExceededError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QuotaExceededError';
+  }
+}
+
 export const AiService = {
   // Save API configuration to local storage (client-side only for privacy)
   saveConfig: (config: AIConfig) => {
@@ -61,7 +68,13 @@ export const AiService = {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'AI Service Error');
+        const errorMessage = errorData.error || 'AI Service Error';
+
+        if (errorMessage.includes('credit balance is too low') || errorMessage.includes('insufficient_quota')) {
+          throw new QuotaExceededError('AI Service quota exceeded. Please upgrade your plan or check API keys.');
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -69,6 +82,13 @@ export const AiService = {
 
     } catch (error: any) {
       console.error("AI Service Error:", error);
+      if (error instanceof QuotaExceededError) {
+        throw error;
+      }
+      // Re-throw specific error to be handled by UI
+      if (error.message?.includes('credit balance is too low')) {
+        throw new QuotaExceededError('AI Service quota exceeded. Please upgrade your plan or check API keys.');
+      }
       throw error;
     }
   },
