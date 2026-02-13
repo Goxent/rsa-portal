@@ -21,13 +21,18 @@ const monthNames = [
     "July", "August", "September", "October", "November", "December"
 ];
 
+const bsMonths = [
+    "Baisakh", "Jestha", "Ashad", "Shrawan", "Bhadra", "Ashwin",
+    "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"
+];
+
 const CalendarPage: React.FC = () => {
     const { user } = useAuth();
 
     // Core Calendar State
-    const [month, setMonth] = useState(new NepaliDate().getMonth());
-    const [year, setYear] = useState(new NepaliDate().getYear());
-    const [selectedDate, setSelectedDate] = useState<number | null>(new NepaliDate().getDate());
+    const [month, setMonth] = useState(new Date().getMonth());
+    const [year, setYear] = useState(new Date().getFullYear());
+    const [selectedDate, setSelectedDate] = useState<number | null>(new Date().getDate());
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [isSaving, setIsSaving] = useState(false);
@@ -247,8 +252,12 @@ const CalendarPage: React.FC = () => {
                     if (!day) return <div key={`blank-${index}`} className="h-24 lg:h-32 rounded-xl bg-white/2 border border-white/5"></div>;
 
                     const { events: dayEvents } = getItemsForDay(day);
-                    const isToday = day === new NepaliDate().getDate() && month === new NepaliDate().getMonth() && year === new NepaliDate().getYear();
+                    const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                     const isSelected = day === selectedDate;
+
+                    // Nepali Date for this day
+                    const bsDateString = toBS(new Date(year, month, day));
+                    const bsDay = bsDateString.split('-')[2];
 
                     return (
                         <div
@@ -264,6 +273,9 @@ const CalendarPage: React.FC = () => {
                             <div className="flex justify-between items-start mb-1">
                                 <span className={`text-sm font-bold ${isToday ? 'text-emerald-300' : isSelected ? 'text-brand-300' : 'text-gray-300'}`}>
                                     {day}
+                                </span>
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                    {bsDay}
                                 </span>
                             </div>
                             <div className="space-y-1 mt-1 overflow-hidden">
@@ -469,10 +481,20 @@ const CalendarPage: React.FC = () => {
                         </button>
                     </div>
 
-                    <div className="flex items-center space-x-4 bg-white/5 p-1 rounded-xl border border-white/10">
-                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronLeft size={20} /></button>
-                        <span className="text-lg font-bold text-white w-32 text-center select-none">{monthNames[month]} {year}</span>
-                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronRight size={20} /></button>
+                    <div className="flex flex-col items-center bg-white/5 px-4 py-1 rounded-xl border border-white/10">
+                        <div className="flex items-center space-x-4">
+                            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronLeft size={20} /></button>
+                            <div className="flex flex-col items-center w-32">
+                                <span className="text-lg font-bold text-white select-none">{monthNames[month]} {year}</span>
+                                <span className="text-[10px] text-brand-400 font-medium tracking-wider uppercase">
+                                    {(() => {
+                                        const bs = toBS(new Date(year, month, 1)).split('-');
+                                        return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[0]}`;
+                                    })()}
+                                </span>
+                            </div>
+                            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronRight size={20} /></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -485,19 +507,28 @@ const CalendarPage: React.FC = () => {
                     </div>
 
                     <div className="w-full lg:w-80 glass-panel rounded-2xl p-6 flex flex-col shadow-2xl h-fit">
-                        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-4">
-                            <h3 className="text-lg font-bold text-white flex items-center">
-                                <CalendarIcon size={18} className="mr-2 text-blue-400" />
-                                {selectedDate ? `${monthNames[month]} ${selectedDate}` : 'Select a date'}
-                            </h3>
-                            {/* Everyone can create events now */}
-                            <button
-                                onClick={() => handleOpenEventModal(selectedDate || undefined)}
-                                className="p-2 bg-brand-600 rounded-lg text-white hover:bg-brand-500 transition-colors shadow-lg"
-                                title="Create event"
-                            >
-                                <Plus size={16} />
-                            </button>
+                        <div className="flex flex-col border-b border-white/10 pb-4 mb-4">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="text-lg font-bold text-white flex items-center">
+                                    <CalendarIcon size={18} className="mr-2 text-blue-400" />
+                                    {selectedDate ? `${monthNames[month]} ${selectedDate}` : 'Select a date'}
+                                </h3>
+                                <button
+                                    onClick={() => handleOpenEventModal(selectedDate || undefined)}
+                                    className="p-2 bg-brand-600 rounded-lg text-white hover:bg-brand-500 transition-colors shadow-lg"
+                                    title="Create event"
+                                >
+                                    <Plus size={16} />
+                                </button>
+                            </div>
+                            {selectedDate && (
+                                <span className="text-[10px] text-brand-400 font-bold uppercase tracking-widest ml-7">
+                                    {(() => {
+                                        const bs = toBS(new Date(year, month, selectedDate)).split('-');
+                                        return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[2]}, ${bs[0]}`;
+                                    })()}
+                                </span>
+                            )}
                         </div>
 
                         {/* Toggle for showing only my events */}
