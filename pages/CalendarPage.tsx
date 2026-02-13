@@ -247,69 +247,73 @@ const CalendarPage: React.FC = () => {
         const totalSlots = [...blanks, ...days];
 
         return (
-            <div className="grid grid-cols-7 gap-3 lg:gap-4 auto-rows-fr">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                    <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-3 ${i === 6 ? 'text-rose-400' : 'text-blue-300/70'}`}>
-                        {d}
-                    </div>
-                ))}
-                {totalSlots.map((day, index) => {
-                    if (!day) return <div key={`blank-${index}`} className="min-h-[120px] rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm"></div>;
-
-                    const { events: dayEvents } = getItemsForDay(day);
-                    const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
-                    const isSelected = day === selectedDate;
-
-                    // Nepali Date for this day
-                    const bsDateString = toBS(new Date(year, month, day));
-                    const bsDay = bsDateString.split('-')[2];
-
-                    return (
-                        <div
-                            key={day}
-                            onClick={() => setSelectedDate(day)}
-                            className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
-                                ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-                                : isSelected
-                                    ? 'border-blue-500/50 bg-gradient-to-br from-blue-600/20 to-indigo-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
-                                    : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
-                                }`}
-                        >
-                            {/* Hover Effect Light */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-
-                            <div className="flex justify-between items-start mb-2 relative z-10">
-                                <span className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday
-                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                                    : isSelected
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                        : 'text-gray-300 group-hover:bg-white/10'}`}>
-                                    {day}
-                                </span>
-                                <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 rounded-full bg-black/20 border border-white/5">
-                                    {bsDay}
-                                </span>
-                            </div>
-
-                            <div className="space-y-1.5 mt-1 overflow-hidden flex-1 relative z-10">
-                                {dayEvents.slice(0, 3).map((ev, i) => (
-                                    <div key={`ev-${i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ev.color || '#fff' }}></div>
-                                        <div className="text-[10px] text-gray-300 truncate font-medium leading-none">
-                                            {ev.title}
-                                        </div>
-                                    </div>
-                                ))}
-                                {dayEvents.length > 3 && (
-                                    <div className="text-[10px] text-gray-400 font-medium px-1">
-                                        +{dayEvents.length - 3} more
-                                    </div>
-                                )}
-                            </div>
+            <>
+                <div className="grid grid-cols-7 gap-3 lg:gap-4 mb-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+                        <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-rose-400' : 'text-blue-300/70'}`}>
+                            {d}
                         </div>
-                    );
-                })}
-            </div>
+                    ))}
+                </div>
+                <div className="grid grid-cols-7 gap-3 lg:gap-4 auto-rows-fr">
+                    {totalSlots.map((day, index) => {
+                        if (!day) return <div key={`blank-${index}`} className="min-h-[120px] rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm"></div>;
+
+                        const { events: dayEvents } = getItemsForDay(day);
+                        const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+                        const isSelected = day === selectedDate;
+
+                        // Nepali Date for this day
+                        const bsDateString = toBS(new Date(year, month, day));
+                        const bsDay = bsDateString.split('-')[2];
+
+                        return (
+                            <div
+                                key={day}
+                                onClick={() => setSelectedDate(day)}
+                                className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
+                                    ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                                    : isSelected
+                                        ? 'border-blue-500/50 bg-gradient-to-br from-blue-600/20 to-indigo-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
+                                        : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
+                                    }`}
+                            >
+                                {/* Hover Effect Light */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+                                <div className="flex justify-between items-start mb-2 relative z-10">
+                                    <span className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday
+                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                        : isSelected
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'text-gray-300 group-hover:bg-white/10'}`}>
+                                        {day}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 rounded-full bg-black/20 border border-white/5">
+                                        {bsDay}
+                                    </span>
+                                </div>
+
+                                <div className="space-y-1.5 mt-1 overflow-hidden flex-1 relative z-10">
+                                    {dayEvents.slice(0, 3).map((ev, i) => (
+                                        <div key={`ev-${i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ev.color || '#fff' }}></div>
+                                            <div className="text-[10px] text-gray-300 truncate font-medium leading-none">
+                                                {ev.title}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {dayEvents.length > 3 && (
+                                        <div className="text-[10px] text-gray-400 font-medium px-1">
+                                            +{dayEvents.length - 3} more
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </>
         );
     };
 
