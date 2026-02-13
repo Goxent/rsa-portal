@@ -24,6 +24,7 @@ import { StorageService } from '../services/storage';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
 import { toast } from 'react-hot-toast';
+import { useModal } from '../context/ModalContext';
 
 const DEFAULT_COLORS = [
     '#3B82F6', // Blue
@@ -38,6 +39,7 @@ const DEFAULT_COLORS = [
 
 const KnowledgeBasePage: React.FC = () => {
     const { user } = useAuth();
+    const { openModal } = useModal();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     const [resources, setResources] = useState<Resource[]>([]);
@@ -91,16 +93,23 @@ const KnowledgeBasePage: React.FC = () => {
 
     // --- RESOURCE HANDLERS ---
 
-    const handleDeleteResource = async (id: string, e: React.MouseEvent) => {
+    const handleDeleteResource = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm('Are you sure you want to delete this resource?')) return;
-        try {
-            await KnowledgeService.deleteResource(id);
-            setResources(prev => prev.filter(r => r.id !== id));
-            toast.success("Resource deleted");
-        } catch (error) {
-            toast.error("Failed to delete resource");
-        }
+        openModal('CONFIRMATION', {
+            title: 'Delete Resource',
+            message: 'Are you sure you want to delete this resource? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await KnowledgeService.deleteResource(id);
+                    setResources(prev => prev.filter(r => r.id !== id));
+                    toast.success("Resource deleted");
+                } catch (error) {
+                    toast.error("Failed to delete resource");
+                }
+            }
+        });
     };
 
     const handleEditResource = (resource: Resource, e: React.MouseEvent) => {
@@ -145,17 +154,24 @@ const KnowledgeBasePage: React.FC = () => {
 
     // --- CATEGORY HANDLERS ---
 
-    const handleDeleteCategory = async (id: string, e: React.MouseEvent) => {
+    const handleDeleteCategory = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm('Delete this category? Resources in this category will check for other categories.')) return;
-        try {
-            await KnowledgeService.deleteCategory(id);
-            setCategories(prev => prev.filter(c => c.id !== id));
-            if (activeCategory === id) setActiveCategory('ALL');
-            toast.success("Category deleted");
-        } catch (error) {
-            toast.error("Failed to delete category");
-        }
+        openModal('CONFIRMATION', {
+            title: 'Delete Category',
+            message: 'Are you sure you want to delete this category? Resources in this category will not be deleted but will need to be re-categorized.',
+            confirmLabel: 'Delete',
+            variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await KnowledgeService.deleteCategory(id);
+                    setCategories(prev => prev.filter(c => c.id !== id));
+                    if (activeCategory === id) setActiveCategory('ALL');
+                    toast.success("Category deleted");
+                } catch (error) {
+                    toast.error("Failed to delete category");
+                }
+            }
+        });
     };
 
     const handleCategorySubmit = async (e: React.FormEvent) => {

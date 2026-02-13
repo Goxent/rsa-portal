@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle, AlertTriangle, Plus, Calendar as CalIcon, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import { ComplianceEvent } from '../types/advanced';
 import { ComplianceService } from '../services/advanced';
 
 const CompliancePage: React.FC = () => {
     const { user } = useAuth();
+    const { openModal } = useModal();
     const [events, setEvents] = useState<ComplianceEvent[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [filter, setFilter] = useState('ALL');
@@ -30,13 +32,17 @@ const CompliancePage: React.FC = () => {
     const handleSaveEvent = async () => {
         if (!user || !newEvent.title || !newEvent.dueDate) return;
 
+        const eventData = {
+            ...newEvent,
+            category: newEvent.category as ComplianceEvent['category'],
+            priority: newEvent.priority as ComplianceEvent['priority'],
+        };
+
         if (editingId) {
-            await ComplianceService.updateEvent(editingId, {
-                ...newEvent,
-            });
+            await ComplianceService.updateEvent(editingId, eventData);
         } else {
             await ComplianceService.createEvent({
-                ...newEvent,
+                ...eventData,
                 status: 'UPCOMING',
                 assignedTo: [user.uid],
                 isRecurring: false,
@@ -69,10 +75,17 @@ const CompliancePage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this compliance event?')) return;
-        await ComplianceService.deleteEvent(id);
-        await loadEvents();
+    const handleDelete = (id: string) => {
+        openModal('CONFIRMATION', {
+            title: 'Delete Compliance Event',
+            message: 'Are you sure you want to delete this compliance event? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            variant: 'danger',
+            onConfirm: async () => {
+                await ComplianceService.deleteEvent(id);
+                await loadEvents();
+            }
+        });
     };
 
     const handleComplete = async (id: string) => {

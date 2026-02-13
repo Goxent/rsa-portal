@@ -58,6 +58,7 @@ const TasksPage: React.FC = () => {
 
     // New Filters
     const [filterSignee, setFilterSignee] = useState<string>('ALL');
+    const [filterStaff, setFilterStaff] = useState<string>('ALL');
     const [filterVat, setFilterVat] = useState<boolean>(false);
     const [filterItr, setFilterItr] = useState<boolean>(false);
 
@@ -72,6 +73,11 @@ const TasksPage: React.FC = () => {
         }
         if (filterPriority !== 'ALL' && t.priority !== filterPriority) return false;
         if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase()) && !t.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+
+        // Staff Filter
+        if (filterStaff !== 'ALL') {
+            if (!t.assignedTo.includes(filterStaff)) return false;
+        }
 
         // New Filters Logic
         if (filterSignee !== 'ALL' || filterVat || filterItr) {
@@ -738,10 +744,22 @@ const TasksPage: React.FC = () => {
                         ITR Clients
                     </button>
 
-                    <div className="relative">
-                        <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
-                        <input className="pl-9 pr-4 py-2 glass-input text-sm" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    {/* Staff Filter (Replaces Search) */}
+                    <div className="relative group">
+                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300">
+                            <Filter size={14} className="text-gray-400" />
+                            <span>Staff:</span>
+                            <select
+                                className="bg-transparent border-none outline-none text-brand-300 font-bold w-32"
+                                value={filterStaff}
+                                onChange={(e) => setFilterStaff(e.target.value)}
+                            >
+                                <option value="ALL">All Staff</option>
+                                {usersList.map((u) => <option key={u.uid} value={u.uid}>{u.displayName}</option>)}
+                            </select>
+                        </div>
                     </div>
+
                     {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
                         <button onClick={() => setIsTemplateManagerOpen(true)} className="px-4 py-2 bg-navy-800 text-brand-300 border border-brand-500/20 rounded-xl text-sm font-bold hover:bg-navy-700 transition-all flex items-center">
                             <Sparkles size={16} className="mr-2" /> Manage Templates

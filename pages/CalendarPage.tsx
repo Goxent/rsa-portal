@@ -15,6 +15,11 @@ import NepaliDate from 'nepali-date-converter';
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
+const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
 const CalendarPage: React.FC = () => {
     const { user } = useAuth();
     // List View State

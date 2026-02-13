@@ -56,7 +56,8 @@ service cloud.firestore {
       // Removed 'createdBy' permission to enforce strict assignment-based editing
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
-        isAdmin()
+        isAdmin() ||
+        getUserRole() == 'MANAGER'
       );
       
       // Only admins can delete tasks

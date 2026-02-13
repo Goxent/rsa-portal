@@ -3,6 +3,7 @@ import { useModal } from '../context/ModalContext';
 import { X } from 'lucide-react';
 
 // Import Modals here
+import { ConfirmationModal } from './ConfirmationModal';
 // import TaskTemplateModal from './TaskTemplateModal';
 
 export const ModalManager: React.FC = () => {
@@ -27,6 +28,20 @@ export const ModalManager: React.FC = () => {
                         </div>
                     </div>
                 );
+            case 'CONFIRMATION':
+                return (
+                    <ConfirmationModal
+                        isOpen={true}
+                        onClose={closeModal}
+                        onConfirm={modalProps.onConfirm}
+                        title={modalProps.title}
+                        message={modalProps.message}
+                        confirmLabel={modalProps.confirmLabel}
+                        cancelLabel={modalProps.cancelLabel}
+                        variant={modalProps.variant}
+                    />
+                );
+
             // Add other cases here
             // case 'TASK_TEMPLATE':
             //     return <TaskTemplateModal {...modalProps} onClose={closeModal} />;
