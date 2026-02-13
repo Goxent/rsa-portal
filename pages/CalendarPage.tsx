@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X, Edit, Trash2, Eye, EyeOff, Repeat, List, FileDown } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { AuthService } from '../services/firebase';
 import { Task, CalendarEvent, UserRole, UserProfile } from '../types';
 import { ComplianceEvent } from '../types/advanced';
