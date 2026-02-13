@@ -260,3 +260,11 @@ export interface TaskTemplate {
     serviceType?: string; // e.g., Audit, Tax
   };
 }
+
+export interface Category {
+  id: string;
+  label: string;
+  icon: string; // Helper to map to Lucide icons (e.g., 'Book', 'FileText')
+  color?: string; // Hex or Tailwind class for styling
+  createdAt: string;
+}

@@ -107,12 +107,10 @@ service cloud.firestore {
 
     // NOTIFICATIONS COLLECTION
     match /notifications/{notificationId} {
-        // Users can read/delete their own notifications
-        allow read, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
-        // Anyone (system/users) can create notifications for others
-        allow create: if isAuthenticated();
-        // Users can update (mark as read) their own notifications
-        allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
+        // Users can read their own notifications and system-wide notifications
+        allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == 'ALL');
+        // Users can delete/update only their own notifications
+        allow delete, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     // TEMPLATES (Advanced)
@@ -245,8 +243,15 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       
       // Admins and Managers can create, update, or delete
+      // Admins and Managers can create, update, or delete
       // Using a custom check for Manager if needed, or just isAdmin() for now
       allow create, update, delete: if isAdmin() || (isAuthenticated() && getUserRole() == 'MANAGER');
+    }
+
+    // CATEGORIES COLLECTION
+    match /resource_categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
   }
 }

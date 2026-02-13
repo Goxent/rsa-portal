@@ -63,17 +63,15 @@ validateConfig();
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
 
-// Enable Offline Persistence
-enableIndexedDbPersistence(db)
-    .catch((err) => {
-        if (err.code == 'failed-precondition') {
-            console.warn('Persistence failed: Multiple tabs open');
-        } else if (err.code == 'unimplemented') {
-            console.warn('Persistence not supported by browser');
-        }
-    });
+// Initialize Firestore with Persistent Cache (New API)
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+
+export const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+    })
+});
 
 // Action Code Settings for Email Verification
 const getActionCodeSettings = (): ActionCodeSettings => {

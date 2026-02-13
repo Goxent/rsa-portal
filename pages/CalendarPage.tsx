@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X, Edit, Trash2, Eye, EyeOff, Repeat } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, ExternalLink, Plus, X, Edit, Trash2, Eye, EyeOff, Repeat, List } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { Task, CalendarEvent, UserRole, UserProfile } from '../types';
 import { ComplianceEvent } from '../types/advanced';
@@ -17,203 +17,50 @@ const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month
 
 const CalendarPage: React.FC = () => {
     const { user } = useAuth();
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState<number | null>(new Date().getDate());
+    // List View State
+    const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
+    const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
 
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [events, setEvents] = useState<CalendarEvent[]>([]);
-    const [complianceEvents, setComplianceEvents] = useState<ComplianceEvent[]>([]);
-    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-    const [showOnlyMyEvents, setShowOnlyMyEvents] = useState(false);
+    // ... (keep existing effects)
 
-    // Modal State
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
-    const [isSaving, setIsSaving] = useState(false);
-
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const daysInMonth = getDaysInMonth(year, month);
-    const firstDay = getFirstDayOfMonth(year, month);
-
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-    useEffect(() => {
-        if (user) {
-            AuthService.getAllTasks().then(setTasks);
-            // Use new visibility-aware function
-            AuthService.getAllEventsForUser(user.uid, user.role, user.department).then(rawEvents => {
-                // Expand recurring events for the current month view
-                const startOfMonth = new Date(year, month, 1);
-                const endOfMonth = new Date(year, month + 1, 0);
-
-                const expandedEvents: CalendarEvent[] = [];
-                rawEvents.forEach(event => {
-                    if (event.isRecurring && event.recurrenceRule) {
-                        const instances = generateRecurringInstances(event, startOfMonth, endOfMonth);
-                        expandedEvents.push(...instances);
-                    } else {
-                        expandedEvents.push(event);
-                    }
-                });
-
-                setEvents(expandedEvents);
-            });
-            // Load compliance events
-            ComplianceService.getEvents().then(setComplianceEvents);
-            AuthService.getAllUsers().then(setAllUsers);
-
-            // Fetch Clients for VAT/ITR Auto-Events
-            AuthService.getAllClients().then(clients => {
-                const autoEvents: ComplianceEvent[] = [];
-                // 1. VAT Returns (25th of every Nepali Month)
-                // We need to find the AD date for the 25th of the CURRENT Nepali month(s) that overlap with the current grid view
-
-                // Simple approach: Get current Nepali Year/Month
-                const npNow = new NepaliDate(new Date());
-                const currentNpYear = npNow.getYear();
-                const currentNpMonth = npNow.getMonth(); // 0-11
-
-                // Generate for current month and next month to be safe
-                for (let i = 0; i < 2; i++) {
-                    const targetMonth = currentNpMonth + i;
-                    // Handle year rollover if needed (basic implementation)
-                    const npDate = new NepaliDate(currentNpYear, targetMonth, 25);
-                    const adDate = npDate.toJsDate();
-                    // Use local date components to avoid UTC shift
-                    const year = adDate.getFullYear();
-                    const month = String(adDate.getMonth() + 1).padStart(2, '0');
-                    const day = String(adDate.getDate()).padStart(2, '0');
-                    const adDateStr = `${year}-${month}-${day}`;
-
-                    // Find clients with VAT Return enabled
-                    const vatClients = clients.filter(c => c.vatReturn);
-                    if (vatClients.length > 0) {
-                        autoEvents.push({
-                            id: `vat_${adDateStr}`,
-                            title: `VAT Return Deadline (${vatClients.length} Clients)`,
-                            dueDate: adDateStr,
-                            priority: 'CRITICAL',
-                            status: 'PENDING',
-                            assignedTo: [], // Auto-assigned
-                            description: `VAT Return for: ${vatClients.map(c => c.code).join(', ')}`
-                        });
-                    }
-                }
-
-                setComplianceEvents(prev => [...prev, ...autoEvents]);
-            });
+    // Bulk Actions
+    const handleSelectEvent = (eventId: string) => {
+        const newSelected = new Set(selectedEventIds);
+        if (newSelected.has(eventId)) {
+            newSelected.delete(eventId);
+        } else {
+            newSelected.add(eventId);
         }
-    }, [user, year, month]);
-
-    const changeMonth = (offset: number) => {
-        setCurrentDate(new Date(year, month + offset, 1));
-        setSelectedDate(null);
+        setSelectedEventIds(newSelected);
     };
 
-    const getItemsForDay = (day: number) => {
-        const taskItems = tasks.filter(task => {
-            const taskDate = new Date(task.dueDate);
-            const isSameDay = taskDate.getDate() === day &&
-                taskDate.getMonth() === month &&
-                taskDate.getFullYear() === year;
-
-            if (!isSameDay) return false;
-
-            // Filter for non-admins
-            if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN && user.role !== UserRole.MANAGER) {
-                if (!task.assignedTo || !task.assignedTo.includes(user.uid)) {
-                    return false;
-                }
-            }
-            return true;
-        });
-
-        let eventItems = events.filter(ev => {
-            const evDate = new Date(ev.date);
-            return evDate.getDate() === day &&
-                evDate.getMonth() === month &&
-                evDate.getFullYear() === year;
-        });
-
-        // Get compliance events for this day
-        const complianceItems = complianceEvents.filter(ce => {
-            const ceDate = new Date(ce.dueDate);
-            return ceDate.getDate() === day &&
-                ceDate.getMonth() === month &&
-                ceDate.getFullYear() === year;
-        });
-
-        // Filter to only user's events if toggle is on
-        if (showOnlyMyEvents && user) {
-            eventItems = eventItems.filter(ev => ev.createdBy === user.uid);
-        }
-
-        return { tasks: taskItems, events: eventItems, compliance: complianceItems };
-    };
-
-    const handleOpenEventModal = (date?: number) => {
-        if (date) setSelectedDate(date);
-        setEditingEvent(undefined);
-        setIsModalOpen(true);
-    };
-
-    const handleEditEvent = (event: CalendarEvent, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (user && canEditEvent(event, user)) {
-            setEditingEvent(event);
-            setIsModalOpen(true);
+    const handleSelectAll = () => {
+        if (selectedEventIds.size === events.length) {
+            setSelectedEventIds(new Set());
+        } else {
+            setSelectedEventIds(new Set(events.map(e => e.id)));
         }
     };
 
-    const handleDeleteEvent = async (event: CalendarEvent, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!user || !canDeleteEvent(event, user)) return;
-
-        if (confirm(`Delete event "${event.title}"?`)) {
-            try {
-                await AuthService.deleteEvent(event.id, user.uid, user.role);
-                // Refresh events
-                const rawEvents = await AuthService.getAllEventsForUser(user.uid, user.role, user.department);
-                const startOfMonth = new Date(year, month, 1);
-                const endOfMonth = new Date(year, month + 1, 0);
-
-                const expandedEvents: CalendarEvent[] = [];
-                rawEvents.forEach(ev => {
-                    if (ev.isRecurring && ev.recurrenceRule) {
-                        expandedEvents.push(...generateRecurringInstances(ev, startOfMonth, endOfMonth));
-                    } else {
-                        expandedEvents.push(ev);
-                    }
-                });
-                setEvents(expandedEvents);
-            } catch (error: any) {
-                alert(error.message || 'Failed to delete event');
-            }
-        }
-    };
-
-    const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
-        if (!user) return;
-        if (isSaving) return; // Prevent duplicate submissions
+    const handleBulkDelete = async () => {
+        if (!user || selectedEventIds.size === 0) return;
+        if (!confirm(`Delete ${selectedEventIds.size} events? This will remove all instances of recurring events.`)) return;
 
         setIsSaving(true);
         try {
-            if (editingEvent) {
-                // Update existing event
-                await AuthService.updateEvent(editingEvent.id, eventData, user.uid, user.role);
-            } else {
-                // Create new event - use eventData.date directly to avoid timezone issues
-                const fullEvent: CalendarEvent = {
-                    id: 'temp_' + Date.now(),
-                    ...eventData as CalendarEvent,
-                    date: eventData.date!, // Use the date from the form (already in YYYY-MM-DD format)
-                    createdBy: user.uid,
-                };
-                await AuthService.saveEvent(fullEvent);
-            }
+            // Extract unique master IDs (handle recurring instances like "id_date")
+            const masterIds = new Set<string>();
+            selectedEventIds.forEach(id => {
+                masterIds.add(id.split('_')[0]);
+            });
 
-            // Refresh events
+            const promises = Array.from(masterIds).map(id =>
+                AuthService.deleteEvent(id, user.uid, user.role)
+            );
+
+            await Promise.all(promises);
+
+            // Refresh
             const rawEvents = await AuthService.getAllEventsForUser(user.uid, user.role, user.department);
             const startOfMonth = new Date(year, month, 1);
             const endOfMonth = new Date(year, month + 1, 0);
@@ -227,101 +74,112 @@ const CalendarPage: React.FC = () => {
                 }
             });
             setEvents(expandedEvents);
-
-            setIsModalOpen(false);
-            setEditingEvent(undefined);
+            setSelectedEventIds(new Set());
+            alert("Events deleted successfully");
         } catch (error: any) {
-            alert(error.message || 'Failed to save event');
+            alert("Failed to delete some events: " + error.message);
         } finally {
             setIsSaving(false);
         }
     };
-    const addToGoogleCalendar = (title: string, date: string, desc: string) => {
-        const dateStr = date.replace(/-/g, '');
-        const details = encodeURIComponent(desc);
-        const encTitle = encodeURIComponent(title);
-        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encTitle}&dates=${dateStr}/${dateStr}&details=${details}`;
-        window.open(url, '_blank');
-    };
 
-    const renderCalendarGrid = () => {
-        const blanks = Array(firstDay).fill(null);
-        const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-        const totalSlots = [...blanks, ...days];
+    const renderListView = () => {
+        // Sort events by date
+        const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         return (
-            <div className="grid grid-cols-7 gap-2 lg:gap-4">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                    <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-red-400' : 'text-gray-500'}`}>
-                        {d}
-                    </div>
-                ))}
-                {totalSlots.map((day, index) => {
-                    if (!day) return <div key={`blank-${index}`} className="h-24 lg:h-32 rounded-xl bg-white/2 border border-white/5"></div>;
-
-                    const { tasks: dayTasks, events: dayEvents, compliance: dayCompliance } = getItemsForDay(day);
-                    const totalCount = dayTasks.length + dayEvents.length + dayCompliance.length;
-                    const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
-                    const isSelected = day === selectedDate;
-
-                    // Determine if Saturday (Day 6 in JS Date)
-                    const isSaturday = new Date(year, month, day).getDay() === 6;
-                    const isCurrent = isToday; // Renamed for clarity with the new className
-
-                    return (
-                        <div
-                            key={day}
-                            onClick={() => setSelectedDate(day)}
-                            className={`relative min-h-[100px] p-2 rounded-xl border-2 transition-all duration-200 cursor-pointer ${isCurrent
-                                ? 'border-emerald-500 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 shadow-lg shadow-emerald-500/20'
-                                : day === selectedDate
-                                    ? 'border-brand-500 bg-brand-500/10 shadow-lg shadow-brand-500/20'
-                                    : 'border-white/5 hover:border-brand-400/30 hover:bg-white/5'
-                                }  ${dayTasks.length > 0 || dayEvents.length > 0 || dayCompliance.length > 0 ? 'shadow-inner' : ''}`}
+            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={handleSelectAll}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedEventIds.size === events.length && events.length > 0 ? 'bg-brand-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                         >
-                            <div className="flex justify-between items-start mb-1">
-                                <span className={`text-sm font-bold ${isCurrent ? 'text-emerald-300' : day === selectedDate ? 'text-brand-300' : 'text-gray-300'}`}>
-                                    {day}
-                                </span>
-                                <div className="flex flex-col items-end gap-0.5">
-                                    {totalCount > 0 && (
-                                        <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400 font-medium">
-                                            {totalCount}
-                                        </span>
-                                    )}
-                                    <span className="text-[8px] text-gray-600 font-mono">
-                                        {toBS(new Date(year, month, day)).split('-')[2]}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="space-y-1 mt-1 overflow-hidden">
-                                {dayCompliance.map((comp, i) => (
-                                    <div key={`comp-${i}`} className={`px-1.5 py-1 rounded text-[10px] truncate border-l-2 ${comp.priority === 'CRITICAL' ? 'bg-red-500/20 text-red-200 border-red-500' :
-                                        comp.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-200 border-orange-500' :
-                                            'bg-amber-500/20 text-amber-200 border-amber-500'
-                                        }`} title={comp.title}>
-                                        🔔 {comp.title}
-                                    </div>
-                                ))}
-                                {dayEvents.map((ev, i) => (
-                                    <div key={`ev-${i}`} className="px-1.5 py-1 rounded bg-purple-500/20 text-[10px] text-purple-200 truncate border-l-2 border-purple-500">
-                                        {ev.title}
-                                    </div>
-                                ))}
-                                {dayTasks.slice(0, 2 - dayEvents.length - dayCompliance.length).map((t, i) => (
-                                    <div key={`t-${i}`} className="px-1.5 py-1 rounded bg-blue-500/20 text-[10px] text-blue-200 truncate border-l-2 border-blue-500">
-                                        {t.title}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
+                            {selectedEventIds.size === events.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                        {selectedEventIds.size > 0 && (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                            >
+                                <Trash2 size={14} /> Delete Selected ({selectedEventIds.size})
+                            </button>
+                        )}
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-white/5 border-b border-white/10 text-[10px] text-gray-500 uppercase font-black tracking-widest">
+                                <th className="p-4 w-10"></th>
+                                <th className="p-4">Date</th>
+                                <th className="p-4">Title</th>
+                                <th className="p-4">Type</th>
+                                <th className="p-4">Visibility</th>
+                                <th className="p-4">Creator</th>
+                                <th className="p-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {sortedEvents.map(event => {
+                                const canEdit = user && canEditEvent(event, user);
+                                const isSelected = selectedEventIds.has(event.id);
+                                return (
+                                    <tr key={event.id} className={`hover:bg-white/5 transition-all ${isSelected ? 'bg-brand-500/10' : ''}`}>
+                                        <td className="p-4">
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => handleSelectEvent(event.id)}
+                                                className="rounded border-gray-600 bg-black/30 text-brand-500 focus:ring-brand-500"
+                                            />
+                                        </td>
+                                        <td className="p-4 text-sm text-gray-300 font-mono whitespace-nowrap">
+                                            {event.date}
+                                            <span className="ml-2 text-xs text-gray-500">{event.time}</span>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: event.color || '#8b5cf6' }}></div>
+                                                <span className="font-medium text-white">{event.title}</span>
+                                                {event.isRecurring && <Repeat size={12} className="text-gray-500" />}
+                                            </div>
+                                            {event.description && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{event.description}</p>}
+                                        </td>
+                                        <td className="p-4 text-xs text-gray-400 capitalize">{event.type.toLowerCase().replace('_', ' ')}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${getVisibilityBadge(event.visibility || 'PUBLIC').color}`}>
+                                                {getVisibilityBadge(event.visibility || 'PUBLIC').text}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-xs text-gray-400">
+                                            {allUsers.find(u => u.uid === event.createdBy)?.displayName || 'System'}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {canEdit && (
+                                                    <>
+                                                        <button onClick={(e) => handleEditEvent(event, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-blue-400 transition-colors"><Edit size={14} /></button>
+                                                        <button onClick={(e) => handleDeleteEvent(event, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-red-400 transition-colors"><Trash2 size={14} /></button>
+                                                    </>
+                                                )}
+                                                <button onClick={() => addToGoogleCalendar(event.title, event.date, event.description || '')} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><ExternalLink size={14} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {sortedEvents.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="p-10 text-center text-gray-500">No events found for this month.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         );
     };
-
-    const { tasks: selectedDayTasks, events: selectedDayEvents } = selectedDate ? getItemsForDay(selectedDate) : { tasks: [], events: [] };
 
     return (
         <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
@@ -330,135 +188,161 @@ const CalendarPage: React.FC = () => {
                     <h1 className="text-2xl font-bold text-white">Firm Calendar</h1>
                     <p className="text-sm text-gray-400">Track task deadlines, meetings, and events</p>
                 </div>
-                <div className="flex items-center space-x-4 bg-white/5 p-1 rounded-xl border border-white/10">
-                    <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronLeft size={20} /></button>
-                    <span className="text-lg font-bold text-white w-32 text-center select-none">{monthNames[month]} {year}</span>
-                    <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronRight size={20} /></button>
-                </div>
-            </div>
-
-            <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden">
-                {/* Main Calendar Grid */}
-                <div className="flex-1 glass-panel rounded-2xl p-4 lg:p-6 overflow-y-auto shadow-2xl">
-                    {renderCalendarGrid()}
-                </div>
-
-                <div className="w-full lg:w-80 glass-panel rounded-2xl p-6 flex flex-col shadow-2xl h-fit">
-                    <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-4">
-                        <h3 className="text-lg font-bold text-white flex items-center">
-                            <CalendarIcon size={18} className="mr-2 text-blue-400" />
-                            {selectedDate ? `${monthNames[month]} ${selectedDate}` : 'Select a date'}
-                        </h3>
-                        {/* Everyone can create events now */}
+                <div className="flex items-center space-x-4">
+                    {/* View Toggle */}
+                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-2">
                         <button
-                            onClick={() => handleOpenEventModal(selectedDate || undefined)}
-                            className="p-2 bg-brand-600 rounded-lg text-white hover:bg-brand-500 transition-colors shadow-lg"
-                            title="Create event"
+                            onClick={() => setViewMode('GRID')}
+                            className={`p-2 rounded-lg transition-all ${viewMode === 'GRID' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            title="Grid View"
                         >
-                            <Plus size={16} />
+                            <CalendarIcon size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('LIST')}
+                            className={`p-2 rounded-lg transition-all ${viewMode === 'LIST' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            title="List View"
+                        >
+                            <List size={18} />
                         </button>
                     </div>
 
-                    {/* Toggle for showing only my events */}
-                    <div className="mb-4">
-                        <button
-                            onClick={() => setShowOnlyMyEvents(!showOnlyMyEvents)}
-                            className="flex items-center text-xs text-gray-400 hover:text-gray-200 transition-colors"
-                        >
-                            {showOnlyMyEvents ? <Eye size={14} className="mr-1" /> : <EyeOff size={14} className="mr-1" />}
-                            {showOnlyMyEvents ? 'Show all events' : 'Show only my events'}
-                        </button>
-                    </div>
-
-                    <div className="space-y-3 flex-1">
-                        {/* Event Items */}
-                        {selectedDayEvents.map((ev, i) => {
-                            // Add defaults for old events without new fields
-                            const eventWithDefaults = {
-                                ...ev,
-                                visibility: ev.visibility || 'PUBLIC',
-                                createdBy: ev.createdBy || 'system',
-                                type: ev.type || 'GENERAL'
-                            };
-
-                            const badge = getVisibilityBadge(eventWithDefaults.visibility);
-                            const canEdit = user && canEditEvent(eventWithDefaults, user);
-                            const canDelete = user && canDeleteEvent(eventWithDefaults, user);
-
-                            return (
-                                <div key={i} className="group flex flex-col p-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 transition-colors border border-purple-500/20">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-semibold text-purple-200">{eventWithDefaults.title}</h4>
-                                            <p className="text-[10px] text-gray-400">{formatEventTime(eventWithDefaults)} • {eventWithDefaults.type.replace('_', ' ')}</p>
-                                            {eventWithDefaults.isRecurring && (
-                                                <p className="text-[10px] text-emerald-400 flex items-center mt-1">
-                                                    <Repeat size={10} className="mr-1" /> Recurring
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            {canEdit && (
-                                                <button
-                                                    onClick={(e) => handleEditEvent(eventWithDefaults, e)}
-                                                    className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
-                                                    title="Edit event"
-                                                >
-                                                    <Edit size={14} />
-                                                </button>
-                                            )}
-                                            {canDelete && (
-                                                <button
-                                                    onClick={(e) => handleDeleteEvent(eventWithDefaults, e)}
-                                                    className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                                                    title="Delete event"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${badge.color}`}>
-                                            {badge.text}
-                                        </span>
-                                        <button
-                                            onClick={() => addToGoogleCalendar(eventWithDefaults.title, eventWithDefaults.date, eventWithDefaults.description || '')}
-                                            className="text-[10px] text-purple-300 hover:underline flex items-center"
-                                        >
-                                            <ExternalLink size={10} className="mr-1" /> G-Cal
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-
-                        {selectedDayTasks.map((task, i) => (
-                            <div key={i} className="group flex flex-col p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
-                                <div className="flex items-start space-x-3 mb-2">
-                                    <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_currentColor]"></div>
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-200 group-hover:text-white">{task.title}</h4>
-                                        <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.clientName}</span>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => addToGoogleCalendar(task.title, task.dueDate, `Client: ${task.clientName}`)}
-                                    className="mt-2 text-xs flex items-center justify-center w-full py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-300 rounded-lg border border-blue-500/20 transition-colors"
-                                >
-                                    <ExternalLink size={12} className="mr-2" /> Add to G-Cal
-                                </button>
-                            </div>
-                        ))}
-
-                        {selectedDayTasks.length === 0 && selectedDayEvents.length === 0 && (
-                            <div className="text-center py-10 text-gray-500">
-                                <p className="text-sm">No items for this date.</p>
-                            </div>
-                        )}
+                    <div className="flex items-center space-x-4 bg-white/5 p-1 rounded-xl border border-white/10">
+                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronLeft size={20} /></button>
+                        <span className="text-lg font-bold text-white w-32 text-center select-none">{monthNames[month]} {year}</span>
+                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronRight size={20} /></button>
                     </div>
                 </div>
             </div>
+
+            {viewMode === 'GRID' ? (
+                <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden">
+                    {/* Main Calendar Grid */}
+                    <div className="flex-1 glass-panel rounded-2xl p-4 lg:p-6 overflow-y-auto shadow-2xl">
+                        {renderCalendarGrid()}
+                    </div>
+
+                    <div className="w-full lg:w-80 glass-panel rounded-2xl p-6 flex flex-col shadow-2xl h-fit">
+                        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-4">
+                            <h3 className="text-lg font-bold text-white flex items-center">
+                                <CalendarIcon size={18} className="mr-2 text-blue-400" />
+                                {selectedDate ? `${monthNames[month]} ${selectedDate}` : 'Select a date'}
+                            </h3>
+                            {/* Everyone can create events now */}
+                            <button
+                                onClick={() => handleOpenEventModal(selectedDate || undefined)}
+                                className="p-2 bg-brand-600 rounded-lg text-white hover:bg-brand-500 transition-colors shadow-lg"
+                                title="Create event"
+                            >
+                                <Plus size={16} />
+                            </button>
+                        </div>
+
+                        {/* Toggle for showing only my events */}
+                        <div className="mb-4">
+                            <button
+                                onClick={() => setShowOnlyMyEvents(!showOnlyMyEvents)}
+                                className="flex items-center text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                            >
+                                {showOnlyMyEvents ? <Eye size={14} className="mr-1" /> : <EyeOff size={14} className="mr-1" />}
+                                {showOnlyMyEvents ? 'Show all events' : 'Show only my events'}
+                            </button>
+                        </div>
+
+                        <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px] custom-scrollbar">
+                            {/* Event Items */}
+                            {selectedDayEvents.map((ev, i) => {
+                                // Add defaults for old events without new fields
+                                const eventWithDefaults = {
+                                    ...ev,
+                                    visibility: ev.visibility || 'PUBLIC',
+                                    createdBy: ev.createdBy || 'system',
+                                    type: ev.type || 'GENERAL'
+                                };
+
+                                const badge = getVisibilityBadge(eventWithDefaults.visibility);
+                                const canEdit = user && canEditEvent(eventWithDefaults, user);
+                                const canDelete = user && canDeleteEvent(eventWithDefaults, user);
+
+                                return (
+                                    <div key={i} className="group flex flex-col p-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 transition-colors border border-purple-500/20">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-semibold text-purple-200">{eventWithDefaults.title}</h4>
+                                                <p className="text-[10px] text-gray-400">{formatEventTime(eventWithDefaults)} • {eventWithDefaults.type.replace('_', ' ')}</p>
+                                                {eventWithDefaults.isRecurring && (
+                                                    <p className="text-[10px] text-emerald-400 flex items-center mt-1">
+                                                        <Repeat size={10} className="mr-1" /> Recurring
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                {canEdit && (
+                                                    <button
+                                                        onClick={(e) => handleEditEvent(eventWithDefaults, e)}
+                                                        className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
+                                                        title="Edit event"
+                                                    >
+                                                        <Edit size={14} />
+                                                    </button>
+                                                )}
+                                                {canDelete && (
+                                                    <button
+                                                        onClick={(e) => handleDeleteEvent(eventWithDefaults, e)}
+                                                        className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                                                        title="Delete event"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${badge.color}`}>
+                                                {badge.text}
+                                            </span>
+                                            <button
+                                                onClick={() => addToGoogleCalendar(eventWithDefaults.title, eventWithDefaults.date, eventWithDefaults.description || '')}
+                                                className="text-[10px] text-purple-300 hover:underline flex items-center"
+                                            >
+                                                <ExternalLink size={10} className="mr-1" /> G-Cal
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {selectedDayTasks.map((task, i) => (
+                                <div key={i} className="group flex flex-col p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                                    <div className="flex items-start space-x-3 mb-2">
+                                        <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_currentColor]"></div>
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-gray-200 group-hover:text-white">{task.title}</h4>
+                                            <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.clientName}</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => addToGoogleCalendar(task.title, task.dueDate, `Client: ${task.clientName}`)}
+                                        className="mt-2 text-xs flex items-center justify-center w-full py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-300 rounded-lg border border-blue-500/20 transition-colors"
+                                    >
+                                        <ExternalLink size={12} className="mr-2" /> Add to G-Cal
+                                    </button>
+                                </div>
+                            ))}
+
+                            {selectedDayTasks.length === 0 && selectedDayEvents.length === 0 && (
+                                <div className="text-center py-10 text-gray-500">
+                                    <p className="text-sm">No items for this date.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex-1 overflow-hidden">
+                    {renderListView()}
+                </div>
+            )}
 
             {/* EventModal Component */}
             <EventModal
