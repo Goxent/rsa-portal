@@ -1,9 +1,12 @@
 import { db } from './firebase';
 import { collection, query, where, getDocs, orderBy, doc, setDoc, getDoc } from 'firebase/firestore';
-import { Task, AttendanceRecord, TaskStatus } from '../types';
+import {
+    Task, AttendanceRecord, TaskStatus, TaskPriority,
+    PerformanceCycle, FinalizedPerformanceScore, PeerReview,
+    UserProfile, UserRole
+} from '../types';
 import { startOfMonth, endOfMonth, isBefore, isAfter, subMonths, differenceInDays } from 'date-fns';
 import { PeerFeedbackService } from './peer-feedback';
-import { UserProfile, UserRole } from '../types';
 
 export interface PerformanceStats {
     totalTasks: number;
@@ -40,6 +43,11 @@ export interface PerformanceStats {
         totalStaff: number;
         percentile: number;
     } | null;
+
+    // Performance evaluation metrics (Prompt 3.A)
+    avgCycleTime: number; // Average days to complete a task
+    assignmentFulfillment: number; // Ratio of tasks completed vs assigned
+    dueDateFulfillment: number; // % of tasks completed on or before due date
 
     // Performance tier
     performanceTier: 'Exceptional' | 'Strong' | 'Meeting Expectations' | 'Needs Improvement' | 'Critical';
@@ -214,7 +222,100 @@ export class PerformanceService {
             lateDays,
             absentDays,
             benchmark: null,
-            performanceTier
+            performanceTier,
+            avgCycleTime: completed.reduce((sum, t) => {
+                const created = new Date(t.createdAt);
+                const finished = new Date(t.completedAt!);
+                return sum + ((finished.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+            }, 0) / (completed.length || 1),
+            assignmentFulfillment: monthlyTasks.length > 0 ? (completed.length / monthlyTasks.length) * 100 : 100,
+            dueDateFulfillment: onTimeRate
+        };
+    }
+
+    static async getQuarterlyPerformance(staffId: string, quarterIndex: number, year: number): Promise<PerformanceStats> {
+        // quarterIndex 0 = Jan-Mar, 1 = Apr-Jun, etc.
+        const startMonth = quarterIndex * 3;
+        const start = new Date(year, startMonth, 1);
+        const end = endOfMonth(new Date(year, startMonth + 2, 1));
+
+        // In a real implementation, this would aggregate 3 individual monthly stats or a single query
+        // For simplicity, we aggregate here
+        const months = [0, 1, 2].map(m => startMonth + m);
+
+        let totalTasks = 0, completedTasks = 0, onTimeTasks = 0, overdueTasks = 0;
+        let totalWorkHours = 0, presentDays = 0, lateDays = 0, absentDays = 0;
+        let cycleTimes: number[] = [];
+
+        // This is a rough estimation of aggregation. 
+        // In reality, we'd query the whole 3-month range at once for accuracy.
+        // Let's do a proper 3-month range query.
+
+        // Fetch Tasks for the quarter
+        const tasksQuery = query(
+            collection(db, 'tasks'),
+            where('assignedTo', 'array-contains', staffId),
+            orderBy('createdAt', 'desc')
+        );
+        const tasksSnap = await getDocs(tasksQuery);
+        const allTasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        const quarterlyTasks = allTasks.filter(t => {
+            const created = new Date(t.createdAt);
+            return created >= start && created <= end;
+        });
+
+        const completed = quarterlyTasks.filter(t => t.status === TaskStatus.COMPLETED);
+        const onTime = completed.filter(t => {
+            if (!t.completedAt || !t.dueDate) return true;
+            return isBefore(new Date(t.completedAt), new Date(t.dueDate));
+        });
+
+        // Attendance
+        const attendanceQuery = query(
+            collection(db, 'attendance'),
+            where('userId', '==', staffId),
+            where('date', '>=', start.toISOString().split('T')[0]),
+            where('date', '<=', end.toISOString().split('T')[0])
+        );
+        const attendanceSnap = await getDocs(attendanceQuery);
+        const attendance = attendanceSnap.docs.map(doc => doc.data() as AttendanceRecord);
+
+        presentDays = attendance.filter(a => ['PRESENT', 'LATE', 'HALF_DAY'].includes(a.status)).length;
+        lateDays = attendance.filter(a => a.status === 'LATE').length;
+        totalWorkHours = attendance.reduce((sum, a) => sum + (a.workHours || 0), 0);
+
+        const completionRate = quarterlyTasks.length > 0 ? (completed.length / quarterlyTasks.length) * 100 : 100;
+        const onTimeRate = completed.length > 0 ? (onTime.length / completed.length) * 100 : 100;
+        const punctualityScore = presentDays > 0 ? ((presentDays - lateDays) / presentDays) * 100 : 100;
+
+        const totalScore = (completionRate * 0.4) + (onTimeRate * 0.4) + (punctualityScore * 0.2);
+
+        return {
+            totalTasks: quarterlyTasks.length,
+            completedTasks: completed.length,
+            onTimeTasks: onTime.length,
+            overdueTasks: quarterlyTasks.filter(t => t.status !== TaskStatus.COMPLETED && new Date(t.dueDate) < new Date()).length,
+            completionRate,
+            onTimeRate,
+            punctualityScore,
+            qualityScore: 100, // Placeholder
+            difficultyBonus: 0,
+            totalScore,
+            eligibility: { qualified: true, failedCriteria: [] },
+            highPriorityTasks: quarterlyTasks.filter(t => t.priority === TaskPriority.URGENT || t.priority === TaskPriority.HIGH).length,
+            highPriorityCompleted: completed.filter(t => t.priority === TaskPriority.URGENT || t.priority === TaskPriority.HIGH).length,
+            highPriorityRate: 100,
+            avgWorkHours: presentDays > 0 ? totalWorkHours / presentDays : 0,
+            presentDays,
+            lateDays,
+            absentDays: 0,
+            benchmark: null,
+            performanceTier: totalScore >= 75 ? 'Strong' : 'Meeting Expectations',
+            avgCycleTime: completed.length > 0 ? completed.reduce((sum, t) => {
+                return sum + ((new Date(t.completedAt!).getTime() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+            }, 0) / completed.length : 0,
+            assignmentFulfillment: completionRate,
+            dueDateFulfillment: onTimeRate
         };
     }
 

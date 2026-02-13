@@ -28,10 +28,14 @@ const PerformancePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'roster' | 'leaderboard'>('roster');
     const [isFinalizing, setIsFinalizing] = useState(false);
     const [showScoringInfo, setShowScoringInfo] = useState(false);
+    const [viewMode, setViewMode] = useState<'monthly' | 'quarterly'>('monthly');
+    const [selectedQuarter, setSelectedQuarter] = useState(Math.floor(new Date().getMonth() / 3));
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [expandedStaffId, setExpandedStaffId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchInitialData();
-    }, [selectedMonth]);
+    }, [selectedMonth, viewMode, selectedQuarter, selectedYear]);
 
     const fetchInitialData = async () => {
         setIsLoading(true);
@@ -39,48 +43,62 @@ const PerformancePage: React.FC = () => {
             const users = await AuthService.getAllStaff();
             setStaff(users);
 
-            // Check if month is finalized
-            const monthKey = subMonths(new Date(), selectedMonth).toISOString().substring(0, 7);
-            const cycleDoc = await getDoc(doc(db, 'performance_cycles', `${monthKey}_default`));
+            if (viewMode === 'monthly') {
+                // Check if month is finalized
+                const monthKey = subMonths(new Date(), selectedMonth).toISOString().substring(0, 7);
+                const cycleDoc = await getDoc(doc(db, 'performance_cycles', `${monthKey}_default`));
 
-            if (cycleDoc.exists()) {
-                const cycleData = cycleDoc.data() as PerformanceCycle;
-                setFinalizedCycle(cycleData);
+                if (cycleDoc.exists()) {
+                    const cycleData = cycleDoc.data() as PerformanceCycle;
+                    setFinalizedCycle(cycleData);
 
-                const scores: Record<string, PerformanceStats> = {};
-                Object.entries(cycleData.staff_scores).forEach(([uid, s]: [string, any]) => {
-                    scores[uid] = {
-                        totalTasks: s.metrics?.total_tasks || 0,
-                        completedTasks: s.metrics?.completed_tasks || 0,
-                        onTimeTasks: s.metrics?.on_time_tasks || 0,
-                        overdueTasks: 0, // Not stored in past
-                        completionRate: s.components.completion_rate,
-                        onTimeRate: s.components.on_time_delivery,
-                        punctualityScore: s.components.punctuality,
-                        qualityScore: s.components.task_quality,
-                        difficultyBonus: s.components.task_difficulty,
-                        totalScore: s.total_score,
-                        eligibility: {
-                            qualified: s.eligibility.qualified,
-                            failedCriteria: s.eligibility.failed_criteria || []
-                        },
-                        highPriorityTasks: 0,
-                        highPriorityCompleted: 0,
-                        highPriorityRate: 0,
-                        avgWorkHours: 0,
-                        presentDays: s.metrics?.present_days || 0,
-                        lateDays: 0,
-                        absentDays: 0,
-                        benchmark: null,
-                        performanceTier: s.total_score >= 90 ? 'Exceptional' : s.total_score >= 75 ? 'Strong' : s.total_score >= 60 ? 'Meeting Expectations' : s.total_score >= 40 ? 'Needs Improvement' : 'Critical'
-                    };
-                });
-                setPerformanceData(scores);
+                    const scores: Record<string, PerformanceStats> = {};
+                    Object.entries(cycleData.staff_scores).forEach(([uid, s]: [string, any]) => {
+                        scores[uid] = {
+                            totalTasks: s.metrics?.total_tasks || 0,
+                            completedTasks: s.metrics?.completed_tasks || 0,
+                            onTimeTasks: s.metrics?.on_time_tasks || 0,
+                            overdueTasks: 0,
+                            completionRate: s.components.completion_rate,
+                            onTimeRate: s.components.on_time_delivery,
+                            punctualityScore: s.components.punctuality,
+                            qualityScore: s.components.task_quality,
+                            difficultyBonus: s.components.task_difficulty,
+                            totalScore: s.total_score,
+                            eligibility: {
+                                qualified: s.eligibility.qualified,
+                                failedCriteria: s.eligibility.failed_criteria || []
+                            },
+                            highPriorityTasks: 0,
+                            highPriorityCompleted: 0,
+                            highPriorityRate: 0,
+                            avgWorkHours: 0,
+                            presentDays: s.metrics?.present_days || 0,
+                            lateDays: 0,
+                            absentDays: 0,
+                            benchmark: null,
+                            performanceTier: s.total_score >= 90 ? 'Exceptional' : s.total_score >= 75 ? 'Strong' : s.total_score >= 60 ? 'Meeting Expectations' : s.total_score >= 40 ? 'Needs Improvement' : 'Critical',
+                            avgCycleTime: 0,
+                            assignmentFulfillment: 0,
+                            dueDateFulfillment: 0
+                        };
+                    });
+                    setPerformanceData(scores);
+                } else {
+                    setFinalizedCycle(null);
+                    const scores: Record<string, PerformanceStats> = {};
+                    for (const user of users) {
+                        const stats = await PerformanceService.getStaffPerformance(user.uid, selectedMonth);
+                        scores[user.uid] = stats;
+                    }
+                    setPerformanceData(scores);
+                }
             } else {
+                // Quarterly Mode
                 setFinalizedCycle(null);
                 const scores: Record<string, PerformanceStats> = {};
                 for (const user of users) {
-                    const stats = await PerformanceService.getStaffPerformance(user.uid, selectedMonth);
+                    const stats = await PerformanceService.getQuarterlyPerformance(user.uid, selectedQuarter, selectedYear);
                     scores[user.uid] = stats;
                 }
                 setPerformanceData(scores);
@@ -291,7 +309,22 @@ const PerformancePage: React.FC = () => {
                         </button>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-4">
+                        <button
+                            onClick={() => setViewMode('monthly')}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'monthly' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            onClick={() => setViewMode('quarterly')}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'quarterly' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            Quarterly
+                        </button>
+                    </div>
+
                     <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-4">
                         <button
                             onClick={() => setActiveTab('roster')}
@@ -306,35 +339,61 @@ const PerformancePage: React.FC = () => {
                             Leaderboard
                         </button>
                     </div>
-                    {AuthService.isAdmin(user?.role) && selectedMonth === 0 && !finalizedCycle && (
-                        <button
-                            onClick={handleFinalize}
-                            disabled={isFinalizing}
-                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all"
-                        >
-                            {isFinalizing ? <Loader2 size={16} className="animate-spin mr-2" /> : <Lock size={16} className="mr-2" />}
-                            Finalize {format(subMonths(new Date(), 1), 'MMM')} Performance
-                        </button>
-                    )}
-                    {finalizedCycle && (
-                        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
-                            <Lock size={14} className="text-emerald-400" />
-                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-tight">Finalized</span>
+
+                    {viewMode === 'monthly' ? (
+                        <>
+                            {AuthService.isAdmin(user?.role) && selectedMonth === 0 && !finalizedCycle && (
+                                <button
+                                    onClick={handleFinalize}
+                                    disabled={isFinalizing}
+                                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all"
+                                >
+                                    {isFinalizing ? <Loader2 size={16} className="animate-spin mr-2" /> : <Lock size={16} className="mr-2" />}
+                                    Finalize {format(subMonths(new Date(), 1), 'MMM')} Performance
+                                </button>
+                            )}
+                            {finalizedCycle && (
+                                <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
+                                    <Lock size={14} className="text-emerald-400" />
+                                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-tight">Finalized</span>
+                                </div>
+                            )}
+                            <select
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            >
+                                <option value={0}>{format(new Date(), 'MMMM yyyy')}</option>
+                                <option value={1}>{format(subMonths(new Date(), 1), 'MMMM yyyy')}</option>
+                                <option value={2}>{format(subMonths(new Date(), 2), 'MMMM yyyy')}</option>
+                                <option value={3}>{format(subMonths(new Date(), 3), 'MMMM yyyy')}</option>
+                            </select>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={selectedQuarter}
+                                onChange={(e) => setSelectedQuarter(Number(e.target.value))}
+                                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            >
+                                <option value={0}>Q1 (Jan - Mar)</option>
+                                <option value={1}>Q2 (Apr - Jun)</option>
+                                <option value={2}>Q3 (Jul - Sep)</option>
+                                <option value={3}>Q4 (Oct - Dec)</option>
+                            </select>
+                            <select
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            >
+                                <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
+                                <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
+                            </select>
                         </div>
                     )}
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                        className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white"
-                    >
-                        <option value={0}>{format(new Date(), 'MMMM yyyy')}</option>
-                        <option value={1}>{format(subMonths(new Date(), 1), 'MMMM yyyy')}</option>
-                        <option value={2}>{format(subMonths(new Date(), 2), 'MMMM yyyy')}</option>
-                        <option value={3}>{format(subMonths(new Date(), 3), 'MMMM yyyy')}</option>
-                    </select>
                     <button
                         onClick={exportPDF}
-                        className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg"
+                        className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-transform hover:scale-105 active:scale-95"
                     >
                         <FileDown size={16} className="mr-2" /> Export PDF
                     </button>
@@ -445,14 +504,29 @@ const PerformancePage: React.FC = () => {
                         if (!stats) return null;
 
                         return (
-                            <div key={member.uid} className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-brand-500/40 transition-all hover:bg-white/[0.02]">
+                            <div
+                                key={member.uid}
+                                onClick={() => setExpandedStaffId(expandedStaffId === member.uid ? null : member.uid)}
+                                className={`glass-panel p-6 rounded-2xl border transition-all cursor-pointer ${expandedStaffId === member.uid ? 'border-brand-500 ring-2 ring-brand-500/20 bg-white/[0.04]' : 'border-white/10 hover:border-brand-500/40 hover:bg-white/[0.02]'}`}
+                            >
                                 <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 rounded-xl bg-navy-800 flex items-center justify-center font-bold text-white border border-white/5">
-                                        {member.displayName?.[0]}
+                                    <div className="relative">
+                                        <div className="w-12 h-12 rounded-xl bg-navy-800 flex items-center justify-center font-bold text-white border border-white/5">
+                                            {member.photoURL ? (
+                                                <img src={member.photoURL} className="w-full h-full object-cover rounded-xl" alt="" />
+                                            ) : (
+                                                member.displayName?.[0]
+                                            )}
+                                        </div>
+                                        {stats.totalScore >= 90 && (
+                                            <div className="absolute -top-1 -right-1 bg-yellow-500 text-navy-900 rounded-full p-0.5 border-2 border-navy-900">
+                                                <Trophy size={10} />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-bold text-white">{member.displayName}</h3>
-                                        <p className="text-xs text-gray-500 capitalize">{member.role.replace('_', ' ')}</p>
+                                        <p className="text-xs text-gray-500 capitalize">{member.role.replace('_', ' ')} • {member.department || 'General'}</p>
                                     </div>
                                     <div className="text-right">
                                         <span className={`text-lg font-mono font-bold ${stats.totalScore > 85 ? 'text-emerald-400' : stats.totalScore > 60 ? 'text-brand-400' : 'text-orange-400'}`}>
@@ -464,12 +538,53 @@ const PerformancePage: React.FC = () => {
 
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400">Total Score</span>
+                                        <span className="text-gray-400">Weighted Performance</span>
                                         <span className="text-white font-mono">{stats.totalScore.toFixed(1)}%</span>
                                     </div>
                                     <div className="h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-brand-500 rounded-full" style={{ width: `${stats.totalScore}%` }} />
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-1000 ${stats.totalScore > 85 ? 'bg-emerald-500' : stats.totalScore > 60 ? 'bg-brand-500' : 'bg-orange-500'}`}
+                                            style={{ width: `${stats.totalScore}%` }}
+                                        />
                                     </div>
+
+                                    {/* Expanded Details */}
+                                    {expandedStaffId === member.uid && (
+                                        <div className="pt-4 mt-4 border-t border-white/5 grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="bg-white/5 p-2 rounded-lg">
+                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Fulfillment</p>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-white">{(stats.assignmentFulfillment || 0).toFixed(0)}%</span>
+                                                    <TrendingUp size={10} className="text-emerald-400" />
+                                                </div>
+                                            </div>
+                                            <div className="bg-white/5 p-2 rounded-lg">
+                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">On-Time Rate</p>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-white">{(stats.dueDateFulfillment || 0).toFixed(0)}%</span>
+                                                    <Clock size={10} className="text-blue-400" />
+                                                </div>
+                                            </div>
+                                            <div className="bg-white/5 p-2 rounded-lg">
+                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Avg Cycle Time</p>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-white">{(stats.avgCycleTime || 0).toFixed(1)} <span className="text-[8px] text-gray-500 uppercase">Days</span></span>
+                                                    <Zap size={10} className="text-yellow-400" />
+                                                </div>
+                                            </div>
+                                            <div className="bg-white/5 p-2 rounded-lg">
+                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Tasks</p>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-white">{stats.completedTasks} / {stats.totalTasks}</span>
+                                                    <CheckCircle2 size={10} className="text-brand-400" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!expandedStaffId && (
+                                        <p className="text-[9px] text-gray-600 text-center animate-pulse">Click to view detailed metrics</p>
+                                    )}
                                 </div>
                             </div>
                         );
