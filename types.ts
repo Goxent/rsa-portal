@@ -143,7 +143,7 @@ export interface LeaveRequest {
   id: string;
   userId: string;
   userName: string;
-  type: 'Sick' | 'Casual' | 'Annual' | 'Unpaid';
+  type: 'Sick' | 'Casual' | 'Annual' | 'Unpaid' | 'Exam';
   startDate: string;
   endDate: string;
   reason: string;

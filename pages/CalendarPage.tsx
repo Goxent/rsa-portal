@@ -192,8 +192,12 @@ const CalendarPage: React.FC = () => {
             const masterIds = new Set<string>();
             selectedEventIds.forEach(id => masterIds.add(id.split('_')[0]));
 
+
+
+            // ... existing code ...
+
             const promises = Array.from(masterIds).map(id =>
-                AuthService.updateEvent(id, { visibility: visibility as any })
+                AuthService.updateEvent(id, { visibility: visibility as any }, user.uid, user.role)
             );
 
             await Promise.all(promises);

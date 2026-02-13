@@ -29,6 +29,9 @@ import PendingActionsWidget from './widgets/PendingActionsWidget';
 import RecentActivityWidget from './widgets/RecentActivityWidget';
 import ClientStatsWidget from './widgets/ClientStatsWidget';
 import StaffStatsWidget from './widgets/StaffStatsWidget';
+import ImpactStatsWidget from './widgets/ImpactStatsWidget';
+import AiInsightWidget from './widgets/AiInsightWidget';
+import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
 
 interface WidgetContainerProps {
     userId: string;
@@ -122,12 +125,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         saveWidgetConfig([...widgets, newWidget]);
         setShowWidgetPicker(false);
     };
-
-    import ImpactStatsWidget from './widgets/ImpactStatsWidget';
-    import AiInsightWidget from './widgets/AiInsightWidget';
-    import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
-
-    // ... existing imports
 
     const renderWidget = (widget: WidgetConfig) => {
         const props = { ...dashboardData, widget };
