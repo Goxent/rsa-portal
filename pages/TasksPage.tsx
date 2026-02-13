@@ -719,7 +719,7 @@ const TasksPage: React.FC = () => {
                     {/* Signee Filter */}
                     <div className="relative group">
                         <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300">
-                            <span>Signee:</span>
+                            <span>Auditor:</span>
                             <select
                                 className="bg-transparent border-none outline-none text-brand-300 font-bold w-32"
                                 value={filterSignee}

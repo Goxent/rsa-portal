@@ -33,7 +33,7 @@ export interface AttendanceRecord {
   clockOut?: string; // ISO Timestamp
   notes?: string; // Used for Late Reason or Admin correction notes
   location?: { lat: number; lng: number };
-  status: 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'CORRECTED';
+  status: 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'CORRECTED' | 'ON LEAVE';
   workHours: number; // in hours
   // New Reporting Fields
   clientId?: string;
@@ -260,7 +260,13 @@ export interface TaskTemplate {
     industryType?: string;
     serviceType?: string; // e.g., Audit, Tax
   };
+  // New fields for Template Library Upgrade
+  attachments?: Attachment[];
+  tags?: string[];
+  isPublic?: boolean;
 }
+
+export type Template = TaskTemplate;
 
 export interface Category {
   id: string;

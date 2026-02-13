@@ -66,12 +66,16 @@ export const auth = getAuth(app);
 
 // Initialize Firestore with Persistent Cache (New API)
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 export const db = initializeFirestore(app, {
     localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager()
     })
 });
+
+// Initialize Storage
+export const storage = getStorage(app);
 
 // Action Code Settings for Email Verification
 const getActionCodeSettings = (): ActionCodeSettings => {

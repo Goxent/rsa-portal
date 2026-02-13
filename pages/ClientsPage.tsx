@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Users, Plus, Search, Filter, FileText, MoreVertical,
     Edit, Trash2, Phone, Mail, MapPin, BadgeCheck, Building2,
-    Briefcase, Calendar, X, Save, ChevronDown
+    Briefcase, Calendar, X, Save, ChevronDown, CheckCircle2, User
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Client, UserRole, UserProfile } from '../types';
@@ -70,8 +70,24 @@ const ClientsPage: React.FC = () => {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name || !formData.code) {
-            toast.error('Name and Code are required');
+
+        let finalCode = formData.code;
+
+        // Auto-generate code if empty
+        if (!finalCode) {
+            const existingCodes = clients.map(c => c.code).filter(c => c);
+
+            // Try to find a numeric pattern
+            const numbers = existingCodes.map(c => parseInt(c.replace(/\D/g, ''))).filter(n => !isNaN(n));
+            const nextNum = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+
+            // Format: C-001 or similar if no pattern, but let's try to infer or default
+            // If most start with something, use it? For now, default to C-{number}
+            finalCode = `C-${String(nextNum).padStart(3, '0')}`;
+        }
+
+        if (!formData.name) {
+            toast.error('Name is required');
             return;
         }
 
@@ -87,6 +103,7 @@ const ClientsPage: React.FC = () => {
 
             const clientData: Client = {
                 ...cleanData,
+                code: finalCode,
                 updatedAt: new Date().toISOString()
             };
 
@@ -208,7 +225,7 @@ const ClientsPage: React.FC = () => {
                         value={filterSigningAuthority}
                         onChange={(e) => setFilterSigningAuthority(e.target.value)}
                     >
-                        <option value="ALL">All Signees</option>
+                        <option value="ALL">All Auditors</option>
                         <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
                         <option value="TN Acharya & Co.">TN Acharya & Co.</option>
                         <option value="Pankaj Thapa Associates">Pankaj Thapa Associates</option>
@@ -220,93 +237,151 @@ const ClientsPage: React.FC = () => {
 
             {/* Client Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredClients.map(client => (
-                    <div key={client.id} className="glass-panel p-0 rounded-xl overflow-hidden group hover:border-blue-500/30 transition-all duration-300">
-                        {/* Card Header */}
-                        <div className="p-5 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent relative">
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold shadow-inner ${client.status === 'Active' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'
-                                        }`}>
-                                        {client.code.substring(0, 2).toUpperCase()}
+                {filteredClients.map((client, index) => {
+                    // Generate a deterministic color based on the client code or name
+                    const colors = [
+                        'from-blue-500/20 to-cyan-500/5',
+                        'from-purple-500/20 to-pink-500/5',
+                        'from-emerald-500/20 to-teal-500/5',
+                        'from-orange-500/20 to-red-500/5',
+                        'from-indigo-500/20 to-violet-500/5'
+                    ];
+                    const colorIndex = (client.code.charCodeAt(0) + client.code.charCodeAt(client.code.length - 1)) % colors.length;
+                    const bgGradient = colors[colorIndex];
+                    const accentColor = bgGradient.split(' ')[0].replace('from-', 'text-').replace('/20', '-400');
+                    const borderColor = bgGradient.split(' ')[0].replace('from-', 'border-').replace('/20', '/30');
+
+                    return (
+                        <div
+                            key={client.id}
+                            className={`glass-panel p-0 rounded-2xl overflow-hidden group border border-white/5 hover:border-white/20 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-500/10 hover:-translate-y-1`}
+                            style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                            {/* Card Header with Fluid Gradient */}
+                            <div className={`p-6 bg-gradient-to-br ${bgGradient} relative overflow-hidden`}>
+                                {/* Abstract Shapes */}
+                                <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
+                                <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-black/10 rounded-full blur-xl"></div>
+
+                                <div className="relative z-10 flex justify-between items-start">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md bg-white/10 text-white border border-white/20`}>
+                                            {client.code.substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-white text-lg leading-tight tracking-tight group-hover:text-blue-200 transition-colors">
+                                                {client.name}
+                                            </h3>
+                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-white/70 font-mono border border-white/10 backdrop-blur-sm">
+                                                    {client.code}
+                                                </span>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border backdrop-blur-sm font-bold uppercase tracking-wider ${client.status === 'Active'
+                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                                    }`}>
+                                                    {client.status}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-white text-lg leading-tight">{client.name}</h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono">{client.code}</span>
-                                            <span className={`text-xs px-2 py-0.5 rounded ${client.status === 'Active' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                                                }`}>{client.status}</span>
+                                    {isAdmin && (
+                                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-1 transform translate-x-2 group-hover:translate-x-0">
+                                            <button
+                                                onClick={() => handleEdit(client)}
+                                                className="p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-colors backdrop-blur-md"
+                                            >
+                                                <Edit size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(client.id)}
+                                                className="p-2 hover:bg-rose-500/20 rounded-lg text-white/70 hover:text-rose-400 transition-colors backdrop-blur-md"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Card Body */}
+                            <div className="p-6 space-y-5 bg-navy-900/40 backdrop-blur-sm">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Service</p>
+                                        <div className="flex items-center text-sm font-medium text-gray-200">
+                                            <Briefcase size={14} className={`mr-2 ${accentColor}`} />
+                                            <span className="truncate" title={client.serviceType}>{client.serviceType}</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Sector</p>
+                                        <div className="flex items-center text-sm font-medium text-gray-200">
+                                            <Building2 size={14} className={`mr-2 ${accentColor}`} />
+                                            <span className="truncate" title={client.industry}>{client.industry || 'N/A'}</span>
                                         </div>
                                     </div>
                                 </div>
-                                {isAdmin && (
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                        <button onClick={() => handleEdit(client)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400"><Edit size={16} /></button>
-                                        <button onClick={() => handleDelete(client.id)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-400"><Trash2 size={16} /></button>
+
+                                {/* Compliance Badges */}
+                                <div className="flex gap-2 flex-wrap">
+                                    {client.vatReturn && (
+                                        <span className="text-[10px] bg-emerald-500/5 text-emerald-400 px-2.5 py-1 rounded-md border border-emerald-500/20 font-bold flex items-center gap-1">
+                                            <CheckCircle2 size={10} /> VAT Return
+                                        </span>
+                                    )}
+                                    {client.itrReturn && (
+                                        <span className="text-[10px] bg-blue-500/5 text-blue-400 px-2.5 py-1 rounded-md border border-blue-500/20 font-bold flex items-center gap-1">
+                                            <FileText size={10} /> ITR Filing
+                                        </span>
+                                    )}
+                                    {!client.vatReturn && !client.itrReturn && (
+                                        <span className="text-[10px] text-gray-600 italic px-1">No services configured</span>
+                                    )}
+                                </div>
+
+                                {/* Divider */}
+                                <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+                                {/* Signing & Auditor Info */}
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3 group/item">
+                                        <div className="mt-0.5 p-1.5 rounded-full bg-white/5 text-gray-400 group-hover/item:text-white group-hover/item:bg-white/10 transition-colors">
+                                            <BadgeCheck size={12} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Signing Authority</p>
+                                            <p className="text-xs text-gray-300 font-medium">{getSigningAuthorityName(client)}</p>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
 
-                        {/* Card Body */}
-                        <div className="p-5 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">Service Type</p>
-                                    <div className="flex items-center text-sm text-gray-300">
-                                        <Briefcase size={14} className="mr-2 text-purple-400" /> {client.serviceType}
+                                    <div className="flex items-start gap-3 group/item">
+                                        <div className="mt-0.5 p-1.5 rounded-full bg-white/5 text-gray-400 group-hover/item:text-white group-hover/item:bg-white/10 transition-colors">
+                                            <User size={12} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Lead Auditor</p>
+                                            <p className="text-xs text-gray-300 font-medium">{getAuditorName(client.auditorId)}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">Client Type</p>
-                                    <div className="flex items-center text-sm text-gray-300">
-                                        <Building2 size={14} className="mr-2 text-orange-400" /> {client.industry || 'N/A'}
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Compliance Badges */}
-                            <div className="flex gap-2 flex-wrap">
-                                {client.vatReturn && (
-                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded border border-emerald-500/20 font-bold">VAT Registered</span>
-                                )}
-                                {client.itrReturn && (
-                                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20 font-bold">ITR Filer</span>
-                                )}
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-white/5">
-                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Signing Authority</p>
-                                <div className="flex items-center text-sm text-gray-300">
-                                    <BadgeCheck size={14} className="mr-2 text-indigo-400" />
-                                    {getSigningAuthorityName(client)}
-                                </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-white/5 space-y-3">
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <BadgeCheck size={16} className="mr-3 text-blue-500" />
-                                    <span className="flex-1">Auditor:</span>
-                                    <span className="text-white font-medium">{getAuditorName(client.auditorId)}</span>
-                                </div>
+                                {/* Hover Reveal details - Contact, PAN, etc can go here if we want more density, 
+                                    but let's keep it clean. Maybe tooltip or expand? 
+                                    For now, let's keep PAN if available.
+                                */}
                                 {client.pan && (
-                                    <div className="flex items-center text-sm text-gray-400">
-                                        <FileText size={16} className="mr-3 text-gray-500" />
-                                        <span className="flex-1">PAN No:</span>
-                                        <span className="text-white font-mono">{client.pan}</span>
-                                    </div>
-                                )}
-                                {client.contactPerson && (
-                                    <div className="flex items-center text-sm text-gray-400">
-                                        <Users size={16} className="mr-3 text-gray-500" />
-                                        <span className="flex-1 truncate">{client.contactPerson}</span>
-                                        <span className="text-white">{client.phone}</span>
+                                    <div className="pt-2">
+                                        <div className="bg-black/20 rounded-lg px-3 py-2 flex items-center justify-between border border-white/5">
+                                            <span className="text-[10px] text-gray-500 font-mono">PAN</span>
+                                            <span className="text-xs text-brand-200 font-mono tracking-wider">{client.pan}</span>
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {loading && (
@@ -314,10 +389,14 @@ const ClientsPage: React.FC = () => {
             )}
 
             {!loading && filteredClients.length === 0 && (
-                <div className="text-center py-20 opacity-50">
-                    <Building2 size={48} className="mx-auto mb-4 text-gray-600" />
-                    <p className="text-xl font-medium text-gray-400">No clients found</p>
-                    <p className="text-sm text-gray-500">Try adjusting your filters or add a new client.</p>
+                <div className="text-center py-20">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                        <Building2 size={32} className="text-gray-600" />
+                    </div>
+                    <p className="text-xl font-bold text-white">No clients found</p>
+                    <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">
+                        Try adjusting your filters or add a new client to the directory.
+                    </p>
                 </div>
             )}
 
@@ -349,10 +428,10 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-400 mb-1">
-                                            Client Code <span className="text-red-400">*</span>
+                                            Client Code <span className="text-[10px] text-gray-500">(Auto-generated if empty)</span>
                                         </label>
-                                        <input required type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm font-mono"
-                                            value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="e.g. ACME-01" />
+                                        <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm font-mono"
+                                            value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="e.g. ACME-01 (Optional)" />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-400 mb-1">Assignment Type</label>
@@ -467,9 +546,9 @@ const ClientsPage: React.FC = () => {
 
                             {/* Assignment */}
                             <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Assignment</h3>
+                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Internal Focal Person</h3>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Auditor</label>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Focal Person</label>
                                     <StaffSelect
                                         users={staffList}
                                         value={formData.auditorId}

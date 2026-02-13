@@ -9,7 +9,8 @@ import ExcelJS from 'exceljs';
 import { useLocation } from 'react-router-dom';
 import { getCurrentDateUTC } from '../utils/dates';
 import StaffSelect from '../components/StaffSelect';
-import { FileText, Download, Filter, Search, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, AlertTriangle, Briefcase, ChevronRight, User } from 'lucide-react';
+import ManualAttendanceModal from '../components/attendance/ManualAttendanceModal';
+import { FileText, Download, Filter, Search, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, AlertTriangle, Briefcase, ChevronRight, User, Edit2, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const AttendancePage: React.FC = () => {
@@ -21,7 +22,14 @@ const AttendancePage: React.FC = () => {
     const [history, setHistory] = useState<AttendanceRecord[]>([]);
     const [leavesList, setLeavesList] = useState<LeaveRequest[]>([]);
     const [holidays, setHolidays] = useState<CalendarEvent[]>([]);
+    const [clients, setClients] = useState<Client[]>([]); // Added Clients
     const [loading, setLoading] = useState(true);
+
+    // Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+    const [selectedDateForEdit, setSelectedDateForEdit] = useState<string>('');
+    const [selectedUserForEdit, setSelectedUserForEdit] = useState<UserProfile | null>(null);
 
     // Filtering State
     const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -50,17 +58,19 @@ const AttendancePage: React.FC = () => {
         if (!user) return;
         setLoading(true);
         try {
-            const [uList, attHistory, lList, allEvents] = await Promise.all([
+            const [uList, attHistory, lList, allEvents, fetchedClients] = await Promise.all([
                 AuthService.getAllUsers(),
                 AuthService.getAttendanceHistory(isAdmin ? undefined : user.uid),
                 AuthService.getAllLeaves(isAdmin ? undefined : user.uid),
-                AuthService.getAllEvents()
+                AuthService.getAllEvents(),
+                AuthService.getAllClients()
             ]);
 
             setUsersList(uList); // Removed Inactive filter to ensure all directory users are visible
             setHistory(attHistory);
             setLeavesList(lList.filter(l => l.status === 'APPROVED'));
             setHolidays(allEvents.filter(e => e.type === 'HOLIDAY'));
+            setClients(fetchedClients);
         } catch (err) {
             console.error("Error loading attendance data:", err);
             toast.error("Failed to load attendance records");
@@ -341,6 +351,7 @@ const AttendancePage: React.FC = () => {
                                 <th className="p-6">Team Member</th>
                                 <th className="p-6">Timeline</th>
                                 <th className="p-6">Activities / Clients</th>
+                                {isAdmin && <th className="p-6">Actions</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -418,6 +429,29 @@ const AttendancePage: React.FC = () => {
                                                 </div>
                                             )}
                                         </td>
+                                        {isAdmin && (
+                                            <td className="p-6 align-top">
+                                                <button
+                                                    onClick={() => {
+                                                        const userProfile = usersList.find(u => u.uid === record.userId);
+                                                        if (userProfile) {
+                                                            setSelectedUserForEdit(userProfile);
+                                                            setSelectedDateForEdit(record.date);
+                                                            // Provide the full record if it exists (status is not missing/absent placeholder)
+                                                            // BUT: reportData generates placeholder "ABSENT" records which are not real DB records
+                                                            // So check if 'type' is 'RECORD'
+                                                            const realRecord = history.find(h => h.userId === record.userId && h.date === record.date);
+                                                            setSelectedRecord(realRecord || null);
+                                                            setIsEditModalOpen(true);
+                                                        }
+                                                    }}
+                                                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-brand-400 transition-colors"
+                                                    title="Adjust Attendance"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             )}
@@ -425,6 +459,20 @@ const AttendancePage: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            <ManualAttendanceModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                record={selectedRecord}
+                selectedDate={selectedDateForEdit}
+                selectedUser={selectedUserForEdit}
+                clients={clients}
+                onSave={async (newRecord) => {
+                    await AuthService.recordAttendance(newRecord);
+                    toast.success('Attendance updated successfully');
+                    loadData();
+                }}
+            />
         </div>
     );
 };

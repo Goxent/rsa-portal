@@ -141,6 +141,66 @@ const CompliancePage: React.FC = () => {
                 )}
             </div>
 
+            {/* Next Deadline Timer */}
+            {(() => {
+                const upcomingEvents = events.filter(e => e.status === 'UPCOMING' || e.status === 'DUE_SOON');
+                if (upcomingEvents.length === 0) return null;
+
+                // Find nearest event
+                const nearestEvent = upcomingEvents.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
+                const dueDate = new Date(nearestEvent.dueDate);
+                const now = new Date();
+                const diffTime = dueDate.getTime() - now.getTime();
+
+                // If overdue or today, handle differently? For now, standard countdown
+                const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+
+                return (
+                    <div className="glass-panel p-6 rounded-xl border-l-4 border-l-blue-500 relative overflow-hidden">
+                        <div className="absolute right-0 top-0 opacity-10">
+                            <CalIcon size={120} />
+                        </div>
+                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h3 className="text-lg text-gray-400 font-medium mb-1">Next Compliance Deadline</h3>
+                                <div className="text-2xl font-bold text-white flex items-center gap-2">
+                                    {nearestEvent.title}
+                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getCategoryColor(nearestEvent.category)}`}>
+                                        {nearestEvent.category}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Due: {dueDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                </p>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <div className="text-center">
+                                    <div className="text-3xl font-black text-white bg-white/5 rounded-lg px-4 py-2 backdrop-blur-md border border-white/10">
+                                        {Math.max(0, days)}
+                                    </div>
+                                    <div className="text-[10px] uppercase font-bold text-gray-500 mt-1">Days</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-3xl font-black text-white bg-white/5 rounded-lg px-4 py-2 backdrop-blur-md border border-white/10">
+                                        {Math.max(0, hours)}
+                                    </div>
+                                    <div className="text-[10px] uppercase font-bold text-gray-500 mt-1">Hours</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-3xl font-black text-white bg-white/5 rounded-lg px-4 py-2 backdrop-blur-md border border-white/10">
+                                        {Math.max(0, minutes)}
+                                    </div>
+                                    <div className="text-[10px] uppercase font-bold text-gray-500 mt-1">Mins</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="glass-panel p-6 rounded-xl">

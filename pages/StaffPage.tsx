@@ -154,45 +154,102 @@ const StaffPage: React.FC = () => {
             {/* Content */}
             {viewMode === 'GRID' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredUsers.map((staff) => (
-                        <div key={staff.uid} className="glass-panel p-6 rounded-xl hover:border-brand-500/40 transition-all group relative overflow-hidden">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-xl font-bold text-white border-2 border-white/10 shadow-lg">
-                                        {getInitials(staff.displayName)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-white text-lg">{staff.displayName}</h3>
-                                        <p className="text-brand-400 text-sm">{staff.position || staff.role}</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => handleOpenEdit(staff)} className="text-gray-500 hover:text-white transition-colors">
-                                    <Edit size={16} />
-                                </button>
-                            </div>
+                    {filteredUsers.map((staff, index) => {
+                        // Deterministic color generation
+                        const colors = [
+                            'from-blue-600/20 to-cyan-400/10',
+                            'from-purple-600/20 to-pink-400/10',
+                            'from-emerald-600/20 to-teal-400/10',
+                            'from-orange-600/20 to-amber-400/10',
+                            'from-indigo-600/20 to-violet-400/10',
+                            'from-rose-600/20 to-red-400/10'
+                        ];
+                        const colorIndex = staff.uid.charCodeAt(0) % colors.length;
+                        const bgGradient = colors[colorIndex];
+                        const accentColor = bgGradient.split(' ')[0].replace('from-', 'text-').replace('-600/20', '-400');
 
-                            <div className="space-y-3 pt-2 border-t border-white/5">
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <Mail size={14} className="mr-2 text-brand-500" /> {staff.email}
+                        return (
+                            <div
+                                key={staff.uid}
+                                className="glass-panel p-0 rounded-2xl overflow-hidden group border border-white/5 hover:border-white/20 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-500/10 hover:-translate-y-1"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                            >
+                                {/* Card Header with Fluid Gradient */}
+                                <div className={`p-6 bg-gradient-to-br ${bgGradient} relative overflow-hidden`}>
+                                    {/* Abstract Shapes */}
+                                    <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
+                                    <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-black/10 rounded-full blur-xl"></div>
+
+                                    <div className="relative z-10 flex justify-between items-start">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md bg-white/10 text-white border border-white/20 group-hover:scale-110 transition-transform duration-500">
+                                                {getInitials(staff.displayName)}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-white text-lg leading-tight tracking-tight group-hover:text-blue-200 transition-colors">
+                                                    {staff.displayName}
+                                                </h3>
+                                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-white/70 font-mono border border-white/10 backdrop-blur-sm">
+                                                        {staff.role}
+                                                    </span>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border backdrop-blur-sm font-bold uppercase tracking-wider ${staff.status === 'Active'
+                                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                                            : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                                        }`}>
+                                                        {staff.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleOpenEdit(staff)}
+                                            className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-all backdrop-blur-md transform translate-x-2 group-hover:translate-x-0"
+                                        >
+                                            <Edit size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <Phone size={14} className="mr-2 text-brand-500" /> {staff.phoneNumber || 'N/A'}
-                                </div>
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <Briefcase size={14} className="mr-2 text-brand-500" /> {staff.department}
-                                </div>
-                                <div className="flex items-center text-sm text-gray-400">
-                                    <User size={14} className="mr-2 text-brand-500" /> {staff.gender || 'Not Specified'}
-                                </div>
-                                <div className="flex items-center justify-between pt-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${staff.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                        {staff.status || 'Active'}
-                                    </span>
-                                    <span className="text-[10px] text-gray-500">Joined: {staff.dateOfJoining || 'N/A'}</span>
+
+                                {/* Card Body */}
+                                <div className="p-6 space-y-4 bg-navy-900/40 backdrop-blur-sm">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Department</p>
+                                            <div className="flex items-center text-sm font-medium text-gray-200">
+                                                <Briefcase size={14} className={`mr-2 ${accentColor}`} />
+                                                <span className="truncate">{staff.department}</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Position</p>
+                                            <div className="flex items-center text-sm font-medium text-gray-200">
+                                                <Shield size={14} className={`mr-2 ${accentColor}`} />
+                                                <span className="truncate">{staff.position || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+                                    <div className="space-y-2.5">
+                                        <div className="flex items-center text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                                            <Mail size={12} className="mr-2 text-gray-500" />
+                                            <span className="truncate">{staff.email}</span>
+                                        </div>
+                                        <div className="flex items-center text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                                            <Phone size={12} className="mr-2 text-gray-500" />
+                                            <span className="truncate">{staff.phoneNumber || 'Not provided'}</span>
+                                        </div>
+                                        <div className="flex items-center text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                                            <Calendar size={12} className="mr-2 text-gray-500" />
+                                            <span>Joined: {staff.dateOfJoining || 'N/A'}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="glass-panel rounded-xl overflow-hidden">
