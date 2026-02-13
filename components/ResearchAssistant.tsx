@@ -29,7 +29,7 @@ const ResearchAssistant: React.FC<ResearchAssistantProps> = ({ isOpen, onClose, 
     const [isLoading, setIsLoading] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [apiKey, setApiKey] = useState('');
-    const [provider, setProvider] = useState<'openai' | 'anthropic'>('openai');
+    const [provider, setProvider] = useState<'openai' | 'anthropic' | 'gemini'>('openai');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -118,7 +118,7 @@ const ResearchAssistant: React.FC<ResearchAssistantProps> = ({ isOpen, onClose, 
                     </div>
                     <div>
                         <h3 className="font-bold text-white">Research Assistant</h3>
-                        <p className="text-xs text-purple-300">Powered by {provider === 'openai' ? 'OpenAI' : 'Claude'}</p>
+                        <p className="text-xs text-purple-300">Powered by {provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Claude' : 'Gemini'}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -153,6 +153,12 @@ const ResearchAssistant: React.FC<ResearchAssistantProps> = ({ isOpen, onClose, 
                                 >
                                     Anthropic (Claude)
                                 </button>
+                                <button
+                                    onClick={() => setProvider('gemini')}
+                                    className={`flex-1 py-2 rounded text-xs font-bold border ${provider === 'gemini' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'bg-white/5 text-gray-400 border-white/10'}`}
+                                >
+                                    Google (Gemini)
+                                </button>
                             </div>
                         </div>
                         <div>
@@ -183,8 +189,8 @@ const ResearchAssistant: React.FC<ResearchAssistantProps> = ({ isOpen, onClose, 
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user'
-                                ? 'bg-brand-600 text-white rounded-br-none'
-                                : 'bg-white/10 text-gray-200 rounded-bl-none border border-white/5'
+                            ? 'bg-brand-600 text-white rounded-br-none'
+                            : 'bg-white/10 text-gray-200 rounded-bl-none border border-white/5'
                             }`}>
                             <div className="flex items-center gap-2 mb-1 opacity-50 text-[10px] uppercase font-bold">
                                 {msg.role === 'user' ? <User size={10} /> : <Bot size={10} />}

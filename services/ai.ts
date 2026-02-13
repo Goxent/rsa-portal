@@ -1,7 +1,7 @@
 import { TaskTemplate } from '../types';
 
 interface AIConfig {
-  provider: 'openai' | 'anthropic';
+  provider: 'openai' | 'anthropic' | 'gemini';
   apiKey: string;
 }
 
@@ -15,7 +15,20 @@ export const AiService = {
 
   getConfig: (): AIConfig | null => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
+    if (stored) return JSON.parse(stored);
+
+    // Fallback to Environment Variables
+    if (import.meta.env.VITE_OPENAI_API_KEY) {
+      return { provider: 'openai', apiKey: import.meta.env.VITE_OPENAI_API_KEY };
+    }
+    if (import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_CLAUDE_API_KEY) {
+      return { provider: 'anthropic', apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_CLAUDE_API_KEY };
+    }
+    if (import.meta.env.VITE_GEMINI_API_KEY) {
+      return { provider: 'gemini', apiKey: import.meta.env.VITE_GEMINI_API_KEY };
+    }
+
+    return null;
   },
 
   clearConfig: () => {
@@ -25,7 +38,7 @@ export const AiService = {
   generateContent: async (prompt: string, context?: string): Promise<string> => {
     const config = AiService.getConfig();
     if (!config || !config.apiKey) {
-      throw new Error('API Key not found. Please configure settings.');
+      throw new Error('API Key not found. Please configure settings or add to .env file.');
     }
 
     const systemPrompt = `You are an expert Audit & Tax Assistant for RSA (a CA Firm). 
@@ -36,6 +49,8 @@ export const AiService = {
       return AiService.callOpenAI(config.apiKey, systemPrompt, prompt);
     } else if (config.provider === 'anthropic') {
       return AiService.callAnthropic(config.apiKey, systemPrompt, prompt);
+    } else if (config.provider === 'gemini') {
+      return AiService.callGemini(config.apiKey, systemPrompt, prompt);
     }
 
     throw new Error('Invalid Provider');
@@ -105,5 +120,37 @@ export const AiService = {
 
     const data = await response.json();
     return data.content[0]?.text || '';
+  },
+
+  callGemini: async (apiKey: string, system: string, userMsg: string): Promise<string> => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    // Gemini doesn't have a 'system' role in the same way as OpenAI/Anthropic in the basic API, 
+    // so we prepend it to the prompt or use the system instruction if using a newer model version that supports it.
+    // For simplicity with v1beta, we'll prepend.
+
+    const finalPrompt = `${system}\n\nUser Question: ${userMsg}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: finalPrompt
+          }]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'Gemini API Error');
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
 };
