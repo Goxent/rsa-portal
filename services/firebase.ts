@@ -408,7 +408,8 @@ export const AuthService = {
     getAllClients: async (): Promise<Client[]> => {
         const q = query(collection(db, 'clients'));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => docConverter<Client>(d));
+        const clients = snapshot.docs.map(d => docConverter<Client>(d));
+        return clients.sort((a, b) => a.name.localeCompare(b.name));
     },
 
     addClient: async (client: Client) => {
@@ -573,6 +574,12 @@ export const AuthService = {
             }
 
             const { id, ...updateData } = record;
+
+            // Fix: Don't overwrite clockIn if it is set to 'KEEP_EXISTING'
+            if (updateData.clockIn === 'KEEP_EXISTING') {
+                delete (updateData as any).clockIn;
+            }
+
             await updateDoc(doc(db, 'attendance', docId), updateData);
         } else {
             // Create New
