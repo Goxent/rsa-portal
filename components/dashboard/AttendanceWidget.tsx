@@ -1,11 +1,109 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee, Search, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceRecord, Client, UserRole } from '../../types';
 import { AuthService } from '../../services/firebase';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
+
+// Internal Searchable Select Component
+const SearchableClientSelect = ({
+    clients,
+    value,
+    onChange,
+    disabled,
+    placeholder = "Select Client"
+}: {
+    clients: Client[],
+    value: string,
+    onChange: (val: string) => void,
+    disabled: boolean,
+    placeholder?: string
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const selectedClient = clients.find(c => c.id === value);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        if (isOpen && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isOpen]);
+
+    const filteredClients = clients.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.code && c.code.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    return (
+        <div className="relative flex-1" ref={wrapperRef}>
+            <button
+                type="button"
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                disabled={disabled}
+                className={`w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-left transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-500/50'}`}
+            >
+                <span className={selectedClient ? 'text-white' : 'text-gray-500'}>
+                    {selectedClient ? selectedClient.name : placeholder}
+                </span>
+                <ChevronDown size={14} className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#0f172a] border border-white/10 rounded-lg shadow-xl z-50 max-h-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-2 border-b border-white/5 sticky top-0 bg-[#0f172a]">
+                        <div className="relative">
+                            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                className="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-2 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-500/50 placeholder-gray-600"
+                                placeholder="Search clients..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto custom-scrollbar flex-1 p-1">
+                        {filteredClients.length > 0 ? (
+                            filteredClients.map(client => (
+                                <button
+                                    key={client.id}
+                                    type="button"
+                                    onClick={() => {
+                                        onChange(client.id);
+                                        setIsOpen(false);
+                                        setSearchTerm('');
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-[11px] rounded-md transition-colors flex items-center justify-between group ${value === client.id ? 'bg-brand-600/20 text-brand-300' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                                >
+                                    <span>{client.name}</span>
+                                    {value === client.id && <Check size={12} className="text-brand-400" />}
+                                </button>
+                            ))
+                        ) : (
+                            <div className="p-3 text-center text-gray-500 text-[10px]">No clients found</div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const AttendanceWidget: React.FC = () => {
     const { user } = useAuth();
@@ -63,6 +161,8 @@ const AttendanceWidget: React.FC = () => {
                 } else {
                     setStatus('COMPLETED');
                     setCurrentRecordId(todayRecord.id);
+                    // Load logs for viewing even if completed
+                    if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
                 }
             } else {
                 setStatus('CLOCKED_OUT');
@@ -229,7 +329,7 @@ const AttendanceWidget: React.FC = () => {
                             <h2 className="text-lg font-bold text-white tracking-tight">Daily Attendance</h2>
                         </div>
                         <p className="text-xs text-gray-400 font-medium ml-10">
-                            {new NepaliDate().format('DD MMMM YYYY')}
+                            {new NepaliDate().format('DD MMMM YYYY')} (BS)
                         </p>
                     </div>
 
@@ -287,7 +387,7 @@ const AttendanceWidget: React.FC = () => {
                             <button
                                 onClick={handleClockIn}
                                 disabled={loading}
-                                className="w-full group/btn relative py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3 overflow-hidden"
+                                className="w-full group/btn relative py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
                                 <Play size={20} className="fill-white" />
@@ -319,8 +419,11 @@ const AttendanceWidget: React.FC = () => {
                             <h3 className="text-xs font-bold text-brand-300 uppercase tracking-widest flex items-center gap-2">
                                 <Briefcase size={12} /> Work Activities
                             </h3>
-                            {status === 'CLOCKED_IN' && (
-                                <button onClick={addLog} className="p-1 px-2 rounded-lg bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition-colors text-[10px] font-bold border border-brand-500/20">
+                            {(status === 'CLOCKED_IN' || status === 'CLOCKED_OUT') && (
+                                <button
+                                    onClick={addLog}
+                                    className="p-1 px-2 rounded-lg bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition-colors text-[10px] font-bold border border-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     + ADD TASK
                                 </button>
                             )}
@@ -329,20 +432,19 @@ const AttendanceWidget: React.FC = () => {
                         <div className="space-y-3 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
                             {workLogs.map((log) => (
                                 <div key={log.id} className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2 hover:bg-white/10 transition-colors group/card">
-                                    <div className="flex gap-2">
-                                        <select
+                                    <div className="flex gap-2 items-center">
+                                        <SearchableClientSelect
+                                            clients={clients}
                                             value={log.clientId}
-                                            onChange={(e) => updateLog(log.id, 'clientId', e.target.value)}
-                                            disabled={status === 'CLOCKED_OUT'}
-                                            className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-white focus:ring-1 focus:ring-brand-500 outline-none disabled:opacity-50"
-                                        >
-                                            <option value="" disabled>Select Client / Location</option>
-                                            {clients.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                        {workLogs.length > 1 && status === 'CLOCKED_IN' && (
-                                            <button onClick={() => removeLog(log.id)} className="p-1.5 text-gray-500 hover:text-rose-400 transition-colors">
+                                            onChange={(val) => updateLog(log.id, 'clientId', val)}
+                                            disabled={status === 'COMPLETED' || (status === 'CLOCKED_OUT' && !currentRecordId)}
+                                        />
+
+                                        {workLogs.length > 1 && status !== 'COMPLETED' && (
+                                            <button
+                                                onClick={() => removeLog(log.id)}
+                                                className="p-2 text-gray-500 hover:text-rose-400 transition-colors bg-white/5 rounded-lg border border-white/5"
+                                            >
                                                 <X size={14} />
                                             </button>
                                         )}
@@ -351,7 +453,7 @@ const AttendanceWidget: React.FC = () => {
                                         placeholder="What did you work on?"
                                         value={log.description}
                                         onChange={(e) => updateLog(log.id, 'description', e.target.value)}
-                                        disabled={status === 'CLOCKED_OUT'}
+                                        disabled={status === 'COMPLETED' || (status === 'CLOCKED_OUT' && !currentRecordId)}
                                         rows={2}
                                         className="w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-gray-200 placeholder-gray-600 focus:ring-1 focus:ring-brand-500 outline-none resize-none disabled:opacity-50"
                                     />
