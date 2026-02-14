@@ -1,23 +1,40 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Loader2, ShieldCheck, User, Check, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const LoginPage: React.FC = () => {
+  const [isLogin, setIsLogin] = useState(true);
+
+  // Form States
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login, googleLogin, signup } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      await login(email, password);
-      navigate('/dashboard');
-      toast.success('Welcome back!');
+      if (isLogin) {
+        // LOGIN LOGIC
+        await login(email, password);
+        navigate('/dashboard');
+        toast.success('Welcome back!');
+      } else {
+        // SIGNUP LOGIC
+        if (password !== confirmPassword) {
+          throw new Error("Passwords must match");
+        }
+        await signup(email, password);
+        navigate('/dashboard');
+        toast.success('Account created successfully!');
+      }
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -27,7 +44,7 @@ const LoginPage: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      await loginWithGoogle();
+      await googleLogin();
       navigate('/dashboard');
       toast.success('Welcome back!');
     } catch (error: any) {
@@ -45,10 +62,10 @@ const LoginPage: React.FC = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500">
-        {/* Logo Section */}
+        {/* Header Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 rotate-3 hover:rotate-6 transition-transform duration-500">
-            <ShieldCheck size={40} className="text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 rotate-3 hover:rotate-6 transition-transform duration-500 group">
+            <ShieldCheck size={40} className="text-white group-hover:scale-110 transition-transform" />
           </div>
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200 tracking-tight mb-2">
             RSA Portal
@@ -56,9 +73,30 @@ const LoginPage: React.FC = () => {
           <p className="text-gray-400 font-medium">Secure Access for Staff</p>
         </div>
 
-        {/* Login Form */}
-        <div className="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
-          <form onSubmit={handleLogin} className="space-y-5">
+        {/* Main Card */}
+        <div className="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+
+          {/* Toggle Switch */}
+          <div className="flex p-1 bg-black/20 rounded-xl mb-8 border border-white/5 relative">
+            <div
+              className="absolute bg-white/10 rounded-lg inset-y-1 w-[calc(50%-4px)] transition-all duration-300 ease-out shadow-lg border border-white/10"
+              style={{ left: isLogin ? '4px' : 'calc(50%)' }}
+            ></div>
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-2.5 text-sm font-bold text-center z-10 transition-colors ${isLogin ? 'text-white' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-2.5 text-sm font-bold text-center z-10 transition-colors ${!isLogin ? 'text-white' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
               <div className="relative group">
@@ -77,9 +115,11 @@ const LoginPage: React.FC = () => {
             <div className="space-y-1">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Password</label>
-                <Link to="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
-                  Forgot?
-                </Link>
+                {isLogin && (
+                  <Link to="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                    Forgot?
+                  </Link>
+                )}
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
@@ -94,6 +134,32 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {!isLogin && (
+              <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Confirm Password</label>
+                <div className="relative group">
+                  <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
+                  <input
+                    type="password"
+                    required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl flex items-start gap-2">
+                <AlertCircle size={16} className="text-blue-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-200">
+                  Only emails already listed in the Staff Directory will be accepted.
+                </p>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -103,7 +169,8 @@ const LoginPage: React.FC = () => {
                 <Loader2 size={20} className="animate-spin" />
               ) : (
                 <>
-                  Sign In <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  {isLogin ? 'Sign In' : 'Create Account'}
+                  <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
@@ -127,10 +194,13 @@ const LoginPage: React.FC = () => {
 
         <div className="mt-8 text-center">
           <p className="text-gray-400">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-blue-400 font-bold hover:text-blue-300 transition-colors">
-              Apply for Access
-            </Link>
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-blue-400 font-bold hover:text-blue-300 transition-colors"
+            >
+              {isLogin ? 'Apply for Access' : 'Sign In'}
+            </button>
           </p>
         </div>
       </div>

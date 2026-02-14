@@ -151,11 +151,18 @@ export const AuthService = {
             const usersSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
 
             if (usersSnapshot.empty) {
-                throw new Error('This email is not authorized for signup. Only staff members listed in the directory can register.');
+                const error = new Error('Access Denied: Your email is not listed in the Staff Directory. Please contact the administrator.');
+                (error as any).code = 'auth/operation-not-allowed';
+                throw error;
             }
 
             const existingUserDoc = usersSnapshot.docs[0];
             const existingUserData = existingUserDoc.data() as UserProfile;
+
+            // Check if already registered (shouldn't happen if using email login, but good safety)
+            if (existingUserData.uid && !existingUserData.uid.startsWith('pending_')) {
+                throw new Error('Account already set up. Please log in.');
+            }
 
             if (existingUserData.status === 'Inactive') {
                 throw new Error('This account is marked as Inactive. Please contact the administrator.');
@@ -166,39 +173,34 @@ export const AuthService = {
             const uid = userCredential.user.uid;
 
             try {
-                // Create Initial Profile in Firestore
+                // MERGE: Use existing data, update UID and Status
                 const newUser: UserProfile = {
+                    ...existingUserData,
                     uid,
-                    email,
-                    displayName: email.split('@')[0],
-                    role: UserRole.STAFF,
-                    department: 'General',
+                    displayName: existingUserData.displayName || email.split('@')[0],
                     isSetupComplete: false,
                     status: 'Active',
-                    phoneNumber: '',
-                    address: '',
-                    position: 'Staff',
-                    dateOfJoining: getCurrentDateUTC(),
-                    gender: 'Other'
+                    // DATE of Joining & other fields are preserved from Admin entry
                 };
 
+                // Create new doc with real UID
                 await setDoc(doc(db, 'users', uid), newUser);
 
-                // Send Verification Email with better error handling
+                // Delete the old placeholder doc
+                await deleteDoc(doc(db, 'users', existingUserDoc.id));
+
+                // Send Verification Email
                 try {
                     const actionCodeSettings = getActionCodeSettings();
                     await sendEmailVerification(userCredential.user, actionCodeSettings);
-                    console.log('Verification email sent successfully');
-                } catch (emailError: any) {
+                } catch (emailError) {
                     console.error("Failed to send verification email:", emailError);
-                    // Don't throw error here - user is still created
-                    // They can resend verification later
                 }
 
                 return newUser;
 
             } catch (firestoreError) {
-                // ROLLBACK: If Firestore profile creation fails, delete the Auth User
+                // ROLLBACK
                 console.error("Firestore profile creation failed. Rolling back Auth User.", firestoreError);
                 await userCredential.user.delete();
                 throw new Error("Registration failed due to system error. Please try again.");
@@ -211,8 +213,6 @@ export const AuthService = {
                 throw new Error('Invalid email address format.');
             } else if (error.code === 'auth/weak-password') {
                 throw new Error('Password should be at least 6 characters long.');
-            } else if (error.code === 'auth/operation-not-allowed') {
-                throw new Error('Email/password accounts are not enabled. Please contact support.');
             } else {
                 throw new Error(error.message || 'Registration failed. Please try again.');
             }
@@ -237,55 +237,67 @@ export const AuthService = {
     loginWithGoogle: async (): Promise<UserProfile> => {
         try {
             const provider = new GoogleAuthProvider();
-            // Add custom parameters for better UX
-            provider.setCustomParameters({
-                prompt: 'select_account'
-            });
+            provider.setCustomParameters({ prompt: 'select_account' });
 
             const userCredential = await signInWithPopup(auth, provider);
             const user = userCredential.user;
+            const email = user.email || '';
 
-            // Check if Profile exists
+            // 1. Check if Profile exists for this UID (Already Registered)
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
 
             if (userDoc.exists()) {
-                return { uid: user.uid, ...userDoc.data() } as UserProfile;
-            } else {
-                // New User via Google -> Create Profile
+                const userData = userDoc.data() as UserProfile;
+                if (userData.status === 'Inactive') {
+                    await signOut(auth);
+                    throw new Error('Your account is Inactive. Please contact support.');
+                }
+                return { uid: user.uid, ...userData } as UserProfile;
+            }
+
+            // 2. Not Registered yet? Check Staff Directory by Email
+            const usersSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
+
+            if (!usersSnapshot.empty) {
+                // FOUND IN DIRECTORY -> MERGE ACCOUNT
+                const existingUserDoc = usersSnapshot.docs[0];
+                const existingUserData = existingUserDoc.data() as UserProfile;
+
+                if (existingUserData.status === 'Inactive') {
+                    await user.delete();
+                    throw new Error('This account is marked as Inactive. Please contact the administrator.');
+                }
+
+                // Merge
                 const newUser: UserProfile = {
+                    ...existingUserData,
                     uid: user.uid,
-                    email: user.email || '',
-                    displayName: user.displayName || 'New User',
-                    role: UserRole.STAFF,
-                    department: 'General',
+                    displayName: existingUserData.displayName || user.displayName || 'Staff',
+                    photoURL: user.photoURL || undefined,
                     isSetupComplete: false,
                     status: 'Active',
-                    phoneNumber: user.phoneNumber || '',
-                    address: '',
-                    position: 'Staff',
-                    dateOfJoining: getCurrentDateUTC(),
-                    gender: 'Other'
                 };
+
+                // Save to new UID doc
                 await setDoc(userDocRef, newUser);
+
+                // Delete old placeholder
+                await deleteDoc(doc(db, 'users', existingUserDoc.id));
+
                 return newUser;
+            } else {
+                // 3. NOT IN DIRECTORY -> ACCESS DENIED
+                await user.delete(); // Remove the auth user we just created
+                throw new Error('Access Denied: Your email is not listed in the Staff Directory. Please contact the administrator to be added.');
             }
+
         } catch (error: any) {
-            // Provide user-friendly error messages
             if (error.code === 'auth/popup-closed-by-user') {
-                throw new Error('Sign-in cancelled. Please try again.');
-            } else if (error.code === 'auth/popup-blocked') {
-                throw new Error('Pop-up blocked by browser. Please allow pop-ups and try again.');
-            } else if (error.code === 'auth/unauthorized-domain') {
-                throw new Error('This domain is not authorized for Google sign-in. Please contact support.');
-            } else if (error.code === 'auth/operation-not-allowed') {
-                throw new Error('Google sign-in is not enabled. Please contact support or use email/password.');
-            } else if (error.code === 'auth/cancelled-popup-request') {
-                // User opened multiple popups, ignore this error
-                throw new Error('Please try again.');
+                throw new Error('Sign-in cancelled.');
             } else {
                 console.error('Google sign-in error:', error);
-                throw new Error(error.message || 'Google sign-in failed. Please try again or use email/password.');
+                throw new Error(error.message || 'Google sign-in failed.');
             }
         }
     },

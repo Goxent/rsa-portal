@@ -46,24 +46,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
               setUser(userData);
             } else {
-              console.warn("User authenticated but no profile found in Firestore. Creating default.");
-              // Create a default profile if missing
-              const defaultProfile: UserProfile = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-                role: 'STAFF' as any,
-                department: 'General',
-                isSetupComplete: false,
-                status: 'Active',
-                phoneNumber: '',
-                address: '',
-                position: 'Staff',
-                dateOfJoining: new Date().toLocaleDateString('en-CA'),
-                gender: 'Other'
-              };
-              transaction.set(userRef, defaultProfile);
-              setUser(defaultProfile);
+              console.warn("User authenticated but no profile found in Firestore. Waiting for creation or invalid user.");
+              // Do NOT create default profile. Rigid security.
             }
           });
         } catch (err) {
