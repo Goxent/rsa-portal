@@ -266,7 +266,8 @@ const ClientsPage: React.FC = () => {
             {/* Client Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredClients.map((client, index) => {
-                    // Generate a deterministic color based on the client code or name
+                    // Safe color generation
+                    const seedString = client.code || client.name || 'default';
                     const colors = [
                         'from-blue-500/20 to-cyan-500/5',
                         'from-purple-500/20 to-pink-500/5',
@@ -274,8 +275,13 @@ const ClientsPage: React.FC = () => {
                         'from-orange-500/20 to-red-500/5',
                         'from-indigo-500/20 to-violet-500/5'
                     ];
-                    const colorIndex = (client.code.charCodeAt(0) + client.code.charCodeAt(client.code.length - 1)) % colors.length;
-                    const bgGradient = colors[colorIndex];
+
+                    let colorIndex = 0;
+                    if (seedString && seedString.length > 0) {
+                        colorIndex = (seedString.charCodeAt(0) + seedString.charCodeAt(seedString.length - 1)) % colors.length;
+                    }
+
+                    const bgGradient = colors[colorIndex] || colors[0];
                     const accentColor = bgGradient.split(' ')[0].replace('from-', 'text-').replace('/20', '-400');
                     const borderColor = bgGradient.split(' ')[0].replace('from-', 'border-').replace('/20', '/30');
 

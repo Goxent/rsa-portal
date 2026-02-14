@@ -371,7 +371,13 @@ export const AuthService = {
 
         // Get all existing clients first to minimize reads in loop
         const existingSNAPSHOT = await getDocs(collection(db, 'clients'));
-        const existingNames = new Set(existingSNAPSHOT.docs.map(d => (d.data() as Client).name.toLowerCase()));
+        const existingClients = existingSNAPSHOT.docs.map(d => d.data() as Client);
+        const existingNames = new Set(existingClients.map(c => c.name.toLowerCase()));
+
+        // Calculate next code number
+        const existingCodes = existingClients.map(c => c.code).filter(c => c && c.startsWith('C-'));
+        const numbers = existingCodes.map(c => parseInt(c.replace(/\D/g, ''))).filter(n => !isNaN(n));
+        let nextNum = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
 
         for (const name of clientNames) {
             if (existingNames.has(name.toLowerCase())) {
@@ -379,9 +385,12 @@ export const AuthService = {
                 continue;
             }
 
+            const code = `C-${String(nextNum).padStart(3, '0')}`;
+            nextNum++;
+
             const newClient: Partial<Client> = {
                 name: name.trim(),
-                code: '', // Will need manual update or auto-gen logic if critical
+                code: code,
                 serviceType: 'Statutory Audit', // Default
                 status: 'Active',
                 industry: 'Others',
