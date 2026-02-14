@@ -11,6 +11,8 @@ import { toast } from 'react-hot-toast';
 import StaffSelect from '../components/StaffSelect';
 import { ClientCardSkeleton } from '../components/ui/LoadingSkeleton';
 
+import { INITIAL_CLIENTS } from '../constants/initialClients';
+
 const ClientsPage: React.FC = () => {
     const { user } = useAuth();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
@@ -27,6 +29,7 @@ const ClientsPage: React.FC = () => {
     const [filterSigningAuthority, setFilterSigningAuthority] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isSeeding, setIsSeeding] = useState(false);
 
     // Form State
     const initialFormState: Partial<Client> = {
@@ -65,6 +68,22 @@ const ClientsPage: React.FC = () => {
             toast.error('Failed to load clients');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSeedClients = async () => {
+        if (!confirm(`Are you sure you want to seed ${INITIAL_CLIENTS.length} clients from the preset list? Duplicates will be skipped.`)) return;
+
+        setIsSeeding(true);
+        try {
+            const result = await AuthService.seedClients(INITIAL_CLIENTS);
+            toast.success(`Seeding Complete! Added: ${result.added}, Skipped: ${result.skipped}`);
+            loadData();
+        } catch (error) {
+            console.error("Seeding failed:", error);
+            toast.error("Failed to seed clients");
+        } finally {
+            setIsSeeding(false);
         }
     };
 
@@ -180,16 +199,25 @@ const ClientsPage: React.FC = () => {
                     <p className="text-gray-400 text-sm mt-1">Manage audit clients, tax filings, and contact details</p>
                 </div>
                 {isAdmin && (
-                    <button
-                        onClick={() => {
-                            setEditingId(null);
-                            setFormData(initialFormState);
-                            setIsModalOpen(true);
-                        }}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105"
-                    >
-                        <Plus size={18} className="mr-2" /> Add Client
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleSeedClients}
+                            disabled={isSeeding}
+                            className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg transition-all"
+                        >
+                            {isSeeding ? 'Seeding...' : 'Seed Clients'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setEditingId(null);
+                                setFormData(initialFormState);
+                                setIsModalOpen(true);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105"
+                        >
+                            <Plus size={18} className="mr-2" /> Add Client
+                        </button>
+                    </div>
                 )}
             </div>
 

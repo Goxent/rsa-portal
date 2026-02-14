@@ -32,6 +32,7 @@
     "pages/**/*.tsx",
     "services/**/*.ts",
     "utils/**/*.ts",
+    "api/**/*.ts",
     "*.ts",
     "*.tsx",
     "vite-env.d.ts"

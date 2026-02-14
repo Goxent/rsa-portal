@@ -365,6 +365,36 @@ export const AuthService = {
         }
     },
 
+    seedClients: async (clientNames: string[]) => {
+        let addedCount = 0;
+        let skippedCount = 0;
+
+        // Get all existing clients first to minimize reads in loop
+        const existingSNAPSHOT = await getDocs(collection(db, 'clients'));
+        const existingNames = new Set(existingSNAPSHOT.docs.map(d => (d.data() as Client).name.toLowerCase()));
+
+        for (const name of clientNames) {
+            if (existingNames.has(name.toLowerCase())) {
+                skippedCount++;
+                continue;
+            }
+
+            const newClient: Partial<Client> = {
+                name: name.trim(),
+                code: '', // Will need manual update or auto-gen logic if critical
+                serviceType: 'Statutory Audit', // Default
+                status: 'Active',
+                industry: 'Others',
+                createdAt: new Date().toISOString()
+            };
+
+            await addDoc(collection(db, 'clients'), newClient);
+            addedCount++;
+        }
+
+        return { added: addedCount, skipped: skippedCount };
+    },
+
     // --- CLIENTS ---
     getAllClients: async (): Promise<Client[]> => {
         const q = query(collection(db, 'clients'));
