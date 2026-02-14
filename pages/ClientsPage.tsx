@@ -201,13 +201,6 @@ const ClientsPage: React.FC = () => {
                 {isAdmin && (
                     <div className="flex gap-3">
                         <button
-                            onClick={handleSeedClients}
-                            disabled={isSeeding}
-                            className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg transition-all"
-                        >
-                            {isSeeding ? 'Seeding...' : 'Seed Clients'}
-                        </button>
-                        <button
                             onClick={() => {
                                 setEditingId(null);
                                 setFormData(initialFormState);

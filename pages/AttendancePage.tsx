@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { AttendanceRecord, UserRole, UserProfile, Client, LeaveRequest, CalendarEvent } from '../types';
 import { AuthService } from '../services/firebase';
 import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import NepaliDate from 'nepali-date-converter';
 import ExcelJS from 'exceljs';
 import { useLocation } from 'react-router-dom';
 import { getCurrentDateUTC } from '../utils/dates';
@@ -40,12 +40,20 @@ const AttendancePage: React.FC = () => {
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
 
     useEffect(() => {
-        const date = new Date();
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
-        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+        const today = new Date();
+        const np = new NepaliDate(today);
+        const currentYear = np.getYear();
+        const currentMonth = np.getMonth();
 
-        if (!filterStartDate) setFilterStartDate(firstDay);
-        if (!filterEndDate) setFilterEndDate(lastDay);
+        // Start of Nepali Month
+        const startOfMonthNp = new NepaliDate(currentYear, currentMonth, 1);
+        const startOfMonthAd = startOfMonthNp.toJsDate().toISOString().split('T')[0];
+
+        // End Date (Today)
+        const todayAd = today.toISOString().split('T')[0];
+
+        if (!filterStartDate) setFilterStartDate(startOfMonthAd);
+        if (!filterEndDate) setFilterEndDate(todayAd);
 
         if (location.state?.filterUserId) {
             setFilterStaffId(location.state.filterUserId);
