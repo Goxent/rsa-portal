@@ -503,7 +503,10 @@ export const AuthService = {
                                 userData.email,
                                 userData.displayName || 'Staff Member',
                                 task.title,
-                                `${window.location.origin}/#/workflow`
+                                `${window.location.origin}/#/workflow`,
+                                task.clientName || 'Internal',
+                                task.dueDate,
+                                task.priority
                             );
                         }
                     }

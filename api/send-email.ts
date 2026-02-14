@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         const { data, error } = await resend.emails.send({
-            from: `${fromName || 'RSA System'} <onboarding@resend.dev>`, // Default test domain, change to verified domain later
+            from: `${fromName || 'RSA System'} <${process.env.VITE_EMAIL_FROM || 'onboarding@resend.dev'}>`, // Default test domain if env var missing
             to: Array.isArray(to) ? to : [to],
             subject: subject,
             html: html,
