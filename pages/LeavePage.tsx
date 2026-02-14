@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, CheckCircle, Clock, Plus, X, AlertCircle, Mail, XCircle, ChevronDown, Check, ThumbsDown, UserCog, Loader2 } from 'lucide-react';
+import { CalendarDays, CheckCircle, Clock, Plus, X, AlertCircle, AlertTriangle, Mail, XCircle, ChevronDown, Check, ThumbsDown, UserCog, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { LeaveRequest, UserRole, UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
