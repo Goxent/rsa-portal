@@ -4,6 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { ComplianceEvent } from '../types/advanced';
 import { ComplianceService } from '../services/advanced';
+import NepaliDate from 'nepali-date-converter';
+
+const formatDateWithBS = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const np = new NepaliDate(date);
+    return `${date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })} (BS: ${np.getYear()}-${np.getMonth() + 1}-${np.getDate()})`;
+};
 
 const CompliancePage: React.FC = () => {
     const { user } = useAuth();
@@ -178,7 +186,7 @@ const CompliancePage: React.FC = () => {
                                 </div>
                                 <h3 className="text-3xl font-bold text-white mb-2">{nearestEvent.title}</h3>
                                 <p className="text-gray-300 text-lg">
-                                    Due: <span className="text-white font-semibold">{dueDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                    Due: <span className="text-white font-semibold">{formatDateWithBS(nearestEvent.dueDate)}</span>
                                 </p>
                             </div>
 
@@ -258,7 +266,7 @@ const CompliancePage: React.FC = () => {
                                 <div className="flex items-center gap-6 text-xs text-gray-500 font-medium">
                                     <span className="flex items-center gap-1.5">
                                         <CalIcon size={14} className="text-brand-400" />
-                                        Due: <span className="text-gray-300">{new Date(event.dueDate).toLocaleDateString()}</span>
+                                        Due: <span className="text-gray-300">{formatDateWithBS(event.dueDate)}</span>
                                     </span>
                                     {event.clientName && (
                                         <span className="flex items-center gap-1.5">
