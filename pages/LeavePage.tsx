@@ -171,77 +171,144 @@ const LeavePage: React.FC = () => {
             </div>
 
             {activeTab === 'admin' && (user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) ? (
-                <div className="glass-panel rounded-xl overflow-hidden border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
-                    <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                        <div>
-                            <h3 className="font-bold text-white">Staff Leave Balances</h3>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">Total Limit: {ARTICLESHIP_LEAVE_LIMIT} Days</p>
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-300">
-                            <thead>
-                                <tr className="text-gray-400 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
-                                    <th className="px-6 py-4">Employee</th>
-                                    <th className="px-6 py-4">Position</th>
-                                    <th className="px-6 py-4">Leaves Taken</th>
-                                    <th className="px-6 py-4">Adjustment</th>
-                                    <th className="px-6 py-4">Net Balance</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {allStaff.map(staffMember => {
-                                    const staffLeaves = leaves.filter(l => l.userId === staffMember.uid && l.status === 'APPROVED');
-                                    const taken = staffLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
-                                    const adj = staffMember.leaveAdjustment || 0;
-                                    const net = ARTICLESHIP_LEAVE_LIMIT - (taken + adj);
-
-                                    return (
-                                        <tr key={staffMember.uid} className="hover:bg-white/5 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-400 border border-brand-500/20">
-                                                        {staffMember.displayName[0]}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-white group-hover:text-brand-400 transition-colors">{staffMember.displayName}</div>
-                                                        <div className="text-[10px] text-gray-500">{staffMember.email}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs">{staffMember.position || 'Staff'}</td>
-                                            <td className="px-6 py-4 font-mono font-bold text-blue-400">{taken}d</td>
-                                            <td className="px-6 py-4 font-mono">
-                                                <span className={adj > 0 ? 'text-orange-400' : adj < 0 ? 'text-emerald-400' : 'text-gray-500'}>
-                                                    {adj > 0 ? `+${adj}` : adj}d
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`font-bold font-mono ${net < 20 ? 'text-red-400' : 'text-emerald-400'}`}>{net}d</span>
-                                                    <div className="w-20 bg-white/5 rounded-full h-1 hidden md:block">
-                                                        <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.max(0, (net / ARTICLESHIP_LEAVE_LIMIT) * 100)}%` }}></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => {
-                                                        setAdjustmentData({ uid: staffMember.uid, name: staffMember.displayName, amount: staffMember.leaveAdjustment || 0 });
-                                                        setIsAdjustModalOpen(true);
-                                                    }}
-                                                    className="p-2 hover:bg-brand-500/20 rounded-lg text-brand-400 transition-all"
-                                                    title="Adjust Balance"
-                                                >
-                                                    <UserCog size={16} />
-                                                </button>
-                                            </td>
+                <div className="space-y-8">
+                    {/* Pending Requests Section */}
+                    {leaves.some(l => l.status === 'PENDING') && (
+                        <div className="glass-panel rounded-xl overflow-hidden border border-amber-500/30 shadow-2xl animate-in slide-in-from-bottom-2 duration-500">
+                            <div className="px-6 py-4 border-b border-white/10 bg-amber-500/10 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-amber-200 flex items-center gap-2">
+                                        <AlertTriangle size={18} /> Pending Approvals
+                                    </h3>
+                                    <p className="text-[10px] text-amber-200/60 uppercase tracking-widest font-black mt-1">Action Required</p>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm text-gray-300">
+                                    <thead>
+                                        <tr className="text-amber-200/60 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
+                                            <th className="px-6 py-3">Employee</th>
+                                            <th className="px-6 py-3">Type</th>
+                                            <th className="px-6 py-3">Dates</th>
+                                            <th className="px-6 py-3">Reason</th>
+                                            <th className="px-6 py-3 text-right">Actions</th>
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {leaves.filter(l => l.status === 'PENDING').map(leave => (
+                                            <tr key={leave.id} className="hover:bg-amber-500/5 transition-colors">
+                                                <td className="px-6 py-4 font-bold text-white">{leave.userName}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${leave.type === 'Sick' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                        leave.type === 'Exam' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                                                            'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                        }`}>
+                                                        {leave.type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-xs">
+                                                        {leave.startDate === leave.endDate ? leave.startDate : `${leave.startDate} to ${leave.endDate}`}
+                                                        <span className="text-gray-500 ml-1">({calculateDays(leave.startDate, leave.endDate)}d)</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs text-gray-400 italic">{leave.reason}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button
+                                                            onClick={() => handleStatusUpdate(leave.id, 'APPROVED')}
+                                                            className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg border border-green-500/20 transition-all text-xs font-bold"
+                                                        >
+                                                            <Check size={14} /> Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleStatusUpdate(leave.id, 'REJECTED')}
+                                                            className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg border border-red-500/20 transition-all text-xs font-bold"
+                                                        >
+                                                            <X size={14} /> Reject
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="glass-panel rounded-xl overflow-hidden border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                            <div>
+                                <h3 className="font-bold text-white">Staff Leave Balances</h3>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">Total Limit: {ARTICLESHIP_LEAVE_LIMIT} Days</p>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-gray-300">
+                                <thead>
+                                    <tr className="text-gray-400 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
+                                        <th className="px-6 py-4">Employee</th>
+                                        <th className="px-6 py-4">Position</th>
+                                        <th className="px-6 py-4">Leaves Taken</th>
+                                        <th className="px-6 py-4">Adjustment</th>
+                                        <th className="px-6 py-4">Net Balance</th>
+                                        <th className="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {allStaff.map(staffMember => {
+                                        const staffLeaves = leaves.filter(l => l.userId === staffMember.uid && l.status === 'APPROVED');
+                                        const taken = staffLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
+                                        const adj = staffMember.leaveAdjustment || 0;
+                                        const net = ARTICLESHIP_LEAVE_LIMIT - (taken + adj);
+
+                                        return (
+                                            <tr key={staffMember.uid} className="hover:bg-white/5 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-400 border border-brand-500/20">
+                                                            {staffMember.displayName[0]}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-white group-hover:text-brand-400 transition-colors">{staffMember.displayName}</div>
+                                                            <div className="text-[10px] text-gray-500">{staffMember.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs">{staffMember.position || 'Staff'}</td>
+                                                <td className="px-6 py-4 font-mono font-bold text-blue-400">{taken}d</td>
+                                                <td className="px-6 py-4 font-mono">
+                                                    <span className={adj > 0 ? 'text-orange-400' : adj < 0 ? 'text-emerald-400' : 'text-gray-500'}>
+                                                        {adj > 0 ? `+${adj}` : adj}d
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`font-bold font-mono ${net < 20 ? 'text-red-400' : 'text-emerald-400'}`}>{net}d</span>
+                                                        <div className="w-20 bg-white/5 rounded-full h-1 hidden md:block">
+                                                            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.max(0, (net / ARTICLESHIP_LEAVE_LIMIT) * 100)}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button
+                                                        onClick={() => {
+                                                            setAdjustmentData({ uid: staffMember.uid, name: staffMember.displayName, amount: staffMember.leaveAdjustment || 0 });
+                                                            setIsAdjustModalOpen(true);
+                                                        }}
+                                                        className="p-2 hover:bg-brand-500/20 rounded-lg text-brand-400 transition-all"
+                                                        title="Adjust Balance"
+                                                    >
+                                                        <UserCog size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             ) : (
