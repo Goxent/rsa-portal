@@ -306,7 +306,10 @@ const Layout: React.FC = () => {
                           key={n.id}
                           onClick={() => {
                             AuthService.markAsRead(n.id);
-                            if (n.link) window.location.href = `/#${n.link}`;
+                            if (n.link) {
+                              navigate(n.link);
+                              setShowNotifications(false);
+                            }
                           }}
                           className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!n.read ? 'bg-blue-500/5' : ''}`}
                         >
