@@ -504,7 +504,7 @@ export const AuthService = {
                     message: `You have been assigned to: ${task.title}`,
                     type: 'INFO',
                     category: 'TASK',
-                    link: '/workflow'
+                    link: '/tasks'
                 });
 
                 // Email Notification
@@ -517,7 +517,7 @@ export const AuthService = {
                                 userData.email,
                                 userData.displayName || 'Staff Member',
                                 task.title,
-                                `${window.location.origin}/#/workflow`,
+                                `${window.location.origin}/#/tasks`,
                                 task.clientName || 'Internal',
                                 task.dueDate,
                                 task.priority

@@ -2,17 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { Task, User, TaskStatus, UserRole } from '../types';
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-    Cell
-} from 'recharts';
+
 import {
     LayoutDashboard,
     AlertTriangle,
@@ -23,6 +13,7 @@ import {
     Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import StaffCapacityHeatmap from '../components/resource-planning/StaffCapacityHeatmap';
 
 const ResourcePlanningPage: React.FC = () => {
     const { user: currentUser } = useAuth();
@@ -127,48 +118,8 @@ const ResourcePlanningPage: React.FC = () => {
 
             {/* Main Chart Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/5 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-transparent pointer-events-none" />
-                    <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <BarChart3 className="text-brand-400" size={20} />
-                        Team Workload Distribution
-                    </h2>
-
-                    <div className="h-[400px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={workloadData}
-                                margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                                <XAxis
-                                    dataKey="name"
-                                    stroke="#9ca3af"
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    angle={-45}
-                                    textAnchor="end"
-                                />
-                                <YAxis
-                                    stroke="#9ca3af"
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                                <Bar dataKey="totalTasks" radius={[4, 4, 0, 0]} maxBarSize={50} onClick={(data) => setSelectedUser(data.uid === selectedUser ? null : data.uid)}>
-                                    {workloadData.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.totalTasks > 5 ? '#f43f5e' : entry.totalTasks > 3 ? '#fbbf24' : '#3b82f6'}
-                                            className="transition-all duration-300 hover:opacity-80 cursor-pointer"
-                                        />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+                <div className="lg:col-span-2 h-[600px]">
+                    <StaffCapacityHeatmap users={users} tasks={tasks} />
                 </div>
 
                 {/* Insights / Details Panel */}

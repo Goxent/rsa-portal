@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
     FileText, Search, Plus, Star, Copy, Trash2, Upload,
     File, FileSpreadsheet, FileCode, CheckSquare, Sparkles,
-    MoreVertical, Download, ExternalLink, Bot
+    MoreVertical, Download, ExternalLink, Bot, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Template } from '../types'; // Updated types
+import { Template, UserRole } from '../types'; // Updated types
 import { TemplateService } from '../services/templates';
 import ResearchAssistant from '../components/ResearchAssistant';
 import toast from 'react-hot-toast';
@@ -17,6 +17,7 @@ const TemplatesPage: React.FC = () => {
     const [categoryFilter, setCategoryFilter] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isResearchOpen, setIsResearchOpen] = useState(false);
+    const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null); // New Preview State
     const [uploading, setUploading] = useState(false);
 
     // New Template State
@@ -133,23 +134,27 @@ const TemplatesPage: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                         <FileCode className="text-blue-400" />
-                        Template Base
+                        Template Library
                     </h1>
-                    <p className="text-sm text-gray-400">Reusable templates, checklists, and document standards</p>
+                    <p className="text-sm text-gray-400">Standardized resources for the entire team</p>
                 </div>
                 <div className="flex gap-3">
-                    <button
-                        onClick={() => setIsResearchOpen(true)}
-                        className="bg-purple-600/20 text-purple-300 border border-purple-500/30 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-600/30 shadow-lg flex items-center transition-all"
-                    >
-                        <Sparkles size={16} className="mr-2" /> Research Assistant
-                    </button>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
-                    >
-                        <Plus size={16} className="mr-2" /> New Template
-                    </button>
+                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                        <>
+                            <button
+                                onClick={() => setIsResearchOpen(true)}
+                                className="bg-purple-600/20 text-purple-300 border border-purple-500/30 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-600/30 shadow-lg flex items-center transition-all"
+                            >
+                                <Sparkles size={16} className="mr-2" /> Research Assistant
+                            </button>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
+                            >
+                                <Plus size={16} className="mr-2" /> New Template
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -195,16 +200,16 @@ const TemplatesPage: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${template.category === 'TASK' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                                        template.category === 'CHECKLIST' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                            'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                    template.category === 'CHECKLIST' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                        'bg-purple-500/10 text-purple-400 border-purple-500/20'
                                     }`}>
                                     {template.category}
                                 </span>
-                                {user?.role === 'ADMIN' && (
+                                {user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN ? (
                                     <button onClick={() => handleDelete(template.id)} className="text-gray-500 hover:text-red-400 transition-colors">
                                         <Trash2 size={14} />
                                     </button>
-                                )}
+                                ) : null}
                             </div>
                         </div>
 
@@ -239,10 +244,10 @@ const TemplatesPage: React.FC = () => {
                                 <span>{template.usageCount || 0} Uses</span>
                             </div>
                             <button
-                                onClick={() => handleUseTemplate(template)}
-                                className="text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center transition-colors"
+                                onClick={() => setPreviewTemplate(template)}
+                                className="text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center transition-colors group-hover:underline"
                             >
-                                <Copy size={14} className="mr-1.5" /> Use Template
+                                <ExternalLink size={14} className="mr-1.5" /> View & Use
                             </button>
                         </div>
                     </div>
@@ -399,6 +404,92 @@ const TemplatesPage: React.FC = () => {
                 onClose={() => setIsResearchOpen(false)}
                 context={`Current Template Draft: ${JSON.stringify(newTemplate)}`}
             />
+            {/* Preview Modal - View Only for Staff */}
+            {previewTemplate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="glass-modal rounded-2xl w-full max-w-3xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-white flex items-center">
+                                <FileText className="mr-2 text-blue-400" /> {previewTemplate.name}
+                            </h3>
+                            <button onClick={() => setPreviewTemplate(null)} className="text-gray-400 hover:text-white transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                            <div className="flex gap-2 mb-4">
+                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                    {previewTemplate.category}
+                                </span>
+                                {previewTemplate.type && (
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                        {previewTemplate.type}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                <h4 className="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Description</h4>
+                                <p className="text-gray-300 leading-relaxed">{previewTemplate.description}</p>
+                            </div>
+
+                            {previewTemplate.content && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Content Preview</h4>
+                                    <div className="bg-black/30 p-4 rounded-xl border border-white/10 font-mono text-sm text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                                        {previewTemplate.content}
+                                    </div>
+                                </div>
+                            )}
+
+                            {previewTemplate.attachments && previewTemplate.attachments.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Attachments</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {previewTemplate.attachments.map((att: any, i: number) => (
+                                            <a
+                                                key={i}
+                                                href={att.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex items-center p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group"
+                                            >
+                                                <div className="mr-3 p-2 bg-white/5 rounded-lg text-blue-400">
+                                                    {getIconForType(att.name)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-200 truncate group-hover:text-blue-300 transition-colors">{att.name}</p>
+                                                    <p className="text-xs text-gray-500">Click to view</p>
+                                                </div>
+                                                <ExternalLink size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                            <button
+                                onClick={() => setPreviewTemplate(null)}
+                                className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleUseTemplate(previewTemplate);
+                                    setPreviewTemplate(null);
+                                }}
+                                className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
+                            >
+                                <Copy size={16} className="mr-2" /> Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

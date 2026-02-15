@@ -81,7 +81,7 @@ export const AiService = {
       return data.result;
 
     } catch (error: any) {
-      console.error("AI Service Error:", error);
+      console.warn("AI Service Quota Exceeded:", error.message);
       if (error instanceof QuotaExceededError) {
         throw error;
       }

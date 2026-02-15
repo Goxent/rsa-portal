@@ -60,11 +60,11 @@ const TasksPage: React.FC = () => {
     const canAccessTemplates = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     const [filterPriority, setFilterPriority] = useState<string>('ALL');
-    const [groupBy, setGroupBy] = useState<'NONE' | 'CLIENT' | 'ASSIGNEE'>('NONE');
+    const [groupBy, setGroupBy] = useState<'NONE' | 'AUDITOR' | 'ASSIGNEE'>('NONE');
     const [searchTerm, setSearchTerm] = useState('');
 
     // New Filters
-    const [filterSignee, setFilterSignee] = useState<string>('ALL');
+
     const [filterStaff, setFilterStaff] = useState<string>('ALL');
     const [filterVat, setFilterVat] = useState<boolean>(false);
     const [filterItr, setFilterItr] = useState<boolean>(false);
@@ -96,16 +96,7 @@ const TasksPage: React.FC = () => {
 
             if (!taskClient) return false; // If filtering by client props but no client found, exclude.
 
-            if (filterSignee !== 'ALL') {
-                if (filterSignee === 'Others') {
-                    // Check if signingAuthority is meant to be in the 'Others' bucket (i.e. NOT in the main list)
-                    // The main list excludes 'Others'
-                    const mainAuthorities = SIGNING_AUTHORITIES.filter(s => s !== 'Others');
-                    if (mainAuthorities.includes(taskClient.signingAuthority || '')) return false;
-                } else {
-                    if (taskClient.signingAuthority !== filterSignee) return false;
-                }
-            }
+
             if (filterVat && !taskClient.vatReturn) return false;
             if (filterItr && !taskClient.itrReturn) return false;
         }
@@ -305,10 +296,35 @@ const TasksPage: React.FC = () => {
                 assignedTo: currentTask.assignedTo || [],
                 assignedTo: currentTask.assignedTo || [],
                 subtasks: currentTask.subtasks || [],
-                teamLeaderId: currentTask.teamLeaderId
+                teamLeaderId: currentTask.teamLeaderId || null
             } as Task;
 
             await AuthService.saveTask(taskToSave);
+
+            // Handle Mentions
+            const originalTask = tasks.find(t => t.id === currentTask.id);
+            const newDesc = taskToSave.description || '';
+            const oldDesc = originalTask?.description || '';
+
+            usersList.forEach(u => {
+                // Simple case-sensitive match for "@DisplayName"
+                // In a production app, we might want more robust matching or a mention picker
+                const mention = `@${u.displayName}`;
+
+                if (newDesc.includes(mention) && !oldDesc.includes(mention)) {
+                    if (u.uid !== user?.uid) {
+                        AuthService.createNotification({
+                            userId: u.uid,
+                            title: 'You were mentioned',
+                            message: `${user?.displayName || 'Someone'} mentioned you in task: ${taskToSave.title}`,
+                            type: 'INFO',
+                            category: 'TASK',
+                            link: '/tasks'
+                        });
+                    }
+                }
+            });
+
             toast.success(isEditMode ? "Task updated" : "Task created");
             fetchData();
             setIsModalOpen(false);
@@ -382,15 +398,25 @@ const TasksPage: React.FC = () => {
         const getGroups = () => {
             if (groupBy === 'NONE') return [{ id: 'ALL', title: 'All Tasks', tasks: filteredTasks }];
 
-            if (groupBy === 'CLIENT') {
+            if (groupBy === 'AUDITOR') {
                 const groups: { id: string, title: string, tasks: Task[] }[] = [];
-                // Get unique clients from filtered tasks
-                const uniqueClientNames = Array.from(new Set(filteredTasks.map(t => t.clientName || 'Internal')));
-                uniqueClientNames.sort().forEach(clientName => {
+                const auditorTasks = new Map<string, Task[]>();
+
+                filteredTasks.forEach(task => {
+                    const client = clientsList.find(c => task.clientIds && task.clientIds.includes(c.id));
+                    const auditor = client?.signingAuthority || 'Unassigned';
+
+                    if (!auditorTasks.has(auditor)) {
+                        auditorTasks.set(auditor, []);
+                    }
+                    auditorTasks.get(auditor)!.push(task);
+                });
+
+                Array.from(auditorTasks.keys()).sort().forEach(auditor => {
                     groups.push({
-                        id: clientName,
-                        title: clientName,
-                        tasks: filteredTasks.filter(t => (t.clientName || 'Internal') === clientName)
+                        id: auditor,
+                        title: auditor,
+                        tasks: auditorTasks.get(auditor)!
                     });
                 });
                 return groups;
@@ -429,7 +455,7 @@ const TasksPage: React.FC = () => {
                         <div key={group.id} className="animate-in fade-in duration-500 shrink-0">
                             {groupBy !== 'NONE' && (
                                 <div className="flex items-center gap-3 mb-4 px-2 sticky left-0">
-                                    {groupBy === 'CLIENT' ? <Briefcase className="text-brand-400" size={20} /> : <UserCircle2 className="text-purple-400" size={20} />}
+                                    {groupBy === 'AUDITOR' ? <Sparkles className="text-amber-400" size={20} /> : <UserCircle2 className="text-purple-400" size={20} />}
                                     <h2 className="text-lg font-bold text-white tracking-wide">{group.title}</h2>
                                     <span className="bg-white/10 text-xs px-2 py-0.5 rounded-full text-gray-400">{group.tasks.length}</span>
                                     <div className="h-px bg-white/10 flex-1 ml-4"></div>
@@ -840,22 +866,34 @@ const TasksPage: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
-                <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <CheckSquare className="text-blue-400" />
-                        Workflow & Tasks
-                    </h1>
-                    <p className="text-sm text-gray-400">Manage projects, track deadlines, and collaborate with your team.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex space-x-1 backdrop-blur-md">
+
+
+            {/* Filter Bar */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-2 rounded-xl border-white/5 shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+                        <button
+                            onClick={() => setViewMode('KANBAN')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <LayoutGrid size={14} /> Board
+                        </button>
+                        <button
+                            onClick={() => setViewMode('LIST')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <ListIcon size={14} /> List
+                        </button>
+                    </div>
+
+                    <div className="h-6 w-px bg-white/10"></div>
+
+                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 flex space-x-1 backdrop-blur-md">
                         <button
                             onClick={() => setBoardMode('ALL')}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-white text-blue-900 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
-                            <Briefcase size={14} /> Firm View
+                            <Briefcase size={14} /> Firm
                         </button>
                         <button
                             onClick={() => setBoardMode('MY')}
@@ -864,51 +902,10 @@ const TasksPage: React.FC = () => {
                             <UserCircle2 size={14} /> My Board
                         </button>
                     </div>
-                    {canCreateTask && (
-                        <button
-                            onClick={handleOpenCreate}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-0.5"
-                        >
-                            <Plus size={18} className="mr-2" /> New Task
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Filter Bar */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-2 rounded-xl border-white/5 shrink-0">
-                <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
-                    <button
-                        onClick={() => setViewMode('KANBAN')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <LayoutGrid size={16} /> Board
-                    </button>
-                    <button
-                        onClick={() => setViewMode('LIST')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <ListIcon size={16} /> List
-                    </button>
                 </div>
 
                 <div className="flex items-center space-x-3 overflow-x-auto pb-2 md:pb-0 custom-scrollbar w-full md:w-auto px-2">
-                    {/* Signee Filter */}
-                    <div className="relative group">
-                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-sm text-gray-300 transition-colors">
-                            <Sparkles size={14} className="text-amber-400" />
-                            <span className="font-medium text-xs uppercase tracking-wider text-gray-400">Auditor</span>
-                            <div className="h-4 w-px bg-white/10 mx-2"></div>
-                            <select
-                                className="bg-transparent border-none outline-none text-white font-bold cursor-pointer min-w-[100px]"
-                                value={filterSignee}
-                                onChange={(e) => setFilterSignee(e.target.value)}
-                            >
-                                <option value="ALL" className="bg-navy-900 text-gray-300">All Auditors</option>
-                                {signees.map((s, i) => <option key={i} value={s} className="bg-navy-900 text-white">{s}</option>)}
-                            </select>
-                        </div>
-                    </div>
+
 
                     {/* Quick Filters */}
                     <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
@@ -935,11 +932,11 @@ const TasksPage: React.FC = () => {
                             <select
                                 className="bg-transparent border-none outline-none text-white font-bold cursor-pointer min-w-[100px]"
                                 value={groupBy}
-                                onChange={(e) => setGroupBy(e.target.value as 'NONE' | 'CLIENT' | 'ASSIGNEE')}
+                                onChange={(e) => setGroupBy(e.target.value as 'NONE' | 'AUDITOR' | 'ASSIGNEE')}
                             >
                                 <option value="NONE" className="bg-navy-900 text-gray-300">None</option>
-                                <option value="CLIENT" className="bg-navy-900 text-white">Client</option>
-                                <option value="ASSIGNEE" className="bg-navy-900 text-white">Assignee</option>
+                                <option value="AUDITOR" className="bg-navy-900 text-white">Auditor</option>
+                                <option value="ASSIGNEE" className="bg-navy-900 text-white">Assignees</option>
                             </select>
                         </div>
                     </div>
@@ -982,6 +979,15 @@ const TasksPage: React.FC = () => {
                                 <span className="hidden xl:inline">Templates</span>
                             </button>
                         </>
+                    )}
+
+                    {canCreateTask && (
+                        <button
+                            onClick={handleOpenCreate}
+                            className="ml-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-0.5"
+                        >
+                            <Plus size={18} className="mr-2" /> New Task
+                        </button>
                     )}
                 </div>
             </div>
@@ -1028,15 +1034,12 @@ const TasksPage: React.FC = () => {
                                     <input className="w-full glass-input font-bold text-lg" value={currentTask.title} onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasStructurePermission} />
                                 </div>
 
-                                {/* Due Date & Priority Row */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Due Date, Priority & Estimated Hours Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Due Date <span className="text-red-400">*</span></label>
                                         <input
                                             type="date"
-                                            className="w-full glass-input"
-                                            value={currentTask.dueDate}
-                                            onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
                                             className="w-full glass-input"
                                             value={currentTask.dueDate}
                                             onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
@@ -1049,7 +1052,19 @@ const TasksPage: React.FC = () => {
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
-
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Est. Hours</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.5"
+                                            className="w-full glass-input"
+                                            placeholder="e.g. 4"
+                                            value={currentTask.estimatedHours || ''}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, estimatedHours: parseFloat(e.target.value) })}
+                                            disabled={!hasStructurePermission}
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Status Row */}

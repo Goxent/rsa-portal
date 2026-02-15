@@ -179,25 +179,28 @@ const Layout: React.FC = () => {
           <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Workspace</p>
             <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-            <SidebarItem to="/attendance" icon={Clock} label="Attendance" />
-            <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
             <SidebarItem to="/tasks" icon={CheckSquare} label="Tasks & Kanban" />
-            <SidebarItem to="/workload" icon={BarChart3} label="Workload" />
+            <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
+            <SidebarItem to="/attendance" icon={Clock} label="Attendance" />
             <SidebarItem to="/leaves" icon={Calendar} label="Leaves" />
 
-            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Advanced</p>
-            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Advanced</p>
+            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Practice Management</p>
             <SidebarItem to="/compliance" icon={AlertCircle} label="Compliance" />
+            {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+              <>
+                <SidebarItem to="/clients" icon={Building2} label="Clients" />
+                <SidebarItem to="/workload" icon={BarChart3} label="Workload" />
+              </>
+            )}
+
+            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Knowledge & Assets</p>
             <SidebarItem to="/templates" icon={FileStack} label="Templates" />
-
-
-            <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Firm Data</p>
             <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
+            <SidebarItem to="/resources" icon={FileStack} label="Resources" />
 
             {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
               <>
                 <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Administration</p>
-                <SidebarItem to="/clients" icon={Building2} label="Clients" />
                 <SidebarItem to="/staff" icon={UserCog} label="Staff Directory" />
                 <SidebarItem to="/performance" icon={Trophy} label="Performance Eval" />
 
@@ -297,7 +300,20 @@ const Layout: React.FC = () => {
                           <button onClick={() => setShowLateWarning(false)} className="text-red-400 hover:text-red-300"><X size={16} /></button>
                         </div>
                       )}
-                      <h3 className="text-sm font-bold text-white">Notifications</h3>
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-sm font-bold text-white">Notifications</h3>
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              notifications.forEach(n => AuthService.markAsRead(n.id));
+                            }}
+                            className="text-[10px] text-blue-400 hover:text-blue-300 font-medium"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
                       {notifications.length === 0 ? (

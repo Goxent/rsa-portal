@@ -96,6 +96,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: string;
+  estimatedHours?: number; // For Resource Planning
   driveFolderLink?: string;
   sopLink?: string;
   createdAt: string;
@@ -277,6 +278,10 @@ export interface TaskTemplate {
   attachments?: Attachment[];
   tags?: string[];
   isPublic?: boolean;
+  usageCount?: number;
+  type?: string;
+  content?: string;
+  createdBy?: string;
 }
 
 export type Template = TaskTemplate;

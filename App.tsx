@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { UserRole } from './types';
 import { ThemeProvider, ThemedToaster } from './context/ThemeContext';
 import { ModalProvider } from './context/ModalContext';
 import { ModalManager } from './components/ModalManager';
@@ -79,6 +80,21 @@ const ProfileSetupRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Admin Route Wrapper
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <PageLoader />;
+
+  if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -134,8 +150,13 @@ const App: React.FC = () => {
                     <Route path="clients" element={<LazyPage><ClientsPage /></LazyPage>} />
                     <Route path="tasks" element={<LazyPage><TasksPage /></LazyPage>} />
                     <Route path="calendar" element={<LazyPage><CalendarPage /></LazyPage>} />
-                    <Route path="workload" element={<LazyPage><ResourcePlanningPage /></LazyPage>} />
+                    <Route path="workload" element={
+                      <AdminRoute>
+                        <LazyPage><ResourcePlanningPage /></LazyPage>
+                      </AdminRoute>
+                    } />
                     <Route path="resources" element={<LazyPage><ResourcesPage /></LazyPage>} />
+
                     <Route path="knowledge-base" element={<LazyPage><KnowledgeBasePage /></LazyPage>} />
                     <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />
                     <Route path="staff" element={<LazyPage><StaffPage /></LazyPage>} />
@@ -145,6 +166,8 @@ const App: React.FC = () => {
                     <Route path="templates" element={<LazyPage><TemplatesPage /></LazyPage>} />
                     <Route path="my-performance" element={<LazyPage><MyPerformancePage /></LazyPage>} />
                     <Route path="peer-reviews" element={<LazyPage><PeerReviewPage /></LazyPage>} />
+                    {/* Redirect legacy /workflow to /tasks */}
+                    <Route path="workflow" element={<Navigate to="/tasks" replace />} />
 
                   </Route>
 
