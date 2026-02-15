@@ -138,7 +138,7 @@ const Layout: React.FC = () => {
     switch (location.pathname.split('/')[1]) {
       case 'dashboard': return 'Executive Dashboard';
       case 'attendance': return 'Attendance & Time';
-      case 'tasks': return 'Workflow & Kanban';
+      case 'tasks': return 'Workflow Management';
       case 'calendar': return 'Firm Calendar';
       case 'knowledge-base': return 'Knowledge Base';
       case 'staff': return 'Staff Directory';
@@ -179,7 +179,7 @@ const Layout: React.FC = () => {
           <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Workspace</p>
             <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-            <SidebarItem to="/tasks" icon={CheckSquare} label="Tasks & Kanban" />
+            <SidebarItem to="/tasks" icon={CheckSquare} label="Workflow Management" />
             <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
             <SidebarItem to="/attendance" icon={Clock} label="Attendance" />
             <SidebarItem to="/leaves" icon={Calendar} label="Leaves" />
@@ -196,7 +196,6 @@ const Layout: React.FC = () => {
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Knowledge & Assets</p>
             <SidebarItem to="/templates" icon={FileStack} label="Templates" />
             <SidebarItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
-            <SidebarItem to="/resources" icon={FileStack} label="Resources" />
 
             {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
               <>

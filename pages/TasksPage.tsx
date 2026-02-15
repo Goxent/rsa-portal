@@ -66,6 +66,7 @@ const TasksPage: React.FC = () => {
     // New Filters
 
     const [filterStaff, setFilterStaff] = useState<string>('ALL');
+    const [filterSignee, setFilterSignee] = useState<string>('ALL');
     const [filterVat, setFilterVat] = useState<boolean>(false);
     const [filterItr, setFilterItr] = useState<boolean>(false);
 
