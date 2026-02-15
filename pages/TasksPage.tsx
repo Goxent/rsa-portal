@@ -295,7 +295,6 @@ const TasksPage: React.FC = () => {
                 createdAt: currentTask.createdAt || new Date().toISOString(),
                 createdBy: currentTask.createdBy || user?.uid || 'system',
                 assignedTo: currentTask.assignedTo || [],
-                assignedTo: currentTask.assignedTo || [],
                 subtasks: currentTask.subtasks || [],
                 teamLeaderId: currentTask.teamLeaderId || null
             } as Task;
@@ -1054,15 +1053,15 @@ const TasksPage: React.FC = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Est. Hours</label>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Est. Days</label>
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.5"
                                             className="w-full glass-input"
-                                            placeholder="e.g. 4"
-                                            value={currentTask.estimatedHours || ''}
-                                            onChange={(e) => setCurrentTask({ ...currentTask, estimatedHours: parseFloat(e.target.value) })}
+                                            placeholder="e.g. 2"
+                                            value={currentTask.estimatedDays || ''}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, estimatedDays: parseFloat(e.target.value) })}
                                             disabled={!hasStructurePermission}
                                         />
                                     </div>
@@ -1087,7 +1086,7 @@ const TasksPage: React.FC = () => {
                                         >
                                             <option value="LOW">Low</option>
                                             <option value="MEDIUM">Medium</option>
-                                            <option value="HIGH">High (Requires Review)</option>
+                                            <option value="HIGH">High</option>
                                         </select>
                                     </div>
                                     {/* Team Leader Selection */}

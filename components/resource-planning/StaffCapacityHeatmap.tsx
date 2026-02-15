@@ -33,7 +33,7 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
 
     // Calculate Capacity
     const capacityData = useMemo(() => {
-        const data = new Map<string, Map<string, number>>(); // UserId -> WeekStr -> Hours
+        const data = new Map<string, Map<string, number>>(); // UserId -> WeekStr -> TaskCount
 
         users.forEach(u => {
             data.set(u.uid, new Map());
@@ -43,27 +43,20 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
         });
 
         tasks.forEach(task => {
-            if (!task.dueDate || !task.assignedTo || task.assignedTo.length === 0 || task.status === 'COMPLETED') return;
+            if (!task.dueDate || !task.assignedTo || task.assignedTo.length === 0 ||
+                task.status === 'COMPLETED' || task.status === 'HALTED') return;
 
             const taskDate = new Date(task.dueDate);
-            const taskHours = task.estimatedHours || 0; // Default to 0 if not set, or maybe 1?
 
             // Find which week this task belongs to
-            // Simple logic: task load is applied to the week of its due date
             const taskWeekStart = getStartOfWeek(taskDate);
             const weekStr = taskWeekStart.toISOString().split('T')[0];
 
             task.assignedTo.forEach(uid => {
                 const userMap = data.get(uid);
                 if (userMap && userMap.has(weekStr)) {
-                    // Split hours among assignees? Or duplicate? 
-                    // Usually duplicate if not specified, or split. Let's assume duplicate (each person works X hours) 
-                    // OR if it's a shared task, maybe split. 
-                    // For safety, let's assume the estimatedHours is TOTAL for the task, so we split it?
-                    // Or estimatedHours is PER PERSON?
-                    // Let's assume PER TASK and split evenly for now.
-                    const hoursPerPerson = taskHours / task.assignedTo.length;
-                    userMap.set(weekStr, userMap.get(weekStr)! + hoursPerPerson);
+                    // Increment task count for this user in this week
+                    userMap.set(weekStr, userMap.get(weekStr)! + 1);
                 }
             });
         });
@@ -71,11 +64,11 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
         return data;
     }, [users, tasks, weeks]);
 
-    const getCellColor = (hours: number) => {
-        if (hours === 0) return 'bg-white/5 text-gray-500';
-        if (hours < 20) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'; // Light load
-        if (hours < 35) return 'bg-blue-500/20 text-blue-300 border-blue-500/30'; // Optimal
-        if (hours < 45) return 'bg-amber-500/20 text-amber-300 border-amber-500/30'; // Heavy
+    const getCellColor = (count: number) => {
+        if (count === 0) return 'bg-white/5 text-gray-500';
+        if (count <= 3) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'; // Light load
+        if (count <= 6) return 'bg-blue-500/20 text-blue-300 border-blue-500/30'; // Optimal
+        if (count <= 9) return 'bg-amber-500/20 text-amber-300 border-amber-500/30'; // Heavy
         return 'bg-red-500/20 text-red-300 border-red-500/30 font-bold'; // Overload
     };
 
@@ -96,7 +89,7 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
             <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <div className="flex items-center gap-2">
                     <Calendar className="text-blue-400" size={18} />
-                    <h3 className="font-bold text-gray-200">Staff Capacity Heatmap</h3>
+                    <h3 className="font-bold text-gray-200">Staff Task Workload Grid</h3>
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={handlePrev} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
@@ -111,10 +104,10 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
                     </button>
                 </div>
                 <div className="flex gap-4 text-xs">
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-500/20 border border-emerald-500/30 rounded"></div> &lt; 20h</div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500/20 border border-blue-500/30 rounded"></div> 20-35h</div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-amber-500/20 border border-amber-500/30 rounded"></div> 35-45h</div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-500/20 border border-red-500/30 rounded"></div> &gt; 45h</div>
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-500/20 border border-emerald-500/30 rounded"></div> 1-3</div>
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500/20 border border-blue-500/30 rounded"></div> 4-6</div>
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-amber-500/20 border border-amber-500/30 rounded"></div> 7-9</div>
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-500/20 border border-red-500/30 rounded"></div> 10+</div>
                 </div>
             </div>
 
@@ -146,15 +139,15 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
                                     </td>
                                     {weeks.map((w, i) => {
                                         const dateStr = w.toISOString().split('T')[0];
-                                        const hours = userWeeks?.get(dateStr) || 0;
+                                        const count = userWeeks?.get(dateStr) || 0;
                                         return (
                                             <td key={i} className="p-1 border-l border-white/5 relative group">
-                                                <div className={`h-12 rounded-lg flex items-center justify-center text-xs font-bold border transition-all ${getCellColor(hours)}`}>
-                                                    {hours > 0 ? `${hours.toFixed(1)}h` : '-'}
+                                                <div className={`h-12 rounded-lg flex items-center justify-center text-xs font-bold border transition-all ${getCellColor(count)}`}>
+                                                    {count > 0 ? `${count} Tasks` : '-'}
                                                 </div>
-                                                {hours > 0 && (
+                                                {count > 0 && (
                                                     <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 bg-navy-900 text-white text-xs p-2 rounded shadow-lg pointer-events-none z-30 whitespace-nowrap border border-white/10">
-                                                        Estimated Load: {hours.toFixed(1)} hrs
+                                                        Active Tasks: {count}
                                                     </div>
                                                 )}
                                             </td>

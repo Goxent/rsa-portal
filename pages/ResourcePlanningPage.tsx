@@ -55,7 +55,8 @@ const ResourcePlanningPage: React.FC = () => {
     const workloadData = users.map(user => {
         const userTasks = tasks.filter(t =>
             t.assignedTo.includes(user.uid) &&
-            t.status !== TaskStatus.COMPLETED
+            t.status !== TaskStatus.COMPLETED &&
+            t.status !== TaskStatus.HALTED
         );
 
         const highRiskCount = userTasks.filter(t => t.riskLevel === 'HIGH').length;
@@ -81,7 +82,7 @@ const ResourcePlanningPage: React.FC = () => {
                     <p className="font-bold text-white mb-2">{label}</p>
                     <p className="text-brand-300 text-sm">Total Active Tasks: {payload[0].value}</p>
                     {payload[0].payload.highRisk > 0 && (
-                        <p className="text-red-400 text-sm">High Risk: {payload[0].payload.highRisk}</p>
+                        <p className="text-red-400 text-sm">Highi Risk: {payload[0].payload.highRisk}</p>
                     )}
                     {payload[0].payload.overdue > 0 && (
                         <p className="text-amber-400 text-sm">Overdue: {payload[0].payload.overdue}</p>
@@ -111,7 +112,7 @@ const ResourcePlanningPage: React.FC = () => {
                 <div className="flex items-center gap-4 bg-white/5 p-2 rounded-xl border border-white/5">
                     <div className="px-4 py-2 rounded-lg bg-navy-900/50 border border-white/5">
                         <span className="text-xs text-gray-400 uppercase tracking-wider block">Total Active Tasks</span>
-                        <span className="text-xl font-bold text-white">{tasks.filter(t => t.status !== TaskStatus.COMPLETED).length}</span>
+                        <span className="text-xl font-bold text-white">{tasks.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED).length}</span>
                     </div>
                 </div>
             </div>
@@ -192,7 +193,7 @@ const ResourcePlanningPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {tasks.filter(t => t.assignedTo.includes(selectedUser) && t.status !== TaskStatus.COMPLETED).map(task => (
+                        {tasks.filter(t => t.assignedTo.includes(selectedUser) && t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED).map(task => (
                             <div key={task.id} className="glass-panel p-4 rounded-xl border border-white/5 hover:border-brand-500/30 transition-all group">
                                 <div className="flex justify-between items-start mb-2">
                                     <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide border ${task.priority === 'HIGH' ? 'bg-red-500/10 text-red-300 border-red-500/20' : task.priority === 'MEDIUM' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-blue-500/10 text-blue-300 border-blue-500/20'}`}>

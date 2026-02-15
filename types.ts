@@ -96,7 +96,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: string;
-  estimatedHours?: number; // For Resource Planning
+  estimatedDays?: number; // For Resource Planning
   driveFolderLink?: string;
   sopLink?: string;
   createdAt: string;
