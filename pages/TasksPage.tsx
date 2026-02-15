@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
-    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search, Calendar, Trash2, X
+    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search, Calendar, Trash2, X, AlertTriangle, ShieldAlert
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate } from '../types';
+import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { TemplateService } from '../services/templates';
@@ -13,6 +13,7 @@ import { SIGNING_AUTHORITIES } from '../constants/firmData';
 import TaskTemplateModal from '../components/TaskTemplateModal';
 import TemplateManager from '../components/TemplateManager';
 import StaffSelect from '../components/StaffSelect';
+import TaskComments from '../components/TaskComments';
 import { TaskListSkeleton } from '../components/ui/LoadingSkeleton';
 import ClientSelect from '../components/ClientSelect';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -52,8 +53,14 @@ const TasksPage: React.FC = () => {
 
     // Permissions Check
     const canCreateTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+    // canManageTask controls critical fields (Client, Title, Priority, Dates, Assignees)
+    const canManageTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+
+    // Template Access Check
+    const canAccessTemplates = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     const [filterPriority, setFilterPriority] = useState<string>('ALL');
+    const [groupBy, setGroupBy] = useState<'NONE' | 'CLIENT' | 'ASSIGNEE'>('NONE');
     const [searchTerm, setSearchTerm] = useState('');
 
     // New Filters
@@ -128,7 +135,10 @@ const TasksPage: React.FC = () => {
             priority: TaskPriority.MEDIUM,
             subtasks: [],
             dueDate: localDate,
-            clientIds: []
+            clientIds: [],
+            teamLeaderId: '',
+            riskLevel: 'LOW',
+            comments: []
         });
         setIsModalOpen(true);
     };
@@ -151,7 +161,8 @@ const TasksPage: React.FC = () => {
                 createdAt: new Date().toISOString()
             })),
             dueDate: getCurrentDateUTC(),
-            clientIds: []
+            clientIds: [],
+            teamLeaderId: ''
         });
         setIsModalOpen(true);
     };
@@ -249,6 +260,11 @@ const TasksPage: React.FC = () => {
         if (task.assignedTo && user?.uid && task.assignedTo.includes(user.uid)) return true;
         return false;
     };
+
+
+
+    // Specific permission for structure/critical fields
+    const hasStructurePermission = canManageTask;
     const handleOpenEdit = (task: Task) => {
         setIsEditMode(true);
         setFormError('');
@@ -287,7 +303,9 @@ const TasksPage: React.FC = () => {
                 createdAt: currentTask.createdAt || new Date().toISOString(),
                 createdBy: currentTask.createdBy || user?.uid || 'system',
                 assignedTo: currentTask.assignedTo || [],
-                subtasks: currentTask.subtasks || []
+                assignedTo: currentTask.assignedTo || [],
+                subtasks: currentTask.subtasks || [],
+                teamLeaderId: currentTask.teamLeaderId
             } as Task;
 
             await AuthService.saveTask(taskToSave);
@@ -299,6 +317,23 @@ const TasksPage: React.FC = () => {
             toast.error('Failed to save task');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+
+
+    const handleAddComment = (comment: TaskComment) => {
+        const updatedComments = [...(currentTask.comments || []), comment];
+        setCurrentTask(prev => ({ ...prev, comments: updatedComments }));
+
+        // Use a background update for comments to feel snappy, but we should probably save properly
+        // For now, we rely on the main "Save" button or we could auto-save.
+        // Let's autosave just the comments to be safe if it's an existing task
+        if (currentTask.id) {
+            AuthService.updateTask(currentTask.id, { comments: updatedComments }).catch(err => {
+                console.error("Failed to save comment", err);
+                toast.error("Failed to save comment");
+            });
         }
     };
 
@@ -343,136 +378,201 @@ const TasksPage: React.FC = () => {
     };
 
     const KanbanBoard = () => {
+        // Grouping Logic
+        const getGroups = () => {
+            if (groupBy === 'NONE') return [{ id: 'ALL', title: 'All Tasks', tasks: filteredTasks }];
+
+            if (groupBy === 'CLIENT') {
+                const groups: { id: string, title: string, tasks: Task[] }[] = [];
+                // Get unique clients from filtered tasks
+                const uniqueClientNames = Array.from(new Set(filteredTasks.map(t => t.clientName || 'Internal')));
+                uniqueClientNames.sort().forEach(clientName => {
+                    groups.push({
+                        id: clientName,
+                        title: clientName,
+                        tasks: filteredTasks.filter(t => (t.clientName || 'Internal') === clientName)
+                    });
+                });
+                return groups;
+            }
+
+            if (groupBy === 'ASSIGNEE') {
+                const groups: { id: string, title: string, tasks: Task[] }[] = [];
+                const allAssignees = new Set<string>();
+                filteredTasks.forEach(t => t.assignedTo.forEach(uid => allAssignees.add(uid)));
+
+                // Unassigned
+                const unassignedTasks = filteredTasks.filter(t => t.assignedTo.length === 0);
+                if (unassignedTasks.length > 0) {
+                    groups.push({ id: 'UNASSIGNED', title: 'Unassigned', tasks: unassignedTasks });
+                }
+
+                Array.from(allAssignees).forEach(uid => {
+                    const user = usersList.find(u => u.uid === uid);
+                    groups.push({
+                        id: uid,
+                        title: user ? user.displayName : 'Unknown User',
+                        tasks: filteredTasks.filter(t => t.assignedTo.includes(uid))
+                    });
+                });
+                return groups;
+            }
+            return [];
+        };
+
+        const groups = getGroups();
+
         return (
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex space-x-6 overflow-x-auto pb-6 h-full custom-scrollbar items-start px-2">
-                    {Object.values(TaskStatus).map(status => (
-                        <Droppable key={status} droppableId={status}>
-                            {(provided, snapshot) => (
-                                <div
-                                    {...provided.droppableProps}
-                                    ref={provided.innerRef}
-                                    className={`flex-shrink-0 w-80 rounded-2xl p-4 transition-all border-2 flex flex-col max-h-full ${snapshot.isDraggingOver ? 'bg-white/5 border-brand-500/50 shadow-brand-500/20 shadow-lg' :
-                                        status === TaskStatus.NOT_STARTED ? 'bg-white/5 border-white/5' :
-                                            status === TaskStatus.IN_PROGRESS ? 'bg-blue-500/5 border-blue-500/10' :
-                                                status === TaskStatus.HALTED ? 'bg-red-500/5 border-red-500/10' :
-                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500/5 border-amber-500/10' :
-                                                        'bg-emerald-500/5 border-emerald-500/10'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between mb-4 px-2 shrink-0">
-                                        <div className="flex items-center space-x-3">
-                                            <div className={`w-3 h-3 rounded-full shadow-sm ${status === TaskStatus.NOT_STARTED ? 'bg-gray-400' :
-                                                status === TaskStatus.IN_PROGRESS ? 'bg-blue-500 shadow-blue-500/50' :
-                                                    status === TaskStatus.HALTED ? 'bg-red-500 shadow-red-500/50' :
-                                                        status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500 shadow-amber-500/50' :
-                                                            'bg-emerald-500 shadow-emerald-500/50'
-                                                }`} />
-                                            <h3 className="font-bold text-white text-sm tracking-wide">{status.replace('_', ' ')}</h3>
-                                        </div>
-                                        <span className="bg-white/10 text-white text-xs px-2.5 py-1 rounded-lg font-bold border border-white/5 shadow-sm">
-                                            {filteredTasks.filter(t => t.status === status).length}
-                                        </span>
-                                    </div>
+                <div className="flex flex-col space-y-8 pb-8 h-full overflow-y-auto custom-scrollbar">
+                    {groups.map(group => (
+                        <div key={group.id} className="animate-in fade-in duration-500 shrink-0">
+                            {groupBy !== 'NONE' && (
+                                <div className="flex items-center gap-3 mb-4 px-2 sticky left-0">
+                                    {groupBy === 'CLIENT' ? <Briefcase className="text-brand-400" size={20} /> : <UserCircle2 className="text-purple-400" size={20} />}
+                                    <h2 className="text-lg font-bold text-white tracking-wide">{group.title}</h2>
+                                    <span className="bg-white/10 text-xs px-2 py-0.5 rounded-full text-gray-400">{group.tasks.length}</span>
+                                    <div className="h-px bg-white/10 flex-1 ml-4"></div>
+                                </div>
+                            )}
 
-                                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
-                                        {filteredTasks.filter(t => t.status === status).map((task, idx) => {
-                                            const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
-                                            const totalSub = task.subtasks?.length || 0;
-                                            const subtaskProgress = totalSub > 0 ? (completedSub / totalSub) * 100 : 0;
-                                            const progressColor = subtaskProgress === 100 ? 'bg-emerald-500' : 'bg-brand-500';
+                            <div className="flex overflow-x-auto pb-4 gap-6 px-1 min-w-full">
+                                {Object.values(TaskStatus).map(status => (
+                                    <Droppable key={`${group.id}-${status}`} droppableId={status} type="TASK">
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.droppableProps}
+                                                className={`flex-shrink-0 w-80 flex flex-col rounded-2xl transition-colors duration-300 ${snapshot.isDraggingOver ? 'bg-white/5 ring-1 ring-white/10' : 'bg-transparent'}`}
+                                            >
+                                                {/* Column Header - Only show for first group or if grouping is NONE */}
+                                                {(groupBy === 'NONE' || groups.indexOf(group) === 0) && (
+                                                    <div className="mb-4 flex items-center justify-between px-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-2 h-2 rounded-full ${status === TaskStatus.COMPLETED ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+                                                                status === TaskStatus.IN_PROGRESS ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
+                                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
+                                                                        'bg-gray-500'
+                                                                }`} />
+                                                            <h3 className="font-bold text-white text-sm tracking-wide">{status.replace('_', ' ')}</h3>
+                                                        </div>
+                                                        <span className="bg-white/10 text-white text-xs px-2.5 py-1 rounded-lg font-bold border border-white/5 shadow-sm">
+                                                            {groupBy === 'NONE'
+                                                                ? filteredTasks.filter(t => t.status === status).length
+                                                                : group.tasks.filter(t => t.status === status).length}
+                                                        </span>
+                                                    </div>
+                                                )}
 
-                                            return (
-                                                <Draggable key={task.id} draggableId={task.id} index={idx}>
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            onClick={() => handleOpenEdit(task)}
-                                                            className={`glass-panel p-4 rounded-xl group relative overflow-hidden transition-all duration-300 border border-white/5 hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-900/20 active:scale-95 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50 bg-navy-800' : 'bg-navy-900/40'}`}
-                                                        >
-                                                            {/* Hover Gradient Overlay */}
-                                                            <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 via-brand-500/0 to-brand-500/0 group-hover:from-brand-500/5 group-hover:to-purple-500/5 transition-all duration-500"></div>
+                                                <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0 max-h-[600px]">
+                                                    {group.tasks.filter(t => t.status === status).map((task, idx) => {
+                                                        const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
+                                                        const totalSub = task.subtasks?.length || 0;
+                                                        const subtaskProgress = totalSub > 0 ? (completedSub / totalSub) * 100 : 0;
+                                                        const progressColor = subtaskProgress === 100 ? 'bg-emerald-500' : 'bg-brand-500';
 
-                                                            <div className="relative z-10">
-                                                                <div className="flex justify-between items-start mb-3">
-                                                                    <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
-                                                                    <div className="text-[10px] text-gray-400 font-mono bg-black/20 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                                                        <Calendar size={10} />
-                                                                        <span>{task.dueDate}</span>
-                                                                    </div>
-                                                                </div>
+                                                        return (
+                                                            <Draggable key={task.id} draggableId={task.id} index={idx}>
+                                                                {(provided, snapshot) => (
+                                                                    <div
+                                                                        ref={provided.innerRef}
+                                                                        {...provided.draggableProps}
+                                                                        {...provided.dragHandleProps}
+                                                                        onClick={() => handleOpenEdit(task)}
+                                                                        className={`glass-panel p-4 rounded-xl group relative overflow-hidden transition-all duration-300 border border-white/5 hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-900/20 active:scale-95 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50 bg-navy-800' : 'bg-navy-900/40'}`}
+                                                                    >
+                                                                        {/* Hover Gradient Overlay */}
+                                                                        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 via-brand-500/0 to-brand-500/0 group-hover:from-brand-500/5 group-hover:to-purple-500/5 transition-all duration-500"></div>
 
-                                                                <h4 className="font-bold text-white text-sm mb-2 leading-snug group-hover:text-brand-300 transition-colors line-clamp-2">{task.title}</h4>
-
-                                                                <div className="flex items-center text-xs text-gray-400 mb-3 bg-white/5 p-1.5 rounded-lg border border-white/5">
-                                                                    <Briefcase size={12} className="mr-2 text-brand-400 shrink-0" />
-                                                                    <span className="truncate text-gray-300 font-medium">{task.clientName || 'Internal'}</span>
-                                                                </div>
-
-                                                                {/* Signing Authority Badge */}
-                                                                {(() => {
-                                                                    const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
-                                                                    if (taskClient && taskClient.signingAuthority) {
-                                                                        return (
-                                                                            <div className="mb-3 flex items-center bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 w-fit">
-                                                                                <Sparkles size={10} className="text-amber-400 mr-1.5" />
-                                                                                <span className="text-[10px] text-amber-200 font-medium truncate max-w-[150px]">
-                                                                                    {taskClient.signingAuthority}
-                                                                                </span>
+                                                                        <div className="relative z-10">
+                                                                            <div className="flex justify-between items-start mb-3">
+                                                                                <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
+                                                                                <div className="text-[10px] text-gray-400 font-mono bg-black/20 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                                                    <Calendar size={10} />
+                                                                                    <span>{task.dueDate}</span>
+                                                                                </div>
                                                                             </div>
-                                                                        );
-                                                                    }
-                                                                    return null;
-                                                                })()}
 
-                                                                {totalSub > 0 && (
-                                                                    <div className="mb-4">
-                                                                        <div className="flex justify-between text-[10px] text-gray-400 mb-1.5">
-                                                                            <span>Progress</span>
-                                                                            <span className="font-mono text-brand-300">{Math.round(subtaskProgress)}%</span>
-                                                                        </div>
-                                                                        <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                                                                            <div className={`h-full rounded-full ${progressColor} shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-700 ease-out`} style={{ width: `${subtaskProgress}%` }}></div>
+                                                                            <h4 className="font-bold text-white text-sm mb-2 leading-snug group-hover:text-brand-300 transition-colors line-clamp-2">{task.title}</h4>
+
+                                                                            <div className="flex items-center text-xs text-gray-400 mb-3 bg-white/5 p-1.5 rounded-lg border border-white/5">
+                                                                                <Briefcase size={12} className="mr-2 text-brand-400 shrink-0" />
+                                                                                <span className="truncate text-gray-300 font-medium">{task.clientName || 'Internal'}</span>
+                                                                            </div>
+
+                                                                            {/* Signing Authority Badge */}
+                                                                            {(() => {
+                                                                                const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
+                                                                                if (taskClient && taskClient.signingAuthority) {
+                                                                                    return (
+                                                                                        <div className="mb-3 flex items-center bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 w-fit">
+                                                                                            <Sparkles size={10} className="text-amber-400 mr-1.5" />
+                                                                                            <span className="text-[10px] text-amber-200 font-medium truncate max-w-[150px]">
+                                                                                                {taskClient.signingAuthority}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                            })()}
+
+                                                                            {/* Risk Level Badge */}
+                                                                            {task.riskLevel === 'HIGH' && (
+                                                                                <div className="mb-3 flex items-center bg-red-500/10 px-2 py-1 rounded border border-red-500/20 w-fit">
+                                                                                    <AlertTriangle size={10} className="text-red-400 mr-1.5" />
+                                                                                    <span className="text-[10px] text-red-300 font-bold tracking-wide">HIGH RISK: SENIOR REVIEW</span>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {totalSub > 0 && (
+                                                                                <div className="mb-4">
+                                                                                    <div className="flex justify-between text-[10px] text-gray-400 mb-1.5">
+                                                                                        <span>Progress</span>
+                                                                                        <span className="font-mono text-brand-300">{Math.round(subtaskProgress)}%</span>
+                                                                                    </div>
+                                                                                    <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                                                                        <div className={`h-full rounded-full ${progressColor} shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-700 ease-out`} style={{ width: `${subtaskProgress}%` }}></div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            <div className="pt-3 border-t border-white/5 flex justify-between items-center group-hover:border-white/10 transition-colors">
+                                                                                <div className="flex -space-x-2">
+                                                                                    {task.assignedTo.slice(0, 3).map((uid, i) => {
+                                                                                        const u = usersList.find(user => user.uid === uid);
+                                                                                        return (
+                                                                                            <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-800 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-white shadow-sm hover:scale-110 transition-transform z-0 hover:z-10 relative">
+                                                                                                {getInitials(u?.displayName || '?')}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                    {task.assignedTo.length > 3 && (
+                                                                                        <div className="w-6 h-6 rounded-full bg-navy-900 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-gray-400 z-10">
+                                                                                            +{task.assignedTo.length - 3}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                    <div className="bg-brand-500 text-white p-1 rounded-md shadow-lg shadow-brand-500/20">
+                                                                                        <CheckSquare size={12} />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
-
-                                                                <div className="pt-3 border-t border-white/5 flex justify-between items-center group-hover:border-white/10 transition-colors">
-                                                                    <div className="flex -space-x-2">
-                                                                        {task.assignedTo.slice(0, 3).map((uid, i) => {
-                                                                            const u = usersList.find(user => user.uid === uid);
-                                                                            return (
-                                                                                <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-800 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-white shadow-sm hover:scale-110 transition-transform z-0 hover:z-10 relative">
-                                                                                    {getInitials(u?.displayName || '?')}
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                        {task.assignedTo.length > 3 && (
-                                                                            <div className="w-6 h-6 rounded-full bg-navy-900 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-gray-400 z-10">
-                                                                                +{task.assignedTo.length - 3}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-
-                                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                        <div className="bg-brand-500 text-white p-1 rounded-md shadow-lg shadow-brand-500/20">
-                                                                            <CheckSquare size={12} />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </Draggable>
-                                            );
-                                        })}
-                                        {provided.placeholder}
-                                    </div>
-                                </div>
-                            )}
-                        </Droppable>
+                                                            </Draggable>
+                                                        );
+                                                    })}
+                                                    {provided.placeholder}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                ))}
+                            </div>
+                        </div>
                     ))}
                 </div>
             </DragDropContext>
@@ -826,6 +926,24 @@ const TasksPage: React.FC = () => {
                         </button>
                     </div>
 
+                    {/* Group By Dropdown */}
+                    <div className="relative group">
+                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-sm text-gray-300 transition-colors">
+                            <LayoutGrid size={14} className="text-purple-400" />
+                            <span className="font-medium text-xs uppercase tracking-wider text-gray-400">Group By</span>
+                            <div className="h-4 w-px bg-white/10 mx-2"></div>
+                            <select
+                                className="bg-transparent border-none outline-none text-white font-bold cursor-pointer min-w-[100px]"
+                                value={groupBy}
+                                onChange={(e) => setGroupBy(e.target.value as 'NONE' | 'CLIENT' | 'ASSIGNEE')}
+                            >
+                                <option value="NONE" className="bg-navy-900 text-gray-300">None</option>
+                                <option value="CLIENT" className="bg-navy-900 text-white">Client</option>
+                                <option value="ASSIGNEE" className="bg-navy-900 text-white">Assignee</option>
+                            </select>
+                        </div>
+                    </div>
+
                     {/* Staff Filter */}
                     <div className="relative group">
                         <div className="flex items-center space-x-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-sm text-gray-300 transition-colors">
@@ -845,22 +963,26 @@ const TasksPage: React.FC = () => {
 
                     <div className="h-6 w-px bg-white/10 mx-2"></div>
 
-                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                        <button
-                            onClick={() => setIsTemplateManagerOpen(true)}
-                            className="bg-navy-800/80 hover:bg-navy-700 text-brand-300 border border-brand-500/20 rounded-xl p-2.5 transition-all"
-                            title="Manage Templates"
-                        >
-                            <Sparkles size={18} />
-                        </button>
+                    {canAccessTemplates && (
+                        <>
+                            {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                                <button
+                                    onClick={() => setIsTemplateManagerOpen(true)}
+                                    className="bg-navy-800/80 hover:bg-navy-700 text-brand-300 border border-brand-500/20 rounded-xl p-2.5 transition-all"
+                                    title="Manage Templates"
+                                >
+                                    <Sparkles size={18} />
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setIsTemplateModalOpen(true)}
+                                className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold transition-all flex items-center gap-2"
+                            >
+                                <CheckSquare size={16} />
+                                <span className="hidden xl:inline">Templates</span>
+                            </button>
+                        </>
                     )}
-                    <button
-                        onClick={() => setIsTemplateModalOpen(true)}
-                        className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold transition-all flex items-center gap-2"
-                    >
-                        <CheckSquare size={16} />
-                        <span className="hidden xl:inline">Templates</span>
-                    </button>
                 </div>
             </div>
 
@@ -896,14 +1018,14 @@ const TasksPage: React.FC = () => {
                                         onChange={(val) => handleClientChange(val as string)}
                                         multi={false}
                                         placeholder="Select Client..."
-                                        disabled={!hasEditPermission}
+                                        disabled={!hasStructurePermission}
                                     />
                                 </div>
 
                                 {/* Task Title */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Task Title <span className="text-red-400">*</span></label>
-                                    <input className="w-full glass-input" value={currentTask.title} onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasEditPermission} />
+                                    <input className="w-full glass-input font-bold text-lg" value={currentTask.title} onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })} disabled={!hasStructurePermission} />
                                 </div>
 
                                 {/* Due Date & Priority Row */}
@@ -915,23 +1037,61 @@ const TasksPage: React.FC = () => {
                                             className="w-full glass-input"
                                             value={currentTask.dueDate}
                                             onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
-                                            disabled={!hasEditPermission}
+                                            className="w-full glass-input"
+                                            value={currentTask.dueDate}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
+                                            disabled={!hasStructurePermission}
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
-                                        <select className="w-full glass-input" value={currentTask.priority} onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasEditPermission}>
+                                        <select className="w-full glass-input" value={currentTask.priority} onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })} disabled={!hasStructurePermission}>
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
+
                                 </div>
 
                                 {/* Status Row */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
-                                    <select className="w-full glass-input" value={currentTask.status} onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>
-                                        {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                                    </select>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                                        <select className="w-full glass-input" value={currentTask.status} onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })} disabled={!hasEditPermission}>
+                                            {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                                        </select>
+                                    </div>
+                                    {/* Risk Level */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Risk Level</label>
+                                        <select
+                                            className={`w-full glass-input font-bold ${currentTask.riskLevel === 'HIGH' ? 'text-red-400 border-red-500/30' : ''}`}
+                                            value={currentTask.riskLevel || 'LOW'}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, riskLevel: e.target.value as 'LOW' | 'MEDIUM' | 'HIGH' })}
+                                            disabled={!hasStructurePermission}
+                                        >
+                                            <option value="LOW">Low</option>
+                                            <option value="MEDIUM">Medium</option>
+                                            <option value="HIGH">High (Requires Review)</option>
+                                        </select>
+                                    </div>
+                                    {/* Team Leader Selection */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Team Leader</label>
+                                        <select
+                                            className="w-full glass-input"
+                                            value={currentTask.teamLeaderId || ''}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, teamLeaderId: e.target.value })}
+                                            disabled={!hasEditPermission}
+                                        >
+                                            <option value="">Select Team Leader...</option>
+                                            {usersList
+                                                .filter(u => currentTask.assignedTo?.includes(u.uid))
+                                                .map(u => (
+                                                    <option key={u.uid} value={u.uid}>{u.displayName}</option>
+                                                ))
+                                            }
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="relative" ref={dropdownRef}>
@@ -941,16 +1101,31 @@ const TasksPage: React.FC = () => {
                                     <StaffSelect
                                         users={usersList}
                                         value={currentTask.assignedTo || []}
-                                        onChange={(val) => setCurrentTask({ ...currentTask, assignedTo: val as string[] })}
+                                        onChange={(val) => {
+                                            const newAssigned = val as string[];
+                                            // If removed user was team leader, clear team leader
+                                            let newTeamLeader = currentTask.teamLeaderId;
+                                            if (newTeamLeader && !newAssigned.includes(newTeamLeader)) {
+                                                newTeamLeader = '';
+                                            }
+                                            setCurrentTask({ ...currentTask, assignedTo: newAssigned, teamLeaderId: newTeamLeader });
+                                        }}
                                         multi={true}
                                         placeholder="Assign staff..."
-                                        disabled={!hasEditPermission}
+                                        disabled={!hasStructurePermission}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Description</label>
-                                    <textarea rows={2} className="w-full glass-input" value={currentTask.description} onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })} disabled={!hasEditPermission} />
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                                    <textarea
+                                        rows={4}
+                                        className="w-full glass-input leading-relaxed"
+                                        placeholder="Add details about this task..."
+                                        value={currentTask.description}
+                                        onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })}
+                                        disabled={!hasEditPermission}
+                                    />
                                 </div>
 
                                 <div className="space-y-3">
@@ -959,72 +1134,118 @@ const TasksPage: React.FC = () => {
                                     </div>
                                     <div className="space-y-2">
                                         {currentTask.subtasks?.map(st => (
-                                            <div key={st.id} className="flex flex-col space-y-1 bg-white/5 p-2 rounded-lg">
-                                                <div className="flex items-center space-x-2">
+                                            <div key={st.id} className="group flex flex-col space-y-1 bg-white/5 hover:bg-white/10 p-3 rounded-xl transition-all border border-white/5 hover:border-white/10">
+                                                <div className="flex items-start gap-3">
                                                     <button
                                                         onClick={() => toggleSubtask(st.id)}
                                                         disabled={!hasEditPermission}
-                                                        className={`${st.isCompleted ? 'text-emerald-500' : 'text-gray-500'} ${!hasEditPermission ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                        className={`mt-0.5 shrink-0 ${st.isCompleted ? 'text-emerald-500' : 'text-gray-500 hover:text-brand-400'} ${!hasEditPermission ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} transition-colors`}
                                                     >
-                                                        {st.isCompleted ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 border border-gray-500 rounded-full" />}
+                                                        {st.isCompleted ? <CheckCircle2 size={18} className="fill-emerald-500/20" /> : <div className="w-4 h-4 border-2 border-current rounded-md" />}
                                                     </button>
-                                                    <span className={`text-xs flex-1 ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>{st.title}</span>
-                                                    {hasEditPermission && <Trash2 size={14} className="text-gray-600 hover:text-red-400 cursor-pointer" onClick={() => deleteSubtask(st.id)} />}
-                                                </div>
-                                                {st.minimumRequirement && (
-                                                    <div className="ml-6 text-[10px] text-brand-400/80 italic flex items-center">
-                                                        <AlertCircle size={10} className="mr-1" />
-                                                        Req: {st.minimumRequirement}
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={`text-sm block leading-snug ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>{st.title}</span>
+                                                        {st.minimumRequirement && (
+                                                            <div className="mt-1.5 flex items-center text-[11px] text-amber-400/90 bg-amber-400/10 w-fit px-2 py-0.5 rounded border border-amber-400/10">
+                                                                <AlertCircle size={10} className="mr-1.5" />
+                                                                <span className="font-medium">Req: {st.minimumRequirement}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+                                                    {hasEditPermission && (
+                                                        <button
+                                                            onClick={() => deleteSubtask(st.id)}
+                                                            className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1 rounded hover:bg-white/5"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                     {hasEditPermission && (
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex gap-2">
-                                                <input className="flex-1 glass-input text-xs" placeholder="New step..." value={newSubtaskTitle}
-                                                    onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
-                                                />
+                                        <div className="flex flex-col gap-2 mt-2 bg-black/20 p-3 rounded-xl border border-white/5">
+                                            <div className="flex gap-2 items-center">
                                                 <input
-                                                    className="w-1/3 glass-input text-xs"
-                                                    placeholder="Min Requirement (Opt)"
-                                                    value={newSubtaskRequirement}
-                                                    onChange={(e) => setNewSubtaskRequirement(e.target.value)}
+                                                    className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-gray-500"
+                                                    placeholder="Add a new subtask..."
+                                                    value={newSubtaskTitle}
+                                                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
                                                 />
-                                                <button onClick={addSubtask} className="px-3 bg-white/10 rounded font-bold text-xs">Add</button>
+                                            </div>
+                                            <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                                <div className="flex-1 relative">
+                                                    <AlertCircle size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                                                    <input
+                                                        className="w-full bg-white/5 rounded-lg pl-7 pr-3 py-1.5 text-xs text-white border border-transparent focus:border-brand-500/50 outline-none placeholder-gray-600"
+                                                        placeholder="Requirement (Optional)"
+                                                        value={newSubtaskRequirement}
+                                                        onChange={(e) => setNewSubtaskRequirement(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={addSubtask}
+                                                    className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                                    disabled={!newSubtaskTitle.trim()}
+                                                >
+                                                    Add Subtask
+                                                </button>
                                             </div>
                                         </div>
                                     )}
-                                </div>
-                            </div>
 
-                            <div className="px-6 py-4 border-t border-white/10 flex justify-between bg-white/5">
-                                {isEditMode && hasEditPermission && (user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                                    <button onClick={() => currentTask.id && handleDeleteTask(currentTask.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center">
-                                        <Trash2 size={16} className="mr-2" /> Delete
-                                    </button>
+
+                                </div>
+
+                                {currentTask.id && (
+                                    <div className="pt-4 border-t border-white/10">
+                                        <TaskComments
+                                            comments={currentTask.comments}
+                                            users={usersList}
+                                            onAddComment={async (comment) => {
+                                                const updatedComments = [...(currentTask.comments || []), comment];
+                                                setCurrentTask({ ...currentTask, comments: updatedComments });
+                                                try {
+                                                    await AuthService.addTaskComment(currentTask.id!, comment);
+                                                } catch (err) {
+                                                    console.error("Failed to add comment", err);
+                                                    toast.error("Failed to save comment");
+                                                }
+                                            }}
+                                            readOnly={false}
+                                        />
+                                    </div>
                                 )}
-                                <div className="flex space-x-3 ml-auto">
-                                    <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
-                                    {hasEditPermission && (
-                                        <button
-                                            onClick={handleSaveTask}
-                                            disabled={isSaving}
-                                            className={`btn-primary flex items-center px-6 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        >
-                                            {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
-                                            {isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
+
+                                <div className="px-6 py-4 border-t border-white/10 flex justify-between bg-white/5">
+                                    {isEditMode && hasStructurePermission && (user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                                        <button onClick={() => currentTask.id && handleDeleteTask(currentTask.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center">
+                                            <Trash2 size={16} className="mr-2" /> Delete
                                         </button>
                                     )}
+                                    <div className="flex space-x-3 ml-auto">
+                                        <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                                        {hasEditPermission && (
+                                            <button
+                                                onClick={handleSaveTask}
+                                                disabled={isSaving}
+                                                className={`btn-primary flex items-center px-6 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            >
+                                                {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
+                                                {isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
                 </div>
             )}
-
             {isTemplateModalOpen && (
                 <TaskTemplateModal
                     isOpen={isTemplateModalOpen}
@@ -1033,8 +1254,9 @@ const TasksPage: React.FC = () => {
                 />
             )}
             {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
-        </div>
+        </div >
     );
 };
+
 
 export default TasksPage;

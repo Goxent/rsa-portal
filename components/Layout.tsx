@@ -182,6 +182,7 @@ const Layout: React.FC = () => {
             <SidebarItem to="/attendance" icon={Clock} label="Attendance" />
             <SidebarItem to="/calendar" icon={Calendar} label="Calendar" />
             <SidebarItem to="/tasks" icon={CheckSquare} label="Tasks & Kanban" />
+            <SidebarItem to="/workload" icon={BarChart3} label="Workload" />
             <SidebarItem to="/leaves" icon={Calendar} label="Leaves" />
 
             <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-8">Advanced</p>

@@ -29,7 +29,8 @@ import {
     enableIndexedDbPersistence,
     limit,
     startAfter,
-    QueryDocumentSnapshot
+    QueryDocumentSnapshot,
+    arrayUnion
 } from 'firebase/firestore';
 import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification } from '../types';
 import { getCurrentDateUTC } from '../utils/dates';
@@ -548,6 +549,13 @@ export const AuthService = {
     updateTask: async (taskId: string, updates: Partial<Task>) => {
         if (!auth.currentUser) throw new Error("Unauthenticated");
         await updateDoc(doc(db, 'tasks', taskId), updates);
+    },
+
+    addTaskComment: async (taskId: string, comment: any) => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+        await updateDoc(doc(db, 'tasks', taskId), {
+            comments: arrayUnion(comment)
+        });
     },
 
     // --- ATTENDANCE ---

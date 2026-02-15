@@ -102,6 +102,19 @@ export interface Task {
   completedAt?: string;
   attachments?: Attachment[];
   subtasks?: SubTask[];
+  teamLeaderId?: string; // UID of the designated team leader
+  riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
+  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  comments?: TaskComment[];
+}
+
+export interface TaskComment {
+  id: string;
+  text: string;
+  userId: string;
+  userName: string;
+  createdAt: string;
+  mentions?: string[]; // userIds
 }
 
 export interface Client {

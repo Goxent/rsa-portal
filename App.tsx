@@ -31,6 +31,7 @@ const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const MyPerformancePage = lazy(() => import('./pages/MyPerformancePage'));
 const PeerReviewPage = lazy(() => import('./pages/PeerReviewPage'));
+const ResourcePlanningPage = lazy(() => import('./pages/ResourcePlanningPage'));
 
 
 // Suspense wrapper for lazy-loaded components
@@ -82,7 +83,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       refetchOnWindowFocus: false,
       retry: 1,
     },
@@ -133,6 +134,7 @@ const App: React.FC = () => {
                     <Route path="clients" element={<LazyPage><ClientsPage /></LazyPage>} />
                     <Route path="tasks" element={<LazyPage><TasksPage /></LazyPage>} />
                     <Route path="calendar" element={<LazyPage><CalendarPage /></LazyPage>} />
+                    <Route path="workload" element={<LazyPage><ResourcePlanningPage /></LazyPage>} />
                     <Route path="resources" element={<LazyPage><ResourcesPage /></LazyPage>} />
                     <Route path="knowledge-base" element={<LazyPage><KnowledgeBasePage /></LazyPage>} />
                     <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />
