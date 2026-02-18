@@ -272,6 +272,23 @@ const TasksPage: React.FC = () => {
         }
     };
 
+    // Recursively removes undefined values from an object before sending to Firestore
+    // Firestore rejects undefined values anywhere in the document tree
+    const cleanForFirestore = (obj: any): any => {
+        if (Array.isArray(obj)) {
+            return obj.map(cleanForFirestore);
+        }
+        if (obj !== null && typeof obj === 'object') {
+            return Object.entries(obj).reduce((acc, [key, value]) => {
+                if (value !== undefined) {
+                    acc[key] = cleanForFirestore(value);
+                }
+                return acc;
+            }, {} as any);
+        }
+        return obj;
+    };
+
     const handleSaveTask = async () => {
         if (!currentTask.title?.trim()) {
             setFormError("Title is required.");
@@ -288,7 +305,7 @@ const TasksPage: React.FC = () => {
                 .map(id => clientsList.find(c => c.id === id)?.name)
                 .filter(Boolean);
 
-            const taskToSave: Task = {
+            const rawTask: Task = {
                 ...currentTask,
                 id: currentTask.id || `t_${Date.now()}`,
                 clientName: clientNames.length > 0 ? clientNames.join(', ') : 'Internal',
@@ -298,6 +315,9 @@ const TasksPage: React.FC = () => {
                 subtasks: currentTask.subtasks || [],
                 teamLeaderId: currentTask.teamLeaderId || null
             } as Task;
+
+            // Strip all undefined values before saving to Firestore
+            const taskToSave: Task = cleanForFirestore(rawTask);
 
             await AuthService.saveTask(taskToSave);
 
@@ -357,10 +377,12 @@ const TasksPage: React.FC = () => {
 
     const addSubtask = () => {
         if (!newSubtaskTitle.trim()) return;
+        const trimmedReq = newSubtaskRequirement.trim();
         const sub: SubTask = {
             id: 'st_' + Date.now(),
             title: newSubtaskTitle,
-            minimumRequirement: newSubtaskRequirement.trim() || undefined,
+            // Only include minimumRequirement if it has a value — Firestore rejects undefined
+            ...(trimmedReq ? { minimumRequirement: trimmedReq } : {}),
             isCompleted: false,
             createdBy: user?.displayName || 'User',
             createdAt: new Date().toISOString()

@@ -7,7 +7,8 @@ import { AuthService } from '../../services/firebase';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
 
-// Internal Searchable Select Component
+// Internal Searchable Select Component — uses a portal-style fixed dropdown
+// to escape overflow:hidden/auto parent containers
 const SearchableClientSelect = ({
     clients,
     value,
@@ -23,11 +24,14 @@ const SearchableClientSelect = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const selectedClient = clients.find(c => c.id === value);
 
+    // Close on outside click
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -38,10 +42,47 @@ const SearchableClientSelect = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Focus search input when opened
     useEffect(() => {
         if (isOpen && inputRef.current) {
             inputRef.current.focus();
         }
+    }, [isOpen]);
+
+    // Recalculate dropdown position on scroll/resize while open
+    useEffect(() => {
+        if (!isOpen) return;
+        const updatePosition = () => {
+            if (!buttonRef.current) return;
+            const rect = buttonRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const dropdownHeight = 240; // max-h-60 = 240px
+            // Open upward if not enough space below
+            if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+                setDropdownStyle({
+                    position: 'fixed',
+                    bottom: window.innerHeight - rect.top + 4,
+                    left: rect.left,
+                    width: rect.width,
+                    zIndex: 9999,
+                });
+            } else {
+                setDropdownStyle({
+                    position: 'fixed',
+                    top: rect.bottom + 4,
+                    left: rect.left,
+                    width: rect.width,
+                    zIndex: 9999,
+                });
+            }
+        };
+        updatePosition();
+        window.addEventListener('scroll', updatePosition, true);
+        window.addEventListener('resize', updatePosition);
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
     }, [isOpen]);
 
     const filteredClients = clients.filter(c =>
@@ -49,11 +90,17 @@ const SearchableClientSelect = ({
         (c.code && c.code.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const handleToggle = () => {
+        if (disabled) return;
+        setIsOpen(prev => !prev);
+    };
+
     return (
         <div className="relative flex-1" ref={wrapperRef}>
             <button
+                ref={buttonRef}
                 type="button"
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={handleToggle}
                 disabled={disabled}
                 className={`w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-left transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-500/50'}`}
             >
@@ -64,8 +111,12 @@ const SearchableClientSelect = ({
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#0f172a] border border-white/10 rounded-lg shadow-xl z-50 max-h-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                    <div className="p-2 border-b border-white/5 sticky top-0 bg-[#0f172a]">
+                <div
+                    style={dropdownStyle}
+                    className="bg-[#0f172a] border border-white/10 rounded-lg shadow-2xl max-h-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                >
+                    {/* Search */}
+                    <div className="p-2 border-b border-white/5 bg-[#0f172a]">
                         <div className="relative">
                             <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
                             <input
@@ -78,6 +129,7 @@ const SearchableClientSelect = ({
                             />
                         </div>
                     </div>
+                    {/* Client List */}
                     <div className="overflow-y-auto custom-scrollbar flex-1 p-1">
                         {filteredClients.length > 0 ? (
                             filteredClients.map(client => (
