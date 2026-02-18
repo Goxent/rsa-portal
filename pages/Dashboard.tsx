@@ -55,7 +55,7 @@ const Dashboard: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const isAdmin = user.role === UserRole.ADMIN;
+            const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN;
 
             // Fetch Basic Data
             const allUsers = isAdmin ? await AuthService.getAllUsers() : [user];
@@ -98,12 +98,18 @@ const Dashboard: React.FC = () => {
                 { name: 'Pending', value: statusCounts.NOT_STARTED }
             ]);
 
-            // Recent Tasks (sorted by priority)
+            // Recent Tasks (sorted by urgency — admin sees ALL tasks, staff sees own)
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('en-CA');
             const sortedTasks = [...relevantTasks].sort((a, b) => {
+                const aOverdue = a.dueDate && new Date(a.dueDate) < now ? 1 : 0;
+                const bOverdue = b.dueDate && new Date(b.dueDate) < now ? 1 : 0;
+                if (bOverdue !== aOverdue) return bOverdue - aOverdue;
                 const pMap: Record<string, number> = { URGENT: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
                 return (pMap[b.priority] || 0) - (pMap[a.priority] || 0);
-            }).slice(0, 5);
-            setRecentTasks(sortedTasks);
+            });
+            // Admin gets all tasks (no slice), staff gets top 5
+            setRecentTasks(isAdmin ? sortedTasks : sortedTasks.slice(0, 5));
 
             // Recent Completed Tasks (for Activity Feed)
             const completedRecent = [...relevantTasks]
@@ -113,8 +119,6 @@ const Dashboard: React.FC = () => {
             setRecentCompletedTasks(completedRecent);
 
             // Upcoming Schedule
-            const now = new Date();
-            const todayStr = now.toLocaleDateString('en-CA');
             const datePlus30 = new Date(now);
             datePlus30.setDate(datePlus30.getDate() + 30);
             const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
@@ -218,7 +222,7 @@ const Dashboard: React.FC = () => {
     const dashboardData = {
         activeStaffCount,
         taskData,
-        recentTasks,
+        recentTasks,       // admin: all tasks sorted by urgency; staff: top 5 own tasks
         upcomingSchedule,
         staffStats,
         userMap,
@@ -266,7 +270,7 @@ const Dashboard: React.FC = () => {
                 user && (
                     <WidgetContainer
                         userId={user.uid}
-                        isAdmin={user.role === UserRole.ADMIN}
+                        isAdmin={user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN}
                         dashboardData={dashboardData}
                     />
                 )

@@ -32,6 +32,7 @@ import StaffStatsWidget from './widgets/StaffStatsWidget';
 import ImpactStatsWidget from './widgets/ImpactStatsWidget';
 import AiInsightWidget from './widgets/AiInsightWidget';
 import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
+import AllTasksWidget from './widgets/AllTasksWidget';
 
 interface WidgetContainerProps {
     userId: string;
@@ -64,7 +65,16 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         const savedConfig = localStorage.getItem(`dashboard-widgets-${userId}`);
         if (savedConfig) {
             try {
-                setWidgets(JSON.parse(savedConfig));
+                const parsed: WidgetConfig[] = JSON.parse(savedConfig);
+                // Version check: if admin layout is missing 'all-tasks', reset to new default
+                const needsReset = isAdmin && !parsed.some(w => w.type === 'all-tasks');
+                if (needsReset) {
+                    const fresh = getDefaultWidgetConfig(isAdmin);
+                    localStorage.setItem(`dashboard-widgets-${userId}`, JSON.stringify(fresh));
+                    setWidgets(fresh);
+                } else {
+                    setWidgets(parsed);
+                }
             } catch {
                 setWidgets(getDefaultWidgetConfig(isAdmin));
             }
@@ -136,6 +146,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <AiInsightWidget />;
             case 'compliance-countdown':
                 return <ComplianceCountdownWidget />;
+            case 'all-tasks':
+                return <AllTasksWidget recentTasks={dashboardData.recentTasks} userMap={dashboardData.userMap} isLoading={dashboardData.isLoading} />;
             case 'task-stats':
                 return <TaskStatsWidget {...props} />;
             case 'my-tasks':

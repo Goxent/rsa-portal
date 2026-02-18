@@ -2,6 +2,7 @@
 
 export type WidgetType =
     | 'my-tasks'
+    | 'all-tasks'
     | 'team-workload'
     | 'pending-actions'
     | 'calendar'
@@ -80,6 +81,14 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         defaultSize: 'md',
     },
     {
+        type: 'all-tasks',
+        title: 'All Tasks',
+        description: 'Firm-wide task list with urgency filters and assignee view',
+        icon: 'CheckSquare',
+        defaultSize: 'full',
+        adminOnly: true,
+    },
+    {
         type: 'team-workload',
         title: 'Team Workload',
         description: 'Staff capacity and assignment overview',
@@ -141,24 +150,33 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
 
 // Default widget layout for new users
 export const getDefaultWidgetConfig = (isAdmin: boolean): WidgetConfig[] => {
-    const baseWidgets: WidgetConfig[] = [
-        { id: 'w_impact', type: 'impact-stats', title: 'Impact Stats', position: 0, size: 'full', visible: true },
-        { id: 'w_ai', type: 'ai-insight', title: 'AI Insight', position: 1, size: 'full', visible: true },
-        { id: 'w1', type: 'task-stats', title: 'Task Statistics', position: 2, size: 'md', visible: true },
-        { id: 'w2', type: 'my-tasks', title: 'My Tasks', position: 3, size: 'md', visible: true },
-        { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 4, size: 'md', visible: true },
-        { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 5, size: 'sm', visible: true },
-        { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 6, size: 'md', visible: true },
-    ];
-
     if (isAdmin) {
-        baseWidgets.push(
-            { id: 'w6', type: 'team-workload', title: 'Team Workload', position: 7, size: 'md', visible: true },
-            { id: 'w7', type: 'pending-actions', title: 'Pending Actions', position: 8, size: 'sm', visible: true }
-        );
+        // Admin: work management + event management focused
+        return [
+            { id: 'w_ai', type: 'ai-insight', title: 'AI Daily Insight', position: 0, size: 'full', visible: true },
+            { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 1, size: 'full', visible: true },
+            { id: 'w_workload', type: 'team-workload', title: 'Team Workload', position: 2, size: 'md', visible: true },
+            { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
+            { id: 'w_stats', type: 'task-stats', title: 'Task Statistics', position: 4, size: 'md', visible: true },
+            { id: 'w_activity', type: 'recent-activity', title: 'Recent Activity', position: 5, size: 'md', visible: true },
+            { id: 'w_qa', type: 'quick-actions', title: 'Quick Actions', position: 6, size: 'sm', visible: true },
+            { id: 'w_clients', type: 'client-stats', title: 'Client Overview', position: 7, size: 'sm', visible: true },
+            { id: 'w_staff', type: 'staff-stats', title: 'Department Overview', position: 8, size: 'sm', visible: true },
+            { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 9, size: 'md', visible: true },
+        ];
     }
 
-    return baseWidgets;
+    // Staff: personal task + performance focused
+    return [
+        { id: 'w_ai', type: 'ai-insight', title: 'AI Daily Insight', position: 0, size: 'full', visible: true },
+        { id: 'w1', type: 'task-stats', title: 'Task Statistics', position: 1, size: 'md', visible: true },
+        { id: 'w2', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'md', visible: true },
+        { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
+        { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 4, size: 'sm', visible: true },
+        { id: 'w5', type: 'performance', title: 'Performance', position: 5, size: 'sm', visible: true },
+        { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 6, size: 'md', visible: true },
+        { id: 'w_act', type: 'recent-activity', title: 'Recent Activity', position: 7, size: 'md', visible: true },
+    ];
 };
 
 // Size class mapping for Tailwind
