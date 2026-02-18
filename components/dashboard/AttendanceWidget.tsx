@@ -7,8 +7,8 @@ import { AuthService } from '../../services/firebase';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
 
-// Internal Searchable Select Component — uses a portal-style fixed dropdown
-// to escape overflow:hidden/auto parent containers
+// Internal Searchable Select Component
+// Uses simple absolute positioning — works because the parent container does NOT have overflow:hidden/auto
 const SearchableClientSelect = ({
     clients,
     value,
@@ -24,9 +24,7 @@ const SearchableClientSelect = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const buttonRef = useRef<HTMLButtonElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const selectedClient = clients.find(c => c.id === value);
@@ -36,53 +34,18 @@ const SearchableClientSelect = ({
         const handleClickOutside = (event: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
+                setSearchTerm('');
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Focus search input when opened
+    // Auto-focus search when opened
     useEffect(() => {
         if (isOpen && inputRef.current) {
-            inputRef.current.focus();
+            setTimeout(() => inputRef.current?.focus(), 50);
         }
-    }, [isOpen]);
-
-    // Recalculate dropdown position on scroll/resize while open
-    useEffect(() => {
-        if (!isOpen) return;
-        const updatePosition = () => {
-            if (!buttonRef.current) return;
-            const rect = buttonRef.current.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const dropdownHeight = 240; // max-h-60 = 240px
-            // Open upward if not enough space below
-            if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
-                setDropdownStyle({
-                    position: 'fixed',
-                    bottom: window.innerHeight - rect.top + 4,
-                    left: rect.left,
-                    width: rect.width,
-                    zIndex: 9999,
-                });
-            } else {
-                setDropdownStyle({
-                    position: 'fixed',
-                    top: rect.bottom + 4,
-                    left: rect.left,
-                    width: rect.width,
-                    zIndex: 9999,
-                });
-            }
-        };
-        updatePosition();
-        window.addEventListener('scroll', updatePosition, true);
-        window.addEventListener('resize', updatePosition);
-        return () => {
-            window.removeEventListener('scroll', updatePosition, true);
-            window.removeEventListener('resize', updatePosition);
-        };
     }, [isOpen]);
 
     const filteredClients = clients.filter(c =>
@@ -90,65 +53,112 @@ const SearchableClientSelect = ({
         (c.code && c.code.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const handleToggle = () => {
-        if (disabled) return;
-        setIsOpen(prev => !prev);
-    };
-
     return (
-        <div className="relative flex-1" ref={wrapperRef}>
+        <div className="relative w-full" ref={wrapperRef}>
+            {/* Trigger Button */}
             <button
-                ref={buttonRef}
                 type="button"
-                onClick={handleToggle}
+                onClick={() => !disabled && setIsOpen(prev => !prev)}
                 disabled={disabled}
-                className={`w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-left transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand-500/50'}`}
+                className={`
+                    w-full flex items-center justify-between
+                    bg-black/30 border rounded-xl px-4 py-2.5
+                    text-[12px] text-left transition-all duration-200
+                    ${isOpen
+                        ? 'border-brand-500/60 bg-brand-500/5 shadow-[0_0_0_3px_rgba(99,102,241,0.1)]'
+                        : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                    }
+                    ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+                `}
             >
-                <span className={selectedClient ? 'text-white' : 'text-gray-500'}>
-                    {selectedClient ? selectedClient.name : placeholder}
-                </span>
-                <ChevronDown size={14} className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${selectedClient ? 'bg-brand-400' : 'bg-gray-600'}`} />
+                    <span className={`truncate font-medium ${selectedClient ? 'text-white' : 'text-gray-500'}`}>
+                        {selectedClient ? selectedClient.name : placeholder}
+                    </span>
+                </div>
+                <ChevronDown
+                    size={14}
+                    className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-brand-400' : ''}`}
+                />
             </button>
 
+            {/* Dropdown Panel — absolute, anchored to button, no overflow clipping */}
             {isOpen && (
-                <div
-                    style={dropdownStyle}
-                    className="bg-[#0f172a] border border-white/10 rounded-lg shadow-2xl max-h-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                >
-                    {/* Search */}
-                    <div className="p-2 border-b border-white/5 bg-[#0f172a]">
-                        <div className="relative">
-                            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                className="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-2 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-500/50 placeholder-gray-600"
-                                placeholder="Search clients..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                <div className="absolute top-full left-0 right-0 mt-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="bg-[#0d1526] border border-white/10 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+                        {/* Search Bar */}
+                        <div className="p-2.5 border-b border-white/5">
+                            <div className="relative">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-2 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/50 focus:bg-brand-500/5 transition-all"
+                                    placeholder="Search clients..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                {searchTerm && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                    >
+                                        <X size={11} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                    {/* Client List */}
-                    <div className="overflow-y-auto custom-scrollbar flex-1 p-1">
-                        {filteredClients.length > 0 ? (
-                            filteredClients.map(client => (
-                                <button
-                                    key={client.id}
-                                    type="button"
-                                    onClick={() => {
-                                        onChange(client.id);
-                                        setIsOpen(false);
-                                        setSearchTerm('');
-                                    }}
-                                    className={`w-full text-left px-3 py-2 text-[11px] rounded-md transition-colors flex items-center justify-between group ${value === client.id ? 'bg-brand-600/20 text-brand-300' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
-                                >
-                                    <span>{client.name}</span>
-                                    {value === client.id && <Check size={12} className="text-brand-400" />}
-                                </button>
-                            ))
-                        ) : (
-                            <div className="p-3 text-center text-gray-500 text-[10px]">No clients found</div>
+
+                        {/* Client List */}
+                        <div className="max-h-52 overflow-y-auto custom-scrollbar py-1">
+                            {filteredClients.length > 0 ? (
+                                filteredClients.map(client => {
+                                    const isSelected = value === client.id;
+                                    return (
+                                        <button
+                                            key={client.id}
+                                            type="button"
+                                            onClick={() => {
+                                                onChange(client.id);
+                                                setIsOpen(false);
+                                                setSearchTerm('');
+                                            }}
+                                            className={`
+                                                w-full text-left px-3 py-2.5 text-[11px] mx-1 rounded-lg
+                                                transition-all duration-100 flex items-center justify-between gap-2
+                                                ${isSelected
+                                                    ? 'bg-brand-600/25 text-brand-200'
+                                                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                                }
+                                            `}
+                                            style={{ width: 'calc(100% - 8px)' }}
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSelected ? 'bg-brand-400' : 'bg-gray-600'}`} />
+                                                <span className="truncate">{client.name}</span>
+                                            </div>
+                                            {isSelected && (
+                                                <Check size={12} className="text-brand-400 flex-shrink-0" />
+                                            )}
+                                        </button>
+                                    );
+                                })
+                            ) : (
+                                <div className="py-6 text-center">
+                                    <div className="text-gray-500 text-[11px]">No clients found</div>
+                                    <div className="text-gray-600 text-[10px] mt-1">Try a different search term</div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer count */}
+                        {filteredClients.length > 0 && (
+                            <div className="px-3 py-1.5 border-t border-white/5 text-[10px] text-gray-600">
+                                {filteredClients.length} client{filteredClients.length !== 1 ? 's' : ''}
+                                {searchTerm ? ` matching "${searchTerm}"` : ' available'}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -481,7 +491,7 @@ const AttendanceWidget: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="space-y-3 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                        <div className="space-y-3 pr-1">
                             {workLogs.map((log) => (
                                 <div key={log.id} className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2 hover:bg-white/10 transition-colors group/card">
                                     <div className="flex gap-2 items-center">
