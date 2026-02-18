@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { AttendanceRecord, UserRole, UserProfile, Client, LeaveRequest, CalendarEvent } from '../types';
 import { AuthService } from '../services/firebase';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import NepaliDate from 'nepali-date-converter';
 import ExcelJS from 'exceljs';
 import { useLocation } from 'react-router-dom';
@@ -196,66 +197,213 @@ const AttendancePage: React.FC = () => {
     // EXPORT
     const handleExportPDF = () => {
         const doc = new jsPDF();
-        doc.setFillColor(15, 23, 42);
-        doc.rect(0, 0, 210, 40, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(22);
-        doc.text("R. Sapkota & Associates", 105, 15, { align: 'center' });
-        doc.setFontSize(10);
-        doc.text("Attendance & Work Log Report", 105, 25, { align: 'center' });
-        doc.text(`Period: ${filterStartDate} to ${filterEndDate}`, 105, 32, { align: 'center' });
 
+        // ── Header Banner ──────────────────────────────────────────────
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 48, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('R. Sapkota & Associates', 105, 14, { align: 'center' });
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(180, 200, 230);
+        doc.text('Kathmandu, Nepal  |  Chartered Accountants & Tax Consultants', 105, 22, { align: 'center' });
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Attendance & Work Log Report', 105, 32, { align: 'center' });
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(180, 200, 230);
+        doc.text(`Period: ${filterStartDate}  to  ${filterEndDate}`, 105, 40, { align: 'center' });
+
+        // ── Generated timestamp ─────────────────────────────────────────
+        doc.setFontSize(7);
+        doc.setTextColor(120, 140, 160);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 55);
+
+        // ── Table ───────────────────────────────────────────────────────
         const rows = reportData.map(r => [
             r.date,
             r.userName,
             r.status,
             r.clockIn || '-',
             r.clockOut || '-',
-            r.workHours || '0',
-            (r.workLogs?.length > 0 ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('; ') : r.clientName)
+            r.workHours ? `${r.workHours}h` : '-',
+            r.workLogs?.length > 0
+                ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('; ')
+                : (r.clientName || '-')
         ]);
 
+        const getStatusColor = (status: string): [number, number, number] => {
+            if (status === 'PRESENT') return [220, 252, 231];
+            if (status === 'LATE') return [254, 243, 199];
+            if (status === 'ABSENT') return [254, 226, 226];
+            if (status === 'ON LEAVE') return [219, 234, 254];
+            return [245, 245, 250];
+        };
+
         autoTable(doc, {
-            head: [['Date', 'Staff', 'Status', 'In', 'Out', 'Hrs', 'Work Description']],
+            head: [['Date', 'Staff', 'Status', 'Clock In', 'Clock Out', 'Hrs', 'Work Description']],
             body: rows,
-            startY: 45,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [30, 41, 59] }
+            startY: 60,
+            styles: { fontSize: 7.5, cellPadding: 3, lineColor: [220, 225, 235], lineWidth: 0.2 },
+            headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+            columnStyles: { 6: { cellWidth: 70 } },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 2) {
+                    const status = data.cell.raw as string;
+                    data.cell.styles.fillColor = getStatusColor(status);
+                    data.cell.styles.textColor = [30, 41, 59];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
         });
 
-        doc.save(`Attendance_Report_${filterStartDate}.pdf`);
+        // ── Footer ──────────────────────────────────────────────────────
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7);
+            doc.setTextColor(150, 160, 175);
+            doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 8);
+            doc.text(`Page ${i} of ${pageCount}`, 196, doc.internal.pageSize.height - 8, { align: 'right' });
+        }
+
+        doc.save(`RSA_Attendance_${filterStartDate}_to_${filterEndDate}.pdf`);
     };
 
     const handleExportExcel = async () => {
         const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('Attendance');
-        sheet.columns = [
-            { header: 'Date', key: 'date', width: 12 },
-            { header: 'Staff', key: 'name', width: 20 },
-            { header: 'Status', key: 'status', width: 12 },
-            { header: 'Clock In', key: 'in', width: 10 },
-            { header: 'Clock Out', key: 'out', width: 10 },
-            { header: 'Hours', key: 'hours', width: 8 },
-            { header: 'Work Details', key: 'details', width: 50 }
+        workbook.creator = 'R. Sapkota & Associates';
+        workbook.created = new Date();
+
+        const sheet = workbook.addWorksheet('Attendance Report', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        // ── Company Header Block ────────────────────────────────────────
+        sheet.mergeCells('A1:G1');
+        const titleCell = sheet.getCell('A1');
+        titleCell.value = 'R. Sapkota & Associates';
+        titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        sheet.getRow(1).height = 32;
+
+        sheet.mergeCells('A2:G2');
+        const addrCell = sheet.getCell('A2');
+        addrCell.value = 'Kathmandu, Nepal  |  Chartered Accountants & Tax Consultants';
+        addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FFB4C8E6' } };
+        addrCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        sheet.getRow(2).height = 18;
+
+        sheet.mergeCells('A3:G3');
+        const reportTitleCell = sheet.getCell('A3');
+        reportTitleCell.value = 'Attendance & Work Log Report';
+        reportTitleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF1E293B' } };
+        reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        reportTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        sheet.getRow(3).height = 22;
+
+        sheet.mergeCells('A4:G4');
+        const periodCell = sheet.getCell('A4');
+        periodCell.value = `Period: ${filterStartDate}  to  ${filterEndDate}   |   Generated: ${new Date().toLocaleString()}`;
+        periodCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
+        periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        sheet.getRow(4).height = 16;
+
+        // Blank spacer
+        sheet.getRow(5).height = 6;
+
+        // ── Column Headers ──────────────────────────────────────────────
+        const COLS = [
+            { header: 'Date', key: 'date', width: 13 },
+            { header: 'Staff Name', key: 'name', width: 22 },
+            { header: 'Status', key: 'status', width: 13 },
+            { header: 'Clock In', key: 'in', width: 11 },
+            { header: 'Clock Out', key: 'out', width: 11 },
+            { header: 'Hours', key: 'hours', width: 9 },
+            { header: 'Work Details / Notes', key: 'details', width: 55 },
         ];
+        sheet.columns = COLS;
 
-        reportData.forEach(r => sheet.addRow({
-            date: r.date,
-            name: r.userName,
-            status: r.status,
-            in: r.clockIn,
-            out: r.clockOut,
-            hours: r.workHours,
-            details: r.workLogs?.length > 0 ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('\n') : r.clientName
-        }));
+        const headerRow = sheet.getRow(6);
+        COLS.forEach((col, i) => {
+            const cell = headerRow.getCell(i + 1);
+            cell.value = col.header;
+            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                bottom: { style: 'medium', color: { argb: 'FF6366F1' } }
+            };
+        });
+        headerRow.height = 22;
 
+        // ── Data Rows ───────────────────────────────────────────────────
+        const statusFill: Record<string, string> = {
+            'PRESENT': 'FFD1FAE5',
+            'LATE': 'FFFEF3C7',
+            'ABSENT': 'FFFEE2E2',
+            'ON LEAVE': 'FFDBEAFE',
+            'HOLIDAY': 'FFEDE9FE',
+            'WEEKEND': 'FFF1F5F9',
+        };
+
+        reportData.forEach((r, idx) => {
+            const row = sheet.addRow({
+                date: r.date,
+                name: r.userName,
+                status: r.status,
+                in: r.clockIn || '-',
+                out: r.clockOut || '-',
+                hours: r.workHours ? `${r.workHours}h` : '-',
+                details: r.workLogs?.length > 0
+                    ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('\n')
+                    : (r.clientName || '-')
+            });
+
+            const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
+            const statusBg = statusFill[r.status] || rowBg;
+
+            row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+                cell.font = { name: 'Calibri', size: 9 };
+                cell.alignment = { vertical: 'top', wrapText: true };
+                cell.fill = {
+                    type: 'pattern', pattern: 'solid',
+                    fgColor: { argb: colNum === 3 ? statusBg : rowBg }
+                };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                };
+            });
+
+            // Bold status cell
+            const statusCell = row.getCell(3);
+            statusCell.font = { name: 'Calibri', size: 9, bold: true };
+            statusCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+            row.height = r.workLogs?.length > 1 ? Math.min(r.workLogs.length * 16, 80) : 18;
+        });
+
+        // ── Freeze header rows ──────────────────────────────────────────
+        sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 6, activeCell: 'A7' }];
+
+        // ── Download ────────────────────────────────────────────────────
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Attendance_${filterStartDate}.xlsx`;
+        a.download = `RSA_Attendance_${filterStartDate}_to_${filterEndDate}.xlsx`;
         a.click();
+        URL.revokeObjectURL(url);
     };
 
     return (
