@@ -285,7 +285,7 @@ const AttendancePage: React.FC = () => {
         });
 
         // ── Company Header Block ────────────────────────────────────────
-        sheet.mergeCells('A1:G1');
+        sheet.mergeCells('A1:H1');
         const titleCell = sheet.getCell('A1');
         titleCell.value = 'R. Sapkota & Associates';
         titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -293,7 +293,7 @@ const AttendancePage: React.FC = () => {
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
         sheet.getRow(1).height = 32;
 
-        sheet.mergeCells('A2:G2');
+        sheet.mergeCells('A2:H2');
         const addrCell = sheet.getCell('A2');
         addrCell.value = 'Kathmandu, Nepal  |  Chartered Accountants & Tax Consultants';
         addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FFB4C8E6' } };
@@ -301,7 +301,7 @@ const AttendancePage: React.FC = () => {
         addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
         sheet.getRow(2).height = 18;
 
-        sheet.mergeCells('A3:G3');
+        sheet.mergeCells('A3:H3');
         const reportTitleCell = sheet.getCell('A3');
         reportTitleCell.value = 'Attendance & Work Log Report';
         reportTitleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF1E293B' } };
@@ -309,7 +309,7 @@ const AttendancePage: React.FC = () => {
         reportTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
         sheet.getRow(3).height = 22;
 
-        sheet.mergeCells('A4:G4');
+        sheet.mergeCells('A4:H4');
         const periodCell = sheet.getCell('A4');
         periodCell.value = `Period: ${filterStartDate}  to  ${filterEndDate}   |   Generated: ${new Date().toLocaleString()}`;
         periodCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
@@ -328,7 +328,8 @@ const AttendancePage: React.FC = () => {
             { header: 'Clock In', key: 'in', width: 11 },
             { header: 'Clock Out', key: 'out', width: 11 },
             { header: 'Hours', key: 'hours', width: 9 },
-            { header: 'Work Details / Notes', key: 'details', width: 55 },
+            { header: 'Client Name', key: 'client', width: 28 },
+            { header: 'Work Description', key: 'description', width: 50 },
         ];
         sheet.columns = COLS;
 
@@ -356,6 +357,14 @@ const AttendancePage: React.FC = () => {
         };
 
         reportData.forEach((r, idx) => {
+            // Build client name and description from workLogs if available
+            const clientName = r.workLogs?.length > 0
+                ? [...new Set(r.workLogs.map((l: any) => l.clientName).filter(Boolean))].join('\n')
+                : (r.clientName || '-');
+            const description = r.workLogs?.length > 0
+                ? r.workLogs.map((l: any) => l.description).filter(Boolean).join('\n')
+                : (r.notes && r.notes !== '-' ? r.notes : '-');
+
             const row = sheet.addRow({
                 date: r.date,
                 name: r.userName,
@@ -363,9 +372,8 @@ const AttendancePage: React.FC = () => {
                 in: r.clockIn || '-',
                 out: r.clockOut || '-',
                 hours: r.workHours ? `${r.workHours}h` : '-',
-                details: r.workLogs?.length > 0
-                    ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('\n')
-                    : (r.clientName || '-')
+                client: clientName,
+                description: description,
             });
 
             const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
@@ -384,10 +392,14 @@ const AttendancePage: React.FC = () => {
                 };
             });
 
-            // Bold status cell
+            // Bold + centered status cell
             const statusCell = row.getCell(3);
             statusCell.font = { name: 'Calibri', size: 9, bold: true };
             statusCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+            // Light teal tint for client name column for easy scanning
+            const clientCell = row.getCell(7);
+            clientCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF0F4C75' } };
 
             row.height = r.workLogs?.length > 1 ? Math.min(r.workLogs.length * 16, 80) : 18;
         });
