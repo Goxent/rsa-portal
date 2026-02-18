@@ -1,107 +1,180 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, CheckCircle, UserPlus, FileText, MessageSquare } from 'lucide-react';
-import { Task } from '../../../types';
+import { CheckCircle2, Briefcase, Clock, ArrowRight } from 'lucide-react';
+import { Task, TaskStatus } from '../../../types';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface RecentActivityWidgetProps {
     recentCompletedTasks?: Task[];
+    recentTasks?: Task[];
     isLoading?: boolean;
 }
 
-// Mock Activity Type
 interface ActivityItem {
     id: string;
-    type: 'TASK_COMPLETE' | 'CLIENT_ADDED' | 'NEW_RESOURCE' | 'COMMENT';
+    type: 'COMPLETED' | 'OVERDUE' | 'IN_PROGRESS' | 'REVIEW';
     title: string;
-    description: string;
+    client: string;
     timestamp: Date;
-    user: string;
+    priority: string;
 }
 
-const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ recentCompletedTasks, isLoading }) => {
+const getActivityStyle = (type: ActivityItem['type']) => {
+    switch (type) {
+        case 'COMPLETED': return { dot: 'bg-emerald-400', icon: <CheckCircle2 size={13} className="text-emerald-400" />, label: 'Completed', color: 'text-emerald-400' };
+        case 'OVERDUE': return { dot: 'bg-red-400 animate-pulse', icon: <Clock size={13} className="text-red-400" />, label: 'Overdue', color: 'text-red-400' };
+        case 'IN_PROGRESS': return { dot: 'bg-brand-400', icon: <Briefcase size={13} className="text-brand-400" />, label: 'In Progress', color: 'text-brand-400' };
+        case 'REVIEW': return { dot: 'bg-purple-400', icon: <Briefcase size={13} className="text-purple-400" />, label: 'Under Review', color: 'text-purple-400' };
+    }
+};
+
+const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
+    recentCompletedTasks = [],
+    recentTasks = [],
+    isLoading
+}) => {
+    const navigate = useNavigate();
     const [activities, setActivities] = useState<ActivityItem[]>([]);
 
     useEffect(() => {
-        // In a real app, we'd fetch a dedicated activity feed.
-        // For now, we simulate it using recent tasks and some fake data.
+        const items: ActivityItem[] = [];
 
-        const generated: ActivityItem[] = [];
-
-        // Add Recent Tasks
-        recentCompletedTasks?.forEach(t => {
-            generated.push({
-                id: `task-${t.id}`,
-                type: 'TASK_COMPLETE',
-                title: 'Task Completed',
-                description: `${t.title} for ${t.clientName}`,
-                timestamp: new Date(t.completedAt || t.createdAt || new Date()),
-                user: 'System'
+        // Completed tasks
+        recentCompletedTasks.slice(0, 5).forEach(t => {
+            items.push({
+                id: `done-${t.id}`,
+                type: 'COMPLETED',
+                title: t.title,
+                client: t.clientName || 'Internal',
+                timestamp: new Date(t.completedAt || t.createdAt || Date.now()),
+                priority: t.priority,
             });
         });
 
-        // Mock some other events
-        generated.push(
-            {
-                id: 'mock-1',
-                type: 'CLIENT_ADDED',
-                title: 'New Client Onboarded',
-                description: 'Apex Industries Pvt Ltd',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-                user: 'Admin'
-            },
-            {
-                id: 'mock-2',
-                type: 'NEW_RESOURCE',
-                title: 'Resource Update',
-                description: 'Added "Tax Audit Guide 2081"',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-                user: 'Manager'
-            }
+        // Overdue active tasks
+        recentTasks
+            .filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== TaskStatus.COMPLETED)
+            .slice(0, 3)
+            .forEach(t => {
+                items.push({
+                    id: `overdue-${t.id}`,
+                    type: 'OVERDUE',
+                    title: t.title,
+                    client: t.clientName || 'Internal',
+                    timestamp: new Date(t.dueDate),
+                    priority: t.priority,
+                });
+            });
+
+        // In-progress tasks
+        recentTasks
+            .filter(t => t.status === TaskStatus.IN_PROGRESS)
+            .slice(0, 3)
+            .forEach(t => {
+                items.push({
+                    id: `prog-${t.id}`,
+                    type: 'IN_PROGRESS',
+                    title: t.title,
+                    client: t.clientName || 'Internal',
+                    timestamp: new Date(t.createdAt || Date.now()),
+                    priority: t.priority,
+                });
+            });
+
+        // Under review
+        recentTasks
+            .filter(t => t.status === TaskStatus.PENDING_REVIEW)
+            .slice(0, 2)
+            .forEach(t => {
+                items.push({
+                    id: `rev-${t.id}`,
+                    type: 'REVIEW',
+                    title: t.title,
+                    client: t.clientName || 'Internal',
+                    timestamp: new Date(t.createdAt || Date.now()),
+                    priority: t.priority,
+                });
+            });
+
+        // Sort: overdue first, then by recency
+        items.sort((a, b) => {
+            if (a.type === 'OVERDUE' && b.type !== 'OVERDUE') return -1;
+            if (b.type === 'OVERDUE' && a.type !== 'OVERDUE') return 1;
+            return b.timestamp.getTime() - a.timestamp.getTime();
+        });
+
+        setActivities(items.slice(0, 7));
+    }, [recentCompletedTasks, recentTasks]);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-3">
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="flex gap-3 items-start">
+                        <div className="w-2 h-2 rounded-full bg-white/10 mt-2 flex-shrink-0 animate-pulse" />
+                        <div className="flex-1 space-y-1.5">
+                            <div className="h-3 bg-white/8 rounded animate-pulse w-3/4" />
+                            <div className="h-2.5 bg-white/5 rounded animate-pulse w-1/2" />
+                        </div>
+                    </div>
+                ))}
+            </div>
         );
+    }
 
-        // Sort by time
-        generated.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        setActivities(generated.slice(0, 5));
-
-    }, [recentCompletedTasks]);
-
-    if (isLoading) return <div className="space-y-3 p-2">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-white/5 rounded-lg animate-pulse" />)}</div>;
-
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'TASK_COMPLETE': return <CheckCircle size={16} className="text-emerald-400" />;
-            case 'CLIENT_ADDED': return <UserPlus size={16} className="text-blue-400" />;
-            case 'NEW_RESOURCE': return <FileText size={16} className="text-purple-400" />;
-            default: return <MessageSquare size={16} className="text-gray-400" />;
-        }
-    };
+    if (activities.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+                <CheckCircle2 size={28} className="mb-2 opacity-30" />
+                <p className="text-sm">No recent activity</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar pr-2 -mr-2">
-            {activities.length > 0 ? (
-                <div className="relative border-l border-white/10 ml-3 space-y-6 py-2">
-                    {activities.map((item, idx) => (
-                        <div key={item.id} className="relative pl-6 group">
-                            <div className="absolute -left-[9px] top-1 p-1 bg-navy-900 border border-white/10 rounded-full group-hover:border-brand-500/50 transition-colors">
-                                {getIcon(item.type)}
-                            </div>
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-sm font-medium text-white group-hover:text-brand-300 transition-colors">{item.title}</p>
-                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.description}</p>
+        <div className="space-y-0">
+            {/* Timeline */}
+            <div className="relative">
+                {/* Vertical line */}
+                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-white/8" />
+
+                <div className="space-y-0">
+                    {activities.map((item, idx) => {
+                        const style = getActivityStyle(item.type);
+                        return (
+                            <div key={item.id} className="relative flex gap-3 pb-4 last:pb-0 group">
+                                {/* Dot */}
+                                <div className={`relative z-10 w-3.5 h-3.5 rounded-full mt-1 flex-shrink-0 border-2 border-[#0a0f1e] ${style.dot}`} />
+
+                                {/* Content */}
+                                <div className="flex-1 min-w-0 bg-white/2 hover:bg-white/5 rounded-xl px-3 py-2 transition-colors border border-transparent hover:border-white/8">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[12px] font-semibold text-white truncate leading-tight">{item.title}</p>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                {style.icon}
+                                                <span className={`text-[10px] font-medium ${style.color}`}>{style.label}</span>
+                                                <span className="text-[10px] text-gray-600">·</span>
+                                                <span className="text-[10px] text-gray-500 truncate">{item.client}</span>
+                                            </div>
+                                        </div>
+                                        <span className="text-[10px] text-gray-600 whitespace-nowrap flex-shrink-0 mt-0.5">
+                                            {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
-                                    {formatDistanceToNow(item.timestamp, { addSuffix: true })}
-                                </span>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
-            ) : (
-                <div className="text-center text-gray-500 py-8 text-sm">
-                    No recent activity
-                </div>
-            )}
+            </div>
+
+            <button
+                onClick={() => navigate('/tasks')}
+                className="flex items-center justify-center gap-1.5 w-full pt-2 text-[11px] text-brand-400 hover:text-brand-300 transition-colors font-medium"
+            >
+                View all tasks <ArrowRight size={11} />
+            </button>
         </div>
     );
 };
