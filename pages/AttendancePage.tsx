@@ -208,7 +208,7 @@ const AttendancePage: React.FC = () => {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(180, 200, 230);
-        doc.text('Kathmandu, Nepal  |  Chartered Accountants & Tax Consultants', 105, 22, { align: 'center' });
+        doc.text('Chartered Accountants  |  Kathmandu, Nepal', 105, 22, { align: 'center' });
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
@@ -295,7 +295,7 @@ const AttendancePage: React.FC = () => {
 
         sheet.mergeCells('A2:H2');
         const addrCell = sheet.getCell('A2');
-        addrCell.value = 'Kathmandu, Nepal  |  Chartered Accountants & Tax Consultants';
+        addrCell.value = 'Chartered Accountants  |  Kathmandu, Nepal';
         addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FFB4C8E6' } };
         addrCell.alignment = { horizontal: 'center', vertical: 'middle' };
         addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
