@@ -228,6 +228,36 @@ const CompliancePage: React.FC = () => {
 
     const canEdit = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN' || user?.role === 'MANAGER';
 
+    // VAT Filing Restriction & Countdown Logic
+    const npNow = new NepaliDate();
+    const currentNPDay = npNow.getDate();
+    const isSyncDay = currentNPDay === 25;
+
+    const getNextVatDeadline = () => {
+        const now = new NepaliDate();
+        let year = now.getYear();
+        let month = now.getMonth();
+        let day = 25;
+
+        if (now.getDate() > 25) {
+            if (month === 11) {
+                month = 0;
+                year++;
+            } else {
+                month++;
+            }
+        }
+
+        const deadline = new NepaliDate(year, month, day);
+        const adDate = deadline.toJsDate();
+        return {
+            ad: adDate,
+            bsStr: `${day} ${nepaliMonths[month]} ${year}`
+        };
+    };
+
+    const vatDeadline = getNextVatDeadline();
+
     const filteredClients = clients.filter(c => (c.vatReturn || c.itrReturn)).filter(c => {
         const matchesSearch = c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.pan?.includes(searchTerm) ||
@@ -250,14 +280,19 @@ const CompliancePage: React.FC = () => {
                     <p className="text-sm text-gray-400">Track statutory deadlines, tax filings, and audit schedules.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={syncCompliance}
-                        disabled={isSyncing}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${isSyncing ? 'bg-white/5 text-gray-500 border-white/5' : 'bg-brand-500/10 text-brand-400 border-brand-500/20 hover:bg-brand-500/20'}`}
-                    >
-                        {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
-                        Sync Compliance
-                    </button>
+                    <div className="flex flex-col items-end">
+                        <button
+                            onClick={syncCompliance}
+                            disabled={isSyncing || !isSyncDay}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${isSyncing || !isSyncDay ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed' : 'bg-brand-500/10 text-brand-400 border-brand-500/20 hover:bg-brand-500/20'}`}
+                        >
+                            {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
+                            Sync Compliance
+                        </button>
+                        {!isSyncDay && (
+                            <span className="text-[9px] text-amber-500/60 font-bold mt-1 uppercase tracking-tighter">Available on 25th BS Only</span>
+                        )}
+                    </div>
                     {canEdit && (
                         <button
                             onClick={() => {
@@ -279,7 +314,50 @@ const CompliancePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Next Deadline Timer */}
+            {/* VAT Filing Countdown Panel */}
+            <div className="glass-panel p-8 rounded-2xl border-l-4 border-l-emerald-500 relative overflow-hidden bg-gradient-to-r from-emerald-900/20 to-navy-900/40">
+                <div className="absolute right-0 top-0 opacity-10">
+                    <ShieldCheck size={180} className="text-white" />
+                </div>
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                                VAT Filing Deadline
+                            </span>
+                            <span className="text-gray-400 text-xs font-medium">Monthly Requirement</span>
+                        </div>
+                        <h3 className="text-3xl font-bold text-white mb-2">Monthly VAT Submission</h3>
+                        <p className="text-gray-300 text-lg">
+                            Due Date: <span className="text-white font-semibold">{vatDeadline.bsStr}</span>
+                        </p>
+                    </div>
+
+                    <div className="flex gap-4">
+                        {(() => {
+                            const diff = vatDeadline.ad.getTime() - new Date().getTime();
+                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                            return [
+                                { val: days, label: 'Days' },
+                                { val: hours, label: 'Hours' },
+                                { val: mins, label: 'Mins' }
+                            ].map((item, idx) => (
+                                <div key={idx} className="text-center group">
+                                    <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-1 group-hover:scale-110 transition-transform duration-300">
+                                        {Math.max(0, item.val)}
+                                    </div>
+                                    <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest">{item.label}</div>
+                                </div>
+                            ));
+                        })()}
+                    </div>
+                </div>
+            </div>
+
+            {/* Next Deadline Timer (Other Compliance Events) */}
             {(() => {
                 const upcomingEvents = events.filter(e => e.status === 'UPCOMING' || e.status === 'DUE_SOON');
                 if (upcomingEvents.length === 0) return null;
