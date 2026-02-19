@@ -117,14 +117,7 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         icon: 'Zap',
         defaultSize: 'sm',
     },
-    {
-        type: 'pending-actions',
-        title: 'Pending Actions',
-        description: 'Items awaiting client response',
-        icon: 'Clock',
-        defaultSize: 'sm',
-        adminOnly: true,
-    },
+
     {
         type: 'recent-activity',
         title: 'Recent Activity',
@@ -159,10 +152,7 @@ export const getDefaultWidgetConfig = (isAdmin: boolean): WidgetConfig[] => {
             { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
             { id: 'w_stats', type: 'task-stats', title: 'Task Statistics', position: 4, size: 'md', visible: true },
             { id: 'w_activity', type: 'recent-activity', title: 'Recent Activity', position: 5, size: 'md', visible: true },
-            { id: 'w_qa', type: 'quick-actions', title: 'Quick Actions', position: 6, size: 'sm', visible: true },
-            { id: 'w_clients', type: 'client-stats', title: 'Client Overview', position: 7, size: 'sm', visible: true },
-            { id: 'w_staff', type: 'staff-stats', title: 'Department Overview', position: 8, size: 'sm', visible: true },
-            { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 9, size: 'md', visible: true },
+
         ];
     }
 

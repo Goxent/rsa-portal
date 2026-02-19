@@ -187,6 +187,9 @@ export const AuthService = {
                 // Create new doc with real UID
                 await setDoc(doc(db, 'users', uid), newUser);
 
+                // Migrate Tasks from Old ID (pending_...) to New UID
+                await AuthService.migrateUserTasks(existingUserDoc.id, uid);
+
                 // Delete the old placeholder doc
                 await deleteDoc(doc(db, 'users', existingUserDoc.id));
 
@@ -282,6 +285,9 @@ export const AuthService = {
 
                 // Save to new UID doc
                 await setDoc(userDocRef, newUser);
+
+                // Migrate Tasks
+                await AuthService.migrateUserTasks(existingUserDoc.id, user.uid);
 
                 // Delete old placeholder
                 await deleteDoc(doc(db, 'users', existingUserDoc.id));
@@ -496,38 +502,102 @@ export const AuthService = {
 
         // Notify assigned users (Only on creation for now to avoid spam)
         if (isNew && task.assignedTo && task.assignedTo.length > 0) {
+            // New Task: Notify all assignees
             for (const uid of task.assignedTo) {
-                // In-App Notification
-                await AuthService.createNotification({
-                    userId: uid,
-                    title: 'New Task Assignment',
-                    message: `You have been assigned to: ${task.title}`,
-                    type: 'INFO',
-                    category: 'TASK',
-                    link: '/tasks'
-                });
+                await AuthService.sendTaskNotification(uid, task, isNew);
+            }
+        } else if (!isNew && task.assignedTo && task.assignedTo.length > 0) {
+            // Existing Task: Notify ONLY NEW assignees
+            try {
+                const oldTaskDoc = await getDoc(doc(db, 'tasks', taskId));
+                const oldTask = oldTaskDoc.exists() ? (oldTaskDoc.data() as Task) : null;
+                const oldAssignedTo = oldTask?.assignedTo || [];
 
-                // Email Notification
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', uid));
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data() as UserProfile;
-                        if (userData.email) {
-                            await EmailService.sendTaskAssignment(
-                                userData.email,
-                                userData.displayName || 'Staff Member',
-                                task.title,
-                                `${window.location.origin}/#/tasks`,
-                                task.clientName || 'Internal',
-                                task.dueDate,
-                                task.priority
-                            );
-                        }
+                // Find users who are in the new list but NOT in the old list
+                const newAssignees = task.assignedTo.filter(uid => !oldAssignedTo.includes(uid));
+
+                if (newAssignees.length > 0) {
+                    console.log(`Sending notifications to ${newAssignees.length} new assignees`);
+                    for (const uid of newAssignees) {
+                        await AuthService.sendTaskNotification(uid, task, true); // Treat as "New Assignment" for them
                     }
-                } catch (err) {
-                    console.error("Failed to send email notif", err);
+                }
+            } catch (error) {
+                console.error("Error checking for new assignees:", error);
+            }
+        }
+    },
+
+    // Helper to send notifications (Internal & Email)
+    sendTaskNotification: async (uid: string, task: Task, isNewRel: boolean) => {
+        // In-App Notification
+        await AuthService.createNotification({
+            userId: uid,
+            title: 'New Task Assignment',
+            message: `You have been assigned to: ${task.title}`,
+            type: 'INFO',
+            category: 'TASK',
+            link: '/tasks'
+        });
+
+        // Email Notification
+        try {
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            if (userDoc.exists()) {
+                const userData = userDoc.data() as UserProfile;
+                if (userData.email) {
+                    await EmailService.sendTaskAssignment(
+                        userData.email,
+                        userData.displayName || 'Staff Member',
+                        task.title,
+                        `${window.location.origin}/#/tasks`,
+                        task.clientName || 'Internal',
+                        task.dueDate,
+                        task.priority
+                    );
                 }
             }
+        } catch (err) {
+            console.error("Failed to send email notif", err);
+        }
+    },
+
+    // Migrates tasks from a temporary/pending UID to a real UID
+    migrateUserTasks: async (oldUid: string, newUid: string) => {
+        console.log(`Migrating tasks from ${oldUid} to ${newUid}...`);
+        try {
+            // 1. Find all tasks where oldUid is assigned
+            const q = query(collection(db, 'tasks'), where('assignedTo', 'array-contains', oldUid));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                console.log("No tasks found to migrate.");
+                return;
+            }
+
+            console.log(`Found ${snapshot.size} tasks to migrate.`);
+
+            const batch = import('firebase/firestore').then(async ({ writeBatch }) => {
+                const firebaseBatch = writeBatch(db);
+
+                snapshot.docs.forEach(docSnap => {
+                    const task = docSnap.data() as Task;
+                    const newAssignedTo = task.assignedTo.map(uid => uid === oldUid ? newUid : uid);
+
+                    // Remove duplicates just in case
+                    const uniqueAssignedTo = [...new Set(newAssignedTo)];
+
+                    firebaseBatch.update(docSnap.ref, { assignedTo: uniqueAssignedTo });
+                });
+
+                await firebaseBatch.commit();
+                console.log("Task migration completed successfully.");
+            });
+
+            await batch;
+
+        } catch (error) {
+            console.error("Error migrating user tasks:", error);
         }
     },
 

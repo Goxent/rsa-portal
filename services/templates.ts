@@ -37,18 +37,7 @@ export const TemplateService = {
         await deleteDoc(docRef);
     },
 
-    uploadTemplateAttachment: async (file: File): Promise<Attachment> => {
-        const storageRef = ref(storage, `templates/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snapshot.ref);
 
-        return {
-            id: Date.now().toString(),
-            name: file.name,
-            url: url,
-            type: 'FILE'
-        };
-    },
 
     useTemplate: async (id: string): Promise<void> => {
         // Increment usage count

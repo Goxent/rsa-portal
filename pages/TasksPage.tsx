@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
-    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search, Calendar, Trash2, X, AlertTriangle, ShieldAlert
+    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search, Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,8 @@ import { TaskListSkeleton } from '../components/ui/LoadingSkeleton';
 import ClientSelect from '../components/ClientSelect';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
@@ -422,10 +424,11 @@ const TasksPage: React.FC = () => {
             if (groupBy === 'NONE') return [{ id: 'ALL', title: 'All Tasks', tasks: filteredTasks }];
 
             if (groupBy === 'AUDITOR') {
-                const groups: { id: string, title: string, tasks: Task[] }[] = [];
+                const groups: { id: string, title: string, tasks: Task[], gradient: string }[] = [];
                 const auditorTasks = new Map<string, Task[]>();
 
                 filteredTasks.forEach(task => {
+                    // Logic to find auditor remains the same
                     const client = clientsList.find(c => task.clientIds && task.clientIds.includes(c.id));
                     const auditor = client?.signingAuthority || 'Unassigned';
 
@@ -435,11 +438,21 @@ const TasksPage: React.FC = () => {
                     auditorTasks.get(auditor)!.push(task);
                 });
 
-                Array.from(auditorTasks.keys()).sort().forEach(auditor => {
+                const gradients = [
+                    'from-blue-500/20 to-cyan-500/5',
+                    'from-purple-500/20 to-pink-500/5',
+                    'from-emerald-500/20 to-teal-500/5',
+                    'from-amber-500/20 to-orange-500/5',
+                    'from-rose-500/20 to-red-500/5',
+                    'from-indigo-500/20 to-violet-500/5'
+                ];
+
+                Array.from(auditorTasks.keys()).sort().forEach((auditor, index) => {
                     groups.push({
                         id: auditor,
                         title: auditor,
-                        tasks: auditorTasks.get(auditor)!
+                        tasks: auditorTasks.get(auditor)!,
+                        gradient: gradients[index % gradients.length]
                     });
                 });
                 return groups;
@@ -481,13 +494,25 @@ const TasksPage: React.FC = () => {
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex flex-col space-y-8 pb-8 h-full overflow-y-auto custom-scrollbar">
                     {groups.map(group => (
-                        <div key={group.id} className="animate-in fade-in duration-500 shrink-0">
+                        <div key={group.id} className={`animate-in fade-in duration-500 shrink-0 ${groupBy === 'AUDITOR' ? 'bg-gradient-to-b ' + (group as any).gradient + ' rounded-3xl p-4 border border-white/5' : ''}`}>
                             {groupBy !== 'NONE' && (
-                                <div className="flex items-center gap-3 mb-4 px-2 sticky left-0">
-                                    {groupBy === 'AUDITOR' ? <Sparkles className="text-amber-400" size={20} /> : <UserCircle2 className="text-purple-400" size={20} />}
-                                    <h2 className="text-lg font-bold text-white tracking-wide">{group.title}</h2>
-                                    <span className="bg-white/10 text-xs px-2 py-0.5 rounded-full text-gray-400">{group.tasks.length}</span>
-                                    <div className="h-px bg-white/10 flex-1 ml-4"></div>
+                                <div className="flex items-center gap-3 mb-6 px-2 sticky left-0">
+                                    {groupBy === 'AUDITOR' ? (
+                                        <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md shadow-sm">
+                                            <Sparkles className="text-amber-400" size={20} />
+                                        </div>
+                                    ) : (
+                                        <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md shadow-sm">
+                                            <UserCircle2 className="text-purple-400" size={20} />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white tracking-wide font-heading">{group.title}</h2>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="bg-white/10 text-[10px] font-bold px-2 py-0.5 rounded-full text-gray-300 border border-white/5">{group.tasks.length} Tasks</span>
+                                        </div>
+                                    </div>
+                                    <div className="h-px bg-gradient-to-r from-white/20 to-transparent flex-1 ml-6"></div>
                                 </div>
                             )}
 
@@ -581,17 +606,22 @@ const TasksPage: React.FC = () => {
                                                                                     )}
 
                                                                                     <div className="pt-2 border-t border-white/5 flex justify-between items-center transition-colors">
-                                                                                        <div className="flex -space-x-1.5">
+                                                                                        <div className="flex flex-wrap gap-1.5">
                                                                                             {task.assignedTo.slice(0, 3).map((uid, i) => {
                                                                                                 const u = usersList.find(user => user.uid === uid);
+                                                                                                const firstName = u?.displayName?.split(' ')[0] || '?';
                                                                                                 return (
-                                                                                                    <div key={i} title={u?.displayName} className="w-5 h-5 rounded-full bg-navy-800 border border-navy-700 flex items-center justify-center text-[7px] font-bold text-white relative">
-                                                                                                        {getInitials(u?.displayName || '?')}
+                                                                                                    <div
+                                                                                                        key={i}
+                                                                                                        title={u?.displayName}
+                                                                                                        className="px-2 py-0.5 rounded-md bg-navy-800 border border-navy-700 flex items-center justify-center text-[9px] font-bold text-white shadow-sm"
+                                                                                                    >
+                                                                                                        {firstName}
                                                                                                     </div>
                                                                                                 );
                                                                                             })}
                                                                                             {task.assignedTo.length > 3 && (
-                                                                                                <div className="w-5 h-5 rounded-full bg-navy-900 border border-navy-700 flex items-center justify-center text-[7px] font-bold text-gray-500">
+                                                                                                <div className="px-1.5 py-0.5 rounded-md bg-navy-900 border border-navy-700 flex items-center justify-center text-[9px] font-bold text-gray-500">
                                                                                                     +{task.assignedTo.length - 3}
                                                                                                 </div>
                                                                                             )}
@@ -657,6 +687,71 @@ const TasksPage: React.FC = () => {
         } catch (error) {
             console.error('Bulk update failed:', error);
             toast.error('Failed to update tasks');
+        }
+    };
+
+    const handleExport = (type: 'pdf' | 'csv') => {
+        const dataToExport = filteredTasks;
+
+        if (type === 'pdf') {
+            const doc = new jsPDF();
+
+            // Add Title
+            doc.setFontSize(18);
+            doc.text('Task Report', 14, 22);
+
+            // Add Date
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+            const tableColumn = ["Task Name", "Client", "Assignee", "Priority", "Status", "Due Date"];
+            const tableRows = dataToExport.map(task => [
+                task.title,
+                task.clientName || 'Internal',
+                task.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || '').join(', '),
+                task.priority,
+                task.status.replace('_', ' '),
+                task.dueDate
+            ]);
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40,
+                theme: 'grid',
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [63, 81, 181] }
+            });
+
+            doc.save('tasks_report.pdf');
+            toast.success('PDF exported successfully');
+        } else {
+            const headers = ['Task Name', 'Client', 'Assigned To', 'Priority', 'Status', 'Due Date'];
+            const csvContent = [
+                headers.join(','),
+                ...dataToExport.map(row => [
+                    `"${row.title.replace(/"/g, '""')}"`,
+                    `"${(row.clientName || 'Internal').replace(/"/g, '""')}"`,
+                    `"${row.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || 'Unknown').join(', ').replace(/"/g, '""')}"`,
+                    `"${row.priority}"`,
+                    `"${row.status.replace('_', ' ')}"`,
+                    `"${row.dueDate}"`
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'tasks_export.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success('CSV exported successfully');
+            }
         }
     };
 
@@ -973,6 +1068,25 @@ const TasksPage: React.FC = () => {
                             ITR
                         </button>
                     </div>
+
+                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                        <div className="flex gap-1 ml-1 bg-white/5 p-1 rounded-xl border border-white/10 hidden sm:flex">
+                            <button
+                                onClick={() => handleExport('pdf')}
+                                className="px-2 py-1 rounded-lg text-[10px] font-bold text-red-400 hover:bg-white/10 transition-all flex items-center"
+                                title="Export as PDF"
+                            >
+                                <Download size={14} className="mr-1" /> PDF
+                            </button>
+                            <button
+                                onClick={() => handleExport('csv')}
+                                className="px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-400 hover:bg-white/10 transition-all flex items-center"
+                                title="Export as Excel/CSV"
+                            >
+                                <FileSpreadsheet size={14} className="mr-1" /> Excel
+                            </button>
+                        </div>
+                    )}
 
                     {canAccessTemplates && (
                         <div className="flex items-center gap-1 ml-1">

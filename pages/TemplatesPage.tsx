@@ -7,6 +7,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { Template, UserRole } from '../types'; // Updated types
 import { TemplateService } from '../services/templates';
+import { StorageService } from '../services/storage';
+import { FileUploader } from '../components/common/FileUploader';
 import ResearchAssistant from '../components/ResearchAssistant';
 import toast from 'react-hot-toast';
 
@@ -47,25 +49,7 @@ const TemplatesPage: React.FC = () => {
         }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setUploading(true);
-            try {
-                const file = e.target.files[0];
-                const attachment = await TemplateService.uploadTemplateAttachment(file);
-                // @ts-ignore
-                setNewTemplate(prev => ({
-                    ...prev,
-                    attachments: [...prev.attachments, attachment]
-                }));
-                toast.success('File attached successfully');
-            } catch (error) {
-                toast.error('Upload failed');
-            } finally {
-                setUploading(false);
-            }
-        }
-    };
+
 
     const handleCreateTemplate = async () => {
         if (!user || !newTemplate.name) return;
@@ -316,22 +300,24 @@ const TemplatesPage: React.FC = () => {
 
                                 <div className="col-span-2">
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Attachments</label>
-                                    <div className="border border-dashed border-white/20 rounded-xl p-4 text-center hover:bg-white/5 transition-colors relative">
-                                        <input
-                                            type="file"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                            onChange={handleFileUpload}
-                                            disabled={uploading}
+                                    <div className="border-2 border-dashed border-white/20 rounded-xl p-4 hover:bg-white/5 transition-colors relative">
+                                        <FileUploader
+                                            maxSizeMB={20}
+                                            onUploadComplete={(fileData) => {
+                                                // @ts-ignore
+                                                setNewTemplate(prev => ({
+                                                    ...prev,
+                                                    attachments: [...prev.attachments, {
+                                                        id: fileData.id,
+                                                        name: fileData.name,
+                                                        url: fileData.url,
+                                                        type: 'FILE'
+                                                    }]
+                                                }));
+                                                toast.success('File attached successfully');
+                                            }}
+                                            accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.csv"
                                         />
-                                        <div className="flex flex-col items-center justify-center text-gray-400">
-                                            {uploading ? (
-                                                <div className="animate-spin mb-2"><Bot size={24} /></div>
-                                            ) : (
-                                                <Upload size={24} className="mb-2 text-blue-400" />
-                                            )}
-                                            <span className="text-sm">{uploading ? 'Uploading...' : 'Click or Drag files here'}</span>
-                                            <span className="text-xs text-gray-600 mt-1">PDF, DOCX, XLSX (Max 10MB)</span>
-                                        </div>
                                     </div>
 
                                     {/* Attachment List */}

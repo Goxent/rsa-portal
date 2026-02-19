@@ -160,8 +160,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <PerformanceWidget {...props} />;
             case 'team-workload':
                 return <TeamWorkloadWidget {...props} />;
-            case 'pending-actions':
-                return <PendingActionsWidget {...props} />;
+
             case 'recent-activity':
                 return <RecentActivityWidget {...props} />;
             case 'client-stats':

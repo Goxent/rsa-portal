@@ -36,26 +36,7 @@ const ImpactStatsWidget: React.FC<ImpactStatsWidgetProps> = ({ clientStats, task
             trend: '+5%',
             trendUp: true
         },
-        {
-            label: 'Pending Actions',
-            value: taskData.find(t => t.name === 'Pending')?.value || 0,
-            subValue: 'Requires Attention',
-            icon: AlertCircle,
-            color: 'text-amber-400',
-            bg: 'bg-amber-500/10',
-            trend: '-2%',
-            trendUp: false
-        },
-        {
-            label: 'Est. Revenue', // Placeholder for future integration
-            value: 'NPR 2.4L',
-            subValue: 'This Month',
-            icon: Wallet,
-            color: 'text-purple-400',
-            bg: 'bg-purple-500/10',
-            trend: '+8%',
-            trendUp: true
-        }
+
     ];
 
     return (

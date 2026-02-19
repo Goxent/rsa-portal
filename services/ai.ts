@@ -25,14 +25,14 @@ export const AiService = {
     if (stored) return JSON.parse(stored);
 
     // Fallback to Environment Variables
-    if (import.meta.env.VITE_OPENAI_API_KEY) {
-      return { provider: 'openai', apiKey: import.meta.env.VITE_OPENAI_API_KEY };
+    if (import.meta.env.VITE_GEMINI_API_KEY) {
+      return { provider: 'gemini', apiKey: import.meta.env.VITE_GEMINI_API_KEY };
     }
     if (import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_CLAUDE_API_KEY) {
       return { provider: 'anthropic', apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_CLAUDE_API_KEY };
     }
-    if (import.meta.env.VITE_GEMINI_API_KEY) {
-      return { provider: 'gemini', apiKey: import.meta.env.VITE_GEMINI_API_KEY };
+    if (import.meta.env.VITE_OPENAI_API_KEY) {
+      return { provider: 'openai', apiKey: import.meta.env.VITE_OPENAI_API_KEY };
     }
 
     return null;
@@ -50,7 +50,7 @@ export const AiService = {
         Context: ${context || 'General tax and audit queries.'}
         Provide professional, accurate, and concise responses. Format with Markdown.`;
 
-    const provider = config?.provider || 'openai'; // Default if not configured but env var exists
+    const provider = config?.provider || 'gemini'; // Default if not configured but env var exists
     const apiKey = config?.apiKey || '';
 
     try {
