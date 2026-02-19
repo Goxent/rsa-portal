@@ -20,6 +20,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
@@ -727,31 +728,35 @@ const TasksPage: React.FC = () => {
             doc.save('tasks_report.pdf');
             toast.success('PDF exported successfully');
         } else {
-            const headers = ['Task Name', 'Client', 'Assigned To', 'Priority', 'Status', 'Due Date'];
-            const csvContent = [
-                headers.join(','),
-                ...dataToExport.map(row => [
-                    `"${row.title.replace(/"/g, '""')}"`,
-                    `"${(row.clientName || 'Internal').replace(/"/g, '""')}"`,
-                    `"${row.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || 'Unknown').join(', ').replace(/"/g, '""')}"`,
-                    `"${row.priority}"`,
-                    `"${row.status.replace('_', ' ')}"`,
-                    `"${row.dueDate}"`
-                ].join(','))
-            ].join('\n');
+            // Excel Export
+            const rows = dataToExport.map(task => ({
+                'Task Name': task.title,
+                'Client': task.clientName || 'Internal',
+                'Assigned To': task.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || 'Unknown').join(', '),
+                'Priority': task.priority,
+                'Status': task.status.replace('_', ' '),
+                'Due Date': task.dueDate,
+                'Est. Days': task.estimatedDays || '',
+                'Description': task.description || ''
+            }));
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', 'tasks_export.csv');
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                toast.success('CSV exported successfully');
-            }
+            const worksheet = XLSX.utils.json_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
+
+            // Auto-width columns
+            const maxValWidth = rows.reduce((acc, row) => {
+                Object.keys(row).forEach(key => {
+                    const val = String(row[key as keyof typeof row] || '');
+                    acc[key] = Math.max(acc[key] || 0, val.length);
+                });
+                return acc;
+            }, {} as Record<string, number>);
+
+            worksheet['!cols'] = Object.keys(maxValWidth).map(key => ({ wch: Math.max(key.length, maxValWidth[key]) + 2 }));
+
+            XLSX.writeFile(workbook, "tasks_export.xlsx");
+            toast.success('Excel exported successfully');
         }
     };
 
@@ -1081,7 +1086,7 @@ const TasksPage: React.FC = () => {
                             <button
                                 onClick={() => handleExport('csv')}
                                 className="px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-400 hover:bg-white/10 transition-all flex items-center"
-                                title="Export as Excel/CSV"
+                                title="Export as Excel"
                             >
                                 <FileSpreadsheet size={14} className="mr-1" /> Excel
                             </button>
