@@ -33,7 +33,13 @@ export const convertBSToAD = (bsDate: string): string => {
 
         const nepaliDate = new NepaliDate(year, month - 1, day);
         const adDate = nepaliDate.toJsDate();
-        return adDate.toISOString().split('T')[0];
+
+        // Use local date components to avoid timezone shifts from toISOString()
+        const adYear = adDate.getFullYear();
+        const adMonth = String(adDate.getMonth() + 1).padStart(2, '0');
+        const adDay = String(adDate.getDate()).padStart(2, '0');
+
+        return `${adYear}-${adMonth}-${adDay}`;
     } catch (error) {
         console.error('Error converting BS to AD:', error);
         return '';

@@ -52,14 +52,32 @@ const NepaliDatePicker: React.FC<NepaliDatePickerProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Get days in BS month (approximate - actual days vary by year)
+    // Get days in BS month
     const getDaysInMonth = (year: number, month: number): number => {
         try {
-            // Try to get actual days by checking if day exists
-            const daysInMonth = [31, 32, 31, 32, 31, 30, 30, 29, 30, 29, 30, 30];
-            return daysInMonth[month] || 30;
+            // month is 0-indexed in state, nepali-date-converter also uses 0-indexed month
+            const np = new NepaliDate(year, month, 1);
+            // Month is 0-indexed. We try to find the last valid day by rolling back from 32
+            for (let d = 32; d >= 28; d--) {
+                const test = new NepaliDate(year, month, d);
+                // If it successfully created the date and it hasn't rolled over to next month
+                if (test.getMonth() === month && test.getDate() === d) {
+                    return d;
+                }
+            }
+            return 30;
         } catch {
             return 30;
+        }
+    };
+
+    // Get the day of the week for the first day of the month (0 = Sunday, 6 = Saturday)
+    const getFirstDayOfMonth = (year: number, month: number): number => {
+        try {
+            const np = new NepaliDate(year, month, 1);
+            return np.getDay();
+        } catch {
+            return 0;
         }
     };
 
@@ -121,8 +139,10 @@ const NepaliDatePicker: React.FC<NepaliDatePickerProps> = ({
     };
 
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+    const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
     const selectedDay = getSelectedDay();
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const padding = Array.from({ length: firstDay }, (_, i) => i);
 
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
@@ -181,13 +201,16 @@ const NepaliDatePicker: React.FC<NepaliDatePickerProps> = ({
 
                     {/* Days grid */}
                     <div className="grid grid-cols-7 gap-1">
+                        {padding.map((_, i) => (
+                            <div key={`pad-${i}`} />
+                        ))}
                         {days.map(day => (
                             <button
                                 key={day}
                                 onClick={() => handleDateSelect(day)}
                                 className={`p-2 text-sm rounded-lg transition-colors ${selectedDay === day
-                                        ? 'bg-brand-600 text-white font-bold'
-                                        : 'text-gray-300 hover:bg-white/10'
+                                    ? 'bg-brand-600 text-white font-bold'
+                                    : 'text-gray-300 hover:bg-white/10'
                                     }`}
                             >
                                 {day}
