@@ -24,16 +24,14 @@ export const AiService = {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
 
-    // Fallback to Environment Variables
-    if (import.meta.env.VITE_GEMINI_API_KEY) {
-      return { provider: 'gemini', apiKey: import.meta.env.VITE_GEMINI_API_KEY };
-    }
-    if (import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_CLAUDE_API_KEY) {
-      return { provider: 'anthropic', apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_CLAUDE_API_KEY };
-    }
-    if (import.meta.env.VITE_OPENAI_API_KEY) {
-      return { provider: 'openai', apiKey: import.meta.env.VITE_OPENAI_API_KEY };
-    }
+    // Auto-detect provider from environment variables
+    const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const anthropicKey = import.meta.env.VITE_CLAUDE_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY;
+    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+    if (geminiKey) return { provider: 'gemini', apiKey: geminiKey };
+    if (anthropicKey) return { provider: 'anthropic', apiKey: anthropicKey };
+    if (openaiKey) return { provider: 'openai', apiKey: openaiKey };
 
     return null;
   },

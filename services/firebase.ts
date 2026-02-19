@@ -62,21 +62,28 @@ const validateConfig = () => {
 validateConfig();
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+let app;
+try {
+    app = initializeApp(firebaseConfig);
+} catch (error) {
+    console.error('Firebase initialization failed:', error);
+    toast.error('System failed to initialize. Please check your network or configuration.');
+}
+
+export const auth = getAuth(app!);
 
 // Initialize Firestore with Persistent Cache (New API)
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-export const db = initializeFirestore(app, {
+export const db = initializeFirestore(app!, {
     localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager()
     })
 });
 
 // Initialize Storage
-export const storage = getStorage(app);
+export const storage = getStorage(app!);
 
 // Action Code Settings for Email Verification
 const getActionCodeSettings = (): ActionCodeSettings => {

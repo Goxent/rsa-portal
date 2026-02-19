@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
     Users, Plus, Search, Filter, FileText, MoreVertical,
     Edit, Trash2, Phone, Mail, MapPin, BadgeCheck, Building2,
-    Briefcase, Calendar, X, Save, ChevronDown, CheckCircle2, User
+    Briefcase, Calendar, X, Save, ChevronDown, CheckCircle2, User,
+    Download, FileSpreadsheet
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import ExcelJS from 'exceljs';
 import { useAuth } from '../context/AuthContext';
 import { Client, UserRole, UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
@@ -163,6 +167,158 @@ const ClientsPage: React.FC = () => {
         }
     };
 
+    const handleExport = async (type: 'pdf' | 'excel') => {
+        const dataToExport = filteredClients;
+        const dateStr = new Date().toISOString().split('T')[0];
+
+        if (type === 'pdf') {
+            const doc = new jsPDF();
+
+            // ── Header Banner ──────────────────────────────────────────────
+            doc.setFillColor(15, 23, 42); // Navy 900
+            doc.rect(0, 0, 210, 48, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text('R. Sapkota & Associates', 105, 15, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184); // Slate 400
+            doc.text('Chartered Accountants  |  Kathmandu, Nepal', 105, 23, { align: 'center' });
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Client Directory Report', 105, 34, { align: 'center' });
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 42, { align: 'center' });
+
+            const tableColumn = ["Code", "Client Name", "PAN", "Focal Person", "Service", "Status"];
+            const tableRows = dataToExport.map(client => [
+                client.code,
+                client.name,
+                client.pan || '-',
+                getAuditorName(client.auditorId),
+                client.serviceType,
+                client.status
+            ]);
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 55,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 3, lineColor: [226, 232, 240] },
+                headStyles: {
+                    fillColor: [30, 41, 59], // Slate 800
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+            });
+
+            // Footer
+            const pageCount = (doc as any).internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 10);
+                doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+            }
+
+            doc.save(`RSA_Clients_${dateStr}.pdf`);
+            toast.success('PDF exported successfully');
+        } else {
+            // Excel Export
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'R. Sapkota & Associates';
+            workbook.created = new Date();
+
+            const sheet = workbook.addWorksheet('Clients', {
+                pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+            });
+
+            // Company Header
+            sheet.mergeCells('A1:F1');
+            const titleCell = sheet.getCell('A1');
+            titleCell.value = 'R. Sapkota & Associates';
+            titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+            titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+            sheet.getRow(1).height = 32;
+
+            sheet.mergeCells('A2:F2');
+            const addrCell = sheet.getCell('A2');
+            addrCell.value = 'Chartered Accountants  |  Kathmandu, Nepal';
+            addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF94A3B8' } };
+            addrCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+            sheet.getRow(2).height = 18;
+
+            sheet.mergeCells('A3:F3');
+            const reportTitleCell = sheet.getCell('A3');
+            reportTitleCell.value = 'Client Directory Report';
+            reportTitleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF1E293B' } };
+            reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            reportTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            sheet.getRow(3).height = 24;
+
+            sheet.getRow(4).height = 8; // Spacer
+
+            const COLS = [
+                { header: 'Code', key: 'code', width: 12 },
+                { header: 'Client Name', key: 'name', width: 40 },
+                { header: 'PAN', key: 'pan', width: 15 },
+                { header: 'Focal Person', key: 'focal', width: 25 },
+                { header: 'Service Type', key: 'service', width: 25 },
+                { header: 'Status', key: 'status', width: 12 },
+            ];
+
+            COLS.forEach((col, i) => {
+                const column = sheet.getColumn(i + 1);
+                column.key = col.key;
+                column.width = col.width;
+            });
+
+            const headerRow = sheet.getRow(5);
+            COLS.forEach((col, i) => {
+                const cell = headerRow.getCell(i + 1);
+                cell.value = col.header;
+                cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+            headerRow.height = 24;
+
+            dataToExport.forEach((client, idx) => {
+                sheet.addRow({
+                    code: client.code,
+                    name: client.name,
+                    pan: client.pan || '-',
+                    focal: getAuditorName(client.auditorId),
+                    service: client.serviceType,
+                    status: client.status
+                });
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `RSA_Clients_${dateStr}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success('Excel exported successfully');
+        }
+    };
+
     // Filtering
     const filteredClients = clients.filter(c => {
         const matchesSearch =
@@ -198,8 +354,26 @@ const ClientsPage: React.FC = () => {
                     </h1>
                     <p className="text-gray-400 text-sm mt-1">Manage audit clients, tax filings, and contact details</p>
                 </div>
-                {isAdmin && (
-                    <div className="flex gap-3">
+                <div className="flex items-center gap-3">
+                    {isAdmin && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => handleExport('pdf')}
+                                className="p-2.5 rounded-xl text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-rose-900/10"
+                                title="Export PDF"
+                            >
+                                <FileText size={18} />
+                            </button>
+                            <button
+                                onClick={() => handleExport('excel')}
+                                className="p-2.5 rounded-xl text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-900/10"
+                                title="Export Excel"
+                            >
+                                <FileSpreadsheet size={18} />
+                            </button>
+                        </div>
+                    )}
+                    {isAdmin && (
                         <button
                             onClick={() => {
                                 setEditingId(null);
@@ -210,8 +384,8 @@ const ClientsPage: React.FC = () => {
                         >
                             <Plus size={18} className="mr-2" /> Add Client
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             {/* Toolbar */}

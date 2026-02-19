@@ -225,7 +225,7 @@ const Layout: React.FC = () => {
                 </button>
 
                 {showNotifications && (
-                  <div className="absolute bottom-full right-0 mb-3 w-72 glass-panel rounded-xl shadow-2xl border border-white/10 overflow-hidden z-20 animate-in slide-in-from-bottom-2 md:left-auto md:right-0">
+                  <div className="absolute bottom-full right-0 mb-3 w-72 bg-navy-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 overflow-hidden z-20 animate-in slide-in-from-bottom-2 md:left-auto md:right-0">
                     <div className="px-4 py-3 border-b border-white/10 bg-white/5">
                       <div className="flex justify-between items-center mb-1">
                         <h3 className="text-sm font-bold text-white">Notifications</h3>

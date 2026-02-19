@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCircle, AlertTriangle, Plus, Calendar as CalIcon, Filter } from 'lucide-react';
+import { Bell, CheckCircle, AlertTriangle, Plus, Calendar as CalIcon, Filter, Briefcase, RefreshCw, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { ComplianceEvent } from '../types/advanced';
 import { ComplianceService } from '../services/advanced';
+import { Client, UserProfile, TaskStatus, TaskPriority, Task } from '../types';
+import { AuthService } from '../services/firebase';
+import { toast } from 'react-hot-toast';
 import NepaliDate from 'nepali-date-converter';
 
 const formatDateWithBS = (dateStr: string) => {
@@ -17,6 +20,9 @@ const CompliancePage: React.FC = () => {
     const { user } = useAuth();
     const { openModal } = useModal();
     const [events, setEvents] = useState<ComplianceEvent[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [staffList, setStaffList] = useState<UserProfile[]>([]);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [filter, setFilter] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,12 +35,28 @@ const CompliancePage: React.FC = () => {
     });
 
     useEffect(() => {
-        if (user) loadEvents();
+        if (user) {
+            loadEvents();
+            loadExtraData();
+        }
     }, [user]);
 
     const loadEvents = async () => {
         const data = await ComplianceService.getEvents();
         setEvents(data);
+    };
+
+    const loadExtraData = async () => {
+        try {
+            const [clientsData, staffData] = await Promise.all([
+                AuthService.getAllClients(),
+                AuthService.getAllStaff()
+            ]);
+            setClients(clientsData);
+            setStaffList(staffData);
+        } catch (error) {
+            console.error('Failed to load extra data:', error);
+        }
     };
 
     const handleSaveEvent = async () => {
@@ -101,6 +123,81 @@ const CompliancePage: React.FC = () => {
         await loadEvents();
     };
 
+    const syncCompliance = async () => {
+        if (!user || isSyncing) return;
+        setIsSyncing(true);
+
+        try {
+            const npNow = new NepaliDate();
+            const year = npNow.getYear();
+            const monthIdx = npNow.getMonth(); // 0-11
+            const day = npNow.getDate();
+
+            const monthNames = ['Baisakh', 'Jestha', 'Ashadh', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'];
+
+            // VAT returns for previous month are due by 25th of current month
+            // If it's the 25th or later, we check for THIS month's deadline (which is for the previous month's data)
+            // But usually, humans start the task EARLIER (e.g. at the start of the month for the previous month)
+            // User requested automation on the 25th.
+
+            const targetMonthName = monthIdx === 0 ? monthNames[11] : monthNames[monthIdx - 1];
+            const targetYear = monthIdx === 0 ? year - 1 : year;
+            const periodLabel = `${targetMonthName} ${targetYear}`;
+
+            const vatClients = clients.filter(c => c.vatReturn);
+            const existingTasks = await AuthService.getAllTasks(); // Use correct method name
+
+            let createdCount = 0;
+
+            for (const client of vatClients) {
+                const taskTitle = `VAT Return Filing - ${periodLabel} - ${client.name}`;
+
+                // Check if already exists
+                const alreadyExists = existingTasks.find(t => t.title === taskTitle);
+
+                if (!alreadyExists) {
+                    const auditorId = client.auditorId || user.uid; // Focal person or fallback to current user
+                    const auditorName = staffList.find(s => s.uid === auditorId)?.displayName || 'Focal Person';
+
+                    const newTask: Task = {
+                        id: `t_vac_${Date.now()}_${client.id}`,
+                        title: taskTitle,
+                        description: `Statutory VAT return filing for ${client.name} for the month of ${periodLabel}. Due by 25th ${monthNames[monthIdx]} ${year}.`,
+                        status: TaskStatus.NOT_STARTED,
+                        priority: TaskPriority.HIGH,
+                        dueDate: new Date().toISOString().split('T')[0], // ASAP
+                        assignedTo: [auditorId],
+                        assignedToNames: [auditorName],
+                        clientIds: [client.id],
+                        clientName: client.name,
+                        createdAt: new Date().toISOString(),
+                        createdBy: 'system',
+                        subtasks: [
+                            { id: '1', title: 'Collect Invoices/Sales Register', isCompleted: false, createdAt: new Date().toISOString(), createdBy: 'system' },
+                            { id: '2', title: 'Prepare VAT Return', isCompleted: false, createdAt: new Date().toISOString(), createdBy: 'system' },
+                            { id: '3', title: 'Client Approval', isCompleted: false, createdAt: new Date().toISOString(), createdBy: 'system' },
+                            { id: '4', title: 'File on IRD Portal', isCompleted: false, createdAt: new Date().toISOString(), createdBy: 'system' }
+                        ]
+                    };
+
+                    await AuthService.saveTask(newTask);
+                    createdCount++;
+                }
+            }
+
+            if (createdCount > 0) {
+                toast.success(`Created ${createdCount} automated compliance tasks!`);
+            } else {
+                toast.success('Compliance tasks are already up-to-date.');
+            }
+        } catch (error) {
+            console.error('Compliance sync failed:', error);
+            toast.error('Failed to sync compliance tasks');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const filteredEvents = events.filter((e) => {
         if (filter === 'ALL') return true;
         return e.status === filter;
@@ -134,24 +231,34 @@ const CompliancePage: React.FC = () => {
                     </h1>
                     <p className="text-sm text-gray-400">Track statutory deadlines, tax filings, and audit schedules.</p>
                 </div>
-                {canEdit && (
+                <div className="flex items-center gap-3">
                     <button
-                        onClick={() => {
-                            setEditingId(null);
-                            setNewEvent({
-                                title: '',
-                                description: '',
-                                category: 'TAX',
-                                dueDate: '',
-                                priority: 'MEDIUM',
-                            });
-                            setIsModalOpen(true);
-                        }}
-                        className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
+                        onClick={syncCompliance}
+                        disabled={isSyncing}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${isSyncing ? 'bg-white/5 text-gray-500 border-white/5' : 'bg-brand-500/10 text-brand-400 border-brand-500/20 hover:bg-brand-500/20'}`}
                     >
-                        <Plus size={16} className="mr-2" /> Add Event
+                        {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
+                        Sync Compliance
                     </button>
-                )}
+                    {canEdit && (
+                        <button
+                            onClick={() => {
+                                setEditingId(null);
+                                setNewEvent({
+                                    title: '',
+                                    description: '',
+                                    category: 'TAX',
+                                    dueDate: '',
+                                    priority: 'MEDIUM',
+                                });
+                                setIsModalOpen(true);
+                            }}
+                            className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
+                        >
+                            <Plus size={16} className="mr-2" /> Add Event
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Next Deadline Timer */}
@@ -204,6 +311,65 @@ const CompliancePage: React.FC = () => {
                     </div>
                 );
             })()}
+
+            {/* Client Statutory Compliance Section */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <ShieldCheck className="text-emerald-400" />
+                        Client Statutory Status
+                    </h2>
+                    <span className="text-xs text-brand-400 font-bold bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                        {clients.filter(c => c.vatReturn).length} VAT Clients
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {clients.filter(c => c.vatReturn || c.itrReturn).map((client) => (
+                        <div key={client.id} className="glass-panel p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all group">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-blue-400 font-bold">
+                                        {client.code?.substring(0, 2) || 'CL'}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-white text-sm group-hover:text-brand-300 transition-colors uppercase">{client.name}</h4>
+                                        <p className="text-[10px] text-gray-500 font-medium">PAN: {client.pan || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                    {client.vatReturn && (
+                                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">VAT</span>
+                                    )}
+                                    {client.itrReturn && (
+                                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-navy-800 flex items-center justify-center text-[8px] font-bold text-gray-300 uppercase">
+                                        {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
+                                    </div>
+                                    <span className="text-[11px] text-gray-400">
+                                        {staffList.find(s => s.uid === client.auditorId)?.displayName || 'Unassigned Focal'}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        // Quick view or navigation to tasks
+                                        toast('Redirecting to tasks...', { icon: '🔍', duration: 1000 });
+                                    }}
+                                    className="text-[10px] font-bold text-brand-400 hover:text-brand-300 transition-colors"
+                                >
+                                    VIEW TASKS
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -518,7 +518,13 @@ const TasksPage: React.FC = () => {
                             )}
 
                             <div className="flex overflow-x-auto pb-4 gap-6 px-1 min-w-full items-start">
-                                {Object.values(TaskStatus).map(status => {
+                                {[
+                                    TaskStatus.HALTED,
+                                    TaskStatus.NOT_STARTED,
+                                    TaskStatus.IN_PROGRESS,
+                                    TaskStatus.UNDER_REVIEW,
+                                    TaskStatus.COMPLETED
+                                ].map(status => {
                                     const isCollapsed = collapsedColumns.includes(status);
                                     const columnTasks = groupBy === 'NONE'
                                         ? filteredTasks.filter(t => t.status === status)
@@ -943,7 +949,7 @@ const TasksPage: React.FC = () => {
     };
 
     const ListView = () => (
-        <div className="glass-panel rounded-2xl overflow-hidden animate-fade-in-up relative border border-white/10 shadow-xl mx-1">
+        <div className="glass-panel rounded-2xl overflow-hidden animate-fade-in-up relative border border-white/10 shadow-xl mx-1 flex flex-col h-full">
             {/* Floating Bulk Action Bar */}
             {selectedTaskIds.length > 0 && (
                 <div className="absolute top-0 left-0 w-full bg-brand-600/95 backdrop-blur-md z-20 p-3 px-6 flex justify-between items-center shadow-lg animate-in slide-in-from-top-2 duration-300">
@@ -974,7 +980,7 @@ const TasksPage: React.FC = () => {
                 </div>
             )}
 
-            <div className="overflow-x-auto">
+            <div className="overflow-auto flex-1 custom-scrollbar">
                 <table className="w-full text-left text-sm text-gray-300">
                     <thead>
                         <tr className="bg-navy-900/40 text-gray-400 uppercase tracking-wider text-xs border-b border-white/5">
