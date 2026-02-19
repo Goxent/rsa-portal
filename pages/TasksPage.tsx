@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
-    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search, Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet
+    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2, AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search, Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet, FileText
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -862,7 +862,14 @@ const TasksPage: React.FC = () => {
                 { header: 'Est. Days', key: 'est', width: 10 },
                 { header: 'Description', key: 'desc', width: 40 },
             ];
-            sheet.columns = COLS;
+
+            // Fix: Do NOT assign sheet.columns = COLS as it overwrites Row 1 with headers
+            // Instead, manualy set column properties
+            COLS.forEach((col, i) => {
+                const column = sheet.getColumn(i + 1);
+                column.key = col.key;
+                column.width = col.width;
+            });
 
             // Header Row Styling
             const headerRow = sheet.getRow(6);
@@ -1274,11 +1281,11 @@ const TasksPage: React.FC = () => {
                         {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => handleExport('excel')}
-                                    className="px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-400 hover:bg-white/10 transition-all flex items-center"
-                                    title="Export as Excel"
+                                    onClick={() => handleExport('pdf')}
+                                    className="p-2.5 rounded-xl text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95"
+                                    title="Export PDF"
                                 >
-                                    <Download size={18} />
+                                    <FileText size={18} />
                                 </button>
                                 <button
                                     onClick={() => handleExport('excel')}
