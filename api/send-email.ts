@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS for development/production
@@ -26,34 +26,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+    // Gmail SMTP Configuration
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASSWORD;
 
-    if (!apiKey) {
-        console.error('RESEND_API_KEY is missing in environment variables.');
-        return res.status(500).json({ error: 'Server configuration error: Missing Email API Key.' });
+    if (!emailUser || !emailPass) {
+        console.error('Email credentials missing. EMAIL_USER or EMAIL_PASSWORD not set.');
+        return res.status(500).json({ error: 'Server configuration error: Missing Email Credentials.' });
     }
 
-    const resend = new Resend(apiKey);
-
     try {
-        console.log(`Attempting to send email to: ${to} with subject: ${subject}`);
-        const { data, error } = await resend.emails.send({
-            from: `${fromName || 'RSA System'} <${process.env.EMAIL_FROM || 'onboarding@resend.dev'}>`,
-            to: Array.isArray(to) ? to : [to],
-            subject: subject,
-            html: html,
+        console.log(`Attempting to send email via Gmail to: ${to}`);
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: emailUser,
+                pass: emailPass,
+            },
         });
 
-        if (error) {
-            console.error('Resend API Error:', error);
-            // Return the specific error message from Resend for better debugging
-            return res.status(400).json({ error: error.message, details: error });
-        }
+        const mailOptions = {
+            from: `"${fromName || 'RSA System'}" <${emailUser}>`,
+            to: Array.isArray(to) ? to.join(',') : to,
+            subject: subject,
+            html: html,
+        };
 
-        console.log('Email sent successfully:', data);
-        return res.status(200).json({ success: true, data });
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email sent successfully:', info.messageId);
+
+        return res.status(200).json({ success: true, data: info });
+
     } catch (error: any) {
-        console.error('Unexpected Email Sending Error:', error);
-        return res.status(500).json({ error: error.message || 'Internal Server Error' });
+        console.error('Nodemailer Error:', error);
+        return res.status(500).json({ error: error.message || 'Failed to send email via Gmail' });
     }
 }
