@@ -1,3 +1,5 @@
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isValid } from 'date-fns';
+
 /**
  * Date Utility Functions
  * Standardizes date handling to avoid timezone issues.
@@ -15,11 +17,8 @@ export const formatDateForDisplay = (dateStr: string): string => {
     if (!dateStr) return '-';
     try {
         const date = new Date(dateStr);
-        return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: '2-digit'
-        }).format(date);
+        if (!isValid(date)) return dateStr;
+        return format(date, 'MMM dd, yyyy');
     } catch (e) {
         console.error("Invalid date format:", dateStr);
         return dateStr;
@@ -29,8 +28,8 @@ export const formatDateForDisplay = (dateStr: string): string => {
 // Returns start and end dates of the current month in YYYY-MM-DD format
 export const getCurrentMonthRange = () => {
     const now = new Date();
-    const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString().split('T')[0];
-    const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0)).toISOString().split('T')[0];
+    const start = format(startOfMonth(now), 'yyyy-MM-dd');
+    const end = format(endOfMonth(now), 'yyyy-MM-dd');
     return { start, end };
 };
 
@@ -44,13 +43,15 @@ export const parseDateSafely = (dateStr: string | undefined): string => {
 
 // Get array of dates between start and end (inclusive)
 export const getDatesInRange = (startDate: string, endDate: string): string[] => {
-    const dates = [];
-    const current = new Date(startDate);
-    const end = new Date(endDate);
+    try {
+        const start = parseISO(startDate);
+        const end = parseISO(endDate);
 
-    while (current <= end) {
-        dates.push(current.toISOString().split('T')[0]);
-        current.setDate(current.getDate() + 1);
+        if (!isValid(start) || !isValid(end)) return [];
+
+        return eachDayOfInterval({ start, end }).map(date => format(date, 'yyyy-MM-dd'));
+    } catch (e) {
+        console.error("Error generating date range:", e);
+        return [];
     }
-    return dates;
 };

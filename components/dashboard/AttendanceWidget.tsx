@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee, Search, ChevronDown } from 'lucide-react';
+import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee, Search, ChevronDown, Minimize2, Maximize2, ChevronUp, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceRecord, Client, UserRole } from '../../types';
 import { AuthService } from '../../services/firebase';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
 import EmptyState from '../common/EmptyState';
+import { useAttendanceHistory, useClockIn, useClockOut } from '../../hooks/useAttendance';
+import { useClients } from '../../hooks/useClients';
 
 // Internal Searchable Select Component
 // Uses simple absolute positioning — works because the parent container does NOT have overflow:hidden/auto
@@ -176,74 +178,71 @@ const AttendanceWidget: React.FC = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [status, setStatus] = useState<'CLOCKED_OUT' | 'CLOCKED_IN' | 'COMPLETED'>('CLOCKED_OUT');
     const [sessionSeconds, setSessionSeconds] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [clients, setClients] = useState<Client[]>([]);
     const [lateReason, setLateReason] = useState('');
     const [isLate, setIsLate] = useState(false);
     const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
+    const [isFloating, setIsFloating] = useState(false);
+
+    // React Query Hooks
+    const { data: clientsList = [] } = useClients();
+    const { data: attendanceHistory = [], isLoading: historyLoading } = useAttendanceHistory(user?.uid);
+    const clockInMutation = useClockIn();
+    const clockOutMutation = useClockOut();
+
+    const loading = historyLoading || clockInMutation.isPending || clockOutMutation.isPending;
+
+    // Derived State for Clients
+    const clients = React.useMemo(() => {
+        const internalClient: Client = {
+            id: 'INTERNAL',
+            name: 'Internal Work / Office',
+            code: 'INT',
+            serviceType: 'Internal' as any,
+            status: 'Active' as any,
+            category: 'A' as any,
+            industry: 'Internal' as any
+        };
+        return [internalClient, ...clientsList.filter(c => c.status === 'Active')];
+    }, [clientsList]);
 
     // Modernized Work Logs
     const [workLogs, setWorkLogs] = useState<{ id: string; clientId: string; clientName: string; description: string; duration: number; billable: boolean }[]>([
         { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', description: '', duration: 0, billable: true }
     ]);
 
-    const loadData = useCallback(async () => {
-        if (!user) return;
-        setLoading(true);
-        try {
-            const [cList, history] = await Promise.all([
-                AuthService.getAllClients(),
-                AuthService.getAttendanceHistory(user.uid)
-            ]);
-
-            // Add Internal Option
-            const internalClient: Client = {
-                id: 'INTERNAL',
-                name: 'Internal Work / Office',
-                code: 'INT',
-                serviceType: 'Internal' as any,
-                status: 'Active' as any,
-                category: 'A' as any,
-                industry: 'Internal' as any
-            };
-            setClients([internalClient, ...cList.filter(c => c.status === 'Active')]);
-
-            // Find today's record
-            const todayStr = new Date().toLocaleDateString('en-CA');
-            const todayRecord = history.find(r => r.date === todayStr);
-
-            if (todayRecord) {
-                if (!todayRecord.clockOut) {
-                    setStatus('CLOCKED_IN');
-                    setCurrentRecordId(todayRecord.id);
-
-                    // Recover session time
-                    const [h, m, s] = todayRecord.clockIn.split(':').map(Number);
-                    const start = new Date();
-                    start.setHours(h, m, s || 0, 0);
-                    setSessionSeconds(Math.max(0, Math.floor((new Date().getTime() - start.getTime()) / 1000)));
-
-                    if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
-                } else {
-                    setStatus('COMPLETED');
-                    setCurrentRecordId(todayRecord.id);
-                    // Load logs for viewing even if completed
-                    if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
-                }
-            } else {
-                setStatus('CLOCKED_OUT');
-                setCurrentRecordId(null);
-                setSessionSeconds(0);
-            }
-        } catch (error) {
-            console.error("Failed to load attendance data", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [user]);
-
+    // Effect: Sync state with fetched history
     useEffect(() => {
-        loadData();
+        if (!attendanceHistory) return;
+
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        const todayRecord = attendanceHistory.find(r => r.date === todayStr);
+
+        if (todayRecord) {
+            if (!todayRecord.clockOut) {
+                setStatus('CLOCKED_IN');
+                setCurrentRecordId(todayRecord.id);
+
+                // Recover session time
+                const [h, m, s] = todayRecord.clockIn.split(':').map(Number);
+                const start = new Date();
+                start.setHours(h, m, s || 0, 0);
+                setSessionSeconds(Math.max(0, Math.floor((new Date().getTime() - start.getTime()) / 1000)));
+
+                if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
+            } else {
+                setStatus('COMPLETED');
+                setCurrentRecordId(todayRecord.id);
+                if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
+            }
+        } else {
+            setStatus('CLOCKED_OUT');
+            setCurrentRecordId(null);
+            setSessionSeconds(0);
+        }
+    }, [attendanceHistory]);
+
+    // Timer & Late Check
+    useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(new Date());
 
@@ -255,8 +254,9 @@ const AttendanceWidget: React.FC = () => {
 
         }, 1000);
         return () => clearInterval(timer);
-    }, [loadData]);
+    }, []);
 
+    // Session Timer
     useEffect(() => {
         let interval: any;
         if (status === 'CLOCKED_IN') {
@@ -279,99 +279,58 @@ const AttendanceWidget: React.FC = () => {
             return;
         }
 
-        setLoading(true);
         try {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
-            const dateStr = now.toLocaleDateString('en-CA');
-
-            const newRecord: AttendanceRecord = {
-                id: '', // Generated by Firebase
+            await clockInMutation.mutateAsync({
                 userId: user.uid,
-                userName: user.displayName || 'Staff',
-                date: dateStr,
-                clockIn: timeStr,
-                status: isLate ? 'LATE' : 'PRESENT',
-                notes: isLate ? `Late: ${lateReason}` : '',
-                workHours: 0,
-                workLogs: []
-            };
-
-            await AuthService.recordAttendance(newRecord);
-            toast.success("Clocked in successfully!");
-            loadData();
-        } catch (error: any) {
-            toast.error(error.message || "Clock-in failed");
-        } finally {
-            setLoading(false);
+                method: 'WEB',
+                notes: isLate ? `Late: ${lateReason}` : ''
+            });
+            // State update handled by useEffect syncing with invalidated query
+        } catch (error) {
+            console.error("Clock in failed", error);
         }
     };
 
     const handleClockOut = async () => {
-        if (!currentRecordId || loading) return;
+        if (!user || !currentRecordId || loading) return;
 
-        // Validation
-        const validLogs = workLogs.filter(l => l.clientId && l.description.trim());
-        if (validLogs.length === 0) {
-            toast.error("Please add at least one work description");
-            return;
-        }
-
-        setLoading(true);
         try {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
-            const hours = Number((sessionSeconds / 3600).toFixed(2));
-
-            const names = validLogs.map(l => clients.find(c => c.id === l.clientId)?.name || 'Unknown').join(', ');
-            const desc = validLogs.map(l => `${clients.find(c => c.id === l.clientId)?.name}: ${l.description}`).join('; ');
-
-            const record: AttendanceRecord = {
-                id: currentRecordId,
-                userId: user?.uid || '',
-                userName: user?.displayName || '',
-                date: new Date().toLocaleDateString('en-CA'),
-                clockIn: 'KEEP_EXISTING',
-                clockOut: timeStr,
-                workHours: hours,
-                status: isLate ? 'LATE' : 'PRESENT',
-                clientIds: validLogs.map(l => l.clientId),
-                clientName: names,
-                workDescription: desc,
-                workLogs: validLogs,
-                notes: lateReason ? `Late: ${lateReason}` : ''
-            };
-
-            await AuthService.recordAttendance(record);
-            toast.success("Clocked out successfully!");
-            setStatus('CLOCKED_OUT');
-            setWorkLogs([{ id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', description: '', duration: 0, billable: true }]);
-            setLateReason('');
-            loadData();
-        } catch (error: any) {
-            toast.error(error.message || "Clock-out failed");
-        } finally {
-            setLoading(false);
+            await clockOutMutation.mutateAsync({
+                userId: user.uid,
+                recordId: currentRecordId,
+                workLogs
+            });
+            // State update handled by useEffect
+            setSessionSeconds(0);
+        } catch (error) {
+            console.error("Clock out failed", error);
         }
     };
 
     const addLog = () => {
         setWorkLogs([...workLogs, {
             id: Math.random().toString(36).substr(2, 9),
-            clientId: '',
-            clientName: '',
+            clientId: 'INTERNAL',
+            clientName: 'Internal Work / Office',
             description: '',
             duration: 0,
             billable: true
         }]);
     };
-    const removeLog = (id: string) => setWorkLogs(workLogs.filter(l => l.id !== id));
-    const updateLog = (id: string, field: string, val: any) => {
+
+    const removeLog = (id: string) => {
+        if (workLogs.length > 1) {
+            setWorkLogs(workLogs.filter(l => l.id !== id));
+        }
+    };
+
+    const updateLog = (id: string, field: string, value: any) => {
         setWorkLogs(workLogs.map(l => {
             if (l.id === id) {
-                const updated = { ...l, [field]: val };
+                const updated = { ...l, [field]: value };
                 if (field === 'clientId') {
-                    updated.clientName = clients.find(c => c.id === val)?.name || '';
+                    const client = clients.find(c => c.id === value);
+                    if (client) updated.clientName = client.name;
                 }
                 return updated;
             }
@@ -379,171 +338,215 @@ const AttendanceWidget: React.FC = () => {
         }));
     };
 
-    return (
-        <div className="glass-panel p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-navy-900/80 to-navy-800/80 shadow-2xl relative overflow-hidden group hover:border-brand-500/20 transition-all duration-500">
-            {/* Design Elements */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl group-hover:bg-brand-500/10 transition-colors"></div>
+    // Floating Widget Render
+    if (isFloating) {
+        return (
+            <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-300">
+                <div className="bg-navy-800/90 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
+                    {/* Drag Handle / Status Icon */}
+                    <div className={`p-2 rounded-xl ${status === 'CLOCKED_IN' ? 'bg-green-500/20 text-green-400 animate-pulse' :
+                            status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                        <Clock size={20} />
+                    </div>
 
-            <div className="relative z-10 space-y-6">
-                {/* Header */}
-                <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-brand-500/20 rounded-lg">
-                                <Clock size={20} className="text-brand-400" />
-                            </div>
-                            <h2 className="text-lg font-bold text-white tracking-tight">Daily Attendance</h2>
+                    <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                {status === 'CLOCKED_IN' ? 'Active Session' : 'Attendance'}
+                            </p>
+                            <button onClick={() => setIsFloating(false)} className="text-gray-500 hover:text-white transition-colors">
+                                <Maximize2 size={14} />
+                            </button>
                         </div>
-                        <p className="text-xs text-gray-400 font-medium ml-10">
-                            {new NepaliDate().format('DD MMMM YYYY')} (BS)
+                        <div className="flex items-baseline gap-2 mt-0.5">
+                            <p className="text-xl font-bold text-white font-mono">
+                                {status === 'CLOCKED_IN' ? formatTime(sessionSeconds) : currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {status === 'CLOCKED_IN' && (
+                                <span className="text-xs text-green-400 font-medium">Recorded</span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Quick Action */}
+                    {status === 'CLOCKED_IN' && (
+                        <button
+                            onClick={() => setIsFloating(false)} // Expand to clock out effectively or add quick clock out here
+                            className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-300 transition-colors"
+                            title="Expand to manage"
+                        >
+                            <ChevronUp size={18} />
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Default Full Widget Render
+    return (
+        <div className="glass-panel border-white/5 relative overflow-hidden group">
+            {/* Header / Top Bar */}
+            <div className="p-6 pb-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+                <div>
+                    <div className="flex items-center gap-3 mb-1">
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Clock className="text-brand-400" size={20} />
+                            Attendance Center
+                        </h2>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${status === 'CLOCKED_IN' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
+                                status === 'COMPLETED' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                                    'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                            }`}>
+                            {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}
+                        </span>
+                    </div>
+                    <p className="text-gray-400 text-xs">
+                        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • <span className="text-brand-200">{new NepaliDate(new Date()).format('YYYY MMMM DD')} BS</span>
+                    </p>
+                </div>
+
+                {/* Right Side: Timer & Controls */}
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    {/* Minimize Button */}
+                    <button
+                        onClick={() => setIsFloating(true)}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all order-last md:order-first"
+                        title="Minimize to floating widget"
+                    >
+                        <Minimize2 size={18} />
+                    </button>
+
+                    <div className="bg-black/30 rounded-xl p-3 border border-white/5 min-w-[140px] text-center">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0.5">Current Time</p>
+                        <p className="text-xl font-mono font-bold text-white leading-none">
+                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </p>
                     </div>
 
-                    <div className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center gap-1.5 transition-all ${status === 'CLOCKED_IN' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
-                        status === 'COMPLETED' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                            'bg-white/5 border-white/10 text-gray-500'
-                        }`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${status === 'CLOCKED_IN' ? 'bg-emerald-400 animate-pulse' :
-                            status === 'COMPLETED' ? 'bg-blue-400' :
-                                'bg-gray-600'
-                            }`}></div>
-                        {status === 'CLOCKED_IN' ? 'ACTIVE SESSION' : status === 'COMPLETED' ? 'DAILY COMPLETE' : 'NOT STARTED'}
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                    {/* Left: Timer & Actions */}
-                    <div className="space-y-6">
-                        <div className="text-center p-8 bg-black/20 rounded-3xl border border-white/5 shadow-inner relative overflow-hidden">
-                            <div className="text-5xl font-mono font-bold text-white mb-2 tracking-tighter">
-                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                            <div className="flex items-center justify-center gap-2 text-brand-300/60 text-xs font-mono">
-                                <Timer size={14} />
-                                <span>Duration: <span className={status === 'CLOCKED_IN' ? 'text-emerald-400' : ''}>{formatTime(sessionSeconds)}</span></span>
-                            </div>
-
-                            {isLate && status === 'CLOCKED_OUT' && (
-                                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                                        <AlertTriangle size={14} className="text-amber-500" />
-                                        <input
-                                            type="text"
-                                            placeholder="Reason for late arrival..."
-                                            className="bg-transparent border-none text-[11px] text-amber-200 placeholder-amber-500/50 w-full focus:ring-0"
-                                            value={lateReason}
-                                            onChange={(e) => setLateReason(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {status === 'COMPLETED' && (
-                                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl justify-center">
-                                        <Check size={14} className="text-emerald-500" />
-                                        <span className="text-[11px] text-emerald-200 font-bold">Attendance recorded for today</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {status === 'CLOCKED_OUT' ? (
-                            <button
-                                onClick={handleClockIn}
-                                disabled={loading}
-                                className="w-full group/btn relative py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
-                                <Play size={20} className="fill-white" />
-                                <span>Start Working Today</span>
-                            </button>
-                        ) : status === 'CLOCKED_IN' ? (
-                            <button
-                                onClick={handleClockOut}
-                                disabled={loading}
-                                className="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3"
-                            >
-                                <Square size={20} className="fill-white" />
-                                <span>End Work Session</span>
-                            </button>
-                        ) : (
-                            <button
-                                disabled
-                                className="w-full py-4 bg-gray-600/20 text-gray-500 rounded-2xl font-bold transition-all border border-white/5 flex items-center justify-center gap-3 cursor-not-allowed"
-                            >
-                                <Check size={20} />
-                                <span>Session Finished</span>
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Right: Work Logs */}
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center px-1">
-                            <h3 className="text-xs font-bold text-brand-300 uppercase tracking-widest flex items-center gap-2">
-                                <Briefcase size={12} /> Work Activities
-                            </h3>
-                            {(status === 'CLOCKED_IN' || status === 'CLOCKED_OUT') && (
-                                <button
-                                    onClick={addLog}
-                                    className="p-1 px-2 rounded-lg bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition-colors text-[10px] font-bold border border-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    + ADD TASK
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="space-y-3 pr-1">
-                            {workLogs.map((log) => (
-                                <div key={log.id} className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2 hover:bg-white/10 transition-colors group/card">
-                                    <div className="flex gap-2 items-center">
-                                        <SearchableClientSelect
-                                            clients={clients}
-                                            value={log.clientId}
-                                            onChange={(val) => updateLog(log.id, 'clientId', val)}
-                                            disabled={status === 'COMPLETED' || (status === 'CLOCKED_OUT' && !currentRecordId)}
-                                        />
-
-                                        {workLogs.length > 1 && status !== 'COMPLETED' && (
-                                            <button
-                                                onClick={() => removeLog(log.id)}
-                                                className="p-2 text-gray-500 hover:text-rose-400 transition-colors bg-white/5 rounded-lg border border-white/5"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        )}
-                                    </div>
-                                    <textarea
-                                        placeholder="What did you work on?"
-                                        value={log.description}
-                                        onChange={(e) => updateLog(log.id, 'description', e.target.value)}
-                                        disabled={status === 'COMPLETED' || (status === 'CLOCKED_OUT' && !currentRecordId)}
-                                        rows={2}
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-gray-200 placeholder-gray-600 focus:ring-1 focus:ring-brand-500 outline-none resize-none disabled:opacity-50"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer Info */}
-                <div className="pt-4 border-t border-white/5 flex flex-wrap gap-4 items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2">
-                            <Coffee size={14} className="text-brand-300" />
-                            <span className="text-[10px] text-white/40">Office: 10:00 AM - 5:00 PM</span>
-                        </div>
-                    </div>
                     {status === 'CLOCKED_IN' && (
-                        <div className="text-[10px] text-brand-400 font-medium animate-pulse flex items-center gap-1.5">
-                            <Plus size={10} /> Syncing session data...
+                        <div className="bg-green-500/10 rounded-xl p-3 border border-green-500/20 min-w-[140px] text-center animate-pulse-slow">
+                            <p className="text-[10px] text-green-400/80 uppercase tracking-widest font-bold mb-0.5">Session Timer</p>
+                            <p className="text-xl font-mono font-bold text-green-400 leading-none">
+                                {formatTime(sessionSeconds)}
+                            </p>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Main Content Area */}
+            <div className="p-6 relative z-10">
+                {/* Late Arrival Input */}
+                {isLate && status === 'CLOCKED_OUT' && (
+                    <div className="mb-6 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
+                        <AlertTriangle className="text-amber-400 flex-shrink-0 mt-0.5" size={18} />
+                        <div className="flex-1">
+                            <h3 className="text-amber-400 font-bold text-sm mb-1">Late Arrival Detected</h3>
+                            <p className="text-amber-200/70 text-xs mb-3">You are checking in after 10:15 AM. Please provide a reason.</p>
+                            <input
+                                type="text"
+                                placeholder="Reason for late arrival..."
+                                value={lateReason}
+                                onChange={(e) => setLateReason(e.target.value)}
+                                className="w-full bg-black/20 border border-amber-500/30 rounded-lg px-3 py-2 text-sm text-white placeholder-amber-500/40 focus:outline-none focus:border-amber-400"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Clock In / Out Actions */}
+                {status === 'CLOCKED_OUT' ? (
+                    <button
+                        onClick={handleClockIn}
+                        disabled={loading || (isLate && !lateReason)}
+                        className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                    >
+                        {loading ? <Loader2 className="animate-spin" /> : <Play className="fill-current" />}
+                        Start Work Day
+                    </button>
+                ) : (
+                    <div className="space-y-6">
+                        {/* Work Logs Section */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-white text-sm font-bold flex items-center gap-2">
+                                    <Briefcase size={16} className="text-brand-400" />
+                                    Work Logs
+                                </h3>
+                                {status !== 'COMPLETED' && (
+                                    <button onClick={addLog} className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1 font-medium bg-brand-500/10 px-2 py-1 rounded-lg border border-brand-500/20">
+                                        <Plus size={12} /> Add Task
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                {workLogs.map((log, index) => (
+                                    <div key={log.id} className="bg-white/5 border border-white/5 rounded-xl p-3 flex gap-3 group hover:border-white/10 transition-colors">
+                                        {/* Client Select */}
+                                        <div className="w-1/3 min-w-[180px]">
+                                            <SearchableClientSelect
+                                                clients={clients}
+                                                value={log.clientId}
+                                                onChange={(val) => updateLog(log.id, 'clientId', val)}
+                                                disabled={status === 'COMPLETED'}
+                                            />
+                                        </div>
+
+                                        {/* Description */}
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                value={log.description}
+                                                onChange={(e) => updateLog(log.id, 'description', e.target.value)}
+                                                placeholder="What are you working on?"
+                                                disabled={status === 'COMPLETED'}
+                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/50 focus:bg-brand-500/5 transition-all h-[38px]"
+                                            />
+                                        </div>
+
+                                        {/* Actions */}
+                                        {status !== 'COMPLETED' && workLogs.length > 1 && (
+                                            <button
+                                                onClick={() => removeLog(log.id)}
+                                                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all h-[38px] w-[38px] flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Clock Out Button */}
+                        {status === 'CLOCKED_IN' && (
+                            <div className="pt-4 border-t border-white/5">
+                                <button
+                                    onClick={handleClockOut}
+                                    disabled={loading}
+                                    className="w-full py-3 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group"
+                                >
+                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current" size={18} />}
+                                    Clock Out & Save Logs
+                                </button>
+                            </div>
+                        )}
+
+                        {status === 'COMPLETED' && (
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
+                                <p className="text-green-400 font-bold mb-1">Work Day Completed</p>
+                                <p className="text-green-400/60 text-xs">Great job! See you tomorrow.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Background Decoration */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl -z-0 pointer-events-none translate-x-1/3 -translate-y-1/3"></div>
         </div>
     );
 };

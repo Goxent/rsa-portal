@@ -11,6 +11,49 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
+
+  // Rate Limiting Logic
+  const MAX_ATTEMPTS = 5;
+  const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
+
+  const checkRateLimit = () => {
+    const stored = localStorage.getItem('rsa_login_attempts');
+    if (!stored) return true;
+
+    const { count, firstAttempt } = JSON.parse(stored);
+    const now = Date.now();
+
+    if (now - firstAttempt > LOCKOUT_TIME) {
+      localStorage.removeItem('rsa_login_attempts');
+      return true;
+    }
+
+    if (count >= MAX_ATTEMPTS) {
+      const remainingTime = Math.ceil((LOCKOUT_TIME - (now - firstAttempt)) / 60000);
+      setRateLimitError(`Too many failed attempts. Please try again in ${remainingTime} minutes.`);
+      return false;
+    }
+
+    return true;
+  };
+
+  const recordAttempt = () => {
+    const stored = localStorage.getItem('rsa_login_attempts');
+    const now = Date.now();
+
+    if (stored) {
+      const { count, firstAttempt } = JSON.parse(stored);
+      localStorage.setItem('rsa_login_attempts', JSON.stringify({ count: count + 1, firstAttempt }));
+    } else {
+      localStorage.setItem('rsa_login_attempts', JSON.stringify({ count: 1, firstAttempt: now }));
+    }
+  };
+
+  const clearAttempts = () => {
+    localStorage.removeItem('rsa_login_attempts');
+    setRateLimitError(null);
+  };
 
   const [loading, setLoading] = useState(false);
   const { login, googleLogin, signup } = useAuth();
@@ -22,10 +65,21 @@ const LoginPage: React.FC = () => {
 
     try {
       if (isLogin) {
+        if (!checkRateLimit()) {
+          setLoading(false);
+          return;
+        }
+
         // LOGIN LOGIC
-        await login(email, password);
-        navigate('/dashboard');
-        toast.success('Welcome back!');
+        try {
+          await login(email, password);
+          clearAttempts();
+          navigate('/dashboard');
+          toast.success('Welcome back!');
+        } catch (error) {
+          recordAttempt();
+          throw error;
+        }
       } else {
         // SIGNUP LOGIC
         if (password !== confirmPassword) {
@@ -96,6 +150,13 @@ const LoginPage: React.FC = () => {
             </button>
           </div>
 
+          {rateLimitError && (
+            <div className="mb-6 bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 animate-pulse">
+              <Lock className="text-red-400" size={20} />
+              <p className="text-sm text-red-300 font-bold">{rateLimitError}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
@@ -162,8 +223,8 @@ const LoginPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transform transition-all active:scale-[0.98] flex items-center justify-center group"
+              disabled={loading || !!rateLimitError}
+              className={`w-full font-bold py-4 rounded-xl shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center group ${!!rateLimitError ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-500/20 text-white'}`}
             >
               {loading ? (
                 <Loader2 size={20} className="animate-spin" />

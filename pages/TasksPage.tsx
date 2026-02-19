@@ -6,8 +6,15 @@ import {
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { AuthService } from '../services/firebase';
-import { TemplateService } from '../services/templates';
+import { useModal } from '../context/ModalContext'; // Import ModalContext
+import { AuthService } from '../services/firebase'; // Keep for static helpers if any, or verify removal
+// import { TemplateService } from '../services/templates'; // Removed
+import { getCurrentDateUTC } from '../utils/dates';
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useAddTaskComment, taskKeys } from '../hooks/useTasks';
+import { useClients } from '../hooks/useClients';
+import { useUsers } from '../hooks/useStaff';
+import { useTemplates } from '../hooks/useTemplates';
+import { useQueryClient } from '@tanstack/react-query';
 import { getCurrentDateUTC } from '../utils/dates';
 import { SIGNING_AUTHORITIES } from '../constants/firmData';
 import TaskTemplateModal from '../components/TaskTemplateModal';
@@ -24,22 +31,31 @@ import ExcelJS from 'exceljs';
 
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { openModal } = useModal();
+    const queryClient = useQueryClient();
+
+    // -- DATA FETCHING (React Query) --
+    const { data: tasks = [], isLoading: tasksLoading } = useTasks();
+    const { data: usersList = [], isLoading: usersLoading } = useUsers();
+    const { data: clientsList = [], isLoading: clientsLoading } = useClients();
+    const { data: templates = [], isLoading: templatesLoading } = useTemplates();
+
+    const loading = tasksLoading || usersLoading || clientsLoading || templatesLoading;
+
+    // -- MUTATIONS --
+    const createTaskMutation = useCreateTask();
+    const updateTaskMutation = useUpdateTask();
+    const deleteTaskMutation = useDeleteTask();
+    const addCommentMutation = useAddTaskComment();
+
     const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN'>('KANBAN');
     const [boardMode, setBoardMode] = useState<'ALL' | 'MY'>('ALL');
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
     const [collapsedColumns, setCollapsedColumns] = useState<TaskStatus[]>([]);
 
-    // Pagination State
-    const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
-    const [hasMore, setHasMore] = useState(true);
-    const [isMoreLoading, setIsMoreLoading] = useState(false);
+    // Pagination Removed (fetching all tasks now)
 
-    // Data State
-    const [usersList, setUsersList] = useState<UserProfile[]>([]);
-    const [clientsList, setClientsList] = useState<Client[]>([]);
-    const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+    // Modal & Edit State
 
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -164,6 +180,7 @@ const TasksPage: React.FC = () => {
     };
 
     // Drag and Drop Logic
+    // Drag and Drop Logic
     const onDragEnd = async (result: DropResult) => {
         const { destination, source, draggableId } = result;
 
@@ -174,72 +191,60 @@ const TasksPage: React.FC = () => {
         const task = tasks.find(t => t.id === draggableId);
 
         if (task && task.status !== newStatus) {
-            const previousTasks = [...tasks];
             const updatedTask = { ...task, status: newStatus };
 
             // Optimistic Update
-            setTasks(prev => prev.map(t => t.id === draggableId ? updatedTask : t));
+            const previousTasks = tasks;
+            queryClient.setQueryData(taskKeys.all, (old: Task[] | undefined) => {
+                return old ? old.map(t => t.id === draggableId ? updatedTask : t) : [];
+            });
 
             try {
-                await AuthService.saveTask(updatedTask);
+                // We use updateTask mutation but strictly speaking we just want to update status.
+                // updateTaskMutation handles the API call.
+                // We don't need to await if we rely on optimistic update + rollback on error.
+                updateTaskMutation.mutate({ id: task.id, updates: { status: newStatus } }, {
+                    onError: (err) => {
+                        console.error("Failed to update task status:", err);
+                        toast.error("Failed to move task. Reverting...");
+                        queryClient.setQueryData(taskKeys.all, previousTasks);
+                    }
+                });
             } catch (error) {
-                console.error("Failed to update task status:", error);
-                toast.error("Failed to move task. Reverting...");
-                setTasks(previousTasks); // Rollback
+                // Should be caught by onError above if using mutate, but keeping safety
             }
         }
     };
 
+    // Load draft when modal opens
     useEffect(() => {
-        if (user) {
-            fetchData();
+        if (isModalOpen && !isEditMode) {
+            const draft = sessionStorage.getItem('rsa_task_draft');
+            if (draft) {
+                try {
+                    const parsed = JSON.parse(draft);
+                    setCurrentTask(parsed);
+                } catch (e) {
+                    console.error("Failed to parse draft", e);
+                }
+            }
         }
-    }, [user]);
+    }, [isModalOpen, isEditMode]);
 
-    const fetchData = async () => {
-        if (!user) return;
-        setLoading(true);
-        try {
-            const [fetchedUsers, fetchedClients, fetchedTemplates] = await Promise.all([
-                AuthService.getAllUsers(),
-                AuthService.getAllClients(),
-                TemplateService.getAllTemplates()
-            ]);
-
-            // Initial Page Load
-            const { tasks: initialTasks, lastVisible: last } = await AuthService.getPaginatedTasks(undefined, 20); // Page size 20
-
-            setTasks(initialTasks);
-            setLastVisible(last);
-            setHasMore(!!last);
-
-            setUsersList(fetchedUsers);
-            setClientsList(fetchedClients);
-            setTemplates(fetchedTemplates);
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to load data");
-        } finally {
-            setLoading(false);
+    // Save draft on change
+    useEffect(() => {
+        if (isModalOpen && !isEditMode) {
+            const timer = setTimeout(() => {
+                sessionStorage.setItem('rsa_task_draft', JSON.stringify(currentTask));
+            }, 500);
+            return () => clearTimeout(timer);
         }
-    };
+    }, [currentTask, isModalOpen, isEditMode]);
 
-    const loadMoreTasks = async () => {
-        if (!lastVisible || isMoreLoading) return;
-        setIsMoreLoading(true);
-        try {
-            const { tasks: nextTasks, lastVisible: nextLast } = await AuthService.getPaginatedTasks(lastVisible, 20);
+    // Removed manual fetchData useEffect
 
-            setTasks(prev => [...prev, ...nextTasks]);
-            setLastVisible(nextLast);
-            setHasMore(!!nextLast);
-        } catch (error) {
-            console.error("Failed to load more tasks", error);
-            toast.error("Failed to load more tasks");
-        } finally {
-            setIsMoreLoading(false);
-        }
-    };
+    // loadMoreTasks Removed
+
 
 
     const getPriorityStyle = (p: TaskPriority) => {
@@ -269,11 +274,17 @@ const TasksPage: React.FC = () => {
     };
 
     const handleDeleteTask = async (taskId: string) => {
-        if (window.confirm("Are you sure you want to delete this task?")) {
-            await AuthService.deleteTask(taskId);
-            fetchData();
-            setIsModalOpen(false);
-        }
+        openModal('CONFIRMATION', {
+            title: 'Delete Task',
+            message: 'Are you sure you want to delete this task? This action cannot be undone.',
+            variant: 'danger',
+            confirmLabel: 'Delete',
+            onConfirm: async () => {
+                await deleteTaskMutation.mutateAsync(taskId);
+                setIsModalOpen(false);
+                // Toast handled by mutation
+            }
+        });
     };
 
     // Recursively removes undefined values from an object before sending to Firestore
@@ -323,7 +334,11 @@ const TasksPage: React.FC = () => {
             // Strip all undefined values before saving to Firestore
             const taskToSave: Task = cleanForFirestore(rawTask);
 
-            await AuthService.saveTask(taskToSave);
+            if (isEditMode && currentTask.id && !currentTask.id.toString().startsWith('t_')) {
+                await updateTaskMutation.mutateAsync({ id: currentTask.id, updates: taskToSave });
+            } else {
+                await createTaskMutation.mutateAsync(taskToSave);
+            }
 
             // Handle Mentions
             const originalTask = tasks.find(t => t.id === currentTask.id);
@@ -332,7 +347,6 @@ const TasksPage: React.FC = () => {
 
             usersList.forEach(u => {
                 // Simple case-sensitive match for "@DisplayName"
-                // In a production app, we might want more robust matching or a mention picker
                 const mention = `@${u.displayName}`;
 
                 if (newDesc.includes(mention) && !oldDesc.includes(mention)) {
@@ -349,12 +363,12 @@ const TasksPage: React.FC = () => {
                 }
             });
 
-            toast.success(isEditMode ? "Task updated" : "Task created");
-            fetchData();
+            // toast handled by mutation
+            sessionStorage.removeItem('rsa_task_draft'); // Clear draft
             setIsModalOpen(false);
         } catch (error) {
             console.error('Error saving task:', error);
-            toast.error('Failed to save task');
+            // toast handled by mutation onError
         } finally {
             setIsSaving(false);
         }
@@ -366,14 +380,8 @@ const TasksPage: React.FC = () => {
         const updatedComments = [...(currentTask.comments || []), comment];
         setCurrentTask(prev => ({ ...prev, comments: updatedComments }));
 
-        // Use a background update for comments to feel snappy, but we should probably save properly
-        // For now, we rely on the main "Save" button or we could auto-save.
-        // Let's autosave just the comments to be safe if it's an existing task
         if (currentTask.id) {
-            AuthService.updateTask(currentTask.id, { comments: updatedComments }).catch(err => {
-                console.error("Failed to save comment", err);
-                toast.error("Failed to save comment");
-            });
+            addCommentMutation.mutate({ taskId: currentTask.id, comment });
         }
     };
 
@@ -595,7 +603,7 @@ const TasksPage: React.FC = () => {
                                                     </div>
 
                                                     {!isCollapsed && (
-                                                        <div className="space-y-3 overflow-y-auto px-1 pb-4 custom-scrollbar flex-1 min-h-[50vh] max-h-[70vh]">
+                                                        <div className="space-y-3 overflow-y-auto px-1 pb-4 custom-scrollbar flex-1 max-h-[calc(100vh-18rem)]">
                                                             {columnTasks.map((task, idx) => {
                                                                 const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
                                                                 const totalSub = task.subtasks?.length || 0;
@@ -683,7 +691,8 @@ const TasksPage: React.FC = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                            )}
+                                            )
+                                            }
                                         </Droppable>
                                     );
                                 })}
@@ -691,7 +700,7 @@ const TasksPage: React.FC = () => {
                         </div>
                     ))}
                 </div>
-            </DragDropContext>
+            </DragDropContext >
         );
     };
 
@@ -710,17 +719,26 @@ const TasksPage: React.FC = () => {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} tasks?`)) return;
-
-        try {
-            await Promise.all(selectedTaskIds.map(id => AuthService.deleteTask(id)));
-            toast.success(`${selectedTaskIds.length} tasks deleted successfully`);
-            setSelectedTaskIds([]);
-            fetchData();
-        } catch (error) {
-            console.error('Bulk delete failed:', error);
-            toast.error('Failed to delete some tasks');
-        }
+        openModal({
+            modalType: 'CONFIRMATION',
+            modalProps: {
+                title: 'Bulk Delete Tasks',
+                message: `Are you sure you want to delete ${selectedTaskIds.length} tasks? This action cannot be undone.`,
+                variant: 'danger',
+                confirmLabel: `Delete ${selectedTaskIds.length} Tasks`,
+                onConfirm: async () => {
+                    try {
+                        await Promise.all(selectedTaskIds.map(id => AuthService.deleteTask(id)));
+                        toast.success(`${selectedTaskIds.length} tasks deleted successfully`);
+                        setSelectedTaskIds([]);
+                        fetchData();
+                    } catch (error) {
+                        console.error('Bulk delete failed:', error);
+                        toast.error('Failed to delete some tasks');
+                    }
+                }
+            }
+        });
     };
 
     const handleBulkStatusUpdate = async (newStatus: TaskStatus) => {
@@ -949,7 +967,7 @@ const TasksPage: React.FC = () => {
     };
 
     const ListView = () => (
-        <div className="glass-panel rounded-2xl overflow-hidden animate-fade-in-up relative border border-white/10 shadow-xl mx-1 flex flex-col h-full">
+        <div className="glass-panel rounded-2xl overflow-hidden animate-fade-in-up relative border border-white/10 shadow-xl mx-1 flex flex-col h-full w-full">
             {/* Floating Bulk Action Bar */}
             {selectedTaskIds.length > 0 && (
                 <div className="absolute top-0 left-0 w-full bg-brand-600/95 backdrop-blur-md z-20 p-3 px-6 flex justify-between items-center shadow-lg animate-in slide-in-from-top-2 duration-300">
@@ -1167,8 +1185,10 @@ const TasksPage: React.FC = () => {
 
     const hasEditPermission = canEditTask(currentTask);
 
+    const pageHeight = "h-[calc(100vh-7rem)]"; // Fixed height for the entire page (minus header padding)
+
     return (
-        <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
+        <div className={`flex flex-col ${pageHeight} space-y-4 animate-in fade-in duration-500`}>
 
 
             {/* 2-Row Layout: Header + Toolbar */}
@@ -1330,7 +1350,8 @@ const TasksPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-hidden">
+            {/* Main Content Area - Fixed Height for internal scrolling */}
+            <div className="flex-1 min-h-0 overflow-hidden bg-navy-900/30 rounded-2xl border border-white/5 relative">
                 {viewMode === 'KANBAN' ? <KanbanBoard /> : <ListView />}
             </div>
 

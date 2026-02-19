@@ -147,8 +147,8 @@ const MyPerformancePage: React.FC = () => {
                             </div>
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Daily Streak</p>
                             <h3 className="text-4xl font-black text-white">12 Days</h3>
-                            <p className="text-[10px] text-gray-400 mt-4 uppercase font-bold">Keep it up to earn 50 Bonus XP!</p>
                         </div>
+
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

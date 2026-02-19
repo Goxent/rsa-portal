@@ -24,6 +24,20 @@ export interface UserProfile {
   leaveAdjustment?: number; // Manual correction for leave balance
 }
 
+export interface StaffDirectoryProfile {
+  uid: string;
+  displayName: string;
+  email: string; // Official email is usually public within org
+  role: UserRole;
+  department: string;
+  position?: string;
+  phoneNumber?: string; // Optional, maybe business phone?
+  status?: 'Active' | 'Inactive';
+  photoURL?: string;
+  gender?: 'Male' | 'Female' | 'Other';
+  dateOfJoining?: string; // Often harmless, but can be omitted if super strict
+}
+
 export interface AttendanceRecord {
   id: string;
   userId: string;

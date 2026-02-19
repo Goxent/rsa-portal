@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Briefcase, Calendar, Plus, Search, Grid, List, Shield, X, Edit, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { UserProfile, UserRole } from '../types';
+import { UserProfile, UserRole, StaffDirectoryProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 const StaffPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [users, setUsers] = useState<UserProfile[]>([]);
+    const [users, setUsers] = useState<StaffDirectoryProfile[]>([]);
+    const [fullUsers, setFullUsers] = useState<UserProfile[]>([]); // Keep full data for admins who can edit
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
 
@@ -46,7 +47,26 @@ const StaffPage: React.FC = () => {
 
     const fetchUsers = async () => {
         const data = await AuthService.getAllUsers();
-        setUsers(data);
+        // If current user is Admin/Master, they get full access.
+        // But for the *Directory View*, we should conceptually use the safe profile.
+        // We'll store full data for editing purposes if admin.
+        setFullUsers(data);
+
+        // Sanitize for display
+        const safeProfiles: StaffDirectoryProfile[] = data.map(u => ({
+            uid: u.uid,
+            displayName: u.displayName,
+            email: u.email,
+            role: u.role,
+            department: u.department,
+            position: u.position,
+            phoneNumber: u.phoneNumber,
+            status: u.status,
+            photoURL: u.photoURL,
+            gender: u.gender,
+            dateOfJoining: u.dateOfJoining
+        }));
+        setUsers(safeProfiles);
     };
 
     const handleOpenAdd = () => {
@@ -68,10 +88,13 @@ const StaffPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleOpenEdit = (staff: UserProfile) => {
+    const handleOpenEdit = (staff: StaffDirectoryProfile) => {
+        const fullProfile = fullUsers.find(u => u.uid === staff.uid);
+        if (!fullProfile) return; // Should not happen
+
         setIsEditing(true);
-        setSelectedUser(staff);
-        setFormData({ ...staff });
+        setSelectedUser(fullProfile);
+        setFormData({ ...fullProfile });
         setFormError('');
         setIsModalOpen(true);
     };
@@ -194,8 +217,8 @@ const StaffPage: React.FC = () => {
                                                         {staff.role}
                                                     </span>
                                                     <span className={`text-[10px] px-2 py-0.5 rounded-full border backdrop-blur-sm font-bold uppercase tracking-wider ${staff.status === 'Active'
-                                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                                            : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                                        : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                                                         }`}>
                                                         {staff.status}
                                                     </span>
