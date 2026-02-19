@@ -36,7 +36,7 @@ export const EmailService = {
     },
 
     sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string) => {
-        const subject = `New Task Assigned: ${taskTitle}`;
+        const subject = `New Task Assigned: ${clientName}`;
         const html = `
             <!DOCTYPE html>
             <html>
