@@ -623,9 +623,75 @@ export const AuthService = {
 
     addTaskComment: async (taskId: string, comment: any) => {
         if (!auth.currentUser) throw new Error("Unauthenticated");
+
         await updateDoc(doc(db, 'tasks', taskId), {
             comments: arrayUnion(comment)
         });
+
+        // --- MENTION LOGIC ---
+        try {
+            const commentText = comment.text || "";
+            const mentionRegex = /@(\w+)/g;
+            const mentionedNames: string[] = [];
+            let match;
+
+            while ((match = mentionRegex.exec(commentText)) !== null) {
+                mentionedNames.push(match[1]); // e.g., "Anil"
+            }
+
+            if (mentionedNames.length > 0) {
+                // Fetch Task Data to check assignments
+                const taskDoc = await getDoc(doc(db, 'tasks', taskId));
+                const task = taskDoc.data() as Task;
+
+                // Fetch All Users to resolve names to UIDs
+                const users = await AuthService.getAllUsers();
+
+                for (const name of mentionedNames) {
+                    // Find user by First Name (Case insensitive)
+                    const targetUser = users.find(u =>
+                        u.displayName.toLowerCase().startsWith(name.toLowerCase()) ||
+                        u.displayName.split(' ')[0].toLowerCase() === name.toLowerCase()
+                    );
+
+                    if (targetUser && targetUser.email) {
+                        // PERMISSION CHECK:
+                        // User must constitute "Team" (Assigned to Task) OR be an Admin
+                        const isAssigned = task.assignedTo?.includes(targetUser.uid);
+                        const isAdmin = targetUser.role === UserRole.ADMIN || targetUser.role === UserRole.MASTER_ADMIN;
+
+                        if (isAssigned || isAdmin) {
+                            console.log(`Sending mention notification to ${targetUser.displayName}`);
+
+                            // Send Email
+                            await EmailService.sendCommentMention(
+                                targetUser.email,
+                                targetUser.displayName,
+                                comment.userName || 'A Colleague',
+                                task.title,
+                                commentText,
+                                `${window.location.origin}/#/tasks`
+                            );
+
+                            // Send In-App Notification
+                            await AuthService.createNotification({
+                                userId: targetUser.uid,
+                                title: 'You were mentioned',
+                                message: `${comment.userName} mentioned you in: ${task.title}`,
+                                type: 'INFO',
+                                category: 'TASK',
+                                link: '/tasks'
+                            });
+                        } else {
+                            console.warn(`User ${name} mentioned but not authorized to view task.`);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error processing mentions:", error);
+            // Don't fail the comment save just because notification failed
+        }
     },
 
     // --- ATTENDANCE ---

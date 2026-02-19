@@ -51,7 +51,7 @@ export const EmailService = {
                     <!-- Content -->
                     <div style="padding: 40px;">
                         <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                        <p style="color: #475569; line-height: 1.6;">You have been assigned a new task. Please log in to the portal to review the full details.</p>
+                        <p style="color: #475569; line-height: 1.6;">You have been assigned a new task. Please log in to the portal to view the full details.</p>
                         
                         <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px; padding: 24px; margin: 24px 0;">
                             <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px;">${taskTitle}</h2>
@@ -165,6 +165,48 @@ export const EmailService = {
                         </div>
                         
                        <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                            <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
+                            <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
+                        </div>
+                    </div>
+                    
+                     <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+                         <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        await EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+    },
+
+    sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, commentText: string, taskLink: string) => {
+        const subject = `Mentioned in Comment: ${taskTitle}`;
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
+                <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+                    <!-- Header -->
+                    <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 32px; text-align: center;">
+                        <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
+                        <p style="color: #ddd6fe; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">New Mention</p>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding: 40px;">
+                        <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
+                        <p style="color: #475569; line-height: 1.6;"><strong>${authorName}</strong> mentioned you in a comment on task <strong>${taskTitle}</strong>.</p>
+                        
+                        <div style="background-color: #f5f3ff; border-left: 4px solid #8b5cf6; border-radius: 4px; padding: 24px; margin: 24px 0;">
+                            <p style="margin: 0; color: #4c1d95; font-style: italic; font-size: 15px;">"${commentText}"</p>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 32px;">
+                            <a href="${taskLink}" style="background-color: #7c3aed; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">Reply to Comment</a>
+                        </div>
+                        
+                        <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
                             <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
                             <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
                         </div>
