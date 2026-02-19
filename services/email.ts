@@ -22,7 +22,7 @@ export const EmailService = {
 
             if (!response.ok) {
                 const error = await response.json();
-                console.error("Resend Email Failed. Status:", response.status, "Error:", error);
+                console.error("Email Sending Failed. Status:", response.status, "Error:", error);
                 throw new Error(error.error || "Failed to send email");
             }
 
