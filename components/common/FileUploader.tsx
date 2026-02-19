@@ -4,19 +4,17 @@ import { StorageService } from '../../services/storage';
 import { toast } from 'react-hot-toast';
 
 interface FileUploaderProps {
-    onUploadComplete: (fileData: { id: string; name: string; url: string; type: string; downloadUrl?: string }) => void;
+    onUploadComplete: (fileData: { id: string; name: string; url: string; type: string }) => void;
     onError?: (error: any) => void;
     accept?: string;
     maxSizeMB?: number;
-    uploadFunction?: (file: File) => Promise<any>; // Optional custom upload function
 }
 
 export const FileUploader: React.FC<FileUploaderProps> = ({
     onUploadComplete,
     onError,
     accept = "image/*,.pdf,.doc,.docx",
-    maxSizeMB = 5,
-    uploadFunction
+    maxSizeMB = 5
 }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -55,14 +53,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 setProgress(prev => Math.min(prev + 10, 90));
             }, 200);
 
-            let result;
-            if (uploadFunction) {
-                // Use custom upload function (e.g., Google Drive)
-                result = await uploadFunction(file);
-            } else {
-                // Default to Appwrite Storage
-                result = await StorageService.upload(file);
-            }
+            const result = await StorageService.upload(file);
 
             clearInterval(interval);
             setProgress(100);

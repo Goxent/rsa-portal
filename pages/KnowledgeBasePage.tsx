@@ -21,7 +21,6 @@ import { useAuth } from '../context/AuthContext';
 import { UserRole, Resource, Category } from '../types';
 import { KnowledgeService } from '../services/knowledge';
 import { StorageService } from '../services/storage';
-import { DriveService } from '../services/drive';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
 import { toast } from 'react-hot-toast';
@@ -453,7 +452,6 @@ const KnowledgeBasePage: React.FC = () => {
                                     <div className="border-2 border-dashed border-white/10 rounded-xl p-4 hover:border-brand-500/50 transition-colors">
                                         <FileUploader
                                             maxSizeMB={20}
-                                            uploadFunction={DriveService.uploadFile}
                                             onUploadComplete={(fileData) => {
                                                 setCurrentResource({
                                                     ...currentResource,
@@ -461,7 +459,7 @@ const KnowledgeBasePage: React.FC = () => {
                                                     link: fileData.url,
                                                     type: fileData.type as any,
                                                     fileId: fileData.id,
-                                                    downloadUrl: fileData.downloadUrl
+                                                    downloadUrl: StorageService.getDownloadUrl(fileData.id)
                                                 });
                                             }}
                                             accept={
