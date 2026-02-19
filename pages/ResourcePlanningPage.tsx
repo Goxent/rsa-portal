@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
-import { Task, User, TaskStatus } from '../types';
+import { Task, UserProfile, TaskStatus } from '../types';
 import {
     LayoutDashboard, AlertTriangle, CheckCircle2, Clock, Briefcase,
     Loader2, ChevronDown, ChevronUp, Search, Users, Zap,
@@ -41,7 +41,7 @@ const getPriorityStyle = (priority?: string) => {
 
 const getStatusStyle = (status: string) => {
     if (status === TaskStatus.IN_PROGRESS) return 'bg-brand-500/10 text-brand-300 border-brand-500/20';
-    if (status === TaskStatus.PENDING_REVIEW) return 'bg-purple-500/10 text-purple-300 border-purple-500/20';
+    if (status === TaskStatus.UNDER_REVIEW) return 'bg-purple-500/10 text-purple-300 border-purple-500/20';
     return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
 };
 
@@ -165,7 +165,7 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
 const ResourcePlanningPage: React.FC = () => {
     const { user: currentUser } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<UserProfile[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [sortKey, setSortKey] = useState<SortKey>('totalTasks');
@@ -264,62 +264,62 @@ const ResourcePlanningPage: React.FC = () => {
         <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500">
 
             {/* ── Header ── */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-                        <div className="p-2 bg-brand-500/15 rounded-xl border border-brand-500/25">
-                            <LayoutDashboard className="text-brand-400" size={20} />
+                    <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                        <div className="p-1.5 bg-brand-500/15 rounded-lg border border-brand-500/25">
+                            <LayoutDashboard className="text-brand-400" size={18} />
                         </div>
                         Resource Planning
                     </h1>
-                    <p className="text-gray-500 text-sm mt-1 ml-12">Team capacity · workload balance · task distribution</p>
+                    <p className="text-gray-500 text-xs mt-0.5 ml-10">Team capacity · workload balance · task distribution</p>
                 </div>
                 <button
                     onClick={() => setShowHeatmap(p => !p)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${showHeatmap ? 'bg-brand-500/15 border-brand-500/30 text-brand-300' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${showHeatmap ? 'bg-brand-500/15 border-brand-500/30 text-brand-300' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
                 >
-                    <TrendingUp size={15} />
-                    {showHeatmap ? 'Hide' : 'Show'} Capacity Heatmap
+                    <TrendingUp size={13} />
+                    {showHeatmap ? 'Hide' : 'Show'} Heatmap
                 </button>
             </div>
 
             {/* ── KPI Summary Bar ── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                 {[
                     {
-                        icon: <Users size={16} className="text-brand-400" />,
+                        icon: <Users size={14} className="text-brand-400" />,
                         value: users.length,
                         label: 'Team Members',
                         sub: `${freeCount} available`,
                         accent: 'border-brand-500/20 bg-brand-500/5',
                     },
                     {
-                        icon: <Briefcase size={16} className="text-indigo-400" />,
+                        icon: <Briefcase size={14} className="text-indigo-400" />,
                         value: activeTasks.length,
                         label: 'Active Tasks',
-                        sub: `${workloadData.length > 0 ? (activeTasks.length / workloadData.length).toFixed(1) : 0} avg/person`,
+                        sub: `${workloadData.length > 0 ? (activeTasks.length / workloadData.length).toFixed(1) : 0} avg`,
                         accent: 'border-indigo-500/20 bg-indigo-500/5',
                     },
                     {
-                        icon: <AlertTriangle size={16} className="text-red-400" />,
+                        icon: <AlertTriangle size={14} className="text-red-400" />,
                         value: overloadedCount,
                         label: 'Overloaded',
-                        sub: overloadedCount > 0 ? 'Needs attention' : 'All balanced',
+                        sub: overloadedCount > 0 ? 'Action needed' : 'All balanced',
                         accent: overloadedCount > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-emerald-500/20 bg-emerald-500/5',
                     },
                     {
-                        icon: <Clock size={16} className="text-amber-400" />,
+                        icon: <Clock size={14} className="text-amber-400" />,
                         value: totalOverdue,
                         label: 'Overdue Tasks',
                         sub: `${totalHighRisk} high risk`,
                         accent: totalOverdue > 0 ? 'border-amber-500/25 bg-amber-500/8' : 'border-emerald-500/20 bg-emerald-500/5',
                     },
                 ].map((kpi, i) => (
-                    <div key={i} className={`rounded-2xl border p-4 ${kpi.accent}`}>
-                        <div className="flex items-center gap-2 mb-2">{kpi.icon}</div>
-                        <div className="text-2xl font-bold text-white mb-0.5">{kpi.value}</div>
-                        <div className="text-xs font-medium text-gray-300">{kpi.label}</div>
-                        <div className="text-[11px] text-gray-500 mt-0.5">{kpi.sub}</div>
+                    <div key={i} className={`rounded-xl border p-3 ${kpi.accent}`}>
+                        <div className="flex items-center gap-2 mb-1">{kpi.icon}</div>
+                        <div className="text-xl font-bold text-white mb-0.5">{kpi.value}</div>
+                        <div className="text-[10px] font-medium text-gray-300 uppercase tracking-tight">{kpi.label}</div>
+                        <div className="text-[10px] text-gray-500/80 mt-0.5">{kpi.sub}</div>
                     </div>
                 ))}
             </div>

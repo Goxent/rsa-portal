@@ -249,57 +249,57 @@ const Dashboard: React.FC = () => {
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-brand-600/10 to-accent-purple/10"></div>
 
-                <div className="relative p-6 md:p-8 flex flex-col lg:flex-row justify-between items-center z-10 gap-6">
+                <div className="relative p-4 md:p-5 flex flex-col lg:flex-row justify-between items-center z-10 gap-4">
                     <div className="flex-1 w-full lg:w-auto">
-                        <div className="flex items-center justify-between mb-2">
-                            <h1 className="text-2xl md:text-3xl font-bold text-white font-heading tracking-tight">
+                        <div className="flex items-center justify-between mb-1">
+                            <h1 className="text-xl md:text-2xl font-bold text-white font-heading tracking-tight">
                                 Good {currentTime.getHours() < 12 ? 'Morning' : currentTime.getHours() < 17 ? 'Afternoon' : 'Evening'}, <span className="text-brand-500">{user?.displayName?.split(' ')[0]}</span>
                             </h1>
                             {/* Mobile Theme Toggle */}
                             <button
                                 onClick={toggleTheme}
-                                className="lg:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white transition-all"
+                                className="lg:hidden p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white transition-all"
                             >
-                                {theme === 'dark' ? <Sun size={20} className="text-amber-400" /> : <Moon size={20} className="text-blue-400" />}
+                                {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-blue-400" />}
                             </button>
                         </div>
-                        <p className="text-gray-400 text-sm max-w-xl">
-                            Welcome to your customizable dashboard. Drag widgets to rearrange, or click "Customize" to add new ones.
+                        <p className="text-gray-400 text-xs max-w-xl">
+                            Welcome to your customizable dashboard. Drag widgets to rearrange.
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
+                    <div className="flex flex-wrap items-center justify-center lg:justify-end gap-2.5 w-full lg:w-auto">
                         {/* Digital Clock */}
-                        <div className="glass-panel px-4 py-3 rounded-2xl flex items-center space-x-3 border border-white/5 bg-white/5 min-w-[140px]">
-                            <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
-                                <ClockIcon size={20} />
+                        <div className="glass-panel px-3 py-2 rounded-xl flex items-center space-x-2.5 border border-white/5 bg-white/5 min-w-[130px]">
+                            <div className="p-1.5 bg-blue-500/20 rounded-lg text-blue-400">
+                                <ClockIcon size={18} />
                             </div>
                             <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Local Time</p>
-                                <p className="text-white font-mono text-lg font-bold">
+                                <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Local Time</p>
+                                <p className="text-white font-mono text-base font-bold">
                                     {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                 </p>
                             </div>
                         </div>
 
                         {/* Date (AD/BS) */}
-                        <div className="glass-panel px-4 py-3 rounded-2xl flex items-center space-x-3 border border-white/5 bg-white/5">
-                            <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400">
-                                <CalendarDays size={20} />
+                        <div className="glass-panel px-3 py-2 rounded-xl flex items-center space-x-2.5 border border-white/5 bg-white/5">
+                            <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400">
+                                <CalendarDays size={18} />
                             </div>
                             <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Date (AD / BS)</p>
-                                <p className="text-white font-semibold text-sm">{currentTime.toLocaleDateString()} / {toBS(currentTime)} BS</p>
+                                <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Date (AD / BS)</p>
+                                <p className="text-white font-semibold text-[13px]">{currentTime.toLocaleDateString()} / {toBS(currentTime)} BS</p>
                             </div>
                         </div>
 
                         {/* Desktop Theme Toggle */}
                         <button
                             onClick={toggleTheme}
-                            className="hidden lg:flex p-4 rounded-2xl bg-white/5 border border-white/10 text-gray-300 hover:text-white transition-all hover:bg-white/10 hover:-translate-y-0.5 shadow-xl group"
+                            className="hidden lg:flex p-3 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white transition-all hover:bg-white/10 hover:-translate-y-0.5 shadow-xl group"
                             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                         >
-                            {theme === 'dark' ? <Sun size={24} className="text-amber-400 group-hover:rotate-45 transition-transform" /> : <Moon size={24} className="text-blue-400 group-hover:-rotate-12 transition-transform" />}
+                            {theme === 'dark' ? <Sun size={20} className="text-amber-400 group-hover:rotate-12 transition-transform" /> : <Moon size={20} className="text-blue-400 group-hover:-rotate-12 transition-transform" />}
                         </button>
                     </div>
                 </div>

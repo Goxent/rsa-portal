@@ -1166,79 +1166,79 @@ const TasksPage: React.FC = () => {
 
 
             {/* 2-Row Layout: Header + Toolbar */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
 
                 {/* Row 1: Title, View Toggles & Key Filters */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center">
-                            <LayoutGrid className="mr-3 text-brand-400" /> Task Board
+                        <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center">
+                            <LayoutGrid className="mr-2.5 text-brand-400" size={24} /> Task Board
                         </h1>
-                        <p className="text-gray-400 text-sm font-medium mt-1">Manage, track, and collaborate on audit tasks.</p>
+                        <p className="text-gray-400 text-xs font-medium mt-0.5 ml-8">Manage, track, and collaborate on audit tasks.</p>
                     </div>
 
-                    <div className="flex items-center gap-4 bg-navy-900/50 p-2 rounded-2xl border border-white/10 backdrop-blur-md shadow-lg">
+                    <div className="flex items-center gap-3 bg-navy-900/50 p-1.5 rounded-xl border border-white/10 backdrop-blur-md shadow-lg">
                         {/* View Switcher */}
-                        <div className="flex bg-black/20 p-1 rounded-xl">
+                        <div className="flex bg-black/20 p-1 rounded-lg">
                             <button
                                 onClick={() => setViewMode('KANBAN')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white text-navy-900 shadow-xl scale-105' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all ${viewMode === 'KANBAN' ? 'bg-white text-navy-900 shadow-xl scale-105' : 'text-gray-400 hover:text-white'}`}
                             >
-                                <LayoutGrid size={14} /> Board
+                                <LayoutGrid size={12} /> Board
                             </button>
                             <button
                                 onClick={() => setViewMode('LIST')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white text-navy-900 shadow-xl scale-105' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all ${viewMode === 'LIST' ? 'bg-white text-navy-900 shadow-xl scale-105' : 'text-gray-400 hover:text-white'}`}
                             >
-                                <ListIcon size={14} /> List
+                                <ListIcon size={12} /> List
                             </button>
                         </div>
 
-                        <div className="w-px h-6 bg-white/10"></div>
+                        <div className="w-px h-5 bg-white/10"></div>
 
                         {/* Firm/Mine Switcher */}
-                        <div className="flex bg-black/20 p-1 rounded-xl">
+                        <div className="flex bg-black/20 p-1 rounded-lg">
                             <button
                                 onClick={() => setBoardMode('ALL')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 ${boardMode === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                             >
-                                <Briefcase size={14} /> Firm
+                                <Briefcase size={12} /> Firm
                             </button>
                             <button
                                 onClick={() => setBoardMode('MY')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 ${boardMode === 'MY' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                             >
-                                <UserCircle2 size={14} /> Mine
+                                <UserCircle2 size={12} /> Mine
                             </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Row 2: Deep Filters & Actions */}
-                <div className="glass-panel p-4 rounded-2xl border border-white/5 shadow-xl flex flex-col xl:flex-row gap-4 justify-between items-center relative overflow-hidden">
+                <div className="glass-panel p-3 rounded-xl border border-white/5 shadow-xl flex flex-col xl:flex-row gap-3 justify-between items-center relative overflow-hidden">
                     {/* Background decorations */}
-                    <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-brand-900/10 to-transparent pointer-events-none"></div>
+                    <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-brand-900/10 to-transparent pointer-events-none"></div>
 
-                    <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto no-scrollbar pb-2 lg:pb-0">
+                    <div className="flex flex-col lg:flex-row items-center gap-2.5 w-full xl:w-auto overflow-x-auto no-scrollbar pb-1.5 lg:pb-0">
                         {/* Search */}
                         <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-brand-400 transition-colors" size={16} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-brand-400 transition-colors" size={14} />
                             <input
                                 type="text"
                                 placeholder="Search tasks & clients..."
-                                className="bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-brand-500/50 outline-none w-full md:w-64 transition-all"
+                                className="bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-[13px] text-white focus:ring-2 focus:ring-brand-500/50 outline-none w-full md:w-60 transition-all"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
 
                         {/* Filters Group */}
-                        <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-xl border border-white/5">
+                        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-lg border border-white/5">
                             {/* Group By */}
                             <div className="relative">
-                                <LayoutGrid size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" />
+                                <LayoutGrid size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-purple-400" />
                                 <select
-                                    className="bg-transparent border-none outline-none text-xs font-bold text-gray-300 pl-8 pr-2 py-1.5 cursor-pointer uppercase tracking-tight hover:text-white transition-colors"
+                                    className="bg-transparent border-none outline-none text-[11px] font-bold text-gray-300 pl-7 pr-1.5 py-1 cursor-pointer uppercase tracking-tight hover:text-white transition-colors"
                                     value={groupBy}
                                     onChange={(e) => setGroupBy(e.target.value as any)}
                                 >
@@ -1248,13 +1248,13 @@ const TasksPage: React.FC = () => {
                                 </select>
                             </div>
 
-                            <div className="w-px h-4 bg-white/10"></div>
+                            <div className="w-px h-3 bg-white/10"></div>
 
                             {/* Staff Filter */}
                             <div className="relative">
-                                <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+                                <Filter size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-blue-400" />
                                 <select
-                                    className="bg-transparent border-none outline-none text-xs font-bold text-gray-300 pl-8 pr-2 py-1.5 cursor-pointer uppercase tracking-tight hover:text-white transition-colors max-w-[140px]"
+                                    className="bg-transparent border-none outline-none text-[11px] font-bold text-gray-300 pl-7 pr-1.5 py-1 cursor-pointer uppercase tracking-tight hover:text-white transition-colors max-w-[120px]"
                                     value={filterStaff}
                                     onChange={(e) => setFilterStaff(e.target.value)}
                                 >
@@ -1265,16 +1265,16 @@ const TasksPage: React.FC = () => {
                         </div>
 
                         {/* Compliance Toggles */}
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-1">
                             <button
                                 onClick={() => setFilterVat(!filterVat)}
-                                className={`px-3 py-2 rounded-xl text-[10px] font-black tracking-wider transition-all border ${filterVat ? 'bg-brand-500 text-white border-brand-400 shadow-lg shadow-brand-500/20' : 'bg-white/5 text-gray-500 border-transparent hover:bg-white/10'}`}
+                                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all border ${filterVat ? 'bg-brand-500 text-white border-brand-400 shadow-lg shadow-brand-500/20' : 'bg-white/5 text-gray-500 border-transparent hover:bg-white/10'}`}
                             >
                                 VAT
                             </button>
                             <button
                                 onClick={() => setFilterItr(!filterItr)}
-                                className={`px-3 py-2 rounded-xl text-[10px] font-black tracking-wider transition-all border ${filterItr ? 'bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20' : 'bg-white/5 text-gray-500 border-transparent hover:bg-white/10'}`}
+                                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black tracking-wider transition-all border ${filterItr ? 'bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20' : 'bg-white/5 text-gray-500 border-transparent hover:bg-white/10'}`}
                             >
                                 ITR
                             </button>
@@ -1282,22 +1282,22 @@ const TasksPage: React.FC = () => {
                     </div>
 
                     {/* Actions Group */}
-                    <div className="flex items-center gap-3 w-full xl:w-auto justify-end">
+                    <div className="flex items-center gap-2.5 w-full xl:w-auto justify-end">
                         {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                            <div className="flex gap-2">
+                            <div className="flex gap-1.5">
                                 <button
                                     onClick={() => handleExport('pdf')}
-                                    className="p-2.5 rounded-xl text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95"
+                                    className="p-2 rounded-lg text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95"
                                     title="Export PDF"
                                 >
-                                    <FileText size={18} />
+                                    <FileText size={16} />
                                 </button>
                                 <button
                                     onClick={() => handleExport('excel')}
-                                    className="p-2.5 rounded-xl text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all hover:scale-105 active:scale-95"
+                                    className="p-2 rounded-lg text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all hover:scale-105 active:scale-95"
                                     title="Export Excel"
                                 >
-                                    <FileSpreadsheet size={18} />
+                                    <FileSpreadsheet size={16} />
                                 </button>
                             </div>
                         )}
@@ -1305,19 +1305,19 @@ const TasksPage: React.FC = () => {
                         {canAccessTemplates && (
                             <button
                                 onClick={() => setIsTemplateModalOpen(true)}
-                                className="flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white border border-white/10 rounded-xl px-4 py-2.5 transition-all shadow-lg hover:shadow-xl"
+                                className="flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white border border-white/10 rounded-lg px-3 py-2 transition-all shadow-lg hover:shadow-xl"
                             >
-                                <Sparkles size={16} className="text-amber-400" />
-                                <span className="text-xs font-bold hidden sm:inline">Templates</span>
+                                <Sparkles size={14} className="text-amber-400" />
+                                <span className="text-[11px] font-bold hidden sm:inline">Templates</span>
                             </button>
                         )}
 
                         {canCreateTask && (
                             <button
                                 onClick={handleOpenCreate}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
                             >
-                                <Plus size={16} strokeWidth={3} /> New Task
+                                <Plus size={14} strokeWidth={3} /> New Task
                             </button>
                         )}
                     </div>

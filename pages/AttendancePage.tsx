@@ -421,33 +421,33 @@ const AttendancePage: React.FC = () => {
     return (
         <div className="animate-in fade-in duration-500 space-y-6">
             {/* Header Section */}
-            <div className="glass-panel p-8 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-white/10 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-                <div className="relative z-10 flex items-center gap-5">
-                    <div className="p-4 bg-brand-600/20 rounded-2xl border border-brand-500/20">
-                        <Users className="text-brand-400" size={32} />
+            <div className="glass-panel p-4 md:p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-white/10 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl -mr-24 -mt-24"></div>
+                <div className="relative z-10 flex items-center gap-4">
+                    <div className="p-3 bg-brand-600/20 rounded-xl border border-brand-500/20">
+                        <Users className="text-brand-400" size={24} />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-extrabold text-white tracking-tight">Attendance Center</h1>
-                        <p className="text-gray-400 text-sm font-medium mt-1">Track punctuality, work logs, and team availability.</p>
+                        <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">Attendance Center</h1>
+                        <p className="text-gray-400 text-xs font-medium mt-0.5">Track punctuality, work logs, and team availability.</p>
                     </div>
                 </div>
-                <div className="relative z-10 flex gap-3">
-                    <button onClick={handleExportPDF} className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all font-bold shadow-lg">
-                        <FileText size={18} className="text-rose-400" />
+                <div className="relative z-10 flex gap-2">
+                    <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all text-sm font-bold shadow-lg">
+                        <FileText size={16} className="text-rose-400" />
                         PDF Export
                     </button>
-                    <button onClick={handleExportExcel} className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all font-bold shadow-lg">
-                        <Download size={18} className="text-emerald-400" />
+                    <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all text-sm font-bold shadow-lg">
+                        <Download size={16} className="text-emerald-400" />
                         Excel
                     </button>
                 </div>
             </div>
 
             {/* Filters Section */}
-            <div className="glass-panel p-6 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end border border-white/10 shadow-xl bg-navy-900/40 relative z-20">
+            <div className="glass-panel p-4 rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end border border-white/10 shadow-xl bg-navy-900/40 relative z-20">
                 {isAdmin && (
-                    <div className="space-y-2 lg:col-span-1">
+                    <div className="space-y-1.5 lg:col-span-1">
                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
                             <User size={10} /> Team Member
                         </label>
