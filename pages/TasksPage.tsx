@@ -26,6 +26,7 @@ const TasksPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN'>('KANBAN');
     const [boardMode, setBoardMode] = useState<'ALL' | 'MY'>('ALL');
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+    const [collapsedColumns, setCollapsedColumns] = useState<TaskStatus[]>([]);
 
     // Pagination State
     const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
@@ -470,6 +471,12 @@ const TasksPage: React.FC = () => {
 
         const groups = getGroups();
 
+        const toggleColumnCollapse = (status: TaskStatus) => {
+            setCollapsedColumns(prev =>
+                prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+            );
+        };
+
         return (
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex flex-col space-y-8 pb-8 h-full overflow-y-auto custom-scrollbar">
@@ -484,141 +491,127 @@ const TasksPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="flex overflow-x-auto pb-4 gap-6 px-1 min-w-full">
-                                {Object.values(TaskStatus).map(status => (
-                                    <Droppable key={`${group.id}-${status}`} droppableId={status} type="TASK">
-                                        {(provided, snapshot) => (
-                                            <div
-                                                ref={provided.innerRef}
-                                                {...provided.droppableProps}
-                                                className={`flex-shrink-0 w-80 flex flex-col rounded-2xl transition-colors duration-300 ${snapshot.isDraggingOver ? 'bg-white/5 ring-1 ring-white/10' : 'bg-transparent'}`}
-                                            >
-                                                {/* Column Header - Only show for first group or if grouping is NONE */}
-                                                {(groupBy === 'NONE' || groups.indexOf(group) === 0) && (
-                                                    <div className="mb-4 flex items-center justify-between px-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-2 h-2 rounded-full ${status === TaskStatus.COMPLETED ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
-                                                                status === TaskStatus.IN_PROGRESS ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
-                                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
+                            <div className="flex overflow-x-auto pb-4 gap-4 px-1 min-w-full items-start">
+                                {Object.values(TaskStatus).map(status => {
+                                    const isCollapsed = collapsedColumns.includes(status);
+                                    const columnTasks = groupBy === 'NONE'
+                                        ? filteredTasks.filter(t => t.status === status)
+                                        : group.tasks.filter(t => t.status === status);
+
+                                    return (
+                                        <Droppable key={`${group.id}-${status}`} droppableId={status} type="TASK">
+                                            {(provided, snapshot) => (
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.droppableProps}
+                                                    className={`transition-all duration-300 flex flex-col rounded-2xl ${isCollapsed ? 'w-12 h-[500px]' : 'w-80'} ${snapshot.isDraggingOver ? 'bg-white/5 ring-1 ring-white/10' : 'bg-transparent'}`}
+                                                >
+                                                    {/* Column Header */}
+                                                    <div className={`flex items-center mb-4 px-1 ${isCollapsed ? 'flex-col space-y-4 py-4' : 'justify-between'}`}>
+                                                        <div className={`flex items-center gap-2 ${isCollapsed ? 'flex-col' : ''}`}>
+                                                            <div className={`w-2 h-2 rounded-full shrink-0 ${status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
+                                                                status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
+                                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' :
                                                                         'bg-gray-500'
                                                                 }`} />
-                                                            <h3 className="font-bold text-white text-sm tracking-wide">{status.replace('_', ' ')}</h3>
+                                                            {!isCollapsed ? (
+                                                                <h3 className="font-bold text-white text-[12px] uppercase tracking-wider">{status.replace('_', ' ')}</h3>
+                                                            ) : (
+                                                                <div className="rotate-90 origin-center whitespace-nowrap text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-8">
+                                                                    {status.replace('_', ' ')}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <span className="bg-white/10 text-white text-xs px-2.5 py-1 rounded-lg font-bold border border-white/5 shadow-sm">
-                                                            {groupBy === 'NONE'
-                                                                ? filteredTasks.filter(t => t.status === status).length
-                                                                : group.tasks.filter(t => t.status === status).length}
-                                                        </span>
+
+                                                        <div className="flex items-center gap-2">
+                                                            {!isCollapsed && (
+                                                                <span className="text-white/40 text-[10px] font-bold">
+                                                                    {columnTasks.length}
+                                                                </span>
+                                                            )}
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); toggleColumnCollapse(status); }}
+                                                                className="p-1 hover:bg-white/10 rounded-md text-gray-400 transition-colors"
+                                                            >
+                                                                {isCollapsed ? <ChevronDown size={14} className="-rotate-90" /> : <ChevronDown size={14} className="rotate-90" />}
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                )}
 
-                                                <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0 max-h-[600px]">
-                                                    {group.tasks.filter(t => t.status === status).map((task, idx) => {
-                                                        const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
-                                                        const totalSub = task.subtasks?.length || 0;
-                                                        const subtaskProgress = totalSub > 0 ? (completedSub / totalSub) * 100 : 0;
-                                                        const progressColor = subtaskProgress === 100 ? 'bg-emerald-500' : 'bg-brand-500';
+                                                    {!isCollapsed && (
+                                                        <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0 max-h-[600px]">
+                                                            {columnTasks.map((task, idx) => {
+                                                                const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
+                                                                const totalSub = task.subtasks?.length || 0;
+                                                                const subtaskProgress = totalSub > 0 ? (completedSub / totalSub) * 100 : 0;
+                                                                const progressColor = subtaskProgress === 100 ? 'bg-emerald-500' : 'bg-brand-500';
 
-                                                        return (
-                                                            <Draggable key={task.id} draggableId={task.id} index={idx}>
-                                                                {(provided, snapshot) => (
-                                                                    <div
-                                                                        ref={provided.innerRef}
-                                                                        {...provided.draggableProps}
-                                                                        {...provided.dragHandleProps}
-                                                                        onClick={() => handleOpenEdit(task)}
-                                                                        className={`glass-panel p-4 rounded-xl group relative overflow-hidden transition-all duration-300 border border-white/5 hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-900/20 active:scale-95 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50 bg-navy-800' : 'bg-navy-900/40'}`}
-                                                                    >
-                                                                        {/* Hover Gradient Overlay */}
-                                                                        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 via-brand-500/0 to-brand-500/0 group-hover:from-brand-500/5 group-hover:to-purple-500/5 transition-all duration-500"></div>
-
-                                                                        <div className="relative z-10">
-                                                                            <div className="flex justify-between items-start mb-3">
-                                                                                <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
-                                                                                <div className="text-[10px] text-gray-400 font-mono bg-black/20 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                                                                    <Calendar size={10} />
-                                                                                    <span>{task.dueDate}</span>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <h4 className="font-bold text-white text-sm mb-2 leading-snug group-hover:text-brand-300 transition-colors line-clamp-2">{task.title}</h4>
-
-                                                                            <div className="flex items-center text-xs text-gray-400 mb-3 bg-white/5 p-1.5 rounded-lg border border-white/5">
-                                                                                <Briefcase size={12} className="mr-2 text-brand-400 shrink-0" />
-                                                                                <span className="truncate text-gray-300 font-medium">{task.clientName || 'Internal'}</span>
-                                                                            </div>
-
-                                                                            {/* Signing Authority Badge */}
-                                                                            {(() => {
-                                                                                const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
-                                                                                if (taskClient && taskClient.signingAuthority) {
-                                                                                    return (
-                                                                                        <div className="mb-3 flex items-center bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 w-fit">
-                                                                                            <Sparkles size={10} className="text-amber-400 mr-1.5" />
-                                                                                            <span className="text-[10px] text-amber-200 font-medium truncate max-w-[150px]">
-                                                                                                {taskClient.signingAuthority}
-                                                                                            </span>
+                                                                return (
+                                                                    <Draggable key={task.id} draggableId={task.id} index={idx}>
+                                                                        {(provided, snapshot) => (
+                                                                            <div
+                                                                                ref={provided.innerRef}
+                                                                                {...provided.draggableProps}
+                                                                                {...provided.dragHandleProps}
+                                                                                onClick={() => handleOpenEdit(task)}
+                                                                                className={`glass-panel p-3 rounded-xl group relative overflow-hidden transition-all duration-300 border border-white/5 hover:border-brand-500/30 hover:shadow-lg active:scale-[0.98] cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'rotate-1 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50 bg-navy-800' : 'bg-navy-900/40'}`}
+                                                                            >
+                                                                                <div className="relative z-10">
+                                                                                    <div className="flex justify-between items-start mb-2">
+                                                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
+                                                                                        <div className="text-[9px] text-gray-500 font-medium flex items-center gap-1">
+                                                                                            <Calendar size={10} />
+                                                                                            <span>{task.dueDate}</span>
                                                                                         </div>
-                                                                                    );
-                                                                                }
-                                                                                return null;
-                                                                            })()}
-
-                                                                            {/* Risk Level Badge */}
-                                                                            {task.riskLevel === 'HIGH' && (
-                                                                                <div className="mb-3 flex items-center bg-red-500/10 px-2 py-1 rounded border border-red-500/20 w-fit">
-                                                                                    <AlertTriangle size={10} className="text-red-400 mr-1.5" />
-                                                                                    <span className="text-[10px] text-red-300 font-bold tracking-wide">HIGH RISK: SENIOR REVIEW</span>
-                                                                                </div>
-                                                                            )}
-
-                                                                            {totalSub > 0 && (
-                                                                                <div className="mb-4">
-                                                                                    <div className="flex justify-between text-[10px] text-gray-400 mb-1.5">
-                                                                                        <span>Progress</span>
-                                                                                        <span className="font-mono text-brand-300">{Math.round(subtaskProgress)}%</span>
                                                                                     </div>
-                                                                                    <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                                                                                        <div className={`h-full rounded-full ${progressColor} shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-700 ease-out`} style={{ width: `${subtaskProgress}%` }}></div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
 
-                                                                            <div className="pt-3 border-t border-white/5 flex justify-between items-center group-hover:border-white/10 transition-colors">
-                                                                                <div className="flex -space-x-2">
-                                                                                    {task.assignedTo.slice(0, 3).map((uid, i) => {
-                                                                                        const u = usersList.find(user => user.uid === uid);
-                                                                                        return (
-                                                                                            <div key={i} title={u?.displayName} className="w-6 h-6 rounded-full bg-navy-800 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-white shadow-sm hover:scale-110 transition-transform z-0 hover:z-10 relative">
-                                                                                                {getInitials(u?.displayName || '?')}
+                                                                                    <h4 className="font-bold text-white text-[13px] mb-2 leading-tight group-hover:text-brand-300 transition-colors line-clamp-2">{task.title}</h4>
+
+                                                                                    <div className="flex items-center text-[11px] text-gray-400 mb-2">
+                                                                                        <Briefcase size={10} className="mr-1.5 text-brand-400 shrink-0" />
+                                                                                        <span className="truncate group-hover:text-gray-300 transition-colors">{task.clientName || 'Internal'}</span>
+                                                                                    </div>
+
+                                                                                    {totalSub > 0 && (
+                                                                                        <div className="mb-3">
+                                                                                            <div className="w-full h-1 bg-black/40 rounded-full overflow-hidden">
+                                                                                                <div className={`h-full rounded-full ${progressColor} transition-all duration-700`} style={{ width: `${subtaskProgress}%` }}></div>
                                                                                             </div>
-                                                                                        );
-                                                                                    })}
-                                                                                    {task.assignedTo.length > 3 && (
-                                                                                        <div className="w-6 h-6 rounded-full bg-navy-900 border-2 border-navy-700 flex items-center justify-center text-[8px] font-bold text-gray-400 z-10">
-                                                                                            +{task.assignedTo.length - 3}
                                                                                         </div>
                                                                                     )}
-                                                                                </div>
 
-                                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                    <div className="bg-brand-500 text-white p-1 rounded-md shadow-lg shadow-brand-500/20">
-                                                                                        <CheckSquare size={12} />
+                                                                                    <div className="pt-2 border-t border-white/5 flex justify-between items-center transition-colors">
+                                                                                        <div className="flex -space-x-1.5">
+                                                                                            {task.assignedTo.slice(0, 3).map((uid, i) => {
+                                                                                                const u = usersList.find(user => user.uid === uid);
+                                                                                                return (
+                                                                                                    <div key={i} title={u?.displayName} className="w-5 h-5 rounded-full bg-navy-800 border border-navy-700 flex items-center justify-center text-[7px] font-bold text-white relative">
+                                                                                                        {getInitials(u?.displayName || '?')}
+                                                                                                    </div>
+                                                                                                );
+                                                                                            })}
+                                                                                            {task.assignedTo.length > 3 && (
+                                                                                                <div className="w-5 h-5 rounded-full bg-navy-900 border border-navy-700 flex items-center justify-center text-[7px] font-bold text-gray-500">
+                                                                                                    +{task.assignedTo.length - 3}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        <div className="text-[9px] text-brand-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">VIEW DETAIL</div>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </Draggable>
-                                                        );
-                                                    })}
-                                                    {provided.placeholder}
+                                                                        )}
+                                                                    </Draggable>
+                                                                );
+                                                            })}
+                                                            {provided.placeholder}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        )}
-                                    </Droppable>
-                                ))}
+                                            )}
+                                        </Droppable>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}
@@ -725,7 +718,7 @@ const TasksPage: React.FC = () => {
                                 key={task.id}
                                 className={`group hover:bg-white/5 transition-all cursor-pointer ${selectedTaskIds.includes(task.id!) ? 'bg-brand-500/10 hover:bg-brand-500/20' : index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent'}`}
                             >
-                                <td className="px-6 py-4 text-center">
+                                <td className="px-3 py-2 text-center">
                                     <input
                                         type="checkbox"
                                         className="rounded border-gray-600 bg-navy-800 text-brand-500 focus:ring-brand-500/50 cursor-pointer"
@@ -737,38 +730,38 @@ const TasksPage: React.FC = () => {
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </td>
-                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
-                                    <div className="font-bold text-white group-hover:text-brand-300 transition-colors text-base mb-0.5">{task.title}</div>
+                                <td className="px-3 py-2" onClick={() => handleOpenEdit(task)}>
+                                    <div className="font-bold text-white group-hover:text-brand-300 transition-colors text-[13px] mb-0.5">{task.title}</div>
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
+                                        <span className={`text-[8px] px-1 py-0.5 rounded border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
                                         {task.subtasks && task.subtasks.length > 0 && (
-                                            <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                                            <span className="text-[9px] text-gray-500 flex items-center gap-1">
                                                 <CheckSquare size={10} /> {task.subtasks.filter(s => s.isCompleted).length}/{task.subtasks.length}
                                             </span>
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
-                                    <div className="flex items-center text-brand-200 font-medium">
-                                        <Briefcase size={14} className="mr-2 opacity-50" />
+                                <td className="px-3 py-2" onClick={() => handleOpenEdit(task)}>
+                                    <div className="flex items-center text-brand-200 font-medium text-[12px]">
+                                        <Briefcase size={12} className="mr-1.5 opacity-50" />
                                         {task.clientName}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
+                                <td className="px-3 py-2" onClick={() => handleOpenEdit(task)}>
                                     {(() => {
                                         const taskClient = clientsList.find(c => (task.clientIds && task.clientIds.includes(c.id)) || c.name === task.clientName);
                                         return taskClient?.signingAuthority ? (
-                                            <div className="flex items-center gap-1.5 text-amber-200/90 bg-amber-500/10 px-2 py-1 rounded w-fit text-xs font-medium border border-amber-500/10">
+                                            <div className="flex items-center gap-1.5 text-amber-200/90 bg-amber-500/10 px-1.5 py-0.5 rounded w-fit text-[11px] font-medium border border-amber-500/10">
                                                 <Sparkles size={12} className="text-amber-400" />
                                                 {taskClient.signingAuthority}
                                             </div>
                                         ) : <span className="text-gray-600">-</span>;
                                     })()}
                                 </td>
-                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
-                                    <div className="flex -space-x-2 hover:space-x-1 transition-all duration-300">
+                                <td className="px-3 py-2" onClick={() => handleOpenEdit(task)}>
+                                    <div className="flex -space-x-1.5">
                                         {task.assignedTo.length === 0 ? (
-                                            <span className="text-xs text-gray-500 italic">Unassigned</span>
+                                            <span className="text-[11px] text-gray-500 italic">Unassigned</span>
                                         ) : (
                                             task.assignedTo.slice(0, 4).map((uid, i) => {
                                                 const u = usersList.find(user => user.uid === uid);
@@ -776,7 +769,7 @@ const TasksPage: React.FC = () => {
                                                     <div
                                                         key={i}
                                                         title={u?.displayName}
-                                                        className="w-8 h-8 rounded-full bg-navy-800 border-2 border-navy-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-2 ring-transparent group-hover:ring-brand-500/30 transition-all hover:scale-110 hover:z-10 relative"
+                                                        className="w-6 h-6 rounded-full bg-navy-800 border border-navy-900 flex items-center justify-center text-[8px] font-bold text-white relative shadow-sm"
                                                     >
                                                         {getInitials(u?.displayName || '?')}
                                                     </div>
@@ -784,25 +777,25 @@ const TasksPage: React.FC = () => {
                                             })
                                         )}
                                         {task.assignedTo.length > 4 && (
-                                            <div className="w-8 h-8 rounded-full bg-navy-700 border-2 border-navy-900 flex items-center justify-center text-[10px] font-bold text-gray-300 shadow-sm">
+                                            <div className="w-6 h-6 rounded-full bg-navy-700 border border-navy-900 flex items-center justify-center text-[8px] font-bold text-gray-300">
                                                 +{task.assignedTo.length - 4}
                                             </div>
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
-                                    <div className="flex items-center text-gray-300 bg-white/5 px-2 py-1 rounded-lg w-fit border border-white/5">
-                                        <Calendar size={14} className="mr-2 text-brand-400" />
-                                        <span className="font-mono text-xs">{task.dueDate}</span>
+                                <td className="px-3 py-2" onClick={() => handleOpenEdit(task)}>
+                                    <div className="flex items-center text-gray-400 bg-white/5 px-1.5 py-0.5 rounded-lg w-fit border border-white/5">
+                                        <Calendar size={12} className="mr-1.5 text-brand-400" />
+                                        <span className="font-mono text-[11px]">{task.dueDate}</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4" onClick={() => handleOpenEdit(task)}>
-                                    <span className={`px-3 py-1 rounded-full border text-[10px] uppercase font-bold tracking-wide shadow-sm flex items-center w-fit gap-1.5 ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' :
+                                <td className="px-3 py-2" onClick={() => handleOpenEdit(task)}>
+                                    <span className={`px-2 py-0.5 rounded-full border text-[9px] uppercase font-bold tracking-wide flex items-center w-fit gap-1.5 ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' :
                                         task.status === TaskStatus.COMPLETED ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
                                             task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' :
                                                 'bg-amber-500/10 text-amber-300 border-amber-500/20'
                                         }`}>
-                                        <div className={`w-1.5 h-1.5 rounded-full ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
+                                        <div className={`w-1 h-1 rounded-full ${task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
                                             task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
                                                 task.status === TaskStatus.NOT_STARTED ? 'bg-gray-500' :
                                                     'bg-amber-500'
@@ -890,125 +883,115 @@ const TasksPage: React.FC = () => {
         <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
 
 
-            {/* Filter Bar */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-2 rounded-xl border-white/5 shrink-0">
-                <div className="flex items-center gap-3">
-                    <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+            {/* Refined compact Filter Bar */}
+            <div className="flex flex-col lg:flex-row gap-4 justify-between items-center glass-panel p-2.5 rounded-2xl border-white/5 shrink-0 shadow-lg">
+                <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
+                    {/* View & Board Mode Switcher */}
+                    <div className="flex bg-navy-900/60 p-1 rounded-xl border border-white/10 shadow-inner">
                         <button
                             onClick={() => setViewMode('KANBAN')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white text-navy-900 shadow-xl' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <LayoutGrid size={14} /> Board
+                            <LayoutGrid size={14} /> <span className="hidden sm:inline">Board</span>
                         </button>
                         <button
                             onClick={() => setViewMode('LIST')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white border border-white/10 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white text-navy-900 shadow-xl' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <ListIcon size={14} /> List
+                            <ListIcon size={14} /> <span className="hidden sm:inline">List</span>
                         </button>
                     </div>
 
-                    <div className="h-6 w-px bg-white/10"></div>
+                    <div className="w-px h-6 bg-white/10 mx-1"></div>
 
-                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 flex space-x-1 backdrop-blur-md">
+                    <div className="flex bg-navy-900/60 p-1 rounded-xl border border-white/10 shadow-inner">
                         <button
                             onClick={() => setBoardMode('ALL')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-white text-blue-900 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-brand-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <Briefcase size={14} /> Firm
+                            <Briefcase size={14} /> <span className="hidden sm:inline">Firm</span>
                         </button>
                         <button
                             onClick={() => setBoardMode('MY')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-white text-blue-900 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-brand-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <UserCircle2 size={14} /> My Board
+                            <UserCircle2 size={14} /> <span className="hidden sm:inline">Mine</span>
                         </button>
+                    </div>
+
+                    {/* Quick Search */}
+                    <div className="relative ml-2 hidden xl:block">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                        <input
+                            type="text"
+                            placeholder="Search tasks..."
+                            className="bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:ring-1 focus:ring-brand-500/50 outline-none w-48 transition-all focus:w-64"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-3 overflow-x-auto pb-2 md:pb-0 custom-scrollbar w-full md:w-auto px-2">
+                <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar justify-end">
+                    {/* Compact Filter Selects */}
+                    <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-2 py-1.5">
+                        <LayoutGrid size={14} className="text-purple-400 mr-2" />
+                        <select
+                            className="bg-transparent border-none outline-none text-[11px] font-bold text-gray-300 cursor-pointer uppercase tracking-tight"
+                            value={groupBy}
+                            onChange={(e) => setGroupBy(e.target.value as any)}
+                        >
+                            <option value="NONE" className="bg-navy-900">NO GROUP</option>
+                            <option value="AUDITOR" className="bg-navy-900">BY AUDITOR</option>
+                            <option value="ASSIGNEE" className="bg-navy-900">BY ASSIGNEE</option>
+                        </select>
+                    </div>
 
+                    <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-2 py-1.5">
+                        <Filter size={14} className="text-blue-400 mr-2" />
+                        <select
+                            className="bg-transparent border-none outline-none text-[11px] font-bold text-gray-300 cursor-pointer uppercase tracking-tight max-w-[100px]"
+                            value={filterStaff}
+                            onChange={(e) => setFilterStaff(e.target.value)}
+                        >
+                            <option value="ALL" className="bg-navy-900">ALL STAFF</option>
+                            {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-navy-900">{u.displayName.toUpperCase()}</option>)}
+                        </select>
+                    </div>
 
-                    {/* Quick Filters */}
-                    <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
+                    <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
                         <button
                             onClick={() => setFilterVat(!filterVat)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${filterVat ? 'bg-brand-500/20 text-brand-300 border-brand-500/50 shadow-inner' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'}`}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${filterVat ? 'bg-brand-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                         >
                             VAT
                         </button>
                         <button
                             onClick={() => setFilterItr(!filterItr)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${filterItr ? 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-inner' : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'}`}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${filterItr ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                         >
                             ITR
                         </button>
                     </div>
 
-                    {/* Group By Dropdown */}
-                    <div className="relative group">
-                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-sm text-gray-300 transition-colors">
-                            <LayoutGrid size={14} className="text-purple-400" />
-                            <span className="font-medium text-xs uppercase tracking-wider text-gray-400">Group By</span>
-                            <div className="h-4 w-px bg-white/10 mx-2"></div>
-                            <select
-                                className="bg-transparent border-none outline-none text-white font-bold cursor-pointer min-w-[100px]"
-                                value={groupBy}
-                                onChange={(e) => setGroupBy(e.target.value as 'NONE' | 'AUDITOR' | 'ASSIGNEE')}
-                            >
-                                <option value="NONE" className="bg-navy-900 text-gray-300">None</option>
-                                <option value="AUDITOR" className="bg-navy-900 text-white">Auditor</option>
-                                <option value="ASSIGNEE" className="bg-navy-900 text-white">Assignees</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Staff Filter */}
-                    <div className="relative group">
-                        <div className="flex items-center space-x-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-sm text-gray-300 transition-colors">
-                            <Filter size={14} className="text-blue-400" />
-                            <span className="font-medium text-xs uppercase tracking-wider text-gray-400">Staff</span>
-                            <div className="h-4 w-px bg-white/10 mx-2"></div>
-                            <select
-                                className="bg-transparent border-none outline-none text-white font-bold cursor-pointer min-w-[100px]"
-                                value={filterStaff}
-                                onChange={(e) => setFilterStaff(e.target.value)}
-                            >
-                                <option value="ALL" className="bg-navy-900 text-gray-300">All Staff</option>
-                                {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-navy-900 text-white">{u.displayName}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="h-6 w-px bg-white/10 mx-2"></div>
-
                     {canAccessTemplates && (
-                        <>
-                            {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                                <button
-                                    onClick={() => setIsTemplateManagerOpen(true)}
-                                    className="bg-navy-800/80 hover:bg-navy-700 text-brand-300 border border-brand-500/20 rounded-xl p-2.5 transition-all"
-                                    title="Manage Templates"
-                                >
-                                    <Sparkles size={18} />
-                                </button>
-                            )}
+                        <div className="flex items-center gap-1 ml-1">
                             <button
                                 onClick={() => setIsTemplateModalOpen(true)}
-                                className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold transition-all flex items-center gap-2"
+                                className="bg-navy-800/80 hover:bg-navy-700 text-white border border-white/10 rounded-xl p-2 transition-all shadow-lg"
+                                title="Templates"
                             >
-                                <CheckSquare size={16} />
-                                <span className="hidden xl:inline">Templates</span>
+                                <Sparkles size={16} />
                             </button>
-                        </>
+                        </div>
                     )}
 
                     {canCreateTask && (
                         <button
                             onClick={handleOpenCreate}
-                            className="ml-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg shadow-blue-900/20 transition-all transform hover:-translate-y-0.5"
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 shrink-0"
                         >
-                            <Plus size={18} className="mr-2" /> New Task
+                            <Plus size={16} className="mr-1.5" /> New
                         </button>
                     )}
                 </div>
