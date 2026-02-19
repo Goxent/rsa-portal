@@ -2,223 +2,183 @@ export const EmailService = {
     /**
      * Send an email using our Vercel Serverless Function (Resend)
      */
-    sendEmail: async (toItem: { name: string; email: string } | string, subject: string, htmlContent: string) => {
-        const to = typeof toItem === 'string' ? toItem : toItem.email;
-        const name = typeof toItem === 'string' ? '' : toItem.name;
-
+    sendEmail: async (to: string | { email: string; name: string }, subject: string, html: string): Promise<boolean> => {
         try {
             const response = await fetch('/api/send-email', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    to,
-                    subject,
-                    html: htmlContent,
-                    fromName: 'RSA System'
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to, subject, html }),
             });
-
-            if (!response.ok) {
-                const error = await response.json();
-                console.error("Email Sending Failed. Status:", response.status, "Error:", error);
-                throw new Error(error.error || "Failed to send email");
-            }
-
-            const data = await response.json();
-            console.log("Email Sent Successfully:", data);
-            return data;
+            return response.ok;
         } catch (error) {
-            console.error("Email Service Error:", error);
-            // Don't block the app flow if email fails, just log it
+            console.error('Email send failed:', error);
+            return false;
         }
     },
 
-    sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string) => {
-        const subject = `New Task Assigned: ${clientName}`;
+    sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string): Promise<boolean> => {
+        const subject = `New Task Assigned: ${taskTitle}`;
         const html = `
-            <!DOCTYPE html>
-            <html>
-            <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
-                <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                    <!-- Header -->
-                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%); padding: 32px; text-align: center;">
-                        <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
-                        <p style="color: #93c5fd; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Task Assignment</p>
-                    </div>
-                    
-                    <!-- Content -->
-                    <div style="padding: 40px;">
-                        <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                        <p style="color: #475569; line-height: 1.6;">You have been assigned a new task. Please log in to the portal to view the full details.</p>
-                        
-                        <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                            <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px;">${taskTitle}</h2>
-                            
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="padding: 8px 0; color: #64748b; font-size: 14px; width: 100px;">Client:</td>
-                                    <td style="padding: 8px 0; color: #0f172a; font-weight: 500;">${clientName}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Due Date:</td>
-                                    <td style="padding: 8px 0; color: #0f172a; font-weight: 500;">${dueDate}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Priority:</td>
-                                    <td style="padding: 8px 0;">
-                                        <span style="background-color: ${priority === 'High' ? '#fee2e2' : '#dbeafe'}; color: ${priority === 'High' ? '#991b1b' : '#1e40af'}; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600;">${priority}</span>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2>New Task Assignment</h2>
+                <p>Hello ${userName},</p>
+                <p>You have been assigned a new task on <strong>RSA Portal</strong>.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Client:</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${clientName}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Task:</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${taskTitle}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Priority:</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd; color: ${priority === 'URGENT' ? 'red' : 'black'}">${priority}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Due Date:</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${dueDate}</td>
+                    </tr>
+                </table>
 
-                        <div style="text-align: center; margin-top: 32px;">
-                            <a href="${taskLink}" style="background-color: #2563eb; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">View Task Details</a>
-                        </div>
-                        
-                        <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                            <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                            <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
-                        </div>
-                    </div>
-                    
-                     <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                         <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
+                <p>Please click the button below to view the task:</p>
+                <a href="${taskLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Task</a>
+                
+                <p style="margin-top: 30px; font-size: 12px; color: #888;">
+                    This is an automated message. Please do not reply.
+                </p>
+            </div>
         `;
-        await EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendEventInvitation: async (toEmail: string, userName: string, eventTitle: string, eventDate: string, eventLink: string) => {
         const subject = `Invitation: ${eventTitle}`;
         const html = `
-            <!DOCTYPE html>
-            <html>
-            <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
-                <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                    <!-- Header -->
-                    <div style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); padding: 32px; text-align: center;">
-                        <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
-                        <p style="color: #ccfbf1; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Calendar Invitation</p>
-                    </div>
-                    
-                    <!-- Content -->
-                    <div style="padding: 40px;">
-                        <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                        <p style="color: #475569; line-height: 1.6;">You are invited to an upcoming event. Please mark your calendar accordingly.</p>
-                        
-                        <div style="background-color: #f8fafc; border-left: 4px solid #0d9488; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                            <h2 style="margin: 0 0 8px 0; color: #0f172a; font-size: 20px;">${eventTitle}</h2>
-                            <p style="margin: 0; color: #0d9488; font-weight: 600; font-size: 16px;">📅 ${eventDate}</p>
-                        </div>
+        <!DOCTYPE html>
+        <html>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); padding: 32px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
+                    <p style="color: #ccfbf1; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Calendar Invitation</p>
+                </div>
 
-                        <div style="text-align: center; margin-top: 32px;">
-                            <a href="${eventLink}" style="background-color: #0d9488; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.2);">View Event Details</a>
-                        </div>
-                        
-                       <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                            <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                            <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
-                        </div>
+                <!-- Content -->
+                <div style="padding: 40px;">
+                    <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
+                    <p style="color: #475569; line-height: 1.6;">You are invited to an upcoming event. Please mark your calendar accordingly.</p>
+
+                    <div style="background-color: #f8fafc; border-left: 4px solid #0d9488; border-radius: 4px; padding: 24px; margin: 24px 0;">
+                        <h2 style="margin: 0 0 8px 0; color: #0f172a; font-size: 20px;">${eventTitle}</h2>
+                        <p style="margin: 0; color: #0d9488; font-weight: 600; font-size: 16px;">📅 ${eventDate}</p>
                     </div>
-                    
-                     <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                         <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
+
+                    <div style="text-align: center; margin-top: 32px;">
+                        <a href="${eventLink}" style="background-color: #0d9488; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.2);">View Event Details</a>
+                    </div>
+
+                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                        <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
+                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
                     </div>
                 </div>
-            </body>
-            </html>
+
+                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R.Sapkota & Associates. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
         `;
-        await EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendDueDateReminder: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string) => {
         const subject = `Reminder: Task Due Today - ${taskTitle}`;
         const html = `
-            <!DOCTYPE html>
-            <html>
-            <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
-                <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                    <!-- Header -->
-                    <div style="background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%); padding: 32px; text-align: center;">
-                        <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
-                        <p style="color: #fecaca; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Due Date Reminder</p>
-                    </div>
-                    
-                    <!-- Content -->
-                    <div style="padding: 40px;">
-                        <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                        <p style="color: #475569; line-height: 1.6;">This is a reminder that the following task is <strong>due today</strong>.</p>
-                        
-                        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                            <h2 style="margin: 0 0 16px 0; color: #7f1d1d; font-size: 20px;">${taskTitle}</h2>
-                            <p style="margin: 0; color: #991b1b; font-size: 14px;">Client: <strong>${clientName}</strong></p>
-                        </div>
+        <!DOCTYPE html>
+        <html>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%); padding: 32px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
+                    <p style="color: #fecaca; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Due Date Reminder</p>
+                </div>
 
-                        <div style="text-align: center; margin-top: 32px;">
-                            <a href="${taskLink}" style="background-color: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">View Task</a>
-                        </div>
-                        
-                       <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                            <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                            <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
-                        </div>
+                <!-- Content -->
+                <div style="padding: 40px;">
+                    <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
+                    <p style="color: #475569; line-height: 1.6;">This is a reminder that the following task is <strong>due today</strong>.</p>
+
+                    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; padding: 24px; margin: 24px 0;">
+                        <h2 style="margin: 0 0 16px 0; color: #7f1d1d; font-size: 20px;">${taskTitle}</h2>
+                        <p style="margin: 0; color: #991b1b; font-size: 14px;">Client: <strong>${clientName}</strong></p>
                     </div>
-                    
-                     <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                         <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
+
+                    <div style="text-align: center; margin-top: 32px;">
+                        <a href="${taskLink}" style="background-color: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">View Task</a>
+                    </div>
+
+                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                        <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
+                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
                     </div>
                 </div>
-            </body>
-            </html>
+
+                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R.Sapkota & Associates. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
         `;
-        await EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, commentText: string, taskLink: string) => {
         const subject = `Mentioned in Comment: ${taskTitle}`;
         const html = `
-            <!DOCTYPE html>
-            <html>
-            <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
-                <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                    <!-- Header -->
-                    <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 32px; text-align: center;">
-                        <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
-                        <p style="color: #ddd6fe; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">New Mention</p>
-                    </div>
-                    
-                    <!-- Content -->
-                    <div style="padding: 40px;">
-                        <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                        <p style="color: #475569; line-height: 1.6;"><strong>${authorName}</strong> mentioned you in a comment on task <strong>${taskTitle}</strong>.</p>
-                        
-                        <div style="background-color: #f5f3ff; border-left: 4px solid #8b5cf6; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                            <p style="margin: 0; color: #4c1d95; font-style: italic; font-size: 15px;">"${commentText}"</p>
-                        </div>
+        <!DOCTYPE html>
+        <html>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 32px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
+                    <p style="color: #ddd6fe; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">New Mention</p>
+                </div>
 
-                        <div style="text-align: center; margin-top: 32px;">
-                            <a href="${taskLink}" style="background-color: #7c3aed; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">Reply to Comment</a>
-                        </div>
-                        
-                        <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                            <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                            <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
-                        </div>
+                <!-- Content -->
+                <div style="padding: 40px;">
+                    <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
+                    <p style="color: #475569; line-height: 1.6;"><strong>${authorName}</strong> mentioned you in a comment on task <strong>${taskTitle}</strong>.</p>
+
+                    <div style="background-color: #f5f3ff; border-left: 4px solid #8b5cf6; border-radius: 4px; padding: 24px; margin: 24px 0;">
+                        <p style="margin: 0; color: #4c1d95; font-style: italic; font-size: 15px;">"${commentText}"</p>
                     </div>
-                    
-                     <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                         <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
+
+                    <div style="text-align: center; margin-top: 32px;">
+                        <a href="${taskLink}" style="background-color: #7c3aed; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">Reply to Comment</a>
+                    </div>
+
+                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                        <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
+                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
                     </div>
                 </div>
-            </body>
-            </html>
+
+                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R.Sapkota & Associates. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
         `;
-        await EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     }
 };

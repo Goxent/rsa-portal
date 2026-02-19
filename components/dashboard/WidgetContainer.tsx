@@ -8,6 +8,7 @@ import {
     useSensors,
     DragEndEvent,
 } from '@dnd-kit/core';
+import { AuthService } from '../../services/firebase';
 import {
     arrayMove,
     SortableContext,
@@ -60,33 +61,35 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         })
     );
 
-    // Load widget config from localStorage (can be upgraded to Firestore later)
+    // Load widget config from Firestore
     useEffect(() => {
-        const savedConfig = localStorage.getItem(`dashboard-widgets-${userId}`);
-        if (savedConfig) {
-            try {
-                const parsed: WidgetConfig[] = JSON.parse(savedConfig);
-                // Version check: if admin layout is missing 'all-tasks', reset to new default
-                const needsReset = isAdmin && !parsed.some(w => w.type === 'all-tasks');
+        const loadWidgets = async () => {
+            const savedConfig = await AuthService.getWidgetConfig(userId);
+
+            if (savedConfig && savedConfig.length > 0) {
+                // Version check: if admin layout is missing 'all-tasks', update it
+                const needsReset = isAdmin && !savedConfig.some((w: WidgetConfig) => w.type === 'all-tasks');
                 if (needsReset) {
                     const fresh = getDefaultWidgetConfig(isAdmin);
-                    localStorage.setItem(`dashboard-widgets-${userId}`, JSON.stringify(fresh));
                     setWidgets(fresh);
+                    AuthService.saveWidgetConfig(userId, fresh);
                 } else {
-                    setWidgets(parsed);
+                    setWidgets(savedConfig);
                 }
-            } catch {
-                setWidgets(getDefaultWidgetConfig(isAdmin));
+            } else {
+                const fresh = getDefaultWidgetConfig(isAdmin);
+                setWidgets(fresh);
+                // Save default to Firestore immediately? Optional.
+                // AuthService.saveWidgetConfig(userId, fresh); 
             }
-        } else {
-            setWidgets(getDefaultWidgetConfig(isAdmin));
-        }
+        };
+        loadWidgets();
     }, [userId, isAdmin]);
 
     // Save widget config
     const saveWidgetConfig = (config: WidgetConfig[]) => {
-        localStorage.setItem(`dashboard-widgets-${userId}`, JSON.stringify(config));
-        setWidgets(config);
+        setWidgets(config); // Optimistic update
+        AuthService.saveWidgetConfig(userId, config);
     };
 
     const handleDragEnd = (event: DragEndEvent) => {

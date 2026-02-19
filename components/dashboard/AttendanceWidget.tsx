@@ -6,6 +6,7 @@ import { AttendanceRecord, Client, UserRole } from '../../types';
 import { AuthService } from '../../services/firebase';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
+import EmptyState from '../common/EmptyState';
 
 // Internal Searchable Select Component
 // Uses simple absolute positioning — works because the parent container does NOT have overflow:hidden/auto
@@ -146,10 +147,13 @@ const SearchableClientSelect = ({
                                     );
                                 })
                             ) : (
-                                <div className="py-6 text-center">
-                                    <div className="text-gray-500 text-[11px]">No clients found</div>
-                                    <div className="text-gray-600 text-[10px] mt-1">Try a different search term</div>
-                                </div>
+                                <EmptyState
+                                    icon={Search}
+                                    title="No clients found"
+                                    description="Try a different search term"
+                                    className="!p-4"
+                                    iconSize={24}
+                                />
                             )}
                         </div>
 

@@ -18,11 +18,11 @@ export const useAutoLogout = () => {
                     localStorage.setItem('last_auto_logout', todayStr);
 
                     logout().then(() => {
-                        window.location.href = '/login';
+                        window.location.href = '/#/login';
                     }).catch(err => {
                         console.error("Logout failed", err);
                         // Force redirect anyway
-                        window.location.href = '/login';
+                        window.location.href = '/#/login';
                     });
                 }
             }

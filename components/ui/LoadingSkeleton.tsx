@@ -145,5 +145,33 @@ export const TableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({
     </div>
 );
 
+/**
+ * Individual Dashboard Widget Skeleton
+ */
+export const DashboardWidgetSkeleton: React.FC<{ height?: string }> = ({ height = 'h-64' }) => (
+    <div className={`glass-card p-6 flex flex-col space-y-4 ${height} w-full`}>
+        <div className="flex justify-between items-center">
+            <LoadingSkeleton variant="text" className="w-1/3 h-5" />
+            <LoadingSkeleton variant="button" className="w-8 h-8 rounded-lg" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+            <LoadingSkeleton variant="text" className="w-full h-full opacity-10 rounded-lg" />
+        </div>
+    </div>
+);
+
+/**
+ * Metric Card Skeleton (Small)
+ */
+export const MetricSkeleton: React.FC = () => (
+    <div className="glass-card p-5 flex items-center justify-between">
+        <div className="space-y-2 w-1/2">
+            <LoadingSkeleton variant="text" className="w-12 h-3" />
+            <LoadingSkeleton variant="text" className="w-20 h-6" />
+        </div>
+        <LoadingSkeleton variant="avatar" className="w-10 h-10 rounded-lg" />
+    </div>
+);
+
 export default LoadingSkeleton;
 

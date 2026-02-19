@@ -40,7 +40,9 @@ const ResourcePlanningPage = lazy(() => import('./pages/ResourcePlanningPage'));
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
   <PageErrorBoundary>
     <Suspense fallback={<PageLoader />}>
-      {children}
+      <div className="animate-fade-in w-full h-full">
+        {children}
+      </div>
     </Suspense>
   </PageErrorBoundary>
 );
@@ -183,7 +185,7 @@ const App: React.FC = () => {
           </AuthProvider>
         </ThemeProvider>
       </ErrorBoundary>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider >
   );
 };

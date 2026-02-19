@@ -7,6 +7,7 @@ import { Task, CalendarEvent, UserRole, UserProfile } from '../types';
 import { ComplianceEvent } from '../types/advanced';
 import { useAuth } from '../context/AuthContext';
 import EventModal from '../components/EventModal';
+import EmptyState from '../components/common/EmptyState';
 import { generateRecurringInstances, canEditEvent, canDeleteEvent, getVisibilityBadge, formatEventTime } from '../utils/eventUtils';
 import { toBS, toAD } from '../utils/dateUtils';
 import { ComplianceService } from '../services/advanced';
@@ -606,13 +607,12 @@ const CalendarPage: React.FC = () => {
                             <div className="space-y-4 flex-1 overflow-y-auto p-4 custom-scrollbar">
                                 {/* Event Items */}
                                 {selectedDayEvents.length === 0 && selectedDayTasks.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-48 text-gray-500 text-center">
-                                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
-                                            <CalendarIcon size={24} className="opacity-50" />
-                                        </div>
-                                        <p className="text-sm font-medium">No events for this date</p>
-                                        <p className="text-xs opacity-60 mt-1">Click + to add an event</p>
-                                    </div>
+                                    <EmptyState
+                                        icon={CalendarIcon}
+                                        title="No events for this date"
+                                        description="No events or tasks scheduled for this day. Click + to add an event."
+                                        className="h-48"
+                                    />
                                 ) : (
                                     <>
                                         {selectedDayEvents.map((ev, i) => {

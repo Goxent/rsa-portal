@@ -42,7 +42,6 @@ const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
@@ -74,16 +73,12 @@ export const auth = getAuth(app!);
 
 // Initialize Firestore with Persistent Cache (New API)
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
 
 export const db = initializeFirestore(app!, {
     localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager()
     })
 });
-
-// Initialize Storage
-export const storage = getStorage(app!);
 
 // Action Code Settings for Email Verification
 const getActionCodeSettings = (): ActionCodeSettings => {
@@ -553,7 +548,7 @@ export const AuthService = {
             if (userDoc.exists()) {
                 const userData = userDoc.data() as UserProfile;
                 if (userData.email) {
-                    await EmailService.sendTaskAssignment(
+                    const emailSent = await EmailService.sendTaskAssignment(
                         userData.email,
                         userData.displayName || 'Staff Member',
                         task.title,
@@ -562,6 +557,10 @@ export const AuthService = {
                         task.dueDate,
                         task.priority
                     );
+
+                    if (!emailSent) {
+                        toast.error(`Task saved, but email to ${userData.displayName || 'User'} failed.`);
+                    }
                 }
             }
         } catch (err) {
@@ -605,6 +604,33 @@ export const AuthService = {
 
         } catch (error) {
             console.error("Error migrating user tasks:", error);
+            throw error; // Rethrow to trigger rollback in register
+        }
+    },
+
+    // --- WIDGET PERSISTENCE ---
+    saveWidgetConfig: async (userId: string, config: any[]) => {
+        try {
+            await setDoc(doc(db, 'users', userId, 'settings', 'dashboard'), {
+                widgets: config,
+                updatedAt: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error("Failed to save widget config:", error);
+            // Don't throw, just log. It's a preference, not critical data.
+        }
+    },
+
+    getWidgetConfig: async (userId: string): Promise<any[] | null> => {
+        try {
+            const docSnap = await getDoc(doc(db, 'users', userId, 'settings', 'dashboard'));
+            if (docSnap.exists()) {
+                return docSnap.data().widgets;
+            }
+            return null;
+        } catch (error) {
+            console.error("Failed to fetch widget config:", error);
+            return null;
         }
     },
 
@@ -1071,6 +1097,29 @@ export const AuthService = {
 
     markAsRead: async (id: string) => {
         await updateDoc(doc(db, 'notifications', id), { read: true });
+    },
+
+    markAllAsRead: async (notificationIds: string[]) => {
+        if (!notificationIds || notificationIds.length === 0) return;
+
+        // Firestore batch limit is 500 operations
+        const batchSize = 500;
+        const batches = [];
+
+        for (let i = 0; i < notificationIds.length; i += batchSize) {
+            const chunk = notificationIds.slice(i, i + batchSize);
+            const batch = import('firebase/firestore').then(async ({ writeBatch }) => {
+                const firebaseBatch = writeBatch(db);
+                chunk.forEach(id => {
+                    const ref = doc(db, 'notifications', id);
+                    firebaseBatch.update(ref, { read: true });
+                });
+                await firebaseBatch.commit();
+            });
+            batches.push(batch);
+        }
+
+        await Promise.all(batches);
     },
 
     // Real-time listener

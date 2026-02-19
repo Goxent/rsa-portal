@@ -11,6 +11,7 @@ import {
     ShieldCheck,
     Search
 } from 'lucide-react';
+import EmptyState from '../components/common/EmptyState';
 import NepaliDatePicker from '../components/NepaliDatePicker';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
@@ -493,9 +494,13 @@ const CompliancePage: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="py-20 text-center">
-                            <p className="text-gray-500 text-sm">No clients match your search or filters.</p>
-                        </div>
+                        <EmptyState
+                            icon={ShieldCheck}
+                            title="No clients found"
+                            description="No clients match your search or filters."
+                            className="py-12"
+                            iconSize={40}
+                        />
                     )}
                 </div>
             </div>
@@ -602,12 +607,13 @@ const CompliancePage: React.FC = () => {
                     </div>
                 ))}
                 {filteredEvents.length === 0 && (
-                    <div className="glass-panel p-16 rounded-xl text-center">
-                        <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <CalIcon size={40} className="text-gray-500 opacity-50" />
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-1">No events found</h3>
-                        <p className="text-gray-400">Try adjusting your filters or create a new event.</p>
+                    <div className="glass-panel p-16 rounded-xl">
+                        <EmptyState
+                            icon={CalIcon}
+                            title="No events found"
+                            description="Try adjusting your filters or create a new event."
+                            className="p-0"
+                        />
                     </div>
                 )}
             </div>

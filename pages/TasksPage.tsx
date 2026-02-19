@@ -546,7 +546,7 @@ const TasksPage: React.FC = () => {
                                                 <div
                                                     ref={provided.innerRef}
                                                     {...provided.droppableProps}
-                                                    className={`transition-all duration-300 flex flex-col rounded-3xl ${isCollapsed ? 'w-14 items-center bg-white/5' : 'w-80'} ${snapshot.isDraggingOver ? 'bg-white/10 ring-2 ring-white/10' : ''}`}
+                                                    className={`transition-all duration-300 flex flex-col rounded-3xl shrink-0 ${isCollapsed ? 'w-14 items-center bg-white/5' : 'w-80'} ${snapshot.isDraggingOver ? 'bg-white/10 ring-2 ring-white/10' : ''}`}
                                                 >
                                                     {/* Column Header */}
                                                     <div
