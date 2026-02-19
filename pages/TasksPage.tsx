@@ -765,15 +765,18 @@ const TasksPage: React.FC = () => {
             doc.setFontSize(8);
             doc.setTextColor(100);
 
-            const tableColumn = ["Task Name", "Client", "Assignee", "Priority", "Status", "Due Date"];
-            const tableRows = dataToExport.map(task => [
-                task.title,
-                task.clientName || 'Internal',
-                task.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || '').join(', '),
-                task.priority,
-                task.status.replace('_', ' '),
-                task.dueDate
-            ]);
+            const tableColumn = ["Client", "Task Name", "Auditor", "Assignee", "Status", "Due Date"];
+            const tableRows = dataToExport.map(task => {
+                const client = clientsList.find(c => c.name === task.clientName || (task.clientIds && task.clientIds.includes(c.id)));
+                return [
+                    task.clientName || 'Internal',
+                    task.title,
+                    client?.signingAuthority || '-',
+                    task.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || '').join(', '),
+                    task.status.replace('_', ' '),
+                    task.dueDate
+                ];
+            });
 
             autoTable(doc, {
                 head: [tableColumn],
@@ -788,8 +791,8 @@ const TasksPage: React.FC = () => {
                 },
                 alternateRowStyles: { fillColor: [248, 250, 252] },
                 columnStyles: {
-                    0: { cellWidth: 50 }, // Task Name
-                    1: { cellWidth: 35 }, // Client
+                    0: { cellWidth: 35 }, // Client
+                    1: { cellWidth: 50 }, // Task Name
                 }
             });
 
@@ -853,10 +856,10 @@ const TasksPage: React.FC = () => {
 
             // ── Columns ─────────────────────────────────────────────────────
             const COLS = [
-                { header: 'Task Name', key: 'title', width: 40 },
                 { header: 'Client', key: 'client', width: 25 },
+                { header: 'Task Name', key: 'title', width: 40 },
+                { header: 'Auditor', key: 'auditor', width: 20 },
                 { header: 'Assigned To', key: 'assigned', width: 25 },
-                { header: 'Priority', key: 'priority', width: 12 },
                 { header: 'Status', key: 'status', width: 15 },
                 { header: 'Due Date', key: 'due', width: 12 },
                 { header: 'Est. Days', key: 'est', width: 10 },
@@ -892,11 +895,13 @@ const TasksPage: React.FC = () => {
             };
 
             dataToExport.forEach((task, idx) => {
+                const client = clientsList.find(c => c.name === task.clientName || (task.clientIds && task.clientIds.includes(c.id)));
+
                 const row = sheet.addRow({
-                    title: task.title,
                     client: task.clientName || 'Internal',
+                    title: task.title,
+                    auditor: client?.signingAuthority || '-',
                     assigned: task.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || 'Unknown').join(', '),
-                    priority: task.priority,
                     status: task.status.replace('_', ' '),
                     due: task.dueDate,
                     est: task.estimatedDays || '',
