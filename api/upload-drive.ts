@@ -34,6 +34,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'); // Handle newlines
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
+    console.log("Drive Upload Request:", {
+        hasEmail: !!clientEmail,
+        hasKey: !!privateKey,
+        hasFolder: !!folderId,
+        keyLength: privateKey?.length
+    });
+
     if (!clientEmail || !privateKey || !folderId) {
         console.error('Missing Google Drive Configuration');
         return res.status(500).json({ error: 'Server configuration error: Missing Drive Credentials.' });

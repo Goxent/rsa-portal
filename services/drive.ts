@@ -16,12 +16,19 @@ export const DriveService = {
             body: formData,
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to upload to Google Drive');
+        const responseText = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Non-JSON Response:", responseText);
+            throw new Error(`Server Error: ${response.status} ${response.statusText}. Check Vercel Logs.`);
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to upload to Google Drive');
+        }
         return data.file;
     }
 };
