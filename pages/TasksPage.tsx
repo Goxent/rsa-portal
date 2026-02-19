@@ -20,7 +20,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
@@ -517,12 +517,21 @@ const TasksPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="flex overflow-x-auto pb-4 gap-4 px-1 min-w-full items-start">
+                            <div className="flex overflow-x-auto pb-4 gap-6 px-1 min-w-full items-start">
                                 {Object.values(TaskStatus).map(status => {
                                     const isCollapsed = collapsedColumns.includes(status);
                                     const columnTasks = groupBy === 'NONE'
                                         ? filteredTasks.filter(t => t.status === status)
                                         : group.tasks.filter(t => t.status === status);
+
+                                    // Premium Column Styling
+                                    const statusConfig = {
+                                        [TaskStatus.NOT_STARTED]: { color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20', gradient: 'from-gray-500/20 to-gray-600/5' },
+                                        [TaskStatus.IN_PROGRESS]: { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', gradient: 'from-blue-500/20 to-cyan-500/5' },
+                                        [TaskStatus.UNDER_REVIEW]: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', gradient: 'from-amber-500/20 to-orange-500/5' },
+                                        [TaskStatus.COMPLETED]: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', gradient: 'from-emerald-500/20 to-teal-500/5' }
+                                    };
+                                    const config = statusConfig[status];
 
                                     return (
                                         <Droppable key={`${group.id}-${status}`} droppableId={status} type="TASK">
@@ -530,42 +539,55 @@ const TasksPage: React.FC = () => {
                                                 <div
                                                     ref={provided.innerRef}
                                                     {...provided.droppableProps}
-                                                    className={`transition-all duration-300 flex flex-col rounded-2xl ${isCollapsed ? 'w-12 h-[500px]' : 'w-80'} ${snapshot.isDraggingOver ? 'bg-white/5 ring-1 ring-white/10' : 'bg-transparent'}`}
+                                                    className={`transition-all duration-300 flex flex-col rounded-3xl ${isCollapsed ? 'w-14 items-center bg-white/5' : 'w-80'} ${snapshot.isDraggingOver ? 'bg-white/10 ring-2 ring-white/10' : ''}`}
                                                 >
                                                     {/* Column Header */}
-                                                    <div className={`flex items-center mb-4 px-1 ${isCollapsed ? 'flex-col space-y-4 py-4' : 'justify-between'}`}>
-                                                        <div className={`flex items-center gap-2 ${isCollapsed ? 'flex-col' : ''}`}>
-                                                            <div className={`w-2 h-2 rounded-full shrink-0 ${status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
-                                                                status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
-                                                                    status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' :
-                                                                        'bg-gray-500'
-                                                                }`} />
-                                                            {!isCollapsed ? (
-                                                                <h3 className="font-bold text-white text-[12px] uppercase tracking-wider">{status.replace('_', ' ')}</h3>
-                                                            ) : (
-                                                                <div className="rotate-90 origin-center whitespace-nowrap text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-8">
-                                                                    {status.replace('_', ' ')}
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                    <div
+                                                        className={`relative flex items-center mb-4 overflow-hidden rounded-2xl transition-all duration-300 group/header
+                                                            ${isCollapsed ? 'w-10 h-[400px] flex-col py-4 gap-4 bg-white/5' : 'w-full p-4 bg-gradient-to-br ' + config.gradient + ' border border-white/5'}
+                                                        `}
+                                                        onClick={(e) => { e.stopPropagation(); toggleColumnCollapse(status); }}
+                                                    >
+                                                        {/* Abstract Background Shapes */}
+                                                        {!isCollapsed && (
+                                                            <>
+                                                                <div className="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-full blur-xl group-hover/header:bg-white/20 transition-all"></div>
+                                                                <div className="absolute -left-4 -bottom-4 w-12 h-12 bg-black/10 rounded-full blur-lg"></div>
+                                                            </>
+                                                        )}
 
-                                                        <div className="flex items-center gap-2">
-                                                            {!isCollapsed && (
-                                                                <span className="text-white/40 text-[10px] font-bold">
+                                                        <div className={`relative z-10 flex items-center gap-3 ${isCollapsed ? 'flex-col' : 'justify-between w-full'}`}>
+                                                            <div className={`flex items-center gap-2 ${isCollapsed ? 'flex-col' : ''}`}>
+                                                                <div className={`w-2.5 h-2.5 rounded-full shadow-lg shadow-current ${status === TaskStatus.COMPLETED ? 'bg-emerald-400 text-emerald-500' :
+                                                                        status === TaskStatus.IN_PROGRESS ? 'bg-blue-400 text-blue-500' :
+                                                                            status === TaskStatus.UNDER_REVIEW ? 'bg-amber-400 text-amber-500' :
+                                                                                'bg-gray-400 text-gray-500'
+                                                                    }`} />
+
+                                                                {isCollapsed ? (
+                                                                    <div className="rotate-90 origin-center whitespace-nowrap text-[10px] font-black text-gray-400 uppercase tracking-widest mt-8">
+                                                                        {status.replace('_', ' ')}
+                                                                    </div>
+                                                                ) : (
+                                                                    <h3 className="font-extrabold text-white text-xs uppercase tracking-widest">{status.replace('_', ' ')}</h3>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm border ${isCollapsed ? 'mt-2' : ''} ${config.bg} ${config.color} ${config.border}`}>
                                                                     {columnTasks.length}
                                                                 </span>
-                                                            )}
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); toggleColumnCollapse(status); }}
-                                                                className="p-1 hover:bg-white/10 rounded-md text-gray-400 transition-colors"
-                                                            >
-                                                                {isCollapsed ? <ChevronDown size={14} className="-rotate-90" /> : <ChevronDown size={14} className="rotate-90" />}
-                                                            </button>
+                                                                {!isCollapsed && (
+                                                                    <button className="p-1 hover:bg-white/20 rounded-lg text-white/50 hover:text-white transition-colors">
+                                                                        <ChevronDown size={14} className={isCollapsed ? "-rotate-90" : ""} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
 
                                                     {!isCollapsed && (
-                                                        <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0 max-h-[600px]">
+                                                        <div className="space-y-3 overflow-y-auto px-1 pb-4 custom-scrollbar flex-1 min-h-[50vh] max-h-[70vh]">
                                                             {columnTasks.map((task, idx) => {
                                                                 const completedSub = task.subtasks?.filter(s => s.isCompleted).length || 0;
                                                                 const totalSub = task.subtasks?.length || 0;
@@ -580,54 +602,68 @@ const TasksPage: React.FC = () => {
                                                                                 {...provided.draggableProps}
                                                                                 {...provided.dragHandleProps}
                                                                                 onClick={() => handleOpenEdit(task)}
-                                                                                className={`glass-panel p-3 rounded-xl group relative overflow-hidden transition-all duration-300 border border-white/5 hover:border-brand-500/30 hover:shadow-lg active:scale-[0.98] cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'rotate-1 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50 bg-navy-800' : 'bg-navy-900/40'}`}
+                                                                                className={`glass-panel p-0 rounded-2xl group relative overflow-hidden transition-all duration-300 border border-white/5 hover:border-white/20 hover:shadow-xl active:scale-[0.98] cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-brand-500/50 z-50 bg-navy-800' : 'bg-navy-900/40'}`}
                                                                             >
-                                                                                <div className="relative z-10">
-                                                                                    <div className="flex justify-between items-start mb-2">
-                                                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
-                                                                                        <div className="text-[9px] text-gray-500 font-medium flex items-center gap-1">
-                                                                                            <Calendar size={10} />
-                                                                                            <span>{task.dueDate}</span>
-                                                                                        </div>
+                                                                                {/* Card Main Content */}
+                                                                                <div className="p-4 relative">
+                                                                                    {/* Fluid Gradient Background Effect on Hover */}
+                                                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
+                                                                                    <div className="flex justify-between items-start mb-3 relative z-10">
+                                                                                        <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide border shadow-sm ${getPriorityStyle(task.priority)}`}>{task.priority}</span>
+                                                                                        {task.dueDate && (
+                                                                                            <div className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-md border border-white/5">
+                                                                                                <Calendar size={10} className={
+                                                                                                    new Date(task.dueDate) < new Date() ? "text-red-400" : "text-brand-400"
+                                                                                                } />
+                                                                                                <span className={new Date(task.dueDate) < new Date() ? "text-red-300" : ""}>{task.dueDate}</span>
+                                                                                            </div>
+                                                                                        )}
                                                                                     </div>
 
-                                                                                    <h4 className="font-bold text-white text-[13px] mb-2 leading-tight group-hover:text-brand-300 transition-colors line-clamp-2">{task.title}</h4>
+                                                                                    <h4 className="font-bold text-gray-100 text-sm mb-3 leading-snug group-hover:text-brand-200 transition-colors line-clamp-2 pr-2">{task.title}</h4>
 
-                                                                                    <div className="flex items-center text-[11px] text-gray-400 mb-2">
-                                                                                        <Briefcase size={10} className="mr-1.5 text-brand-400 shrink-0" />
-                                                                                        <span className="truncate group-hover:text-gray-300 transition-colors">{task.clientName || 'Internal'}</span>
+                                                                                    <div className="flex items-center text-xs text-gray-400 mb-4 bg-white/5 p-2 rounded-lg border border-white/5">
+                                                                                        <Briefcase size={12} className="mr-2 text-brand-400 shrink-0" />
+                                                                                        <span className="truncate font-medium">{task.clientName || 'Internal'}</span>
                                                                                     </div>
 
                                                                                     {totalSub > 0 && (
-                                                                                        <div className="mb-3">
-                                                                                            <div className="w-full h-1 bg-black/40 rounded-full overflow-hidden">
-                                                                                                <div className={`h-full rounded-full ${progressColor} transition-all duration-700`} style={{ width: `${subtaskProgress}%` }}></div>
+                                                                                        <div className="mb-4">
+                                                                                            <div className="flex justify-between text-[9px] font-bold text-gray-500 mb-1">
+                                                                                                <span>Progress</span>
+                                                                                                <span>{Math.round(subtaskProgress)}%</span>
+                                                                                            </div>
+                                                                                            <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                                                                                <div className={`h-full rounded-full ${progressColor} transition-all duration-700 shadow-[0_0_10px_rgba(59,130,246,0.5)]`} style={{ width: `${subtaskProgress}%` }}></div>
                                                                                             </div>
                                                                                         </div>
                                                                                     )}
 
-                                                                                    <div className="pt-2 border-t border-white/5 flex justify-between items-center transition-colors">
-                                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                                    <div className="pt-3 border-t border-white/5 flex justify-between items-center relative z-10">
+                                                                                        <div className="flex -space-x-2 hovered:space-x-1 transition-all">
                                                                                             {task.assignedTo.slice(0, 3).map((uid, i) => {
                                                                                                 const u = usersList.find(user => user.uid === uid);
-                                                                                                const firstName = u?.displayName?.split(' ')[0] || '?';
                                                                                                 return (
                                                                                                     <div
                                                                                                         key={i}
                                                                                                         title={u?.displayName}
-                                                                                                        className="px-2 py-0.5 rounded-md bg-navy-800 border border-navy-700 flex items-center justify-center text-[9px] font-bold text-white shadow-sm"
+                                                                                                        className="w-6 h-6 rounded-full bg-navy-800 border-2 border-navy-900 flex items-center justify-center text-[9px] font-bold text-white shadow-md transition-transform hover:scale-110 hover:z-20"
                                                                                                     >
-                                                                                                        {firstName}
+                                                                                                        {getInitials(u?.displayName)}
                                                                                                     </div>
                                                                                                 );
                                                                                             })}
                                                                                             {task.assignedTo.length > 3 && (
-                                                                                                <div className="px-1.5 py-0.5 rounded-md bg-navy-900 border border-navy-700 flex items-center justify-center text-[9px] font-bold text-gray-500">
+                                                                                                <div className="w-6 h-6 rounded-full bg-navy-800 border-2 border-navy-900 flex items-center justify-center text-[9px] font-bold text-gray-400 shadow-md">
                                                                                                     +{task.assignedTo.length - 3}
                                                                                                 </div>
                                                                                             )}
                                                                                         </div>
-                                                                                        <div className="text-[9px] text-brand-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">VIEW DETAIL</div>
+
+                                                                                        <button className="text-[10px] text-gray-500 font-bold group-hover:text-brand-400 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 duration-300">
+                                                                                            OPEN <ChevronDown size={10} className="-rotate-90" />
+                                                                                        </button>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -691,20 +727,41 @@ const TasksPage: React.FC = () => {
         }
     };
 
-    const handleExport = (type: 'pdf' | 'csv') => {
+    const handleExport = async (type: 'pdf' | 'excel') => {
         const dataToExport = filteredTasks;
+        const dateStr = new Date().toISOString().split('T')[0];
 
         if (type === 'pdf') {
             const doc = new jsPDF();
 
-            // Add Title
-            doc.setFontSize(18);
-            doc.text('Task Report', 14, 22);
+            // ── Header Banner ──────────────────────────────────────────────
+            doc.setFillColor(15, 23, 42); // Navy 900
+            doc.rect(0, 0, 210, 48, 'F');
 
-            // Add Date
-            doc.setFontSize(11);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text('R. Sapkota & Associates', 105, 15, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184); // Slate 400
+            doc.text('Chartered Accountants  |  Kathmandu, Nepal', 105, 23, { align: 'center' });
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Task Status Report', 105, 34, { align: 'center' });
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 42, { align: 'center' });
+
+            // ── Generated timestamp footer ────────────────────────────────
+            const pageCount = (doc as any).internal.getNumberOfPages();
+            doc.setFontSize(8);
             doc.setTextColor(100);
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
 
             const tableColumn = ["Task Name", "Client", "Assignee", "Priority", "Status", "Due Date"];
             const tableRows = dataToExport.map(task => [
@@ -719,43 +776,154 @@ const TasksPage: React.FC = () => {
             autoTable(doc, {
                 head: [tableColumn],
                 body: tableRows,
-                startY: 40,
+                startY: 55,
                 theme: 'grid',
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [63, 81, 181] }
+                styles: { fontSize: 9, cellPadding: 4, lineColor: [226, 232, 240] },
+                headStyles: {
+                    fillColor: [30, 41, 59], // Slate 800
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                columnStyles: {
+                    0: { cellWidth: 50 }, // Task Name
+                    1: { cellWidth: 35 }, // Client
+                }
             });
 
-            doc.save('tasks_report.pdf');
+            // Footer
+            const finalPageCount = (doc as any).internal.getNumberOfPages();
+            for (let i = 1; i <= finalPageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 10);
+                doc.text(`Page ${i} of ${finalPageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+            }
+
+            doc.save(`RSA_Tasks_${dateStr}.pdf`);
             toast.success('PDF exported successfully');
         } else {
-            // Excel Export
-            const rows = dataToExport.map(task => ({
-                'Task Name': task.title,
-                'Client': task.clientName || 'Internal',
-                'Assigned To': task.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || 'Unknown').join(', '),
-                'Priority': task.priority,
-                'Status': task.status.replace('_', ' '),
-                'Due Date': task.dueDate,
-                'Est. Days': task.estimatedDays || '',
-                'Description': task.description || ''
-            }));
+            // Excel Export using ExcelJS for styling
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'R. Sapkota & Associates';
+            workbook.created = new Date();
 
-            const worksheet = XLSX.utils.json_to_sheet(rows);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
+            const sheet = workbook.addWorksheet('Tasks', {
+                pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+            });
 
-            // Auto-width columns
-            const maxValWidth = rows.reduce((acc, row) => {
-                Object.keys(row).forEach(key => {
-                    const val = String(row[key as keyof typeof row] || '');
-                    acc[key] = Math.max(acc[key] || 0, val.length);
+            // ── Company Header Block ────────────────────────────────────────
+            sheet.mergeCells('A1:H1');
+            const titleCell = sheet.getCell('A1');
+            titleCell.value = 'R. Sapkota & Associates';
+            titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+            titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Navy 900
+            sheet.getRow(1).height = 32;
+
+            sheet.mergeCells('A2:H2');
+            const addrCell = sheet.getCell('A2');
+            addrCell.value = 'Chartered Accountants  |  Kathmandu, Nepal';
+            addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF94A3B8' } };
+            addrCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+            sheet.getRow(2).height = 18;
+
+            sheet.mergeCells('A3:H3');
+            const reportTitleCell = sheet.getCell('A3');
+            reportTitleCell.value = 'Task Status Report';
+            reportTitleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF1E293B' } };
+            reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            reportTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            sheet.getRow(3).height = 24;
+
+            sheet.mergeCells('A4:H4');
+            const metaCell = sheet.getCell('A4');
+            metaCell.value = `Generated: ${new Date().toLocaleString()}`;
+            metaCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
+            metaCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            metaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            sheet.getRow(4).height = 18;
+
+            // Spacer
+            sheet.getRow(5).height = 8;
+
+            // ── Columns ─────────────────────────────────────────────────────
+            const COLS = [
+                { header: 'Task Name', key: 'title', width: 40 },
+                { header: 'Client', key: 'client', width: 25 },
+                { header: 'Assigned To', key: 'assigned', width: 25 },
+                { header: 'Priority', key: 'priority', width: 12 },
+                { header: 'Status', key: 'status', width: 15 },
+                { header: 'Due Date', key: 'due', width: 12 },
+                { header: 'Est. Days', key: 'est', width: 10 },
+                { header: 'Description', key: 'desc', width: 40 },
+            ];
+            sheet.columns = COLS;
+
+            // Header Row Styling
+            const headerRow = sheet.getRow(6);
+            COLS.forEach((col, i) => {
+                const cell = headerRow.getCell(i + 1);
+                cell.value = col.header;
+                cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = { bottom: { style: 'medium', color: { argb: 'FF64748B' } } };
+            });
+            headerRow.height = 24;
+
+            // ── Data Rows ───────────────────────────────────────────────────
+            const statusColors: Record<string, string> = {
+                'IN_PROGRESS': 'FFDBEAFE', // Blue 100
+                'COMPLETED': 'FFDCFCE7', // Emerald 100
+                'NOT_STARTED': 'FFF1F5F9', // Slate 100
+                'UNDER_REVIEW': 'FFFEF3C7', // Amber 100
+            };
+
+            dataToExport.forEach((task, idx) => {
+                const row = sheet.addRow({
+                    title: task.title,
+                    client: task.clientName || 'Internal',
+                    assigned: task.assignedTo.map(uid => usersList.find(u => u.uid === uid)?.displayName || 'Unknown').join(', '),
+                    priority: task.priority,
+                    status: task.status.replace('_', ' '),
+                    due: task.dueDate,
+                    est: task.estimatedDays || '',
+                    desc: task.description || ''
                 });
-                return acc;
-            }, {} as Record<string, number>);
 
-            worksheet['!cols'] = Object.keys(maxValWidth).map(key => ({ wch: Math.max(key.length, maxValWidth[key]) + 2 }));
+                const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC'; // Zebra striping
 
-            XLSX.writeFile(workbook, "tasks_export.xlsx");
+                row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+                    cell.font = { name: 'Calibri', size: 10 };
+                    cell.alignment = { vertical: 'top', wrapText: true };
+                    cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+
+                    // Apply zebra background
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowBg } };
+                });
+
+                // Status Pill-like coloring
+                const statusCell = row.getCell(5);
+                statusCell.font = { name: 'Calibri', size: 10, bold: true };
+                statusCell.alignment = { horizontal: 'center', vertical: 'top' };
+                statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColors[task.status] || rowBg } };
+            });
+
+            // Freeze panes
+            sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 6, activeCell: 'A7' }];
+
+            // Write File
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `RSA_Tasks_${dateStr}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
             toast.success('Excel exported successfully');
         }
     };
@@ -983,136 +1151,162 @@ const TasksPage: React.FC = () => {
         <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500">
 
 
-            {/* Refined compact Filter Bar */}
-            <div className="flex flex-col lg:flex-row gap-4 justify-between items-center glass-panel p-2.5 rounded-2xl border-white/5 shrink-0 shadow-lg">
-                <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
-                    {/* View & Board Mode Switcher */}
-                    <div className="flex bg-navy-900/60 p-1 rounded-xl border border-white/10 shadow-inner">
-                        <button
-                            onClick={() => setViewMode('KANBAN')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white text-navy-900 shadow-xl' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            <LayoutGrid size={14} /> <span className="hidden sm:inline">Board</span>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('LIST')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white text-navy-900 shadow-xl' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            <ListIcon size={14} /> <span className="hidden sm:inline">List</span>
-                        </button>
+            {/* 2-Row Layout: Header + Toolbar */}
+            <div className="flex flex-col gap-6">
+
+                {/* Row 1: Title, View Toggles & Key Filters */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center">
+                            <LayoutGrid className="mr-3 text-brand-400" /> Task Board
+                        </h1>
+                        <p className="text-gray-400 text-sm font-medium mt-1">Manage, track, and collaborate on audit tasks.</p>
                     </div>
 
-                    <div className="w-px h-6 bg-white/10 mx-1"></div>
+                    <div className="flex items-center gap-4 bg-navy-900/50 p-2 rounded-2xl border border-white/10 backdrop-blur-md shadow-lg">
+                        {/* View Switcher */}
+                        <div className="flex bg-black/20 p-1 rounded-xl">
+                            <button
+                                onClick={() => setViewMode('KANBAN')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'KANBAN' ? 'bg-white text-navy-900 shadow-xl scale-105' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <LayoutGrid size={14} /> Board
+                            </button>
+                            <button
+                                onClick={() => setViewMode('LIST')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white text-navy-900 shadow-xl scale-105' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <ListIcon size={14} /> List
+                            </button>
+                        </div>
 
-                    <div className="flex bg-navy-900/60 p-1 rounded-xl border border-white/10 shadow-inner">
-                        <button
-                            onClick={() => setBoardMode('ALL')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-brand-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            <Briefcase size={14} /> <span className="hidden sm:inline">Firm</span>
-                        </button>
-                        <button
-                            onClick={() => setBoardMode('MY')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-brand-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            <UserCircle2 size={14} /> <span className="hidden sm:inline">Mine</span>
-                        </button>
-                    </div>
+                        <div className="w-px h-6 bg-white/10"></div>
 
-                    {/* Quick Search */}
-                    <div className="relative ml-2 hidden xl:block">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Search tasks..."
-                            className="bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:ring-1 focus:ring-brand-500/50 outline-none w-48 transition-all focus:w-64"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                        {/* Firm/Mine Switcher */}
+                        <div className="flex bg-black/20 p-1 rounded-xl">
+                            <button
+                                onClick={() => setBoardMode('ALL')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <Briefcase size={14} /> Firm
+                            </button>
+                            <button
+                                onClick={() => setBoardMode('MY')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${boardMode === 'MY' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <UserCircle2 size={14} /> Mine
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar justify-end">
-                    {/* Compact Filter Selects */}
-                    <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-2 py-1.5">
-                        <LayoutGrid size={14} className="text-purple-400 mr-2" />
-                        <select
-                            className="bg-transparent border-none outline-none text-[11px] font-bold text-gray-300 cursor-pointer uppercase tracking-tight"
-                            value={groupBy}
-                            onChange={(e) => setGroupBy(e.target.value as any)}
-                        >
-                            <option value="NONE" className="bg-navy-900">NO GROUP</option>
-                            <option value="AUDITOR" className="bg-navy-900">BY AUDITOR</option>
-                            <option value="ASSIGNEE" className="bg-navy-900">BY ASSIGNEE</option>
-                        </select>
-                    </div>
+                {/* Row 2: Deep Filters & Actions */}
+                <div className="glass-panel p-4 rounded-2xl border border-white/5 shadow-xl flex flex-col xl:flex-row gap-4 justify-between items-center relative overflow-hidden">
+                    {/* Background decorations */}
+                    <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-brand-900/10 to-transparent pointer-events-none"></div>
 
-                    <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-2 py-1.5">
-                        <Filter size={14} className="text-blue-400 mr-2" />
-                        <select
-                            className="bg-transparent border-none outline-none text-[11px] font-bold text-gray-300 cursor-pointer uppercase tracking-tight max-w-[100px]"
-                            value={filterStaff}
-                            onChange={(e) => setFilterStaff(e.target.value)}
-                        >
-                            <option value="ALL" className="bg-navy-900">ALL STAFF</option>
-                            {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-navy-900">{u.displayName.toUpperCase()}</option>)}
-                        </select>
-                    </div>
+                    <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto no-scrollbar pb-2 lg:pb-0">
+                        {/* Search */}
+                        <div className="relative group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-brand-400 transition-colors" size={16} />
+                            <input
+                                type="text"
+                                placeholder="Search tasks & clients..."
+                                className="bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-brand-500/50 outline-none w-full md:w-64 transition-all"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
 
-                    <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-                        <button
-                            onClick={() => setFilterVat(!filterVat)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${filterVat ? 'bg-brand-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                        >
-                            VAT
-                        </button>
-                        <button
-                            onClick={() => setFilterItr(!filterItr)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${filterItr ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                        >
-                            ITR
-                        </button>
-                    </div>
+                        {/* Filters Group */}
+                        <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-xl border border-white/5">
+                            {/* Group By */}
+                            <div className="relative">
+                                <LayoutGrid size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" />
+                                <select
+                                    className="bg-transparent border-none outline-none text-xs font-bold text-gray-300 pl-8 pr-2 py-1.5 cursor-pointer uppercase tracking-tight hover:text-white transition-colors"
+                                    value={groupBy}
+                                    onChange={(e) => setGroupBy(e.target.value as any)}
+                                >
+                                    <option value="NONE" className="bg-navy-900">No Grouping</option>
+                                    <option value="AUDITOR" className="bg-navy-900">By Auditor</option>
+                                    <option value="ASSIGNEE" className="bg-navy-900">By Assignee</option>
+                                </select>
+                            </div>
 
-                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                        <div className="flex gap-1 ml-1 bg-white/5 p-1 rounded-xl border border-white/10 hidden sm:flex">
+                            <div className="w-px h-4 bg-white/10"></div>
+
+                            {/* Staff Filter */}
+                            <div className="relative">
+                                <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+                                <select
+                                    className="bg-transparent border-none outline-none text-xs font-bold text-gray-300 pl-8 pr-2 py-1.5 cursor-pointer uppercase tracking-tight hover:text-white transition-colors max-w-[140px]"
+                                    value={filterStaff}
+                                    onChange={(e) => setFilterStaff(e.target.value)}
+                                >
+                                    <option value="ALL" className="bg-navy-900">All Staff</option>
+                                    {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-navy-900">{u.displayName}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Compliance Toggles */}
+                        <div className="flex gap-1.5">
                             <button
-                                onClick={() => handleExport('pdf')}
-                                className="px-2 py-1 rounded-lg text-[10px] font-bold text-red-400 hover:bg-white/10 transition-all flex items-center"
-                                title="Export as PDF"
+                                onClick={() => setFilterVat(!filterVat)}
+                                className={`px-3 py-2 rounded-xl text-[10px] font-black tracking-wider transition-all border ${filterVat ? 'bg-brand-500 text-white border-brand-400 shadow-lg shadow-brand-500/20' : 'bg-white/5 text-gray-500 border-transparent hover:bg-white/10'}`}
                             >
-                                <Download size={14} className="mr-1" /> PDF
+                                VAT
                             </button>
                             <button
-                                onClick={() => handleExport('csv')}
-                                className="px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-400 hover:bg-white/10 transition-all flex items-center"
-                                title="Export as Excel"
+                                onClick={() => setFilterItr(!filterItr)}
+                                className={`px-3 py-2 rounded-xl text-[10px] font-black tracking-wider transition-all border ${filterItr ? 'bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20' : 'bg-white/5 text-gray-500 border-transparent hover:bg-white/10'}`}
                             >
-                                <FileSpreadsheet size={14} className="mr-1" /> Excel
+                                ITR
                             </button>
                         </div>
-                    )}
+                    </div>
 
-                    {canAccessTemplates && (
-                        <div className="flex items-center gap-1 ml-1">
+                    {/* Actions Group */}
+                    <div className="flex items-center gap-3 w-full xl:w-auto justify-end">
+                        {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleExport('excel')}
+                                    className="px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-400 hover:bg-white/10 transition-all flex items-center"
+                                    title="Export as Excel"
+                                >
+                                    <Download size={18} />
+                                </button>
+                                <button
+                                    onClick={() => handleExport('excel')}
+                                    className="p-2.5 rounded-xl text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all hover:scale-105 active:scale-95"
+                                    title="Export Excel"
+                                >
+                                    <FileSpreadsheet size={18} />
+                                </button>
+                            </div>
+                        )}
+
+                        {canAccessTemplates && (
                             <button
                                 onClick={() => setIsTemplateModalOpen(true)}
-                                className="bg-navy-800/80 hover:bg-navy-700 text-white border border-white/10 rounded-xl p-2 transition-all shadow-lg"
-                                title="Templates"
+                                className="flex items-center gap-2 bg-navy-800 hover:bg-navy-700 text-white border border-white/10 rounded-xl px-4 py-2.5 transition-all shadow-lg hover:shadow-xl"
                             >
-                                <Sparkles size={16} />
+                                <Sparkles size={16} className="text-amber-400" />
+                                <span className="text-xs font-bold hidden sm:inline">Templates</span>
                             </button>
-                        </div>
-                    )}
+                        )}
 
-                    {canCreateTask && (
-                        <button
-                            onClick={handleOpenCreate}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 shrink-0"
-                        >
-                            <Plus size={16} className="mr-1.5" /> New
-                        </button>
-                    )}
+                        {canCreateTask && (
+                            <button
+                                onClick={handleOpenCreate}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Plus size={16} strokeWidth={3} /> New Task
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
