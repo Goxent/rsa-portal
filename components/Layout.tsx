@@ -8,15 +8,8 @@ import {
   Users,
   Calendar,
   LogOut,
-  Menu,
-  X,
-  Briefcase,
-  BookOpen,
-  UserCog,
   AlertTriangle,
   Bell,
-  Sun,
-  Moon,
   Settings,
   Trophy,
   Command,
@@ -26,10 +19,13 @@ import {
   FileStack,
   BarChart3,
   Workflow,
-  Building2
+  Building2,
+  BookOpen,
+  UserCog,
+  Menu,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { UserRole, AppNotification } from '../types';
 import { AuthService } from '../services/firebase';
 import CommandPalette from './CommandPalette';
@@ -59,7 +55,6 @@ const SidebarItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: 
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -134,18 +129,6 @@ const Layout: React.FC = () => {
     };
   }, []);
 
-  const getTitle = () => {
-    switch (location.pathname.split('/')[1]) {
-      case 'dashboard': return 'Executive Dashboard';
-      case 'attendance': return 'Attendance & Time';
-      case 'tasks': return 'Workflow Management';
-      case 'calendar': return 'Firm Calendar';
-      case 'knowledge-base': return 'Knowledge Base';
-      case 'staff': return 'Staff Directory';
-      case 'performance': return 'Performance Evaluation';
-      default: return 'RSA Portal System';
-    }
-  };
 
   const getInitials = (name: string) => {
     return name
@@ -219,13 +202,66 @@ const Layout: React.FC = () => {
           </nav>
 
           <div className="p-4 border-t border-white/5">
-            <div className="flex items-center space-x-3 mb-4 px-3 py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-colors cursor-pointer group">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-xs font-bold shadow-lg text-white group-hover:scale-105 transition-transform">
-                {getInitials(user?.displayName || 'U')}
+            {/* Notification & Profile Section */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex-1 flex items-center space-x-3 px-3 py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-colors cursor-pointer group">
+                <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-xs font-bold shadow-lg text-white group-hover:scale-105 transition-transform">
+                  {getInitials(user?.displayName || 'U')}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate text-white group-hover:text-blue-200 transition-colors">{user?.displayName}</p>
+                  <p className="text-[10px] text-gray-400 opacity-70 truncate">{user?.role}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate text-white group-hover:text-blue-200 transition-colors">{user?.displayName}</p>
-                <p className="text-xs text-gray-400 opacity-70 truncate">{user?.role}</p>
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-3 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors relative border border-white/5 bg-white/5"
+                >
+                  <Bell size={18} />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-dark-900"></span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <div className="absolute bottom-full right-0 mb-3 w-72 glass-panel rounded-xl shadow-2xl border border-white/10 overflow-hidden z-20 animate-in slide-in-from-bottom-2 md:left-auto md:right-0">
+                    <div className="px-4 py-3 border-b border-white/10 bg-white/5">
+                      <div className="flex justify-between items-center mb-1">
+                        <h3 className="text-sm font-bold text-white">Notifications</h3>
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              notifications.forEach(n => AuthService.markAsRead(n.id));
+                            }}
+                            className="text-[10px] text-blue-400 font-medium"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-gray-500">No notifications</div>
+                      ) : notifications.map(n => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            AuthService.markAsRead(n.id);
+                            if (n.link) navigate(n.link);
+                            setShowNotifications(false);
+                          }}
+                          className={`p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!n.read ? 'bg-blue-500/5' : ''}`}
+                        >
+                          <p className={`text-xs font-bold ${n.type === 'WARNING' ? 'text-red-300' : 'text-blue-300'}`}>{n.title}</p>
+                          <p className="text-[10px] text-gray-400 mt-1 line-clamp-2">{n.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <button
@@ -243,117 +279,14 @@ const Layout: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-          {/* Topbar (Glass) */}
-          <header className="h-20 flex items-center justify-between px-6 md:px-8 mt-4 mx-4 md:ml-0 rounded-2xl glass-panel z-10 shrink-0">
-            <div className="flex items-center">
-              <button
-                className="md:hidden mr-4 text-gray-300 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                {isMobileMenuOpen ? <X /> : <Menu />}
-              </button>
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-wide drop-shadow-sm">{getTitle()}</h2>
-                <div className="h-1 w-12 bg-blue-500 rounded-full mt-1 hidden md:block opacity-60"></div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4 md:space-x-6">
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-white/10 text-gray-300 hover:text-white transition-all duration-300 hover:rotate-12"
-                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {theme === 'dark' ? <Sun size={20} className="text-accent-gold" /> : <Moon size={20} className="text-blue-600" />}
-              </button>
-
-              {/* Notification Bell */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 rounded-full hover:bg-white/10 text-gray-300 hover:text-white transition-colors relative"
-                >
-                  <Bell size={20} />
-                  {notifications.filter(n => !n.read).length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-dark-900 animate-pulse"></span>
-                  )}
-                </button>
-
-                {showNotifications && (
-                  <div className="absolute right-0 mt-3 w-80 glass-panel rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50 animate-in slide-in-from-top-2">
-                    <div className="px-4 py-3 border-b border-white/10 bg-white/5">
-                      {/* Late Warning Banner */}
-                      {showLateWarning && (
-                        <div className="mb-6 bg-red-500/10 border border-red-500/40 p-3 rounded-xl flex items-center justify-between animate-in slide-in-from-top-2">
-                          <div className="flex items-center space-x-3">
-                            <AlertCircle className="text-red-500 shrink-0" size={20} />
-                            <div>
-                              <h3 className="font-bold text-red-400 text-sm">Attendance Warning</h3>
-                              <p className="text-xs text-red-200">
-                                You have exceeded 5 late arrivals this month.
-                              </p>
-                            </div>
-                          </div>
-                          <button onClick={() => setShowLateWarning(false)} className="text-red-400 hover:text-red-300"><X size={16} /></button>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm font-bold text-white">Notifications</h3>
-                        {notifications.length > 0 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              notifications.forEach(n => AuthService.markAsRead(n.id));
-                            }}
-                            className="text-[10px] text-blue-400 hover:text-blue-300 font-medium"
-                          >
-                            Mark all read
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-gray-500">No new notifications</div>
-                      ) : notifications.map(n => (
-                        <div
-                          key={n.id}
-                          onClick={() => {
-                            AuthService.markAsRead(n.id);
-                            if (n.link) {
-                              navigate(n.link);
-                              setShowNotifications(false);
-                            }
-                          }}
-                          className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!n.read ? 'bg-blue-500/5' : ''}`}
-                        >
-                          <div className="flex items-start">
-                            {n.type === 'WARNING' ? <AlertTriangle size={16} className="text-red-400 mr-2 mt-0.5" /> : <Bell size={16} className="text-blue-400 mr-2 mt-0.5" />}
-                            <div>
-                              <h4 className={`text-sm font-bold ${n.type === 'WARNING' ? 'text-red-300' : 'text-blue-300'}`}>{n.title}</h4>
-                              <p className="text-xs text-gray-400 mt-1">{n.message}</p>
-                              <p className="text-[10px] text-gray-500 mt-2">{new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString()}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="hidden md:flex flex-col items-end">
-                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Today</p>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-300">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </header>
+        <div className="flex-1 flex flex-col h-full overflow-hidden relative pt-4 md:pt-6">
+          {/* Mobile Menu Toggle - Floating */}
+          <button
+            className="md:hidden fixed bottom-6 right-6 z-[60] bg-blue-600 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all outline-none border border-blue-400/50 backdrop-blur-md animate-in slide-in-from-bottom-10"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
 
           {/* Mobile Menu Overlay */}
           {isMobileMenuOpen && (
