@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Users, Calendar, Clock, Repeat, Bell, MapPin, Palette, Plus, Trash2 } from 'lucide-react';
 import { CalendarEvent, UserProfile, UserRole, EventVisibility, EventType, RecurrenceRule } from '../types';
 import { canCreateEventWithVisibility, getEventColor } from '../utils/eventUtils';
+import NepaliDatePicker from './NepaliDatePicker';
 
 interface EventModalProps {
     isOpen: boolean;
@@ -58,6 +59,7 @@ const EventModal: React.FC<EventModalProps> = ({
     const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [useNepali, setUseNepali] = useState(false);
 
     // Initialize form when event or selectedDate changes
     useEffect(() => {
@@ -190,14 +192,31 @@ const EventModal: React.FC<EventModalProps> = ({
                         {/* Date and Time */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Date *</label>
-                                <input
-                                    type="date"
-                                    required
-                                    className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                    value={formData.date}
-                                    onChange={e => setFormData({ ...formData, date: e.target.value })}
-                                />
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase">Date *</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseNepali(!useNepali)}
+                                        className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${useNepali ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-500'}`}
+                                    >
+                                        {useNepali ? 'SELECT AD' : 'SELECT BS'}
+                                    </button>
+                                </div>
+                                {useNepali ? (
+                                    <NepaliDatePicker
+                                        value={formData.date || ''}
+                                        onChange={(ad) => setFormData({ ...formData, date: ad })}
+                                        className="w-full"
+                                    />
+                                ) : (
+                                    <input
+                                        type="date"
+                                        required
+                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                        value={formData.date}
+                                        onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                    />
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Start Time</label>

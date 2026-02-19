@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCircle, AlertTriangle, Plus, Calendar as CalIcon, Filter, Briefcase, RefreshCw, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
+import {
+    Calendar as CalIcon,
+    RefreshCw,
+    Plus,
+    Zap,
+    Bell,
+    AlertTriangle,
+    CheckCircle,
+    Filter,
+    ShieldCheck,
+    Search
+} from 'lucide-react';
+import NepaliDatePicker from '../components/NepaliDatePicker';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { ComplianceEvent } from '../types/advanced';
@@ -26,6 +38,9 @@ const CompliancePage: React.FC = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [filter, setFilter] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [useNepali, setUseNepali] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statutoryFilter, setStatutoryFilter] = useState<'ALL' | 'VAT' | 'ITR'>('ALL');
     const [newEvent, setNewEvent] = useState({
         title: '',
         description: '',
@@ -135,28 +150,22 @@ const CompliancePage: React.FC = () => {
 
             const monthNames = ['Baisakh', 'Jestha', 'Ashadh', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'];
 
-            // VAT returns for previous month are due by 25th of current month
-            // If it's the 25th or later, we check for THIS month's deadline (which is for the previous month's data)
-            // But usually, humans start the task EARLIER (e.g. at the start of the month for the previous month)
-            // User requested automation on the 25th.
-
             const targetMonthName = monthIdx === 0 ? monthNames[11] : monthNames[monthIdx - 1];
             const targetYear = monthIdx === 0 ? year - 1 : year;
             const periodLabel = `${targetMonthName} ${targetYear}`;
 
             const vatClients = clients.filter(c => c.vatReturn);
-            const existingTasks = await AuthService.getAllTasks(); // Use correct method name
+            const existingTasks = await AuthService.getAllTasks();
 
             let createdCount = 0;
 
             for (const client of vatClients) {
                 const taskTitle = `VAT Return Filing - ${periodLabel} - ${client.name}`;
 
-                // Check if already exists
                 const alreadyExists = existingTasks.find(t => t.title === taskTitle);
 
                 if (!alreadyExists) {
-                    const auditorId = client.auditorId || user.uid; // Focal person or fallback to current user
+                    const auditorId = client.auditorId || user.uid;
                     const auditorName = staffList.find(s => s.uid === auditorId)?.displayName || 'Focal Person';
 
                     const newTask: Task = {
@@ -219,9 +228,18 @@ const CompliancePage: React.FC = () => {
 
     const canEdit = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN' || user?.role === 'MANAGER';
 
+    const filteredClients = clients.filter(c => (c.vatReturn || c.itrReturn)).filter(c => {
+        const matchesSearch = c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.pan?.includes(searchTerm) ||
+            c.code?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesType = statutoryFilter === 'ALL' ||
+            (statutoryFilter === 'VAT' && c.vatReturn) ||
+            (statutoryFilter === 'ITR' && c.itrReturn);
+        return matchesSearch && matchesType;
+    });
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-            {/* Header Section */}
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -264,7 +282,6 @@ const CompliancePage: React.FC = () => {
             {/* Next Deadline Timer */}
             {(() => {
                 const upcomingEvents = events.filter(e => e.status === 'UPCOMING' || e.status === 'DUE_SOON');
-                // ... (Logic remains same, just ensuring it's wrapped nicely if needed)
                 if (upcomingEvents.length === 0) return null;
 
                 const nearestEvent = upcomingEvents.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
@@ -313,61 +330,94 @@ const CompliancePage: React.FC = () => {
             })()}
 
             {/* Client Statutory Compliance Section */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <ShieldCheck className="text-emerald-400" />
-                        Client Statutory Status
-                    </h2>
-                    <span className="text-xs text-brand-400 font-bold bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
-                        {clients.filter(c => c.vatReturn).length} VAT Clients
-                    </span>
+            <div className="glass-panel p-6 rounded-2xl border border-white/5 bg-navy-900/40 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                            <ShieldCheck size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Client Statutory Status</h2>
+                            <p className="text-xs text-gray-500">Track VAT and Income Tax filing obligations.</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-1 max-w-xl">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                            <input
+                                type="text"
+                                placeholder="Search client name, PAN or code..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                            />
+                        </div>
+                        <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
+                            {(['ALL', 'VAT', 'ITR'] as const).map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => setStatutoryFilter(t)}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${statutoryFilter === t ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {clients.filter(c => c.vatReturn || c.itrReturn).map((client) => (
-                        <div key={client.id} className="glass-panel p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all group">
-                            <div className="flex justify-between items-start mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-blue-400 font-bold">
-                                        {client.code?.substring(0, 2) || 'CL'}
+                <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {filteredClients.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {filteredClients.map((client) => (
+                                <div key={client.id} className="glass-card p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all group">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="w-10 h-10 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-blue-400 font-bold text-xs">
+                                                {client.code?.substring(0, 3) || 'CL'}
+                                            </div>
+                                            <div className="overflow-hidden">
+                                                <h4 className="font-bold text-white text-xs group-hover:text-brand-300 transition-colors uppercase truncate">{client.name}</h4>
+                                                <p className="text-[10px] text-gray-500 font-medium truncate">PAN: {client.pan || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1 shrink-0">
+                                            {client.vatReturn && (
+                                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">VAT</span>
+                                            )}
+                                            {client.itrReturn && (
+                                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-white text-sm group-hover:text-brand-300 transition-colors uppercase">{client.name}</h4>
-                                        <p className="text-[10px] text-gray-500 font-medium">PAN: {client.pan || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                    {client.vatReturn && (
-                                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">VAT</span>
-                                    )}
-                                    {client.itrReturn && (
-                                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR</span>
-                                    )}
-                                </div>
-                            </div>
 
-                            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-navy-800 flex items-center justify-center text-[8px] font-bold text-gray-300 uppercase">
-                                        {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
+                                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <div className="w-5 h-5 shrink-0 rounded-full bg-navy-800 flex items-center justify-center text-[7px] font-bold text-gray-300 uppercase">
+                                                {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 truncate">
+                                                {staffList.find(s => s.uid === client.auditorId)?.displayName || 'Unassigned Focal'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                toast(`Viewing tasks for ${client.name}`, { icon: '🔍', duration: 1000 });
+                                            }}
+                                            className="text-[9px] font-bold text-brand-400 hover:text-brand-300 transition-colors shrink-0"
+                                        >
+                                            VIEW TASKS
+                                        </button>
                                     </div>
-                                    <span className="text-[11px] text-gray-400">
-                                        {staffList.find(s => s.uid === client.auditorId)?.displayName || 'Unassigned Focal'}
-                                    </span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        // Quick view or navigation to tasks
-                                        toast('Redirecting to tasks...', { icon: '🔍', duration: 1000 });
-                                    }}
-                                    className="text-[10px] font-bold text-brand-400 hover:text-brand-300 transition-colors"
-                                >
-                                    VIEW TASKS
-                                </button>
-                            </div>
+                            ))}
                         </div>
-                    ))}
+                    ) : (
+                        <div className="py-20 text-center">
+                            <p className="text-gray-500 text-sm">No clients match your search or filters.</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -550,13 +600,30 @@ const CompliancePage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Due Date <span className="text-red-400">*</span></label>
-                                <input
-                                    type="date"
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                                    value={newEvent.dueDate}
-                                    onChange={(e) => setNewEvent({ ...newEvent, dueDate: e.target.value })}
-                                />
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Due Date <span className="text-red-400">*</span></label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseNepali(!useNepali)}
+                                        className={`text-[10px] font-bold px-2 py-1 rounded transition-all ${useNepali ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-400'}`}
+                                    >
+                                        {useNepali ? 'SWITCH TO AD' : 'SWITCH TO BS (NEPALI)'}
+                                    </button>
+                                </div>
+                                {useNepali ? (
+                                    <NepaliDatePicker
+                                        value={newEvent.dueDate}
+                                        onChange={(ad) => setNewEvent({ ...newEvent, dueDate: ad })}
+                                        className="w-full"
+                                    />
+                                ) : (
+                                    <input
+                                        type="date"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                        value={newEvent.dueDate}
+                                        onChange={(e) => setNewEvent({ ...newEvent, dueDate: e.target.value })}
+                                    />
+                                )}
                             </div>
 
                             <div>
