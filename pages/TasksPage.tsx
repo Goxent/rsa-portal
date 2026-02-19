@@ -529,6 +529,7 @@ const TasksPage: React.FC = () => {
                                         [TaskStatus.NOT_STARTED]: { color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20', gradient: 'from-gray-500/20 to-gray-600/5' },
                                         [TaskStatus.IN_PROGRESS]: { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', gradient: 'from-blue-500/20 to-cyan-500/5' },
                                         [TaskStatus.UNDER_REVIEW]: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', gradient: 'from-amber-500/20 to-orange-500/5' },
+                                        [TaskStatus.HALTED]: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', gradient: 'from-red-500/20 to-rose-500/5' },
                                         [TaskStatus.COMPLETED]: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', gradient: 'from-emerald-500/20 to-teal-500/5' }
                                     };
                                     const config = statusConfig[status];
@@ -559,8 +560,9 @@ const TasksPage: React.FC = () => {
                                                         <div className={`relative z-10 flex items-center gap-3 ${isCollapsed ? 'flex-col' : 'justify-between w-full'}`}>
                                                             <div className={`flex items-center gap-2 ${isCollapsed ? 'flex-col' : ''}`}>
                                                                 <div className={`w-2.5 h-2.5 rounded-full shadow-lg shadow-current ${status === TaskStatus.COMPLETED ? 'bg-emerald-400 text-emerald-500' :
-                                                                        status === TaskStatus.IN_PROGRESS ? 'bg-blue-400 text-blue-500' :
-                                                                            status === TaskStatus.UNDER_REVIEW ? 'bg-amber-400 text-amber-500' :
+                                                                    status === TaskStatus.IN_PROGRESS ? 'bg-blue-400 text-blue-500' :
+                                                                        status === TaskStatus.UNDER_REVIEW ? 'bg-amber-400 text-amber-500' :
+                                                                            status === TaskStatus.HALTED ? 'bg-red-400 text-red-500' :
                                                                                 'bg-gray-400 text-gray-500'
                                                                     }`} />
 
