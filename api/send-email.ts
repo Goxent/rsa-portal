@@ -26,31 +26,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const apiKey = process.env.VITE_RESEND_API_KEY;
+    const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
 
     if (!apiKey) {
-        console.error('RESEND_API_KEY is missing');
-        return res.status(500).json({ error: 'Server misconfiguration: Missing API Key' });
+        console.error('RESEND_API_KEY is missing in environment variables.');
+        return res.status(500).json({ error: 'Server configuration error: Missing Email API Key.' });
     }
 
     const resend = new Resend(apiKey);
 
     try {
+        console.log(`Attempting to send email to: ${to} with subject: ${subject}`);
         const { data, error } = await resend.emails.send({
-            from: `${fromName || 'RSA System'} <${process.env.VITE_EMAIL_FROM || 'onboarding@resend.dev'}>`, // Default test domain if env var missing
+            from: `${fromName || 'RSA System'} <${process.env.EMAIL_FROM || 'onboarding@resend.dev'}>`,
             to: Array.isArray(to) ? to : [to],
             subject: subject,
             html: html,
         });
 
         if (error) {
-            console.error('Resend Error:', error);
-            return res.status(400).json({ error: error.message });
+            console.error('Resend API Error:', error);
+            // Return the specific error message from Resend for better debugging
+            return res.status(400).json({ error: error.message, details: error });
         }
 
+        console.log('Email sent successfully:', data);
         return res.status(200).json({ success: true, data });
     } catch (error: any) {
-        console.error('Email Sending Error:', error);
+        console.error('Unexpected Email Sending Error:', error);
         return res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 }
