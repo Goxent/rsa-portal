@@ -685,8 +685,10 @@ export const AuthService = {
                 return docSnap.data().widgets;
             }
             return null;
-        } catch (error) {
-            console.error("Failed to fetch widget config:", error);
+        } catch (error: any) {
+            if (error.code !== 'permission-denied') {
+                console.warn("Failed to fetch widget config:", error);
+            }
             return null;
         }
     },

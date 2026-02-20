@@ -51,6 +51,11 @@ export const AiService = {
     const provider = config?.provider || 'gemini'; // Default if not configured but env var exists
     const apiKey = config?.apiKey || '';
 
+    if (!apiKey) {
+      // Fail gracefully if no key is found
+      return "AI Insight is unavailable (Reference: MISSING_KEY). Please add an API Key in settings.";
+    }
+
     try {
       const response = await fetch('/api/ai', {
         method: 'POST',

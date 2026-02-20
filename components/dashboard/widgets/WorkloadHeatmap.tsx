@@ -66,7 +66,7 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
             </div>
 
             {data.length > 0 ? (
-                <div className="flex-1 min-h-[200px]">
+                <div className="w-full h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
                             <XAxis type="number" hide />

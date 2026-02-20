@@ -28,7 +28,7 @@ const AiInsightWidget: React.FC = () => {
             localStorage.setItem(cacheKey, result);
             setInsight(result);
         } catch (error) {
-            console.error("Failed to generate insight", error);
+            // Silently fail to fallback
             setInsight("Review pending tasks and ensure all client communications are up to date.");
         } finally {
             setLoading(false);
