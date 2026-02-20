@@ -50,6 +50,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               // Do NOT create default profile. Rigid security.
             }
           });
+
+          // Cleanup old notifications (non-blocking)
+          AuthService.cleanupOldNotifications(firebaseUser.uid).catch(console.error);
+
         } catch (err) {
           console.error("Error fetching/creating user profile:", err);
         }

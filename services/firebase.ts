@@ -1181,6 +1181,51 @@ export const AuthService = {
         await Promise.all(batches);
     },
 
+    /**
+     * Delete notifications older than 30 days
+     */
+    cleanupOldNotifications: async (userId: string) => {
+        try {
+            const date = new Date();
+            date.setDate(date.getDate() - 30);
+            const cutoffDate = date.toISOString();
+
+            // Query specifically for this user's old notifications
+            // Note: Composite index (userId, createdAt) might be required by Firestore
+            const q = query(
+                collection(db, 'notifications'),
+                where('userId', '==', userId),
+                where('createdAt', '<', cutoffDate)
+            );
+
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) return;
+
+            console.log(`Cleaning up ${snapshot.size} old notifications for user ${userId}`);
+
+            const batchSize = 500;
+            const batches = [];
+
+            for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+                const chunk = snapshot.docs.slice(i, i + batchSize);
+                const batch = import('firebase/firestore').then(async ({ writeBatch }) => {
+                    const firebaseBatch = writeBatch(db);
+                    chunk.forEach(doc => {
+                        firebaseBatch.delete(doc.ref);
+                    });
+                    await firebaseBatch.commit();
+                });
+                batches.push(batch);
+            }
+
+            await Promise.all(batches);
+        } catch (error) {
+            console.error("Failed to cleanup old notifications:", error);
+            // Non-blocking error, so we suppress it from UI
+        }
+    },
+
     // Real-time listener
     // Real-time listener with Retry Logic
     subscribeToNotifications: (userId: string, callback: (notifications: AppNotification[]) => void) => {
