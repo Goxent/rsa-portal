@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, X, ExternalLink, Mail, Phone, MapPin, Calendar as CalendarIcon, Flag, Clock as ClockIcon, Sun, Moon } from 'lucide-react';
+import { X, Mail, Phone, Briefcase, Clock as ClockIcon } from 'lucide-react';
 import { AuthService } from '../services/firebase';
-import { UserProfile, Task, UserRole, CalendarEvent } from '../types';
-import { toBS } from '../utils/dateUtils';
+import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import WidgetContainer from '../components/dashboard/WidgetContainer';
 import AttendanceWidget from '../components/dashboard/AttendanceWidget';
-import { DashboardSkeleton } from '../components/ui/LoadingSkeleton';
+import GreetingsWidget from '../components/dashboard/widgets/GreetingsWidget';
+import FocusWidget from '../components/dashboard/widgets/FocusWidget';
+import ComplianceBanner from '../components/dashboard/widgets/ComplianceBanner';
+import WorkloadHeatmap from '../components/dashboard/widgets/WorkloadHeatmap';
 import { useTasks } from '../hooks/useTasks';
 import { useUsers } from '../hooks/useStaff';
 import { useClients } from '../hooks/useClients';
 import { useEvents } from '../hooks/useEvents';
-
-import { Client } from '../types';
+import { useQuery } from '@tanstack/react-query';
 
 // Helper interface for the unified schedule list
 interface ScheduleItem {
@@ -32,21 +33,13 @@ const Dashboard: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
-    // Clock State
-    const [currentTime, setCurrentTime] = useState(new Date());
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
     // Data Hooks
     const { data: allTasks = [], isLoading: tasksLoading } = useTasks();
     const { data: usersForMap = [], isLoading: usersLoading } = useUsers();
     const { data: allClients = [], isLoading: clientsLoading } = useClients();
     const { data: allEvents = [], isLoading: eventsLoading } = useEvents();
 
-    const { data: lateCount = 0 } = import('@tanstack/react-query').useQuery({
+    const { data: lateCount = 0 } = useQuery({
         queryKey: ['lateCount', user?.uid],
         queryFn: () => user ? AuthService.getLateCountLast30Days(user.uid) : Promise.resolve(0),
         enabled: !!user,
@@ -245,68 +238,36 @@ const Dashboard: React.FC = () => {
         isLoading,
     };
 
+    // Admin check for heatmap
+    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+
     return (
         <div className="space-y-6">
-            {/* Welcome Banner */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-navy-800 to-brand-900 shadow-2xl border border-white/10 animate-fade-in">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-600/10 to-accent-purple/10"></div>
-
-                <div className="relative p-4 md:p-5 flex flex-col lg:flex-row justify-between items-center z-10 gap-4">
-                    <div className="flex-1 w-full lg:w-auto">
-                        <div className="flex items-center justify-between mb-1">
-                            <h1 className="text-xl md:text-2xl font-bold text-white font-heading tracking-tight">
-                                Good {currentTime.getHours() < 12 ? 'Morning' : currentTime.getHours() < 17 ? 'Afternoon' : 'Evening'}, <span className="text-brand-500">{user?.displayName?.split(' ')[0]}</span>
-                            </h1>
-                            {/* Mobile Theme Toggle */}
-                            <button
-                                onClick={toggleTheme}
-                                className="lg:hidden p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white transition-all"
-                            >
-                                {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-blue-400" />}
-                            </button>
-                        </div>
-                        <p className="text-gray-400 text-xs max-w-xl">
-                            Welcome to your customizable dashboard. Drag widgets to rearrange.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-center lg:justify-end gap-2.5 w-full lg:w-auto">
-                        {/* Digital Clock */}
-                        <div className="glass-panel px-3 py-2 rounded-xl flex items-center space-x-2.5 border border-white/5 bg-white/5 min-w-[130px]">
-                            <div className="p-1.5 bg-blue-500/20 rounded-lg text-blue-400">
-                                <ClockIcon size={18} />
-                            </div>
-                            <div>
-                                <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Local Time</p>
-                                <p className="text-white font-mono text-base font-bold">
-                                    {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Date (AD/BS) */}
-                        <div className="glass-panel px-3 py-2 rounded-xl flex items-center space-x-2.5 border border-white/5 bg-white/5">
-                            <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400">
-                                <CalendarDays size={18} />
-                            </div>
-                            <div>
-                                <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Date (AD / BS)</p>
-                                <p className="text-white font-semibold text-[13px]">{currentTime.toLocaleDateString()} / {toBS(currentTime)} BS</p>
-                            </div>
-                        </div>
-
-                        {/* Desktop Theme Toggle */}
-                        <button
-                            onClick={toggleTheme}
-                            className="hidden lg:flex p-3 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white transition-all hover:bg-white/10 hover:-translate-y-0.5 shadow-xl group"
-                            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                        >
-                            {theme === 'dark' ? <Sun size={20} className="text-amber-400 group-hover:rotate-12 transition-transform" /> : <Moon size={20} className="text-blue-400 group-hover:-rotate-12 transition-transform" />}
-                        </button>
-                    </div>
+            {/* Greetings & Focus Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <GreetingsWidget />
+                </div>
+                <div className="lg:col-span-1">
+                    <FocusWidget />
                 </div>
             </div>
+
+            {/* Compliance Banner - Show only if there are urgency deadlines */}
+            <div className="w-full">
+                <ComplianceBanner deadlines={upcomingSchedule.filter(i => i.type === 'DEADLINE')} />
+            </div>
+
+            {/* Admin Exclusive: Workload Heatmap */}
+            {isAdmin && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[300px]">
+                    <WorkloadHeatmap staffStats={staffStats} totalTasks={relevantTasks.length} />
+                    {/* Placeholder for future widget or we can expand heatmap */}
+                    <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-center text-gray-400">
+                        <p>More admin insights coming...</p>
+                    </div>
+                </div>
+            )}
 
             {/* Attendance Widget - Always Top */}
             <AttendanceWidget />
@@ -316,81 +277,76 @@ const Dashboard: React.FC = () => {
                 <WidgetContainer
                     userId={user.uid}
                     dashboardData={dashboardData}
+                    isAdmin={isAdmin}
                 />
             )}
 
             {/* Staff Detail Modal (preserved from original) */}
             {selectedStaff && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="glass-modal rounded-2xl border border-white/10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-accent-purple flex items-center justify-center text-2xl font-bold text-white">
-                                        {selectedStaff.displayName?.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <h2 className="text-xl font-bold text-white">{selectedStaff.displayName}</h2>
-                                        <p className="text-sm text-gray-400">{selectedStaff.role} • {selectedStaff.department}</p>
-                                    </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
+                                    {selectedStaff.displayName?.charAt(0)}
                                 </div>
-                                <button onClick={() => setSelectedStaff(null)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                                    <X size={20} className="text-gray-400" />
-                                </button>
-                            </div>
+                                {selectedStaff.displayName} <span className="text-gray-500 text-sm font-normal">({selectedStaff.role})</span>
+                            </h2>
+                            <button
+                                onClick={() => setSelectedStaff(null)}
+                                className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                            {/* Contact Info */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                                <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl">
-                                    <Mail size={16} className="text-brand-400" />
-                                    <span className="text-sm text-gray-300 truncate">{selectedStaff.email}</span>
-                                </div>
-                                {selectedStaff.phoneNumber && (
-                                    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl">
-                                        <Phone size={16} className="text-green-400" />
-                                        <span className="text-sm text-gray-300">{selectedStaff.phoneNumber}</span>
+                        <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                                    <p className="text-gray-500 text-xs uppercase font-bold mb-1">Email</p>
+                                    <div className="flex items-center gap-2 text-gray-300">
+                                        <Mail size={14} /> {selectedStaff.email}
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Performance Stats */}
-                            <div className="grid grid-cols-3 gap-3 mb-6">
-                                <div className="bg-green-500/10 rounded-xl p-4 text-center">
-                                    <p className="text-2xl font-bold text-green-400">{staffPerformance.completed}</p>
-                                    <p className="text-xs text-gray-400">Completed</p>
                                 </div>
-                                <div className="bg-blue-500/10 rounded-xl p-4 text-center">
-                                    <p className="text-2xl font-bold text-blue-400">{staffPerformance.pending}</p>
-                                    <p className="text-xs text-gray-400">Pending</p>
+                                <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                                    <p className="text-gray-500 text-xs uppercase font-bold mb-1">Phone</p>
+                                    <div className="flex items-center gap-2 text-gray-300">
+                                        <Phone size={14} /> {selectedStaff.phoneNumber || 'N/A'}
+                                    </div>
                                 </div>
-                                <div className="bg-red-500/10 rounded-xl p-4 text-center">
-                                    <p className="text-2xl font-bold text-red-400">{staffPerformance.lateCount}</p>
-                                    <p className="text-xs text-gray-400">Late (30d)</p>
+                                <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+                                    <p className="text-gray-500 text-xs uppercase font-bold mb-1">Department</p>
+                                    <div className="flex items-center gap-2 text-gray-300">
+                                        <Briefcase size={14} /> {selectedStaff.department || 'Unassigned'}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Active Tasks */}
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-300 mb-3">Active Tasks</h3>
+                                <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2">
+                                    <ClockIcon size={16} className="text-brand-400" /> Recent Activity
+                                </h3>
                                 {selectedStaffTasks.length > 0 ? (
-                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    <div className="space-y-3">
                                         {selectedStaffTasks.map(task => (
-                                            <div key={task.id} className="bg-white/5 p-3 rounded-lg flex justify-between items-center">
+                                            <div key={task.id} className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm text-white">{task.title}</p>
-                                                    <p className="text-xs text-gray-400">{task.clientName}</p>
+                                                    <h4 className="font-medium text-white">{task.title}</h4>
+                                                    <p className="text-xs text-gray-400 mt-1">{task.clientName} • Due: {task.dueDate}</p>
                                                 </div>
-                                                <span className={`text-xs px-2 py-1 rounded-full ${task.priority === 'URGENT' ? 'bg-red-500/20 text-red-400' :
-                                                    task.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
-                                                        'bg-blue-500/20 text-blue-400'
+                                                <span className={`px-2 py-1 rounded text-xs font-medium border ${task.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
+                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                                                        'bg-gray-500/10 border-gray-500/20 text-gray-400'
                                                     }`}>
-                                                    {task.priority}
+                                                    {task.status.replace('_', ' ')}
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-gray-500">No active tasks assigned</p>
+                                    <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-white/5 border-dashed">
+                                        No recent tasks found
+                                    </div>
                                 )}
                             </div>
                         </div>
