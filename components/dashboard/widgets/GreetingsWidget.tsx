@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { Sun, Moon, Clock, CalendarDays } from 'lucide-react';
-import { toBS } from '../../utils/dateUtils';
+import { toBS } from '../../../utils/dateUtils';
 
 const GreetingsWidget: React.FC = () => {
     const { user } = useAuth();

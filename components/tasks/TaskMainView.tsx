@@ -132,7 +132,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex-1 overflow-x-auto p-8 custom-scrollbar h-full flex gap-8 items-start">
+            <div className={`flex-1 overflow-hidden p-6 h-full ${groupBy === 'NONE' ? 'grid grid-cols-5 gap-4' : 'flex overflow-x-auto gap-6'} items-start`}>
                 {kanbanColumns.map(col => {
                     const status = groupBy === 'NONE' ? col as TaskStatus : null;
                     const userId = groupBy !== 'NONE' ? col as string : null;
@@ -149,7 +149,10 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`flex flex-col rounded-2xl shrink-0 transition-all duration-300 ${isCollapsed ? 'w-14 items-center bg-white/5' : 'w-80'} ${snapshot.isDraggingOver ? 'bg-white/5 ring-1 ring-white/10' : ''}`}
+                                    className={`flex flex-col rounded-2xl shrink-0 transition-all duration-300 h-full max-h-full ${groupBy === 'NONE'
+                                            ? (isCollapsed ? 'w-14 items-center bg-white/5' : 'w-full min-w-0 flex-1')
+                                            : (isCollapsed ? 'w-14 items-center bg-white/5' : 'w-80')
+                                        } ${snapshot.isDraggingOver ? 'bg-white/5 ring-1 ring-white/10' : ''}`}
                                 >
                                     <div
                                         className={`p-4 flex items-center justify-between cursor-pointer group/header ${isCollapsed ? 'flex-col gap-4 py-8' : ''}`}
