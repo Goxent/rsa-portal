@@ -141,8 +141,8 @@ export const AuthService = {
             // Provide user-friendly error messages
             if (error.code === 'auth/user-not-found') {
                 throw new Error('No account found with this email. Please sign up first.');
-            } else if (error.code === 'auth/wrong-password') {
-                throw new Error('Incorrect password. Please try again.');
+            } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                throw new Error('Invalid email or password. Please try again.');
             } else if (error.code === 'auth/invalid-email') {
                 throw new Error('Invalid email address format.');
             } else if (error.code === 'auth/too-many-requests') {
@@ -1257,9 +1257,11 @@ export const AuthService = {
             }
 
             await Promise.all(batches);
-        } catch (error) {
-            console.error("Failed to cleanup old notifications:", error);
-            // Non-blocking error, so we suppress it from UI
+        } catch (error: any) {
+            // Silently ignore permission errors for background cleanup tasks
+            if (error.code !== 'permission-denied') {
+                console.error("Failed to cleanup old notifications:", error);
+            }
         }
     },
 
