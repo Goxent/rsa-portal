@@ -161,48 +161,62 @@ export const AuthService = {
             const uid = userCredential.user.uid;
 
             // STEP 2: Validate email is in users directory (Staff Directory)
-            const usersSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
+            // Fix: Case-insensitive check. Fetch all users (small collection) and find match
+            const usersSnapshot = await getDocs(collection(db, 'users'));
+            const normalizedInputEmail = email.toLowerCase().trim();
 
-            if (usersSnapshot.empty) {
-                // Rollback if email not found
-                await userCredential.user.delete();
-                const error = new Error('Access Denied: Your email is not listed in the Staff Directory. Please contact the administrator.');
-                (error as any).code = 'auth/operation-not-allowed';
-                throw error;
-            }
+            const existingUserDoc = usersSnapshot.docs.find(doc => {
+                const data = doc.data() as UserProfile;
+                return data.email && data.email.toLowerCase().trim() === normalizedInputEmail;
+            });
 
-            const existingUserDoc = usersSnapshot.docs[0];
-            const existingUserData = existingUserDoc.data() as UserProfile;
-
-            // Check if already registered
-            if (existingUserData.uid && !existingUserData.uid.startsWith('pending_')) {
-                await userCredential.user.delete();
-                throw new Error('Account already set up. Please log in.');
-            }
-
-            if (existingUserData.status === 'Inactive') {
-                await userCredential.user.delete();
-                throw new Error('This account is marked as Inactive. Please contact the administrator.');
-            }
+            let newUser: UserProfile;
 
             try {
-                // MERGE: Use existing data, update UID and Status
-                const newUser: UserProfile = {
-                    ...existingUserData,
-                    uid,
-                    displayName: existingUserData.displayName || email.split('@')[0],
-                    isSetupComplete: false,
-                    status: 'Active',
-                };
+                if (existingUserDoc) {
+                    const existingUserData = existingUserDoc.data() as UserProfile;
 
-                // Create new doc with real UID
-                await setDoc(doc(db, 'users', uid), newUser);
+                    // Check if already registered
+                    if (existingUserData.uid && !existingUserData.uid.startsWith('pending_')) {
+                        await userCredential.user.delete();
+                        throw new Error('Account already set up. Please log in.');
+                    }
 
-                // Migrate Tasks from Old ID (pending_...) to New UID
-                await AuthService.migrateUserTasks(existingUserDoc.id, uid);
+                    if (existingUserData.status === 'Inactive') {
+                        await userCredential.user.delete();
+                        throw new Error('This account is marked as Inactive. Please contact the administrator.');
+                    }
 
-                // Delete the old placeholder doc
-                await deleteDoc(doc(db, 'users', existingUserDoc.id));
+                    // MERGE: Use existing data, update UID and Status
+                    newUser = {
+                        ...existingUserData,
+                        uid,
+                        displayName: existingUserData.displayName || email.split('@')[0],
+                        isSetupComplete: false,
+                        status: 'Active',
+                    };
+
+                    // Create new doc with real UID
+                    await setDoc(doc(db, 'users', uid), newUser);
+
+                    // Migrate Tasks from Old ID (pending_...) to New UID
+                    await AuthService.migrateUserTasks(existingUserDoc.id, uid);
+
+                    // Delete the old placeholder doc
+                    await deleteDoc(doc(db, 'users', existingUserDoc.id));
+                } else {
+                    // Create pending profile if not explicitly invited by Admin
+                    newUser = {
+                        uid,
+                        email: normalizedInputEmail,
+                        displayName: email.split('@')[0],
+                        role: UserRole.STAFF, // Default lowest role
+                        department: 'General',
+                        isSetupComplete: false,
+                        status: 'Pending Approval' as any, // Needs admin approval to access
+                    };
+                    await setDoc(doc(db, 'users', uid), newUser);
+                }
 
                 // Send Verification Email
                 try {
@@ -214,8 +228,13 @@ export const AuthService = {
 
                 return newUser;
 
-            } catch (firestoreError) {
-                // ROLLBACK
+            } catch (firestoreError: any) {
+                // If the error was thrown by our own validations (e.g. Account already set up)
+                if (firestoreError.message && (firestoreError.message.includes('Account already set up') || firestoreError.message.includes('Inactive'))) {
+                    throw firestoreError;
+                }
+
+                // ROLLBACK FOR DB ISSUES
                 console.error("Firestore profile creation failed. Rolling back Auth User.", firestoreError);
                 await userCredential.user.delete();
                 throw new Error("Registration failed due to system error. Please try again.");

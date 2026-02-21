@@ -9,6 +9,7 @@ import {
     Tag
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile, UserRole } from '../../types';
+import TaskCard from './TaskCard';
 
 interface TaskMainViewProps {
     viewMode: 'LIST' | 'KANBAN';
@@ -67,6 +68,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
             case TaskStatus.UNDER_REVIEW: return { color: 'text-amber-400', bg: 'bg-amber-400' };
             case TaskStatus.HALTED: return { color: 'text-rose-400', bg: 'bg-rose-400' };
             case TaskStatus.COMPLETED: return { color: 'text-emerald-400', bg: 'bg-emerald-400' };
+            case TaskStatus.ARCHIVED: return { color: 'text-slate-500', bg: 'bg-slate-500' };
         }
     };
 
@@ -193,7 +195,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     // Kanban Logic
     const kanbanColumns = groupBy === 'NONE'
-        ? [TaskStatus.HALTED, TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.COMPLETED]
+        ? [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED, TaskStatus.ARCHIVED]
         : usersList.filter(u => groupBy === 'AUDITOR' ? u.role === UserRole.ADMIN : true).map(u => u.uid);
 
     return (
@@ -222,7 +224,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                 >
                                     {/* Column Header */}
                                     <div
-                                        className={`p-4 mb-2 flex items-center justify-between cursor-pointer group/header bg-slate-800/20 hover:bg-slate-800/40 border-b-2 ${status === TaskStatus.COMPLETED ? 'border-emerald-500/50' : status === TaskStatus.IN_PROGRESS ? 'border-blue-500/50' : status === TaskStatus.UNDER_REVIEW ? 'border-amber-500/50' : status === TaskStatus.HALTED ? 'border-rose-500/50' : 'border-slate-600/50'} rounded-t-xl transition-colors ${isCollapsed ? 'flex-col gap-4 py-8' : ''}`}
+                                        className={`p-4 mb-2 flex items-center justify-between cursor-pointer group/header bg-slate-800/20 hover:bg-slate-800/40 border-t-4 ${status === TaskStatus.COMPLETED ? 'border-emerald-500' : status === TaskStatus.IN_PROGRESS ? 'border-blue-500' : status === TaskStatus.UNDER_REVIEW ? 'border-amber-500' : status === TaskStatus.HALTED ? 'border-rose-500' : status === TaskStatus.ARCHIVED ? 'border-slate-500' : 'border-slate-400'} rounded-t-xl transition-colors ${isCollapsed ? 'flex-col gap-4 py-8 border-t-0 border-l-4' : ''} shadow-sm`}
                                         onClick={() => status && toggleColumnCollapse(status)}
                                     >
                                         <div className={`flex items-center gap-3 ${isCollapsed ? 'rotate-90 origin-center whitespace-nowrap mt-8' : ''}`}>
@@ -241,94 +243,24 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     {!isCollapsed && (
                                         <div className="flex-1 px-1 space-y-3 pb-20 overflow-y-auto custom-scrollbar">
                                             {columnTasks.map((task, index) => (
-                                                <Draggable key={task.id} draggableId={task.id} index={index}>
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            style={provided.draggableProps.style}
-                                                            onClick={() => handleOpenEdit(task)}
-                                                            className={`relative overflow-hidden group/card p-4 rounded-xl shadow-md transition-all duration-200 border bg-slate-800/60 backdrop-blur-sm
-                                                                ${snapshot.isDragging ? 'shadow-2xl scale-105 rotate-1 z-50 ring-2 ring-blue-500/50' : 'hover:-translate-y-1 hover:shadow-xl'}
-                                                                ${selectedTaskId === task.id ? 'ring-2 ring-cyan-500/50' : ''}
-                                                                border-slate-700/50 hover:border-slate-500/50`}
-                                                        >
-                                                            {/* Priority Bar Indicator */}
-                                                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${task.priority === TaskPriority.URGENT ? 'bg-rose-500' :
-                                                                task.priority === TaskPriority.HIGH ? 'bg-orange-500' :
-                                                                    task.priority === TaskPriority.MEDIUM ? 'bg-blue-500' :
-                                                                        'bg-slate-500'
-                                                                }`} />
-
-                                                            <div className="relative z-10 flex justify-between items-start gap-2 mb-2">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <div className="relative flex items-center justify-center">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={selectedTaskIds.includes(task.id)}
-                                                                            onChange={(e) => {
-                                                                                e.stopPropagation();
-                                                                                onToggleSelection(task.id);
-                                                                            }}
-                                                                            className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-500 cursor-pointer appearance-none checked:bg-blue-500 transition-colors"
-                                                                        />
-                                                                        {selectedTaskIds.includes(task.id) && <Check size={10} className="absolute text-white pointer-events-none" />}
-                                                                    </div>
-                                                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${getPriorityStyle(task.priority)} shrink-0`}>
-                                                                        {task.priority}
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-[10px] font-semibold text-slate-500 font-mono tracking-widest group-hover/card:text-slate-400 transition-colors shrink-0">
-                                                                    #{task.id.toString().substring(0, 4).toUpperCase()}
-                                                                </span>
-                                                            </div>
-
-                                                            <h4 className="text-[14px] font-bold text-slate-100 mb-2 leading-relaxed group-hover/card:text-white transition-colors pl-1 cursor-pointer">{task.title}</h4>
-
-                                                            {task.tags && task.tags.length > 0 && (
-                                                                <div className="flex flex-wrap gap-1.5 mb-3 pl-1">
-                                                                    {task.tags.map(tag => (
-                                                                        <span key={tag} className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-300">
-                                                                            {tag}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-
-                                                            <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-700/50">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="flex items-center gap-1.5 text-slate-400 bg-slate-800 px-2 py-1 rounded border border-slate-700">
-                                                                        <Calendar size={11} className="text-slate-500" />
-                                                                        <span className="text-[10px] font-semibold">{task.dueDate}</span>
-                                                                    </div>
-                                                                    {task.totalTimeSpent ? (
-                                                                        <div className="flex items-center gap-1 text-[10px] text-blue-400 font-semibold bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20" title="Time Logged">
-                                                                            <Clock size={10} /> {task.totalTimeSpent}m
-                                                                        </div>
-                                                                    ) : null}
-                                                                </div>
-                                                                <div className="flex -space-x-1.5">
-                                                                    {task.assignedTo.slice(0, 3).map(uid => {
-                                                                        const u = usersList.find(x => x.uid === uid);
-                                                                        return (
-                                                                            <div key={uid} className="w-6 h-6 rounded-full bg-slate-700 border border-slate-800 flex items-center justify-center text-[9px] font-bold text-slate-200 shadow-sm" title={u?.displayName}>
-                                                                                {u?.displayName ? u.displayName.substring(0, 1).toUpperCase() : '?'}
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                    {task.assignedTo.length > 3 && (
-                                                                        <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-400 shadow-sm">
-                                                                            +{task.assignedTo.length - 3}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </Draggable>
+                                                <TaskCard
+                                                    key={task.id}
+                                                    task={task}
+                                                    index={index}
+                                                    usersList={usersList}
+                                                    selectedTaskIds={selectedTaskIds}
+                                                    onToggleSelection={onToggleSelection}
+                                                    onClick={handleOpenEdit}
+                                                />
                                             ))}
                                             {provided.placeholder}
+
+                                            {/* Empty State Placeholder */}
+                                            {columnTasks.length === 0 && !isCollapsed && (
+                                                <div className="h-24 rounded-xl border-2 border-dashed border-slate-700/50 flex items-center justify-center text-slate-500 text-xs font-semibold uppercase tracking-widest bg-slate-800/10 mb-2">
+                                                    Drop tasks here
+                                                </div>
+                                            )}
 
                                             {/* Quick Add Input */}
                                             {status && !isCollapsed && (

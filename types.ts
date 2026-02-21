@@ -19,7 +19,7 @@ export interface UserProfile {
   address?: string;
   dateOfJoining?: string;
   position?: string;
-  status?: 'Active' | 'Inactive';
+  status?: 'Active' | 'Inactive' | 'Pending Approval';
   gender?: 'Male' | 'Female' | 'Other';
   leaveAdjustment?: number; // Manual correction for leave balance
 }
@@ -32,7 +32,7 @@ export interface StaffDirectoryProfile {
   department: string;
   position?: string;
   phoneNumber?: string; // Optional, maybe business phone?
-  status?: 'Active' | 'Inactive';
+  status?: 'Active' | 'Inactive' | 'Pending Approval';
   photoURL?: string;
   gender?: 'Male' | 'Female' | 'Other';
   dateOfJoining?: string; // Often harmless, but can be omitted if super strict
@@ -71,7 +71,8 @@ export enum TaskStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   HALTED = 'HALTED',
   UNDER_REVIEW = 'UNDER_REVIEW',
-  COMPLETED = 'COMPLETED'
+  COMPLETED = 'COMPLETED',
+  ARCHIVED = 'ARCHIVED'
 }
 
 export enum TaskPriority {

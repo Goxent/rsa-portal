@@ -25,6 +25,7 @@ const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const StaffPage = lazy(() => import('./pages/StaffPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
+const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
 const SystemSettingsPage = lazy(() => import('./pages/SystemSettingsPage'));
 const PerformancePage = lazy(() => import('./pages/PerformancePage'));
 const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage'));
@@ -58,6 +59,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // User must be logged in
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Block users pending approval
+  if (user.status === 'Pending Approval') {
+    return <Navigate to="/pending-approval" replace />;
   }
 
   // Check if profile setup is complete
@@ -136,6 +142,16 @@ const App: React.FC = () => {
                     element={
                       <ProfileSetupRoute>
                         <VerifyEmailPage />
+                      </ProfileSetupRoute>
+                    }
+                  />
+
+                  {/* Pending Approval Page */}
+                  <Route
+                    path="/pending-approval"
+                    element={
+                      <ProfileSetupRoute>
+                        <LazyPage><PendingApprovalPage /></LazyPage>
                       </ProfileSetupRoute>
                     }
                   />
