@@ -5,7 +5,8 @@ import {
     LayoutGrid, List as ListIcon, CheckSquare,
     MoreHorizontal, ChevronDown, Clock,
     MessageSquare, Paperclip, CheckCircle2,
-    Calendar, AlertCircle, Plus, X, Check
+    Calendar, AlertCircle, Plus, X, Check,
+    Tag, ShieldAlert, Lock
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile, UserRole } from '../../types';
 
@@ -104,9 +105,16 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Task Name & Client */}
+                                {/* Task Name & Client & Tags */}
                                 <div className="min-w-0 pr-4">
-                                    <h4 className="text-sm font-bold text-white truncate group-hover:text-blue-400 transition-colors">{task.title}</h4>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="text-sm font-bold text-white truncate group-hover:text-blue-400 transition-colors">{task.title}</h4>
+                                        {task.blockedBy && task.blockedBy.length > 0 && (
+                                            <div title="Blocked by other tasks" className="flex items-center">
+                                                <Lock size={12} className="text-amber-500 shrink-0" />
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[10px] text-indigo-400 font-bold tracking-wider uppercase bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 truncate max-w-[150px]">
                                             {task.clientName || 'Internal'}
@@ -114,7 +122,21 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                         <span className="text-[10px] text-gray-600 font-mono tracking-widest flex-shrink-0">
                                             #{task.id.toString().substring(0, 4).toUpperCase()}
                                         </span>
+                                        {task.totalTimeSpent ? (
+                                            <div className="flex items-center gap-1 text-[9px] text-blue-400 font-bold ml-2 shrink-0">
+                                                <Clock size={10} /> {task.totalTimeSpent}m
+                                            </div>
+                                        ) : null}
                                     </div>
+                                    {task.tags && task.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {task.tags.map(tag => (
+                                                <span key={tag} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-gray-400">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Assignees */}
@@ -246,8 +268,8 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             {/* subtle texture gradient backgound glow */}
                                                             <div className={`absolute -right-12 -top-12 w-32 h-32 rounded-full blur-3xl opacity-[0.15] pointer-events-none transition-all group-hover/card:opacity-[0.25] group-hover/card:scale-110 ${getStatusConfig(task.status).bg}`} />
 
-                                                            <div className="relative z-10 flex justify-between items-start gap-2 mb-4">
-                                                                <div className="flex items-center gap-3">
+                                                            <div className="relative z-10 flex justify-between items-start gap-2 mb-3">
+                                                                <div className="flex flex-wrap items-center gap-2">
                                                                     <div className="relative flex items-center justify-center">
                                                                         <input
                                                                             type="checkbox"
@@ -260,21 +282,43 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                         />
                                                                         {selectedTaskIds.includes(task.id) && <Check size={12} className="absolute text-white pointer-events-none" />}
                                                                     </div>
-                                                                    <span className={`text-[9px] font-black px-2.5 py-1 rounded bg-black/40 border uppercase tracking-wider ${getPriorityStyle(task.priority)}`}>
+                                                                    <span className={`text-[9px] font-black px-2.5 py-1 rounded bg-black/40 border uppercase tracking-wider ${getPriorityStyle(task.priority)} shrink-0`}>
                                                                         {task.priority}
                                                                     </span>
+                                                                    {task.blockedBy && task.blockedBy.length > 0 && (
+                                                                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[9px] px-1.5 py-1 rounded flex items-center gap-1 font-bold shrink-0">
+                                                                            <Lock size={10} /> {task.blockedBy.length}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                                <span className="text-[10px] font-black text-gray-500/50 font-mono tracking-widest group-hover/card:text-gray-400 transition-colors">
+                                                                <span className="text-[10px] font-black text-gray-500/50 font-mono tracking-widest group-hover/card:text-gray-400 transition-colors shrink-0">
                                                                     #{task.id.toString().substring(0, 4).toUpperCase()}
                                                                 </span>
                                                             </div>
 
-                                                            <h4 className="text-[15px] font-bold text-white mb-5 leading-snug group-hover/card:text-blue-100 transition-colors">{task.title}</h4>
+                                                            <h4 className="text-[15px] font-bold text-white mb-3 leading-snug group-hover/card:text-blue-100 transition-colors">{task.title}</h4>
+
+                                                            {task.tags && task.tags.length > 0 && (
+                                                                <div className="flex flex-wrap gap-1 mb-4">
+                                                                    {task.tags.map(tag => (
+                                                                        <span key={tag} className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/5 border border-white/10 text-gray-300">
+                                                                            {tag}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
 
                                                             <div className="flex items-center justify-between pt-4 border-t border-white/[0.04]">
-                                                                <div className="flex items-center gap-2 text-gray-400 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
-                                                                    <Calendar size={12} className="text-blue-400/70" />
-                                                                    <span className="text-[10px] font-bold">{task.dueDate}</span>
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex items-center gap-2 text-gray-400 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
+                                                                        <Calendar size={12} className="text-blue-400/70" />
+                                                                        <span className="text-[10px] font-bold">{task.dueDate}</span>
+                                                                    </div>
+                                                                    {task.totalTimeSpent ? (
+                                                                        <div className="flex items-center gap-1 text-[10px] text-blue-400 font-bold bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20" title="Time Logged">
+                                                                            <Clock size={10} /> {task.totalTimeSpent}m
+                                                                        </div>
+                                                                    ) : null}
                                                                 </div>
                                                                 <div className="flex -space-x-2">
                                                                     {task.assignedTo.slice(0, 3).map(uid => {

@@ -95,6 +95,7 @@ export interface SubTask {
   isCompleted: boolean;
   createdBy: string; // Name of user who added it
   createdAt: string;
+  assignedTo?: string; // NEW: Specific staff member assigned to this checklist item
 }
 
 export interface Task {
@@ -121,6 +122,11 @@ export interface Task {
   riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
   reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   comments?: TaskComment[];
+
+  // Advanced Workflow Features (TaxDome-style)
+  tags?: string[]; // Custom status/category tags
+  totalTimeSpent?: number; // Total minutes logged on this task
+  blockedBy?: string[]; // IDs of tasks that must be completed first
 }
 
 export interface TaskComment {

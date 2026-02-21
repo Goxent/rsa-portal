@@ -4,7 +4,8 @@ import {
     LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2,
     AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search,
     Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet,
-    FileText, User, Edit2, MoreVertical, Box, ChevronRight, Eye, Clock, Circle, Activity
+    FileText, User, Edit2, MoreVertical, Box, ChevronRight, Eye, Clock, Circle, Activity,
+    ArrowRight, Tag
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -64,6 +65,7 @@ const TasksPage: React.FC = () => {
     const [currentTask, setCurrentTask] = useState<Partial<Task>>({});
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
     const [dateMode, setDateMode] = useState<'AD' | 'BS'>('AD');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [formError, setFormError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -158,12 +160,12 @@ const TasksPage: React.FC = () => {
             // Mentions Notification Logic
             if (currentTask.description) {
                 usersList.forEach(u => {
-                    const mention = `@${u.displayName}`;
+                    const mention = `@${u.displayName} `;
                     if (currentTask.description?.includes(mention) && u.uid !== user?.uid) {
                         AuthService.createNotification({
                             userId: u.uid,
                             title: 'You were mentioned',
-                            message: `${user?.displayName || 'Someone'} mentioned you in task: ${currentTask.title}`,
+                            message: `${user?.displayName || 'Someone'} mentioned you in task: ${currentTask.title} `,
                             type: 'INFO',
                             category: 'TASK',
                             link: '/tasks'
@@ -229,7 +231,7 @@ const TasksPage: React.FC = () => {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`Delete ${selectedTaskIds.length} tasks?`)) return;
+        if (!window.confirm(`Delete ${selectedTaskIds.length} tasks ? `)) return;
         try {
             await Promise.all(selectedTaskIds.map(id => deleteTaskMutation.mutateAsync(id)));
             setSelectedTaskIds([]);
@@ -261,7 +263,7 @@ const TasksPage: React.FC = () => {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(180, 200, 230);
-        doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 40, { align: 'center' });
+        doc.text(`Generated: ${new Date().toLocaleString()} `, 105, 40, { align: 'center' });
 
         const rows = filteredTasks.map(t => [
             t.clientName || 'Internal',
@@ -304,7 +306,7 @@ const TasksPage: React.FC = () => {
             doc.setFontSize(7);
             doc.setTextColor(150, 160, 175);
             doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 8);
-            doc.text(`Page ${i} of ${pageCount}`, 196, doc.internal.pageSize.height - 8, { align: 'right' });
+            doc.text(`Page ${i} of ${pageCount} `, 196, doc.internal.pageSize.height - 8, { align: 'right' });
         }
 
         doc.save(`RSA_Tasks_${dateStr}.pdf`);
@@ -348,7 +350,7 @@ const TasksPage: React.FC = () => {
 
         sheet.mergeCells('A4:F4');
         const periodCell = sheet.getCell('A4');
-        periodCell.value = `Generated: ${new Date().toLocaleString()}`;
+        periodCell.value = `Generated: ${new Date().toLocaleString()} `;
         periodCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
         periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
         periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
@@ -460,7 +462,9 @@ const TasksPage: React.FC = () => {
                 createdAt: new Date().toISOString(),
                 createdBy: user?.uid || 'unknown'
             })),
-            dueDate: getCurrentDateUTC()
+            dueDate: getCurrentDateUTC(),
+            totalTimeSpent: 0, // Added totalTimeSpent
+            blockedBy: null, // Added blockedBy
         });
         setIsTemplateModalOpen(false);
         setIsModalOpen(true);
@@ -500,13 +504,13 @@ const TasksPage: React.FC = () => {
                             <div className="flex items-center bg-white/5 rounded-lg p-0.5 mt-1 border border-white/5">
                                 <button
                                     onClick={() => setBoardMode('ALL')}
-                                    className={`text-[10px] font-bold px-3 py-1 rounded-md transition-all ${boardMode === 'ALL' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                    className={`text - [10px] font - bold px - 3 py - 1 rounded - md transition - all ${boardMode === 'ALL' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'} `}
                                 >
                                     FIRM WIDE
                                 </button>
                                 <button
                                     onClick={() => setBoardMode('MY')}
-                                    className={`text-[10px] font-bold px-3 py-1 rounded-md transition-all ${boardMode === 'MY' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                    className={`text - [10px] font - bold px - 3 py - 1 rounded - md transition - all ${boardMode === 'MY' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'} `}
                                 >
                                     MY TASKS
                                 </button>
@@ -518,13 +522,13 @@ const TasksPage: React.FC = () => {
                         <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
                             <button
                                 onClick={() => setViewMode('KANBAN')}
-                                className={`px-4 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'KANBAN' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white'}`}
+                                className={`px - 4 py - 1.5 rounded - lg flex items - center gap - 2 text - xs font - bold transition - all ${viewMode === 'KANBAN' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white'} `}
                             >
                                 <LayoutGrid size={14} /> BOARD
                             </button>
                             <button
                                 onClick={() => setViewMode('LIST')}
-                                className={`px-4 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white'}`}
+                                className={`px - 4 py - 1.5 rounded - lg flex items - center gap - 2 text - xs font - bold transition - all ${viewMode === 'LIST' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white'} `}
                             >
                                 <ListIcon size={14} /> LIST
                             </button>
@@ -643,7 +647,7 @@ const TasksPage: React.FC = () => {
                                     onChange={(e) => setFilterVat(e.target.checked)}
                                     className="w-3.5 h-3.5 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-0"
                                 />
-                                <span className={`text-[10px] font-bold transition-colors ${filterVat ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400'}`}>VAT</span>
+                                <span className={`text - [10px] font - bold transition - colors ${filterVat ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400'} `}>VAT</span>
                             </label>
                             <div className="w-[1px] h-4 bg-white/10" />
                             <label className="flex items-center gap-2 cursor-pointer group">
@@ -653,7 +657,7 @@ const TasksPage: React.FC = () => {
                                     onChange={(e) => setFilterItr(e.target.checked)}
                                     className="w-3.5 h-3.5 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-0"
                                 />
-                                <span className={`text-[10px] font-bold transition-colors ${filterItr ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400'}`}>ITR</span>
+                                <span className={`text - [10px] font - bold transition - colors ${filterItr ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400'} `}>ITR</span>
                             </label>
                         </div>
                     </div>
@@ -702,11 +706,11 @@ const TasksPage: React.FC = () => {
                     <div className="glass-modal rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10 text-gray-100 overflow-hidden">
                         <div className="shrink-0 px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">
                             {/* Dynamic Accent Header based on Status */}
-                            <div className={`absolute top-0 left-0 w-full h-1 ${currentTask.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
-                                currentTask.status === TaskStatus.HALTED ? 'bg-rose-500' :
-                                    currentTask.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
-                                        currentTask.status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' : 'bg-gray-500'
-                                }`} />
+                            <div className={`absolute top - 0 left - 0 w - full h - 1 ${currentTask.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
+                                    currentTask.status === TaskStatus.HALTED ? 'bg-rose-500' :
+                                        currentTask.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
+                                            currentTask.status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' : 'bg-gray-500'
+                                } `} />
                             <div>
                                 <h3 className="text-xl font-black text-white tracking-wide uppercase flex items-center gap-2">
                                     {isEditMode ? <Edit2 size={18} className="text-blue-400" /> : <Plus size={18} className="text-blue-400" />}
@@ -789,13 +793,13 @@ const TasksPage: React.FC = () => {
                                             <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
                                                 <button
                                                     onClick={() => setDateMode('AD')}
-                                                    className={`px-2 py-0.5 rounded font-bold text-[9px] transition-all ${dateMode === 'AD' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'}`}
+                                                    className={`px - 2 py - 0.5 rounded font - bold text - [9px] transition - all ${dateMode === 'AD' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'} `}
                                                 >
                                                     AD
                                                 </button>
                                                 <button
                                                     onClick={() => setDateMode('BS')}
-                                                    className={`px-2 py-0.5 rounded font-bold text-[9px] transition-all ${dateMode === 'BS' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'}`}
+                                                    className={`px - 2 py - 0.5 rounded font - bold text - [9px] transition - all ${dateMode === 'BS' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'} `}
                                                 >
                                                     BS
                                                 </button>
@@ -818,7 +822,7 @@ const TasksPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-2 lg:col-span-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                             <UserCircle2 size={12} className="text-cyan-400" /> Assignees
                                         </label>
                                         <StaffSelect
@@ -827,6 +831,47 @@ const TasksPage: React.FC = () => {
                                             onChange={(val) => setCurrentTask({ ...currentTask, assignedTo: val as string[] })}
                                             multi={true}
                                         />
+                                    </div>
+
+                                    {/* Advanced Workflow: Dependencies & Time Tracking */}
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-1 lg:col-span-1 border-t-amber-500/20 border-t-2">
+                                        <label className="text-[10px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2 mb-2" title="Select tasks that must be completed before this one">
+                                            <ShieldAlert size={12} /> Blocked By
+                                        </label>
+                                        <select
+                                            multiple
+                                            className="w-full bg-black/40 text-sm font-bold text-gray-300 focus:outline-none p-2 rounded-xl custom-scrollbar"
+                                            value={currentTask.blockedBy || []}
+                                            onChange={(e) => {
+                                                const vals = Array.from(e.target.selectedOptions, option => option.value);
+                                                setCurrentTask({ ...currentTask, blockedBy: vals });
+                                            }}
+                                            style={{ minHeight: '80px' }}
+                                        >
+                                            <option value="" disabled className="text-gray-600 bg-[#0a0f1d]">- Select blockers -</option>
+                                            {tasks.filter(t => t.id !== currentTask.id).map(t => (
+                                                <option key={t.id} value={t.id} className="bg-[#0a0f1d] hover:bg-white/10 p-1 rounded mb-1">{t.title} (#{t.id.substring(0, 4)})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-1 lg:col-span-2 border-t-blue-500/20 border-t-2">
+                                        <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                            <Clock size={12} /> Time Logged (Minutes)
+                                        </label>
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className="w-32 bg-black/40 text-lg font-black text-white p-3 rounded-xl border border-white/5 focus:border-blue-500/50 focus:outline-none text-center"
+                                                value={currentTask.totalTimeSpent || ''}
+                                                onChange={(e) => setCurrentTask({ ...currentTask, totalTimeSpent: parseInt(e.target.value) || 0 })}
+                                                placeholder="0"
+                                            />
+                                            <span className="text-xs text-gray-500 font-bold max-w-[200px] leading-relaxed">
+                                                Track total time spent working on this task to gauge efficiency.
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -854,28 +899,50 @@ const TasksPage: React.FC = () => {
                                     {currentTask.subtasks && currentTask.subtasks.length > 0 && (
                                         <div className="space-y-2 mt-4">
                                             {currentTask.subtasks.map((st, i) => (
-                                                <div key={st.id} className="flex items-center justify-between p-3 bg-black/20 rounded-xl border border-white/5 group">
-                                                    <div className="flex items-center gap-3">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={st.isCompleted}
-                                                            onChange={(e) => {
-                                                                const updated = [...(currentTask.subtasks || [])];
-                                                                updated[i].isCompleted = e.target.checked;
-                                                                setCurrentTask({ ...currentTask, subtasks: updated });
-                                                            }}
-                                                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-0 focus:ring-offset-0 transition-all"
-                                                        />
-                                                        <span className={`text-sm ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>
-                                                            {st.title}
-                                                        </span>
+                                                <div key={st.id} className="flex flex-col gap-3 p-4 bg-black/20 rounded-xl border border-white/5 group">
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex items-start gap-3 flex-1 mt-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={st.isCompleted}
+                                                                onChange={(e) => {
+                                                                    const updated = [...(currentTask.subtasks || [])];
+                                                                    updated[i].isCompleted = e.target.checked;
+                                                                    setCurrentTask({ ...currentTask, subtasks: updated });
+                                                                }}
+                                                                className="w-5 h-5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-blue-500/50 cursor-pointer appearance-none checked:bg-blue-500 transition-colors mt-0.5 shrink-0 relative flex items-center justify-center after:content-['✓'] after:absolute after:text-white after:opacity-0 checked:after:opacity-100 after:text-sm after:font-bold"
+                                                            />
+                                                            <div className="flex flex-col gap-2 flex-1">
+                                                                <span className={`text - [14px] font - bold leading - tight ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-200 group-hover:text-blue-200 transition-colors'} `}>
+                                                                    {st.title}
+                                                                </span>
+                                                                {/* Assignee for Subtask */}
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <UserCircle2 size={14} className="text-gray-500" />
+                                                                    <select
+                                                                        className="bg-transparent text-xs font-bold text-gray-400 focus:text-white focus:outline-none cursor-pointer hover:text-gray-300"
+                                                                        value={st.assignedTo || ''}
+                                                                        onChange={(e) => {
+                                                                            const updated = [...(currentTask.subtasks || [])];
+                                                                            updated[i].assignedTo = e.target.value;
+                                                                            setCurrentTask({ ...currentTask, subtasks: updated });
+                                                                        }}
+                                                                    >
+                                                                        <option value="" className="bg-[#0a0f1d]">- Unassigned -</option>
+                                                                        {usersList.map((u) => (
+                                                                            <option key={u.uid} value={u.uid} className="bg-[#0a0f1d]">{u.displayName}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleRemoveSubtask(st.id)}
+                                                            className="text-gray-500 hover:text-rose-400 p-2 opacity-0 group-hover:opacity-100 transition-all bg-white/5 rounded-lg ml-4 shrink-0"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleRemoveSubtask(st.id)}
-                                                        className="text-gray-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all"
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
