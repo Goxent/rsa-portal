@@ -778,6 +778,7 @@ export const AuthService = {
                                 targetUser.displayName,
                                 comment.userName || 'A Colleague',
                                 task.title,
+                                task.clientName || 'Internal Project',
                                 commentText,
                                 `${window.location.origin}/#/tasks`
                             );
@@ -786,7 +787,7 @@ export const AuthService = {
                             await AuthService.createNotification({
                                 userId: targetUser.uid,
                                 title: 'You were mentioned',
-                                message: `${comment.userName} mentioned you in: ${task.title}`,
+                                message: `${comment.userName || 'A Colleague'} mentioned you in ${task.title} and ${task.clientName || 'Internal Project'} along with the message: "${commentText}"`,
                                 type: 'INFO',
                                 category: 'TASK',
                                 link: '/tasks'

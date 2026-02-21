@@ -183,7 +183,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
-    sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, commentText: string, taskLink: string) => {
+    sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, clientName: string, commentText: string, taskLink: string) => {
         const subject = `Mentioned in Comment: ${taskTitle}`;
         const html = `
         <!DOCTYPE html>
@@ -199,7 +199,7 @@ export const EmailService = {
                 <!-- Content -->
                 <div style="padding: 40px;">
                     <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                    <p style="color: #475569; line-height: 1.6;"><strong>${authorName}</strong> mentioned you in a comment on task <strong>${taskTitle}</strong>.</p>
+                    <p style="color: #475569; line-height: 1.6;"><strong>${authorName}</strong> mentioned you in <strong>${taskTitle}</strong> and <strong>${clientName}</strong> along with the message:</p>
 
                     <div style="background-color: #f5f3ff; border-left: 4px solid #8b5cf6; border-radius: 4px; padding: 24px; margin: 24px 0;">
                         <p style="margin: 0; color: #4c1d95; font-style: italic; font-size: 15px;">"${commentText}"</p>
