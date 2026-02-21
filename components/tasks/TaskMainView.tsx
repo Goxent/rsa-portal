@@ -8,7 +8,8 @@ import {
     Calendar, AlertCircle, Plus, X, Check,
     Tag
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, UserRole } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserProfile, UserRole, Client } from '../../types';
+import { SIGNING_AUTHORITIES } from '../../constants/firmData';
 import TaskCard from './TaskCard';
 
 interface TaskMainViewProps {
@@ -24,6 +25,7 @@ interface TaskMainViewProps {
     onToggleSelection: (taskId: string) => void;
     groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE';
     onQuickAdd: (status: TaskStatus, title: string) => Promise<void>;
+    clientsList: Client[];
 }
 
 // WIP Limits Configuration
@@ -50,7 +52,8 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     selectedTaskIds,
     onToggleSelection,
     groupBy,
-    onQuickAdd
+    onQuickAdd,
+    clientsList
 }) => {
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
     const [quickAddTitle, setQuickAddTitle] = React.useState('');
@@ -213,19 +216,32 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     // Kanban Logic
     const kanbanColumns = groupBy === 'NONE'
         ? [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED, TaskStatus.ARCHIVED]
-        : usersList.filter(u => groupBy === 'AUDITOR' ? u.role === UserRole.ADMIN : true).map(u => u.uid);
+        : groupBy === 'AUDITOR'
+            ? SIGNING_AUTHORITIES
+            : usersList.filter(u => u.role !== UserRole.ADMIN).map(u => u.uid); // Exclude top admins from staff group if desired, or keep all
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
             <div className={`flex-1 overflow-x-auto p-6 h-full ${groupBy === 'NONE' ? 'grid grid-cols-6 min-w-[1200px] gap-4' : 'flex gap-6'} items-start custom-scrollbar`}>
                 {kanbanColumns.map(col => {
                     const status = groupBy === 'NONE' ? col as TaskStatus : null;
-                    const userId = groupBy !== 'NONE' ? col as string : null;
+                    const userId = groupBy === 'ASSIGNEE' ? col as string : null;
+                    const auditorName = groupBy === 'AUDITOR' ? col as string : null;
                     const user = userId ? usersList.find(u => u.uid === userId) : null;
 
-                    const title = status ? status.replace('_', ' ') : user?.displayName || 'Unknown';
+                    const title = status ? status.replace('_', ' ') : userId ? (user?.displayName || 'Unknown') : auditorName;
                     const isCollapsed = status ? collapsedColumns.includes(status) : false;
-                    const columnTasks = tasks.filter(t => status ? t.status === status : t.assignedTo.includes(userId!));
+
+                    const columnTasks = tasks.filter(t => {
+                        if (status) return t.status === status;
+                        if (userId) return t.assignedTo.includes(userId);
+                        if (auditorName) {
+                            const taskClient = clientsList.find(c => t.clientIds && t.clientIds.includes(c.id));
+                            return taskClient?.signingAuthority === auditorName;
+                        }
+                        return false;
+                    });
+
                     const config = status ? getStatusConfig(status) : { color: 'text-blue-400', bg: 'bg-blue-400' };
 
                     return (

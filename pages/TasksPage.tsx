@@ -81,7 +81,7 @@ const TasksPage: React.FC = () => {
     const [groupBy, setGroupBy] = useState<'NONE' | 'AUDITOR' | 'ASSIGNEE'>(() => (localStorage.getItem('rsa_filter_groupby') as any) || 'NONE');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStaff, setFilterStaff] = useState<string>(() => localStorage.getItem('rsa_filter_staff') || 'ALL');
-    const [filterSignee, setFilterSignee] = useState<string>(() => localStorage.getItem('rsa_filter_signee') || 'ALL');
+    const [filterAuditor, setFilterAuditor] = useState<string>(() => localStorage.getItem('rsa_filter_auditor') || 'ALL');
     const [filterVat, setFilterVat] = useState<boolean>(() => localStorage.getItem('rsa_filter_vat') === 'true');
     const [filterItr, setFilterItr] = useState<boolean>(() => localStorage.getItem('rsa_filter_itr') === 'true');
     const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
@@ -92,7 +92,7 @@ const TasksPage: React.FC = () => {
     useEffect(() => { localStorage.setItem('rsa_filter_client', filterClient); }, [filterClient]);
     useEffect(() => { localStorage.setItem('rsa_filter_groupby', groupBy); }, [groupBy]);
     useEffect(() => { localStorage.setItem('rsa_filter_staff', filterStaff); }, [filterStaff]);
-    useEffect(() => { localStorage.setItem('rsa_filter_signee', filterSignee); }, [filterSignee]);
+    useEffect(() => { localStorage.setItem('rsa_filter_auditor', filterAuditor); }, [filterAuditor]);
     useEffect(() => { localStorage.setItem('rsa_filter_vat', String(filterVat)); }, [filterVat]);
     useEffect(() => { localStorage.setItem('rsa_filter_itr', String(filterItr)); }, [filterItr]);
 
@@ -120,7 +120,7 @@ const TasksPage: React.FC = () => {
         setFilterStatus(filter.filterStatus || 'ALL');
         setFilterStaff(filter.filterStaff || 'ALL');
         setFilterClient(filter.filterClient || 'ALL');
-        setFilterSignee(filter.filterSignee || 'ALL');
+        setFilterAuditor(filter.filterAuditor || 'ALL');
         setFilterVat(!!filter.filterVat);
         setFilterItr(!!filter.filterItr);
         setDateRange(filter.dateRange || { start: '', end: '' });
@@ -138,12 +138,12 @@ const TasksPage: React.FC = () => {
         if (filterClient !== 'ALL' && !t.clientIds?.includes(filterClient)) return false;
 
         // Advanced Filters
-        if (filterSignee !== 'ALL' || filterVat || filterItr) {
+        if (filterAuditor !== 'ALL' || filterVat || filterItr) {
             const taskClient = clientsList.find(c => t.clientIds && t.clientIds.includes(c.id));
             if (!taskClient) return false;
             if (filterVat && !taskClient.vatReturn) return false;
             if (filterItr && !taskClient.itrReturn) return false;
-            if (filterSignee !== 'ALL' && taskClient.signingAuthority !== filterSignee) return false;
+            if (filterAuditor !== 'ALL' && taskClient.signingAuthority !== filterAuditor) return false;
         }
 
         return true;
@@ -689,10 +689,10 @@ const TasksPage: React.FC = () => {
                                     <button onClick={() => setFilterClient('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
                                 </div>
                             )}
-                            {filterSignee !== 'ALL' && (
+                            {filterAuditor !== 'ALL' && (
                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/10 border border-violet-500/20 rounded-full text-[11px] font-bold text-violet-400">
-                                    Signee: {filterSignee}
-                                    <button onClick={() => setFilterSignee('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
+                                    Auditor: {filterAuditor}
+                                    <button onClick={() => setFilterAuditor('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
                                 </div>
                             )}
                             {filterVat && (
@@ -720,7 +720,7 @@ const TasksPage: React.FC = () => {
                                     setFilterPriority('ALL');
                                     setFilterStaff('ALL');
                                     setFilterClient('ALL');
-                                    setFilterSignee('ALL');
+                                    setFilterAuditor('ALL');
                                     setFilterVat(false);
                                     setFilterItr(false);
                                     setDateRange({ start: '', end: '' });
@@ -747,7 +747,7 @@ const TasksPage: React.FC = () => {
                         >
                             <option value="NONE" className="bg-[#0f172a]">Group: None</option>
                             <option value="AUDITOR" className="bg-[#0f172a]">Group by: Auditor</option>
-                            <option value="ASSIGNEE" className="bg-[#0f172a]">Group by: Assignee</option>
+                            <option value="ASSIGNEE" className="bg-[#0f172a]">Group by: Staff</option>
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
                     </div>
@@ -778,11 +778,11 @@ const TasksPage: React.FC = () => {
 
                     <div className="relative group/select">
                         <select
-                            value={filterSignee}
-                            onChange={(e) => setFilterSignee(e.target.value)}
+                            value={filterAuditor}
+                            onChange={(e) => setFilterAuditor(e.target.value)}
                             className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
                         >
-                            <option value="ALL" className="bg-[#0f172a]">Signee: All</option>
+                            <option value="ALL" className="bg-[#0f172a]">Auditor: All</option>
                             {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#0f172a]">{s}</option>)}
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
@@ -819,6 +819,7 @@ const TasksPage: React.FC = () => {
                     onDragEnd={onDragEnd}
                     handleOpenEdit={handleOpenEdit}
                     usersList={usersList}
+                    clientsList={clientsList}
                     collapsedColumns={collapsedColumns}
                     toggleColumnCollapse={(status) => setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
                     selectedTaskId={selectedTaskId}

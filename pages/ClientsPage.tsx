@@ -30,7 +30,7 @@ const ClientsPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterService, setFilterService] = useState('ALL');
-    const [filterSigningAuthority, setFilterSigningAuthority] = useState('ALL');
+    const [filterAuditorFirm, setFilterAuditorFirm] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
@@ -326,8 +326,8 @@ const ClientsPage: React.FC = () => {
             c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.pan?.includes(searchTerm);
         const matchesService = filterService === 'ALL' || c.serviceType === filterService;
-        const matchesSignee = filterSigningAuthority === 'ALL' || c.signingAuthority === filterSigningAuthority;
-        return matchesSearch && matchesService && matchesSignee;
+        const matchesAuditor = filterAuditorFirm === 'ALL' || c.signingAuthority === filterAuditorFirm;
+        return matchesSearch && matchesService && matchesAuditor;
     });
 
     const getAuditorName = (id?: string) => {
@@ -417,8 +417,8 @@ const ClientsPage: React.FC = () => {
 
                     <select
                         className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500"
-                        value={filterSigningAuthority}
-                        onChange={(e) => setFilterSigningAuthority(e.target.value)}
+                        value={filterAuditorFirm}
+                        onChange={(e) => setFilterAuditorFirm(e.target.value)}
                     >
                         <option value="ALL">All Auditors</option>
                         <option value="R. Sapkota & Associates">R. Sapkota & Associates</option>
@@ -551,7 +551,7 @@ const ClientsPage: React.FC = () => {
                                             <BadgeCheck size={12} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Signing Authority</p>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Auditor (Firm)</p>
                                             <p className="text-xs text-gray-300 font-medium">{getSigningAuthorityName(client)}</p>
                                         </div>
                                     </div>
@@ -678,7 +678,7 @@ const ClientsPage: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Signing Authority</label>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Auditor (Signing Authority)</label>
                                         <div className="grid grid-cols-1 gap-2">
                                             <select
                                                 className="w-full glass-input rounded-lg px-4 py-2.5 text-sm appearance-none"
@@ -698,11 +698,10 @@ const ClientsPage: React.FC = () => {
                                                 <option value="NP Sharma & Co.">NP Sharma & Co.</option>
                                                 <option value="Others">Others (Manual Entry)</option>
                                             </select>
-
                                             {(!['R. Sapkota & Associates', 'TN Acharya & Co.', 'Pankaj Thapa Associates', 'NP Sharma & Co.'].includes(formData.signingAuthority || '') || formData.signingAuthority === '') && (
                                                 <input
                                                     type="text"
-                                                    placeholder="Enter Signing Authority Name"
+                                                    placeholder="Enter Auditor Name"
                                                     className="w-full glass-input rounded-lg px-4 py-2.5 text-sm animate-in fade-in slide-in-from-top-2"
                                                     value={formData.signingAuthority}
                                                     onChange={e => setFormData({ ...formData, signingAuthority: e.target.value, signingAuthorityId: '' })}
