@@ -243,6 +243,12 @@ const Dashboard: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            {/* Attendance Widget - Moved to Top */}
+            <div className="w-full relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-500/10 to-transparent rounded-2xl blur-xl -z-10 opacity-50"></div>
+                <AttendanceWidget />
+            </div>
+
             {/* Greetings & Focus Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
@@ -268,9 +274,6 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-
-            {/* Attendance Widget - Always Top */}
-            <AttendanceWidget />
 
             {/* Widget Container */}
             {user && (
