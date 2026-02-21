@@ -782,12 +782,12 @@ export const AuthService = {
                 link: '/tasks'
             });
 
-            // 2. Email Notification (Branded)
+            // 2. Email Notification (Branded) - ONLY on Completion
             try {
                 const userDoc = await getDoc(doc(db, 'users', uid));
                 if (userDoc.exists()) {
                     const userData = userDoc.data() as UserProfile;
-                    if (userData.email) {
+                    if (userData.email && newStatus === TaskStatus.COMPLETED) {
                         await EmailService.sendWorkflowStatusChange(
                             userData.email,
                             userData.displayName,

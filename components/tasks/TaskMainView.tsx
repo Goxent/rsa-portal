@@ -27,11 +27,12 @@ interface TaskMainViewProps {
 }
 
 // WIP Limits Configuration
+// WIP Limits Configuration - Set to 0 to remove limits
 const WIP_LIMITS: Record<string, number> = {
-    [TaskStatus.NOT_STARTED]: 0, // No limit
-    [TaskStatus.IN_PROGRESS]: 5,
-    [TaskStatus.UNDER_REVIEW]: 3,
-    [TaskStatus.HALTED]: 2,
+    [TaskStatus.NOT_STARTED]: 0,
+    [TaskStatus.IN_PROGRESS]: 0,
+    [TaskStatus.UNDER_REVIEW]: 0,
+    [TaskStatus.HALTED]: 0,
     [TaskStatus.COMPLETED]: 0,
     [TaskStatus.ARCHIVED]: 0
 };
@@ -90,7 +91,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     if (viewMode === 'LIST') {
         return (
-            <div className="flex-1 overflow-x-auto overflow-y-auto p-6 md:p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar h-full">
                 <div className="min-w-[1000px] w-full max-w-7xl mx-auto">
                     {/* Header Row */}
                     <div className="grid grid-cols-[auto_1fr_150px_120px_100px_120px] gap-4 px-6 py-4 bg-slate-800/50 border border-white/10 rounded-t-2xl text-[11px] font-bold text-slate-400 uppercase tracking-widest sticky top-0 backdrop-blur-md z-10 transition-colors">
@@ -216,7 +217,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className={`flex-1 overflow-hidden p-6 h-full ${groupBy === 'NONE' ? 'grid grid-cols-5 gap-4' : 'flex overflow-x-auto gap-6'} items-start`}>
+            <div className={`flex-1 overflow-x-auto p-6 h-full ${groupBy === 'NONE' ? 'grid grid-cols-6 min-w-[1200px] gap-4' : 'flex gap-6'} items-start custom-scrollbar`}>
                 {kanbanColumns.map(col => {
                     const status = groupBy === 'NONE' ? col as TaskStatus : null;
                     const userId = groupBy !== 'NONE' ? col as string : null;
@@ -233,7 +234,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`flex flex-col rounded-2xl shrink-0 transition-all duration-300 h-full max-h-[calc(100vh-200px)] ${groupBy === 'NONE'
+                                    className={`flex flex-col rounded-2xl shrink-0 transition-all duration-300 h-full max-h-[calc(100vh-180px)] ${groupBy === 'NONE'
                                         ? (isCollapsed ? 'w-14 items-center bg-transparent' : 'w-full min-w-0 flex-1')
                                         : (isCollapsed ? 'w-14 items-center bg-transparent' : 'w-[320px]')
                                         } ${snapshot.isDraggingOver ? 'bg-slate-800/30' : ''}`}
@@ -248,12 +249,9 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                             <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">{title}</h3>
                                             {!isCollapsed && (
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${status && WIP_LIMITS[status] && columnTasks.length > WIP_LIMITS[status] ? 'bg-amber-500 text-black animate-pulse' : 'bg-slate-800 text-slate-400'}`}>
-                                                        {columnTasks.length}{status && WIP_LIMITS[status] ? ` / ${WIP_LIMITS[status]}` : ''}
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                                                        {columnTasks.length}
                                                     </span>
-                                                    {status && WIP_LIMITS[status] && columnTasks.length > WIP_LIMITS[status] && (
-                                                        <AlertCircle size={12} className="text-amber-500" />
-                                                    )}
                                                 </div>
                                             )}
                                         </div>
