@@ -464,7 +464,6 @@ const TasksPage: React.FC = () => {
             })),
             dueDate: getCurrentDateUTC(),
             totalTimeSpent: 0, // Added totalTimeSpent
-            blockedBy: null, // Added blockedBy
         });
         setIsTemplateModalOpen(false);
         setIsModalOpen(true);
@@ -707,9 +706,9 @@ const TasksPage: React.FC = () => {
                         <div className="shrink-0 px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">
                             {/* Dynamic Accent Header based on Status */}
                             <div className={`absolute top - 0 left - 0 w - full h - 1 ${currentTask.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
-                                    currentTask.status === TaskStatus.HALTED ? 'bg-rose-500' :
-                                        currentTask.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
-                                            currentTask.status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' : 'bg-gray-500'
+                                currentTask.status === TaskStatus.HALTED ? 'bg-rose-500' :
+                                    currentTask.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
+                                        currentTask.status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' : 'bg-gray-500'
                                 } `} />
                             <div>
                                 <h3 className="text-xl font-black text-white tracking-wide uppercase flex items-center gap-2">
@@ -833,29 +832,8 @@ const TasksPage: React.FC = () => {
                                         />
                                     </div>
 
-                                    {/* Advanced Workflow: Dependencies & Time Tracking */}
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-1 lg:col-span-1 border-t-amber-500/20 border-t-2">
-                                        <label className="text-[10px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2 mb-2" title="Select tasks that must be completed before this one">
-                                            <ShieldAlert size={12} /> Blocked By
-                                        </label>
-                                        <select
-                                            multiple
-                                            className="w-full bg-black/40 text-sm font-bold text-gray-300 focus:outline-none p-2 rounded-xl custom-scrollbar"
-                                            value={currentTask.blockedBy || []}
-                                            onChange={(e) => {
-                                                const vals = Array.from(e.target.selectedOptions, option => option.value);
-                                                setCurrentTask({ ...currentTask, blockedBy: vals });
-                                            }}
-                                            style={{ minHeight: '80px' }}
-                                        >
-                                            <option value="" disabled className="text-gray-600 bg-[#0a0f1d]">- Select blockers -</option>
-                                            {tasks.filter(t => t.id !== currentTask.id).map(t => (
-                                                <option key={t.id} value={t.id} className="bg-[#0a0f1d] hover:bg-white/10 p-1 rounded mb-1">{t.title} (#{t.id.substring(0, 4)})</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-1 lg:col-span-2 border-t-blue-500/20 border-t-2">
+                                    {/* Advanced Workflow: Time Tracking */}
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-2 lg:col-span-4 border-t-blue-500/20 border-t-2">
                                         <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                             <Clock size={12} /> Time Logged (Minutes)
                                         </label>

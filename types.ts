@@ -126,7 +126,6 @@ export interface Task {
   // Advanced Workflow Features (TaxDome-style)
   tags?: string[]; // Custom status/category tags
   totalTimeSpent?: number; // Total minutes logged on this task
-  blockedBy?: string[]; // IDs of tasks that must be completed first
 }
 
 export interface TaskComment {
