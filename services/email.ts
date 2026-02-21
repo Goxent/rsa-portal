@@ -211,12 +211,65 @@ export const EmailService = {
 
                     <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
                         <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
+                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
                     </div>
                 </div>
 
                 <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R.Sapkota & Associates. All rights reserved.</p>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+    },
+
+    sendWorkflowStatusChange: async (toEmail: string, userName: string, taskTitle: string, oldStatus: string, newStatus: string, taskLink: string) => {
+        const subject = `Task Status Update: ${taskTitle} is now ${newStatus.replace('_', ' ')}`;
+        const html = `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                <!-- Header -->
+                <div style="background-color: #1e293b; padding: 40px 32px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 0.5px;">RSA System</h1>
+                    <p style="color: #94a3b8; margin: 12px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;">Workflow Update</p>
+                </div>
+
+                <!-- Content -->
+                <div style="padding: 48px 40px 32px 40px;">
+                    <p style="color: #475569; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
+                    <p style="color: #475569; line-height: 1.6; font-size: 15px; margin-bottom: 32px;">The status of your task <strong>"${taskTitle}"</strong> has been updated.</p>
+
+                    <!-- Status Change Card -->
+                    <div style="background-color: #f8fafc; border-radius: 8px; padding: 24px; margin-bottom: 40px; text-align: center; border: 1px solid #e2e8f0;">
+                        <div style="display: inline-block; vertical-align: middle;">
+                            <span style="display: block; color: #64748b; font-size: 12px; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">From</span>
+                            <span style="background-color: #f1f5f9; color: #475569; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700;">${oldStatus.replace('_', ' ')}</span>
+                        </div>
+                        <div style="display: inline-block; vertical-align: middle; margin: 0 24px;">
+                            <span style="color: #94a3b8; font-size: 24px;">&rarr;</span>
+                        </div>
+                        <div style="display: inline-block; vertical-align: middle;">
+                            <span style="display: block; color: #3b82f6; font-size: 12px; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">To</span>
+                            <span style="background-color: #dbeafe; color: #1d4ed8; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700;">${newStatus.replace('_', ' ')}</span>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 40px;">
+                        <a href="${taskLink}" style="background-color: #3b82f6; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.25);">Review Task Progress</a>
+                    </div>
+
+                    <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
+                        <p style="color: #64748b; font-size: 15px; margin: 0;">Best regards,</p>
+                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 8px 0 0 0;">R. Sapkota & Associates</p>
+                    </div>
+                </div>
+
+                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
                 </div>
             </div>
         </body>

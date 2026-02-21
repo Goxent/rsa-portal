@@ -1,6 +1,6 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Clock, Calendar, Check, Tag, MoreHorizontal, MessageSquare, Paperclip } from 'lucide-react';
+import { Clock, Calendar, Check, Tag, MoreHorizontal, MessageSquare, Paperclip, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { Task, TaskPriority, UserProfile, TaskStatus } from '../../types';
 
 interface TaskCardProps {
@@ -61,111 +61,92 @@ const TaskCard: React.FC<TaskCardProps> = ({
                         ${isSelected ? 'ring-2 ring-cyan-500/50 border-cyan-500/30' : 'border-slate-200 dark:border-slate-700/50 hover:border-blue-500/30 dark:hover:border-slate-500/50'}
                         ${isOverdue ? 'border-l-4 border-l-rose-500 dark:border-l-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : ''}`}
                 >
-                    {/* Priority Bar Indicator (if not overdue which overrides left border) */}
-                    {!isOverdue && (
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor(task.priority)}`} />
-                    )}
+                    {/* Priority Lead Bar */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor(task.priority)} shadow-[2px_0_10px_-2px_rgba(0,0,0,0.3)]`} />
 
-                    {/* Header: Select Checkbox, Priority, ID, Hover actions */}
-                    <div className="relative z-10 flex justify-between items-start gap-2 mb-2">
+                    {/* Header: Select Checkbox, Priority, ID */}
+                    <div className="relative z-10 flex justify-between items-start gap-2 mb-3">
                         <div className="flex flex-wrap items-center gap-2">
-                            <div className={`relative flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity ${isSelected ? '!opacity-100' : ''}`}>
-                                <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                        e.stopPropagation();
-                                        onToggleSelection(task.id);
-                                    }}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-500 cursor-pointer appearance-none checked:bg-blue-500 transition-colors"
-                                />
-                                {isSelected && <Check size={10} className="absolute text-white pointer-events-none" />}
+                            <div
+                                className={`relative flex items-center justify-center w-5 h-5 rounded hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer ${isSelected ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleSelection(task.id);
+                                }}
+                            >
+                                <div className={`w-3.5 h-3.5 border rounded transition-all flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500 shadow-lg shadow-blue-500/20' : 'border-slate-300 dark:border-slate-600 bg-white/50 dark:bg-slate-900/50'}`}>
+                                    {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
+                                </div>
                             </div>
 
-                            {/* Priority Dot & Label */}
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider flex items-center gap-1 ${getPriorityStyle(task.priority)} shrink-0`}>
-                                <div className={`w-1.5 h-1.5 rounded-full ${getPriorityColor(task.priority)}`} />
+                            {/* Priority Badge */}
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider flex items-center gap-1.5 ${getPriorityStyle(task.priority)}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${getPriorityColor(task.priority)} shadow-sm shrink-0`} />
                                 {task.priority}
                             </span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-slate-500 font-mono tracking-widest group-hover/card:text-slate-400 transition-colors shrink-0">
+                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 font-mono tracking-widest group-hover/card:text-blue-500 transition-colors">
                                 #{task.id.toString().substring(0, 4).toUpperCase()}
                             </span>
-                            <button className="opacity-0 group-hover/card:opacity-100 p-1 text-slate-400 hover:text-white transition-opacity hidden md:block" onClick={(e) => { e.stopPropagation(); /* Context Menu Hook Placeholder */ }}>
-                                <MoreHorizontal size={14} />
-                            </button>
                         </div>
                     </div>
 
-                    <h4 className="text-[14px] font-bold text-slate-800 dark:text-slate-100 mb-2 leading-relaxed group-hover/card:text-blue-600 dark:group-hover/card:text-white transition-colors pl-1 cursor-pointer line-clamp-2">
+                    <h4 className="text-[14px] font-bold text-slate-900 dark:text-slate-100 mb-3 leading-snug group-hover/card:text-blue-600 dark:group-hover/card:text-blue-400 transition-colors cursor-pointer">
                         {task.title}
                     </h4>
 
-                    {/* Client Label and Tags and Comments (Middle row) */}
-                    <div className="flex flex-wrap items-center gap-1.5 mb-3 pl-1">
+                    {/* Metadata: Client & Progress */}
+                    <div className="space-y-3 pl-0.5">
                         {task.clientName && (
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 max-w-[120px] truncate">
-                                {task.clientName}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                                <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-white/5 truncate">
+                                    <Tag size={10} className="text-slate-400" />
+                                    {task.clientName}
+                                </div>
+                            </div>
                         )}
-                        {task.tags?.map(tag => (
-                            <span key={tag} className="flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/50 border border-transparent text-slate-500 dark:text-slate-300">
-                                <Tag size={8} /> {tag}
-                            </span>
-                        ))}
-                        {task.comments && task.comments.length > 0 && (
-                            <span className="flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400">
-                                <MessageSquare size={10} /> {task.comments.length}
-                            </span>
-                        )}
-                        {task.attachments && task.attachments.length > 0 && (
-                            <span className="flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400">
-                                <Paperclip size={10} /> {task.attachments.length}
-                            </span>
+
+                        {/* Subtask Progress Bar - Premium Version */}
+                        {subtaskTotal > 0 && (
+                            <div className="group/progress">
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <CheckCircle2 size={10} className={progressPercent === 100 ? 'text-emerald-500' : 'text-slate-400'} />
+                                        <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{subtaskCompleted}/{subtaskTotal} Tasks</span>
+                                    </div>
+                                    <span className="text-[9px] font-black text-blue-500 dark:text-blue-400">{Math.round(progressPercent)}%</span>
+                                </div>
+                                <div className="w-full h-1 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden border border-slate-200/50 dark:border-white/5 shadow-inner">
+                                    <div
+                                        className={`h-full transition-all duration-700 ease-out relative ${progressPercent === 100 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]'}`}
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+                                </div>
+                            </div>
                         )}
                     </div>
 
-                    {/* Subtask Progress Bar */}
-                    {subtaskTotal > 0 && (
-                        <div className="mb-3 px-1">
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{subtaskCompleted}/{subtaskTotal} Subtasks</span>
-                                <span className="text-[9px] font-bold text-slate-500">{Math.round(progressPercent)}%</span>
-                            </div>
-                            <div className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${progressPercent}%` }} />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Footer: Due Date, Time, Assignees */}
-                    <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-100 dark:border-slate-700/50">
-                        <div className="flex items-center gap-2">
-                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${isOverdue ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20' : 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-                                <Calendar size={11} className={isOverdue ? 'text-rose-500' : 'text-slate-400'} />
-                                <span className="text-[10px] font-semibold">{isOverdue ? "Overdue" : task.dueDate}</span>
-                            </div>
-                            {task.totalTimeSpent ? (
-                                <div className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded border border-blue-200 dark:border-blue-500/20" title="Time Logged">
-                                    <Clock size={10} /> {task.totalTimeSpent}m
-                                </div>
-                            ) : null}
+                    {/* Footer: Date & Assignees */}
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-white/5">
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${isOverdue ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20 shadow-sm shadow-rose-500/5' : 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/5'}`}>
+                            <Calendar size={11} className={isOverdue ? 'text-rose-500 animate-pulse' : 'text-slate-400'} />
+                            <span className="text-[10px] font-bold">{isOverdue ? "Overdue" : task.dueDate}</span>
                         </div>
 
-                        {/* Assignee Avatars */}
-                        <div className="flex -space-x-1.5">
+                        {/* Staff Avatar Stack */}
+                        <div className="flex -space-x-2">
                             {task.assignedTo.slice(0, 3).map(uid => {
                                 const u = usersList.find(x => x.uid === uid);
                                 return (
-                                    <div key={uid} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[9px] font-bold text-slate-600 dark:text-slate-200 shadow-sm" title={u?.displayName}>
+                                    <div key={uid} className="w-7 h-7 rounded-full bg-white dark:bg-slate-800 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center text-[10px] font-black text-slate-600 dark:text-blue-400 ring-1 ring-slate-200 dark:ring-white/10" title={u?.displayName}>
                                         {u?.displayName ? u.displayName.substring(0, 1).toUpperCase() : '?'}
                                     </div>
                                 );
                             })}
                             {task.assignedTo.length > 3 && (
-                                <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-400 shadow-sm">
+                                <div className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-700 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center text-[9px] font-black text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-white/10">
                                     +{task.assignedTo.length - 3}
                                 </div>
                             )}

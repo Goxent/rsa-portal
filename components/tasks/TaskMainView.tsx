@@ -26,7 +26,16 @@ interface TaskMainViewProps {
     onQuickAdd: (status: TaskStatus, title: string) => Promise<void>;
 }
 
-// Removed WIP Limits
+// WIP Limits Configuration
+const WIP_LIMITS: Record<string, number> = {
+    [TaskStatus.NOT_STARTED]: 0, // No limit
+    [TaskStatus.IN_PROGRESS]: 5,
+    [TaskStatus.UNDER_REVIEW]: 3,
+    [TaskStatus.HALTED]: 2,
+    [TaskStatus.COMPLETED]: 0,
+    [TaskStatus.ARCHIVED]: 0
+};
+
 
 const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode,
@@ -44,6 +53,13 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 }) => {
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
     const [quickAddTitle, setQuickAddTitle] = React.useState('');
+
+    // Persist collapsed columns to localStorage
+    React.useEffect(() => {
+        if (groupBy === 'NONE') {
+            localStorage.setItem('kanban_collapsed_columns', JSON.stringify(collapsedColumns));
+        }
+    }, [collapsedColumns, groupBy]);
 
     const handleQuickAddSubmit = async (status: TaskStatus) => {
         if (!quickAddTitle.trim()) return;
@@ -232,9 +248,12 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                             <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">{title}</h3>
                                             {!isCollapsed && (
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-                                                        {columnTasks.length}
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${status && WIP_LIMITS[status] && columnTasks.length > WIP_LIMITS[status] ? 'bg-amber-500 text-black animate-pulse' : 'bg-slate-800 text-slate-400'}`}>
+                                                        {columnTasks.length}{status && WIP_LIMITS[status] ? ` / ${WIP_LIMITS[status]}` : ''}
                                                     </span>
+                                                    {status && WIP_LIMITS[status] && columnTasks.length > WIP_LIMITS[status] && (
+                                                        <AlertCircle size={12} className="text-amber-500" />
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

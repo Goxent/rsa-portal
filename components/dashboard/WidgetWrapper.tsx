@@ -45,7 +45,7 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
         >
             <div
                 className={`
-          glass-panel rounded-2xl overflow-hidden h-full
+          glass-panel rounded-2xl h-full
           ${isDragging ? 'shadow-2xl ring-2 ring-brand-500' : ''}
           ${isEditing ? 'ring-1 ring-dashed ring-slate-400 dark:ring-white/20' : ''}
         `}

@@ -69,10 +69,19 @@ export interface WorkLog {
 export enum TaskStatus {
   NOT_STARTED = 'NOT_STARTED',
   IN_PROGRESS = 'IN_PROGRESS',
-  HALTED = 'HALTED',
   UNDER_REVIEW = 'UNDER_REVIEW',
+  HALTED = 'HALTED',
   COMPLETED = 'COMPLETED',
   ARCHIVED = 'ARCHIVED'
+}
+
+export interface TaskStatusConfig {
+  status: TaskStatus;
+  label: string;
+  color: string;
+  isEmailEnabled?: boolean;
+  emailTemplateId?: 'DEFAULT' | 'ASSIGNMENT' | 'STATUS_CHANGE' | 'URGENT_REMINDER';
+  autoAssignTo?: string[];
 }
 
 export enum TaskPriority {

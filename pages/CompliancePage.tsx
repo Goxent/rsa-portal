@@ -410,120 +410,122 @@ const CompliancePage: React.FC = () => {
             })()}
 
             {/* Client Statutory Compliance Section */}
-            <div className="glass-panel p-6 rounded-2xl border border-white/5 bg-navy-900/40 space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-                            <ShieldCheck size={20} />
+            {canEdit && (
+                <div className="glass-panel p-6 rounded-2xl border border-white/5 bg-navy-900/40 space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                <ShieldCheck size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Client Statutory Status</h2>
+                                <p className="text-xs text-gray-500">Track VAT and Income Tax filing obligations.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-white">Client Statutory Status</h2>
-                            <p className="text-xs text-gray-500">Track VAT and Income Tax filing obligations.</p>
+
+                        <div className="flex items-center gap-3 flex-1 max-w-xl">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                                <input
+                                    type="text"
+                                    placeholder="Search client name, PAN or code..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                                />
+                            </div>
+                            <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
+                                {(['ALL', 'VAT', 'ITR'] as const).map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setStatutoryFilter(t)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${statutoryFilter === t ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-1 max-w-xl">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search client name, PAN or code..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
-                            />
-                        </div>
-                        <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
-                            {(['ALL', 'VAT', 'ITR'] as const).map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => setStatutoryFilter(t)}
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${statutoryFilter === t ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    {t}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {filteredClients.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {filteredClients.map((client) => (
-                                <div key={client.id} className="glass-card p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all group">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <div className="w-10 h-10 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-blue-400 font-bold text-xs">
-                                                {client.code?.substring(0, 3) || 'CL'}
-                                            </div>
-                                            <div className="overflow-hidden">
-                                                <h4 className="font-bold text-white text-xs group-hover:text-brand-300 transition-colors uppercase truncate">{client.name}</h4>
-                                                <p className="text-[10px] text-gray-500 font-medium truncate">PAN: {client.pan || 'N/A'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1 shrink-0">
-                                            {client.vatReturn && (
-                                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">VAT</span>
-                                            )}
-                                            {client.itrReturn && (
-                                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR</span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 overflow-hidden flex-1">
-                                                <div className="w-5 h-5 shrink-0 rounded-full bg-navy-800 flex items-center justify-center text-[7px] font-bold text-gray-300 uppercase">
-                                                    {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
+                    <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        {filteredClients.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {filteredClients.map((client) => (
+                                    <div key={client.id} className="glass-card p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all group">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <div className="w-10 h-10 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-blue-400 font-bold text-xs">
+                                                    {client.code?.substring(0, 3) || 'CL'}
                                                 </div>
-                                                <select
-                                                    value={client.auditorId || ''}
-                                                    onChange={async (e) => {
-                                                        const newAuditorId = e.target.value;
-                                                        try {
-                                                            await AuthService.updateClient({ ...client, auditorId: newAuditorId });
-                                                            setClients(clients.map(c => c.id === client.id ? { ...c, auditorId: newAuditorId } : c));
-                                                            toast.success(`Assigned ${staffList.find(s => s.uid === newAuditorId)?.displayName || 'Focal Person'} to ${client.name}`);
-                                                        } catch (error) {
-                                                            toast.error('Failed to update assignee');
-                                                        }
-                                                    }}
-                                                    className="bg-transparent text-[10px] text-gray-400 hover:text-white transition-colors cursor-pointer outline-none w-full truncate appearance-none"
-                                                >
-                                                    <option value="" className="bg-navy-900 text-gray-400">Unassigned Focal</option>
-                                                    {staffList.map(staff => (
-                                                        <option key={staff.uid} value={staff.uid} className="bg-navy-900 text-white">
-                                                            {staff.displayName}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                <div className="overflow-hidden">
+                                                    <h4 className="font-bold text-white text-xs group-hover:text-brand-300 transition-colors uppercase truncate">{client.name}</h4>
+                                                    <p className="text-[10px] text-gray-500 font-medium truncate">PAN: {client.pan || 'N/A'}</p>
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    toast(`Viewing tasks for ${client.name}`, { icon: '🔍', duration: 1000 });
-                                                }}
-                                                className="text-[9px] font-bold text-brand-400 hover:text-brand-300 transition-colors shrink-0 ml-2"
-                                            >
-                                                VIEW TASKS
-                                            </button>
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                                {client.vatReturn && (
+                                                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">VAT</span>
+                                                )}
+                                                {client.itrReturn && (
+                                                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                    <div className="w-5 h-5 shrink-0 rounded-full bg-navy-800 flex items-center justify-center text-[7px] font-bold text-gray-300 uppercase">
+                                                        {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
+                                                    </div>
+                                                    <select
+                                                        value={client.auditorId || ''}
+                                                        onChange={async (e) => {
+                                                            const newAuditorId = e.target.value;
+                                                            try {
+                                                                await AuthService.updateClient({ ...client, auditorId: newAuditorId });
+                                                                setClients(clients.map(c => c.id === client.id ? { ...c, auditorId: newAuditorId } : c));
+                                                                toast.success(`Assigned ${staffList.find(s => s.uid === newAuditorId)?.displayName || 'Focal Person'} to ${client.name}`);
+                                                            } catch (error) {
+                                                                toast.error('Failed to update assignee');
+                                                            }
+                                                        }}
+                                                        className="bg-transparent text-[10px] text-gray-400 hover:text-white transition-colors cursor-pointer outline-none w-full truncate appearance-none"
+                                                    >
+                                                        <option value="" className="bg-navy-900 text-gray-400">Unassigned Focal</option>
+                                                        {staffList.map(staff => (
+                                                            <option key={staff.uid} value={staff.uid} className="bg-navy-900 text-white">
+                                                                {staff.displayName}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        toast(`Viewing tasks for ${client.name}`, { icon: '🔍', duration: 1000 });
+                                                    }}
+                                                    className="text-[9px] font-bold text-brand-400 hover:text-brand-300 transition-colors shrink-0 ml-2"
+                                                >
+                                                    VIEW TASKS
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <EmptyState
-                            icon={ShieldCheck}
-                            title="No clients found"
-                            description="No clients match your search or filters."
-                            className="py-12"
-                            iconSize={40}
-                        />
-                    )}
+                                ))}
+                            </div>
+                        ) : (
+                            <EmptyState
+                                icon={ShieldCheck}
+                                title="No clients found"
+                                description="No clients match your search or filters."
+                                className="py-12"
+                                iconSize={40}
+                            />
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

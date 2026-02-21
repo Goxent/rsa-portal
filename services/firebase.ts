@@ -746,7 +746,62 @@ export const AuthService = {
 
     updateTask: async (taskId: string, updates: Partial<Task>) => {
         if (!auth.currentUser) throw new Error("Unauthenticated");
+
+        // Handle Status Change Workflow
+        if (updates.status) {
+            try {
+                const oldTaskDoc = await getDoc(doc(db, 'tasks', taskId));
+                const oldTask = oldTaskDoc.exists() ? (oldTaskDoc.data() as Task) : null;
+
+                if (oldTask && oldTask.status !== updates.status) {
+                    await AuthService.handleStatusChange(oldTask, updates.status);
+                }
+            } catch (err) {
+                console.error("Workflow trigger failed:", err);
+            }
+        }
+
         await updateDoc(doc(db, 'tasks', taskId), updates);
+    },
+
+    handleStatusChange: async (task: Task, newStatus: TaskStatus) => {
+        // 1. Internal Notification for all assignees & creator
+        const recipients = new Set([...(task.assignedTo || []), task.createdBy]);
+        if (task.teamLeaderId) recipients.add(task.teamLeaderId);
+
+        for (const uid of recipients) {
+            // Don't notify the person who made the change?
+            // Actually, usually helpful to confirm.
+
+            await AuthService.createNotification({
+                userId: uid,
+                title: 'Task Status Updated',
+                message: `"${task.title}" status changed from ${task.status} to ${newStatus}`,
+                type: 'INFO',
+                category: 'TASK',
+                link: '/tasks'
+            });
+
+            // 2. Email Notification (Branded)
+            try {
+                const userDoc = await getDoc(doc(db, 'users', uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data() as UserProfile;
+                    if (userData.email) {
+                        await EmailService.sendWorkflowStatusChange(
+                            userData.email,
+                            userData.displayName,
+                            task.title,
+                            task.status,
+                            newStatus,
+                            `${window.location.origin}/#/tasks`
+                        );
+                    }
+                }
+            } catch (emailErr) {
+                console.error("Status Change Email failed", emailErr);
+            }
+        }
     },
 
     addTaskComment: async (taskId: string, comment: any) => {

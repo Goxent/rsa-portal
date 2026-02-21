@@ -50,6 +50,7 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         description: 'High-level business numbers (Revenue, Clients, Deadlines)',
         icon: 'BarChart2',
         defaultSize: 'full',
+        adminOnly: true,
     },
     {
         type: 'compliance-countdown',
@@ -123,6 +124,7 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         description: 'Client distribution and signing status',
         icon: 'Briefcase',
         defaultSize: 'sm',
+        adminOnly: true,
     },
     {
         type: 'staff-stats',
@@ -130,6 +132,7 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         description: 'Staff distribution by department',
         icon: 'Users',
         defaultSize: 'sm',
+        adminOnly: true,
     },
 ];
 
