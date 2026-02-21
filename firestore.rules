@@ -21,7 +21,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create, delete: if isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
+      allow create: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
     }
     
     // CLIENTS COLLECTION

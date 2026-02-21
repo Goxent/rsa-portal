@@ -127,7 +127,7 @@ export const AuthService = {
                     role: UserRole.STAFF,
                     department: 'General',
                     isSetupComplete: false,
-                    status: 'Active',
+                    status: 'Pending Approval' as any,
                     phoneNumber: '',
                     address: '',
                     position: 'Staff',
