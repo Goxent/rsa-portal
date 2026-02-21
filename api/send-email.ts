@@ -26,6 +26,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Parse 'to' field safely to support string, array of strings, or { email, name } objects
+    let parsedTo = '';
+    if (typeof to === 'string') {
+        parsedTo = to;
+    } else if (Array.isArray(to)) {
+        parsedTo = to.map(t => typeof t === 'object' && t.email ? t.email : t).join(',');
+    } else if (typeof to === 'object' && to.email) {
+        parsedTo = `${to.name ? `"${to.name}" ` : ''}<${to.email}>`;
+    } else {
+        return res.status(400).json({ error: 'Invalid "to" recipient format.' });
+    }
+
     // Gmail SMTP Configuration
     const emailUser = process.env.EMAIL_USER || 'anil99sunar@gmail.com';
     const emailPass = process.env.EMAIL_PASSWORD;
@@ -48,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const mailOptions = {
             from: `"${fromName || 'RSA System'}" <${emailUser}>`,
-            to: Array.isArray(to) ? to.join(',') : to,
+            to: parsedTo,
             subject: subject,
             html: html,
         };
