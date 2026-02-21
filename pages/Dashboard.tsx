@@ -11,6 +11,7 @@ import GreetingsWidget from '../components/dashboard/widgets/GreetingsWidget';
 import FocusWidget from '../components/dashboard/widgets/FocusWidget';
 import ComplianceBanner from '../components/dashboard/widgets/ComplianceBanner';
 import WorkloadHeatmap from '../components/dashboard/widgets/WorkloadHeatmap';
+import AiInsightWidget from '../components/dashboard/widgets/AiInsightWidget';
 import { useTasks } from '../hooks/useTasks';
 import { useUsers } from '../hooks/useStaff';
 import { useClients } from '../hooks/useClients';
@@ -242,15 +243,14 @@ const Dashboard: React.FC = () => {
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Attendance Widget - Moved to Top */}
-            <div className="w-full relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-500/10 to-transparent rounded-2xl blur-xl -z-10 opacity-50"></div>
+            <div className="w-full relative shadow-[inset_0_0_100px_rgba(59,130,246,0.1)] rounded-2xl">
                 <AttendanceWidget />
             </div>
 
             {/* Greetings & Focus Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
                 <div className="lg:col-span-2">
                     <GreetingsWidget />
                 </div>
@@ -266,12 +266,9 @@ const Dashboard: React.FC = () => {
 
             {/* Admin Exclusive: Workload Heatmap */}
             {isAdmin && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[300px]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[300px]">
                     <WorkloadHeatmap staffStats={staffStats} totalTasks={relevantTasks.length} />
-                    {/* Placeholder for future widget or we can expand heatmap */}
-                    <div className="glass-panel p-6 rounded-2xl border border-white/5 flex items-center justify-center text-gray-400">
-                        <p>More admin insights coming...</p>
-                    </div>
+                    <AiInsightWidget />
                 </div>
             )}
 
@@ -284,12 +281,12 @@ const Dashboard: React.FC = () => {
                 />
             )}
 
-            {/* Staff Detail Modal (preserved from original) */}
+            {/* Staff Detail Modal */}
             {selectedStaff && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
                                     {selectedStaff.displayName?.charAt(0)}
                                 </div>
@@ -305,41 +302,41 @@ const Dashboard: React.FC = () => {
 
                         <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-                                    <p className="text-gray-500 text-xs uppercase font-bold mb-1">Email</p>
-                                    <div className="flex items-center gap-2 text-gray-300">
+                                <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-xl border border-slate-200 dark:border-white/5">
+                                    <p className="text-slate-500 dark:text-gray-500 text-xs uppercase font-bold mb-1">Email</p>
+                                    <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
                                         <Mail size={14} /> {selectedStaff.email}
                                     </div>
                                 </div>
-                                <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-                                    <p className="text-gray-500 text-xs uppercase font-bold mb-1">Phone</p>
-                                    <div className="flex items-center gap-2 text-gray-300">
+                                <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-xl border border-slate-200 dark:border-white/5">
+                                    <p className="text-slate-500 dark:text-gray-500 text-xs uppercase font-bold mb-1">Phone</p>
+                                    <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
                                         <Phone size={14} /> {selectedStaff.phoneNumber || 'N/A'}
                                     </div>
                                 </div>
-                                <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-                                    <p className="text-gray-500 text-xs uppercase font-bold mb-1">Department</p>
-                                    <div className="flex items-center gap-2 text-gray-300">
+                                <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-xl border border-slate-200 dark:border-white/5">
+                                    <p className="text-slate-500 dark:text-gray-500 text-xs uppercase font-bold mb-1">Department</p>
+                                    <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
                                         <Briefcase size={14} /> {selectedStaff.department || 'Unassigned'}
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2">
-                                    <ClockIcon size={16} className="text-brand-400" /> Recent Activity
+                                <h3 className="text-md font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                    <ClockIcon size={16} className="text-brand-500 dark:text-brand-400" /> Recent Activity
                                 </h3>
                                 {selectedStaffTasks.length > 0 ? (
                                     <div className="space-y-3">
                                         {selectedStaffTasks.map(task => (
-                                            <div key={task.id} className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                                            <div key={task.id} className="bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/5 flex items-center justify-between">
                                                 <div>
-                                                    <h4 className="font-medium text-white">{task.title}</h4>
-                                                    <p className="text-xs text-gray-400 mt-1">{task.clientName} • Due: {task.dueDate}</p>
+                                                    <h4 className="font-medium text-slate-900 dark:text-white">{task.title}</h4>
+                                                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">{task.clientName} • Due: {task.dueDate}</p>
                                                 </div>
-                                                <span className={`px-2 py-1 rounded text-xs font-medium border ${task.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                                                        'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                                                <span className={`px-2 py-1 rounded text-xs font-medium border ${task.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400' :
+                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400' :
+                                                        'bg-gray-100 dark:bg-gray-500/10 border-gray-200 dark:border-gray-500/20 text-gray-700 dark:text-gray-400'
                                                     }`}>
                                                     {task.status.replace('_', ' ')}
                                                 </span>
@@ -347,7 +344,7 @@ const Dashboard: React.FC = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-white/5 border-dashed">
+                                    <div className="text-center py-8 text-slate-500 dark:text-gray-500 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/5 border-dashed">
                                         No recent tasks found
                                     </div>
                                 )}

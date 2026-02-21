@@ -25,10 +25,23 @@ const ComplianceBanner: React.FC<ComplianceBannerProps> = ({ deadlines }) => {
         return dueDate >= now && dueDate <= urgentThreshold;
     }).slice(0, 3); // Show top 3
 
-    if (urgentDeadlines.length === 0) return null;
+    if (urgentDeadlines.length === 0) {
+        return (
+            <div className="relative mt-2 overflow-hidden rounded-xl bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/20 p-4 flex items-center gap-4 transition-all">
+                <div className="absolute inset-0 bg-[#0d1526] opacity-10"></div>
+                <div className="relative z-10 p-2 bg-emerald-500/20 rounded-xl text-emerald-400 shrink-0">
+                    <CheckCircle2 size={24} />
+                </div>
+                <div className="relative z-10">
+                    <h3 className="text-sm font-bold text-white">All clear</h3>
+                    <p className="text-xs text-gray-300">No urgent deadlines approaching this week.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/20 p-4 animate-in slide-in-from-top-4 duration-500">
+        <div className="relative mt-2 overflow-hidden rounded-xl bg-gradient-to-r from-red-900/40 to-orange-900/40 border border-red-500/20 p-4 animate-in slide-in-from-top-4 duration-500">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
 
             <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

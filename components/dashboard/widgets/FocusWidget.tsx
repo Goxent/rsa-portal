@@ -89,7 +89,7 @@ const FocusWidget: React.FC = () => {
     const allCompleted = goals.length > 0 && goals.every(g => g.completed);
 
     return (
-        <div className="relative glass-panel rounded-2xl border border-white/5 p-6 overflow-hidden min-h-[140px] flex flex-col justify-start transition-all hover:border-brand-500/20 group">
+        <div className="relative glass-panel rounded-2xl border border-white/5 p-6 overflow-hidden min-h-[140px] min-w-[280px] flex flex-col justify-start transition-all hover:border-brand-500/20 group">
             {showConfetti && <Confetti width={width} height={height} numberOfPieces={200} recycle={false} />}
 
             <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -120,7 +120,7 @@ const FocusWidget: React.FC = () => {
                         <button onClick={() => toggleGoal(goal.id)} className={`mt-1 shrink-0 transition-all duration-300 ${goal.completed ? 'text-emerald-400 scale-110' : 'text-gray-500 hover:text-brand-400'}`}>
                             {goal.completed ? <CheckCircle2 size={20} className="fill-emerald-500/20" /> : <Circle size={20} />}
                         </button>
-                        <p onClick={() => toggleGoal(goal.id)} className={`text-base font-semibold cursor-pointer transition-all duration-300 flex-1 ${goal.completed ? 'text-emerald-400/50 line-through decoration-2 decoration-emerald-500/50' : 'text-white hover:text-gray-200'}`}>
+                        <p onClick={() => toggleGoal(goal.id)} className={`text-base font-semibold cursor-pointer transition-all duration-300 flex-1 truncate ${goal.completed ? 'text-emerald-400/50 line-through decoration-2 decoration-emerald-500/50' : 'text-white hover:text-gray-200'}`} title={goal.text}>
                             {goal.text}
                         </p>
                         <button onClick={() => deleteGoal(goal.id)} className="opacity-0 group-hover/item:opacity-100 p-1 text-gray-500 hover:text-red-400 transition-all ml-auto shrink-0">

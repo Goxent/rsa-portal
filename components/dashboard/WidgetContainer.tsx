@@ -184,8 +184,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
     return (
         <div className="space-y-4">
             {/* Toolbar */}
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+            <div className="sticky top-0 z-40 bg-slate-50/80 dark:bg-[#0a0e1a]/80 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 flex justify-between items-center border-b border-transparent transition-all shadow-sm">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
                 <div className="flex gap-2">
                     {isEditing ? (
                         <>
@@ -207,7 +207,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     ) : (
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-medium transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white rounded-xl text-sm font-medium transition-all"
                         >
                             <Edit3 size={16} />
                             Customize
@@ -245,19 +245,19 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
             {/* Widget Picker Modal */}
             {showWidgetPicker && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="glass-modal rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                    <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-white">Add Widget</h2>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add Widget</h2>
                             <button
                                 onClick={() => setShowWidgetPicker(false)}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors text-slate-500 dark:text-gray-400"
                             >
-                                <X size={20} className="text-gray-400" />
+                                <X size={20} />
                             </button>
                         </div>
 
                         {availableWidgets.length === 0 ? (
-                            <p className="text-gray-400 text-center py-8">
+                            <p className="text-slate-500 dark:text-gray-400 text-center py-8">
                                 All available widgets are already on your dashboard.
                             </p>
                         ) : (
@@ -266,12 +266,12 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                                     <button
                                         key={meta.type}
                                         onClick={() => handleAddWidget(meta.type)}
-                                        className="p-4 glass-card hover:border-brand-500/50 text-left transition-all group"
+                                        className="p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl hover:border-brand-500 hover:shadow-lg dark:hover:border-brand-500/50 text-left transition-all group"
                                     >
-                                        <h3 className="font-semibold text-white group-hover:text-brand-400 transition-colors">
+                                        <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                                             {meta.title}
                                         </h3>
-                                        <p className="text-xs text-gray-400 mt-1">{meta.description}</p>
+                                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">{meta.description}</p>
                                     </button>
                                 ))}
                             </div>
