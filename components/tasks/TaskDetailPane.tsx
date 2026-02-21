@@ -55,29 +55,29 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex justify-end overflow-hidden">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/80 backdrop-blur-md"
                         onClick={onClose}
                     />
 
-                    {/* Slide-over Pane */}
+                    {/* Centered Modal */}
                     <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{
                             type: 'spring',
                             damping: 25,
-                            stiffness: 220,
+                            stiffness: 300,
                             mass: 0.8
                         }}
-                        className="relative w-full max-w-2xl bg-[var(--bg-secondary)] shadow-2xl border-l border-white/10 flex flex-col h-full"
+                        className="relative w-full max-w-4xl bg-[var(--bg-secondary)] shadow-2xl border border-white/10 flex flex-col max-h-[90vh] rounded-[32px] overflow-hidden"
                     >
                         {/* Header */}
                         <div className="shrink-0 px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">

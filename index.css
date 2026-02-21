@@ -46,7 +46,7 @@
 
     /* Standard Accessibility Focus Ring */
     :focus-visible {
-        @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-900;
+        @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-slate-900;
     }
 
     .light :focus-visible {
@@ -198,7 +198,7 @@
     input:focus {
         @apply ring-2;
         border-color: #6366f1 !important;
-        ring-color: rgba(99, 102, 241, 0.2) !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
     }
 
     .light .glass-input:focus,
