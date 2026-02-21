@@ -13,8 +13,7 @@ export type WidgetType =
     | 'client-stats'
     | 'staff-stats'
     | 'impact-stats'
-    | 'compliance-countdown'
-    | 'ai-insight';
+    | 'compliance-countdown';
 
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
 
@@ -50,13 +49,6 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         title: 'Impact Stats',
         description: 'High-level business numbers (Revenue, Clients, Deadlines)',
         icon: 'BarChart2',
-        defaultSize: 'full',
-    },
-    {
-        type: 'ai-insight',
-        title: 'AI Daily Insight',
-        description: 'Smart tips and task suggestions',
-        icon: 'Sparkles',
         defaultSize: 'full',
     },
     {
@@ -146,26 +138,23 @@ export const getDefaultWidgetConfig = (isAdmin: boolean): WidgetConfig[] => {
     if (isAdmin) {
         // Admin: work management + event management focused
         return [
-            { id: 'w_ai', type: 'ai-insight', title: 'AI Daily Insight', position: 0, size: 'full', visible: true },
-            { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 1, size: 'full', visible: true },
-            { id: 'w_workload', type: 'team-workload', title: 'Team Workload', position: 2, size: 'md', visible: true },
-            { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
-            { id: 'w_stats', type: 'task-stats', title: 'Task Statistics', position: 4, size: 'md', visible: true },
-            { id: 'w_activity', type: 'recent-activity', title: 'Recent Activity', position: 5, size: 'md', visible: true },
-
+            { id: 'w_stats', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
+            { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
+            { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 2, size: 'full', visible: true },
+            { id: 'w_workload', type: 'team-workload', title: 'Team Workload', position: 3, size: 'md', visible: true },
+            { id: 'w_activity', type: 'recent-activity', title: 'Recent Activity', position: 4, size: 'md', visible: true },
         ];
     }
 
     // Staff: personal task + performance focused
     return [
-        { id: 'w_ai', type: 'ai-insight', title: 'AI Daily Insight', position: 0, size: 'full', visible: true },
-        { id: 'w1', type: 'task-stats', title: 'Task Statistics', position: 1, size: 'md', visible: true },
-        { id: 'w2', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'md', visible: true },
-        { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
-        { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 4, size: 'sm', visible: true },
-        { id: 'w5', type: 'performance', title: 'Performance', position: 5, size: 'sm', visible: true },
-        { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 6, size: 'md', visible: true },
-        { id: 'w_act', type: 'recent-activity', title: 'Recent Activity', position: 7, size: 'md', visible: true },
+        { id: 'w1', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
+        { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
+        { id: 'w2', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
+        { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 3, size: 'sm', visible: true },
+        { id: 'w5', type: 'performance', title: 'Performance', position: 4, size: 'sm', visible: true },
+        { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 5, size: 'md', visible: true },
+        { id: 'w_act', type: 'recent-activity', title: 'Recent Activity', position: 6, size: 'md', visible: true },
     ];
 };
 

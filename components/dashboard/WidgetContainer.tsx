@@ -31,7 +31,6 @@ import RecentActivityWidget from './widgets/RecentActivityWidget';
 import ClientStatsWidget from './widgets/ClientStatsWidget';
 import StaffStatsWidget from './widgets/StaffStatsWidget';
 import ImpactStatsWidget from './widgets/ImpactStatsWidget';
-import AiInsightWidget from './widgets/AiInsightWidget';
 import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
 import AllTasksWidget from './widgets/AllTasksWidget';
 
@@ -67,14 +66,19 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
             const savedConfig = await AuthService.getWidgetConfig(userId);
 
             if (savedConfig && savedConfig.length > 0) {
+                // Filter out any widgets that no longer exist in the registry
+                const validConfig = savedConfig.filter((w: WidgetConfig) =>
+                    WIDGET_REGISTRY.some((meta) => meta.type === w.type)
+                );
+
                 // Version check: if admin layout is missing 'all-tasks', update it
-                const needsReset = isAdmin && !savedConfig.some((w: WidgetConfig) => w.type === 'all-tasks');
-                if (needsReset) {
+                const needsReset = isAdmin && !validConfig.some((w: WidgetConfig) => w.type === 'all-tasks');
+                if (needsReset || validConfig.length === 0) {
                     const fresh = getDefaultWidgetConfig(isAdmin);
                     setWidgets(fresh);
                     AuthService.saveWidgetConfig(userId, fresh);
                 } else {
-                    setWidgets(savedConfig);
+                    setWidgets(validConfig);
                 }
             } else {
                 const fresh = getDefaultWidgetConfig(isAdmin);
@@ -145,8 +149,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         switch (widget.type) {
             case 'impact-stats':
                 return <ImpactStatsWidget {...props} />;
-            case 'ai-insight':
-                return <AiInsightWidget />;
             case 'compliance-countdown':
                 return <ComplianceCountdownWidget />;
             case 'all-tasks':
