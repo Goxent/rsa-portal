@@ -490,46 +490,47 @@ const TasksPage: React.FC = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#0a0f1d] animate-in fade-in duration-500">
-            {/* --- ADVANCED CONSOLE HEADER --- */}
-            <header className="flex-none bg-black/40 backdrop-blur-xl border-b border-white/5 p-6 space-y-6">
-                {/* Row 1: Actions & View Switcher */}
-                <div className="flex items-center justify-between">
+            {/* --- PREMIUM WORKSPACE HEADER --- */}
+            <header className="flex-none bg-[#0f172a]/80 backdrop-blur-2xl border-b border-white/[0.05] p-6 pb-5 relative z-20">
+                {/* Top Row: Title, Quick Toggles & Primary Actions */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
                     <div className="flex items-center gap-6">
-                        <div>
-                            <h1 className="text-xl font-black text-white tracking-widest uppercase flex items-center gap-3">
-                                <Box className="text-blue-500" size={24} />
-                                Tasks <span className="text-blue-500/50">Console</span>
-                            </h1>
-                            <div className="flex items-center bg-white/5 rounded-lg p-0.5 mt-1 border border-white/5">
-                                <button
-                                    onClick={() => setBoardMode('ALL')}
-                                    className={`text - [10px] font - bold px - 3 py - 1 rounded - md transition - all ${boardMode === 'ALL' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'} `}
-                                >
-                                    FIRM WIDE
-                                </button>
-                                <button
-                                    onClick={() => setBoardMode('MY')}
-                                    className={`text - [10px] font - bold px - 3 py - 1 rounded - md transition - all ${boardMode === 'MY' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'} `}
-                                >
-                                    MY TASKS
-                                </button>
+                        <div className="flex items-center gap-4 border-r border-white/10 pr-6">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                <Box className="text-white" size={24} />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-black text-white tracking-tight">Workflow</h1>
+                                <p className="text-xs font-medium text-gray-400">Manage firm tasks & projects</p>
                             </div>
                         </div>
 
-                        <div className="h-10 w-[1px] bg-white/10 mx-2" />
-
-                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+                        {/* View Modes */}
+                        <div className="flex items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05]">
                             <button
                                 onClick={() => setViewMode('KANBAN')}
-                                className={`px - 4 py - 1.5 rounded - lg flex items - center gap - 2 text - xs font - bold transition - all ${viewMode === 'KANBAN' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white'} `}
+                                className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                             >
-                                <LayoutGrid size={14} /> BOARD
+                                <LayoutGrid size={14} /> Board
                             </button>
                             <button
                                 onClick={() => setViewMode('LIST')}
-                                className={`px - 4 py - 1.5 rounded - lg flex items - center gap - 2 text - xs font - bold transition - all ${viewMode === 'LIST' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white'} `}
+                                className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                             >
-                                <ListIcon size={14} /> LIST
+                                <ListIcon size={14} /> List
+                            </button>
+                            <div className="w-px h-6 bg-white/10 mx-2" />
+                            <button
+                                onClick={() => setBoardMode('ALL')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${boardMode === 'ALL' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                Firm Wide
+                            </button>
+                            <button
+                                onClick={() => setBoardMode('MY')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${boardMode === 'MY' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                My Tasks
                             </button>
                         </div>
                     </div>
@@ -538,127 +539,119 @@ const TasksPage: React.FC = () => {
                         {selectedTaskIds.length > 0 && (
                             <button
                                 onClick={handleBulkDelete}
-                                className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-xs font-bold flex items-center gap-2 border border-red-500/20 transition-all"
+                                className="px-5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-rose-500/10"
                             >
-                                <Trash2 size={14} /> DELETE ({selectedTaskIds.length})
+                                <Trash2 size={16} /> Delete ({selectedTaskIds.length})
                             </button>
                         )}
-                        <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/5 mr-2">
-                            <button onClick={handleExportPDF} className="p-2 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={18} /></button>
-                            <button onClick={handleExportExcel} className="p-2 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={18} /></button>
+                        <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
+                            <button onClick={handleExportPDF} title="Export PDF" className="p-2.5 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={18} /></button>
+                            <button onClick={handleExportExcel} title="Export Excel" className="p-2.5 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={18} /></button>
                         </div>
                         <button
                             onClick={() => setIsTemplateModalOpen(true)}
-                            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 flex items-center gap-2 text-xs font-bold transition-all"
+                            className="px-5 py-2.5 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all"
                         >
-                            <Sparkles size={16} className="text-amber-400" /> TEMPLATES
+                            <Sparkles size={16} className="text-amber-400" /> Templates
                         </button>
                         <button
                             onClick={handleOpenCreate}
                             disabled={!canCreateTask}
-                            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-xl shadow-blue-600/20 disabled:opacity-50"
+                            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 border border-white/10"
                         >
-                            <Plus size={18} /> NEW TASK
+                            <Plus size={18} /> New Task
                         </button>
                     </div>
                 </div>
 
-                {/* Row 2: Advanced Filters */}
-                <div className="flex items-center gap-4">
-                    <div className="flex-1 relative group">
+                {/* Bottom Row: Search & Filters */}
+                <div className="flex flex-col lg:flex-row items-center gap-4 bg-[#0a0f1d] p-3 rounded-2xl border border-white/[0.05]">
+                    <div className="flex-1 relative group w-full lg:max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
                         <input
                             type="text"
                             placeholder="Search tasks, clients, or keywords..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-11 bg-white/5 border border-white/5 rounded-xl pl-12 pr-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.08] transition-all"
+                            className="w-full h-11 bg-transparent border-r border-white/5 pl-12 pr-4 text-sm text-white placeholder:text-gray-500 focus:outline-none transition-all"
                         />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/5">
-                            {/* Group By Filter */}
-                            <div className="relative group/select">
-                                <select
-                                    value={groupBy}
-                                    onChange={(e) => setGroupBy(e.target.value as any)}
-                                    className="appearance-none bg-transparent text-[10px] font-bold text-gray-400 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:text-white transition-colors"
-                                >
-                                    <option value="NONE" className="bg-[#0a0f1d]">NO GROUPING</option>
-                                    <option value="AUDITOR" className="bg-[#0a0f1d]">BY AUDITOR</option>
-                                    <option value="ASSIGNEE" className="bg-[#0a0f1d]">BY ASSIGNEE</option>
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 group-hover/select:text-gray-400 pointer-events-none" size={12} />
-                            </div>
-
-                            <div className="w-[1px] h-4 bg-white/10" />
-
-                            {/* Staff Filter */}
-                            <div className="relative group/select">
-                                <select
-                                    value={filterStaff}
-                                    onChange={(e) => setFilterStaff(e.target.value)}
-                                    className="appearance-none bg-transparent text-[10px] font-bold text-gray-400 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:text-white transition-colors max-w-[100px] truncate"
-                                >
-                                    <option value="ALL" className="bg-[#0a0f1d]">ALL STAFF</option>
-                                    {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#0a0f1d]">{u.displayName.toUpperCase()}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 group-hover/select:text-gray-400 pointer-events-none" size={12} />
-                            </div>
-
-                            <div className="w-[1px] h-4 bg-white/10" />
-
-                            {/* Priority Filter */}
-                            <div className="relative group/select">
-                                <select
-                                    value={filterPriority}
-                                    onChange={(e) => setFilterPriority(e.target.value)}
-                                    className="appearance-none bg-transparent text-[10px] font-bold text-gray-400 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:text-white transition-colors"
-                                >
-                                    <option value="ALL" className="bg-[#0a0f1d]">ALL PRIORITIES</option>
-                                    {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#0a0f1d]">{p}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 group-hover/select:text-gray-400 pointer-events-none" size={12} />
-                            </div>
-
-                            <div className="w-[1px] h-4 bg-white/10" />
-
-                            {/* Signee Filter */}
-                            <div className="relative group/select">
-                                <select
-                                    value={filterSignee}
-                                    onChange={(e) => setFilterSignee(e.target.value)}
-                                    className="appearance-none bg-transparent text-[10px] font-bold text-gray-400 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:text-white transition-colors"
-                                >
-                                    <option value="ALL" className="bg-[#0a0f1d]">ALL SIGNEES</option>
-                                    {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#0a0f1d]">{s.toUpperCase()}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 group-hover/select:text-gray-400 pointer-events-none" size={12} />
-                            </div>
+                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto px-2">
+                        <div className="flex items-center gap-1 text-gray-400">
+                            <Filter size={14} />
+                            <span className="text-xs font-bold uppercase tracking-wider">Filters:</span>
                         </div>
 
-                        <div className="flex items-center gap-3 bg-white/5 px-4 h-11 rounded-xl border border-white/5">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={filterVat}
-                                    onChange={(e) => setFilterVat(e.target.checked)}
-                                    className="w-3.5 h-3.5 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-0"
-                                />
-                                <span className={`text - [10px] font - bold transition - colors ${filterVat ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400'} `}>VAT</span>
-                            </label>
-                            <div className="w-[1px] h-4 bg-white/10" />
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={filterItr}
-                                    onChange={(e) => setFilterItr(e.target.checked)}
-                                    className="w-3.5 h-3.5 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-0"
-                                />
-                                <span className={`text - [10px] font - bold transition - colors ${filterItr ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-400'} `}>ITR</span>
-                            </label>
+                        <div className="relative group/select">
+                            <select
+                                value={groupBy}
+                                onChange={(e) => setGroupBy(e.target.value as any)}
+                                className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
+                            >
+                                <option value="NONE" className="bg-[#0f172a]">Group: None</option>
+                                <option value="AUDITOR" className="bg-[#0f172a]">Group by: Auditor</option>
+                                <option value="ASSIGNEE" className="bg-[#0f172a]">Group by: Assignee</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
                         </div>
+
+                        <div className="relative group/select">
+                            <select
+                                value={filterStaff}
+                                onChange={(e) => setFilterStaff(e.target.value)}
+                                className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors max-w-[140px] truncate"
+                            >
+                                <option value="ALL" className="bg-[#0f172a]">Staff: All</option>
+                                {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#0f172a]">{u.displayName}</option>)}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+                        </div>
+
+                        <div className="relative group/select">
+                            <select
+                                value={filterPriority}
+                                onChange={(e) => setFilterPriority(e.target.value)}
+                                className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
+                            >
+                                <option value="ALL" className="bg-[#0f172a]">Priority: All</option>
+                                {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#0f172a]">{p}</option>)}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+                        </div>
+
+                        <div className="relative group/select">
+                            <select
+                                value={filterSignee}
+                                onChange={(e) => setFilterSignee(e.target.value)}
+                                className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
+                            >
+                                <option value="ALL" className="bg-[#0f172a]">Signee: All</option>
+                                {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#0f172a]">{s}</option>)}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+                        </div>
+
+                        <div className="w-px h-6 bg-white/10 hidden lg:block" />
+
+                        <label className="flex items-center gap-2 cursor-pointer group bg-white/5 hover:bg-white/10 px-3 py-2 rounded-lg border border-white/5 transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={filterVat}
+                                onChange={(e) => setFilterVat(e.target.checked)}
+                                className="w-4 h-4 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                            />
+                            <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-blue-400' : 'text-gray-300'}`}>VAT</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer group bg-white/5 hover:bg-white/10 px-3 py-2 rounded-lg border border-white/5 transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={filterItr}
+                                onChange={(e) => setFilterItr(e.target.checked)}
+                                className="w-4 h-4 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                            />
+                            <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-blue-400' : 'text-gray-300'}`}>ITR</span>
+                        </label>
                     </div>
                 </div>
             </header>
@@ -705,11 +698,11 @@ const TasksPage: React.FC = () => {
                     <div className="glass-modal rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10 text-gray-100 overflow-hidden">
                         <div className="shrink-0 px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">
                             {/* Dynamic Accent Header based on Status */}
-                            <div className={`absolute top - 0 left - 0 w - full h - 1 ${currentTask.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
+                            <div className={`absolute top-0 left-0 w-full h-1 ${currentTask.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
                                 currentTask.status === TaskStatus.HALTED ? 'bg-rose-500' :
                                     currentTask.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
                                         currentTask.status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' : 'bg-gray-500'
-                                } `} />
+                                }`} />
                             <div>
                                 <h3 className="text-xl font-black text-white tracking-wide uppercase flex items-center gap-2">
                                     {isEditMode ? <Edit2 size={18} className="text-blue-400" /> : <Plus size={18} className="text-blue-400" />}
@@ -792,13 +785,13 @@ const TasksPage: React.FC = () => {
                                             <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
                                                 <button
                                                     onClick={() => setDateMode('AD')}
-                                                    className={`px - 2 py - 0.5 rounded font - bold text - [9px] transition - all ${dateMode === 'AD' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'} `}
+                                                    className={`px-2 py-0.5 rounded font-bold text-[9px] transition-all ${dateMode === 'AD' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'}`}
                                                 >
                                                     AD
                                                 </button>
                                                 <button
                                                     onClick={() => setDateMode('BS')}
-                                                    className={`px - 2 py - 0.5 rounded font - bold text - [9px] transition - all ${dateMode === 'BS' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'} `}
+                                                    className={`px-2 py-0.5 rounded font-bold text-[9px] transition-all ${dateMode === 'BS' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'}`}
                                                 >
                                                     BS
                                                 </button>
@@ -891,7 +884,7 @@ const TasksPage: React.FC = () => {
                                                                 className="w-5 h-5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-blue-500/50 cursor-pointer appearance-none checked:bg-blue-500 transition-colors mt-0.5 shrink-0 relative flex items-center justify-center after:content-['✓'] after:absolute after:text-white after:opacity-0 checked:after:opacity-100 after:text-sm after:font-bold"
                                                             />
                                                             <div className="flex flex-col gap-2 flex-1">
-                                                                <span className={`text - [14px] font - bold leading - tight ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-200 group-hover:text-blue-200 transition-colors'} `}>
+                                                                <span className={`text-[14px] font-bold leading-tight ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-200 group-hover:text-blue-200 transition-colors'}`}>
                                                                     {st.title}
                                                                 </span>
                                                                 {/* Assignee for Subtask */}
