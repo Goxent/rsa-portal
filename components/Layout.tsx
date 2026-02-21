@@ -133,6 +133,7 @@ const Layout: React.FC = () => {
             openCommandPalette={() => setShowCommandPalette(true)}
             unreadCount={unreadCount}
             toggleNotifications={() => setShowNotifications(!showNotifications)}
+            isSidebarCollapsed={isSidebarCollapsed}
           />
 
           {/* Slide-over Notifications */}

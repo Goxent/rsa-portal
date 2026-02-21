@@ -10,7 +10,9 @@ import {
     signInWithPopup,
     sendEmailVerification,
     ActionCodeSettings,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    setPersistence,
+    browserSessionPersistence
 } from 'firebase/auth';
 import {
     getFirestore,
@@ -70,6 +72,9 @@ try {
 }
 
 export const auth = getAuth(app!);
+
+// Enforce Session persistence for better security (Auto-logout on browser close)
+setPersistence(auth, browserSessionPersistence).catch(console.error);
 
 // Initialize Firestore with Persistent Cache (New API)
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
@@ -149,11 +154,18 @@ export const AuthService = {
     },
 
     register: async (email: string, pass: string): Promise<UserProfile> => {
+        let userCredential;
         try {
-            // STEP 1: Validate email is in users directory (Staff Directory)
+            // STEP 1: Create Auth User FIRST (to bypass unauthenticated Firestore rules)
+            userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            const uid = userCredential.user.uid;
+
+            // STEP 2: Validate email is in users directory (Staff Directory)
             const usersSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
 
             if (usersSnapshot.empty) {
+                // Rollback if email not found
+                await userCredential.user.delete();
                 const error = new Error('Access Denied: Your email is not listed in the Staff Directory. Please contact the administrator.');
                 (error as any).code = 'auth/operation-not-allowed';
                 throw error;
@@ -162,18 +174,16 @@ export const AuthService = {
             const existingUserDoc = usersSnapshot.docs[0];
             const existingUserData = existingUserDoc.data() as UserProfile;
 
-            // Check if already registered (shouldn't happen if using email login, but good safety)
+            // Check if already registered
             if (existingUserData.uid && !existingUserData.uid.startsWith('pending_')) {
+                await userCredential.user.delete();
                 throw new Error('Account already set up. Please log in.');
             }
 
             if (existingUserData.status === 'Inactive') {
+                await userCredential.user.delete();
                 throw new Error('This account is marked as Inactive. Please contact the administrator.');
             }
-
-            // STEP 2: Create Auth User
-            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-            const uid = userCredential.user.uid;
 
             try {
                 // MERGE: Use existing data, update UID and Status
@@ -183,7 +193,6 @@ export const AuthService = {
                     displayName: existingUserData.displayName || email.split('@')[0],
                     isSetupComplete: false,
                     status: 'Active',
-                    // DATE of Joining & other fields are preserved from Admin entry
                 };
 
                 // Create new doc with real UID
@@ -220,6 +229,14 @@ export const AuthService = {
             } else if (error.code === 'auth/weak-password') {
                 throw new Error('Password should be at least 6 characters long.');
             } else {
+                // Check if we need to clean up an orphaned auth account due to some unexpected error
+                if (userCredential && userCredential.user) {
+                    try {
+                        await userCredential.user.delete();
+                    } catch (e) {
+                        console.error("Failed to clean up user after error", e);
+                    }
+                }
                 throw new Error(error.message || 'Registration failed. Please try again.');
             }
         }

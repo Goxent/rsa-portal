@@ -149,9 +149,9 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`flex flex-col rounded-2xl shrink-0 transition-all duration-300 h-full max-h-full ${groupBy === 'NONE'
-                                            ? (isCollapsed ? 'w-14 items-center bg-white/5' : 'w-full min-w-0 flex-1')
-                                            : (isCollapsed ? 'w-14 items-center bg-white/5' : 'w-80')
+                                    className={`flex flex-col rounded-2xl shrink-0 transition-all duration-300 h-full max-h-[calc(100vh-200px)] ${groupBy === 'NONE'
+                                        ? (isCollapsed ? 'w-14 items-center bg-white/5' : 'w-full min-w-0 flex-1')
+                                        : (isCollapsed ? 'w-14 items-center bg-white/5' : 'w-[320px]')
                                         } ${snapshot.isDraggingOver ? 'bg-white/5 ring-1 ring-white/10' : ''}`}
                                 >
                                     <div
@@ -178,7 +178,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     </div>
 
                                     {!isCollapsed && (
-                                        <div className="flex-1 px-3 space-y-4 pb-6">
+                                        <div className="flex-1 px-3 space-y-4 pb-20 overflow-y-auto custom-scrollbar">
                                             {columnTasks.map((task, index) => (
                                                 <Draggable key={task.id} draggableId={task.id} index={index}>
                                                     {(provided, snapshot) => (
@@ -188,9 +188,23 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             {...provided.dragHandleProps}
                                                             style={provided.draggableProps.style}
                                                             onClick={() => handleOpenEdit(task)}
-                                                            className={`bg-[#1e293b] border p-4 rounded-xl shadow-xl transition-all ${snapshot.isDragging ? 'shadow-2xl scale-105 border-blue-500 rotate-1' : selectedTaskId === task.id ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5 hover:border-white/10'}`}
+                                                            className={`relative overflow-hidden group/card p-4 rounded-xl shadow-xl transition-all duration-300 border backdrop-blur-sm
+                                                                ${snapshot.isDragging ? 'shadow-2xl scale-105 rotate-2 z-50' : 'hover:-translate-y-1 hover:shadow-cyan-500/10'}
+                                                                ${selectedTaskId === task.id ? 'ring-2 ring-cyan-500/50' : ''}
+                                                                bg-gradient-to-br from-slate-900/90 to-slate-800/90
+                                                                border-white/5 hover:border-white/10`}
                                                         >
-                                                            <div className="flex justify-between items-start gap-2 mb-3">
+                                                            {/* Dynamic Status/Priority Accent */}
+                                                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${task.priority === TaskPriority.URGENT ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' :
+                                                                    task.priority === TaskPriority.HIGH ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' :
+                                                                        task.priority === TaskPriority.MEDIUM ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' :
+                                                                            'bg-gray-500'
+                                                                }`} />
+
+                                                            {/* subtle texture gradient backgound glow */}
+                                                            <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none transition-all group-hover/card:opacity-40 group-hover/card:scale-110 ${getStatusConfig(task.status).bg}`} />
+
+                                                            <div className="relative z-10 flex justify-between items-start gap-2 mb-3">
                                                                 <div className="flex items-center gap-3">
                                                                     <input
                                                                         type="checkbox"

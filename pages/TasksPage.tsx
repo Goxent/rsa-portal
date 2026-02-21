@@ -24,6 +24,7 @@ import ClientSelect from '../components/ClientSelect';
 import StaffSelect from '../components/StaffSelect';
 import TaskComments from '../components/TaskComments';
 import TaskMainView from '../components/tasks/TaskMainView';
+import NepaliDatePicker from '../components/NepaliDatePicker';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -62,6 +63,7 @@ const TasksPage: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentTask, setCurrentTask] = useState<Partial<Task>>({});
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+    const [dateMode, setDateMode] = useState<'AD' | 'BS'>('AD');
     const [formError, setFormError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -116,6 +118,8 @@ const TasksPage: React.FC = () => {
             comments: []
         });
         setIsModalOpen(true);
+        setDateMode('AD');
+        setNewSubtaskTitle('');
     };
 
     const handleOpenEdit = (task: Task) => {
@@ -123,6 +127,7 @@ const TasksPage: React.FC = () => {
         setIsEditMode(true);
         setIsModalOpen(true); // Revert to modal entry
         setSelectedTaskId(task.id);
+        setNewSubtaskTitle('');
     };
 
     const cleanForFirestore = (obj: any): any => {
@@ -196,6 +201,27 @@ const TasksPage: React.FC = () => {
         }
     };
 
+    const handleAddSubtask = () => {
+        if (!newSubtaskTitle.trim()) return;
+        const newSubtask: SubTask = {
+            id: Math.random().toString(36).substring(2, 9),
+            title: newSubtaskTitle.trim(),
+            isCompleted: false
+        };
+        setCurrentTask(prev => ({
+            ...prev,
+            subtasks: [...(prev.subtasks || []), newSubtask]
+        }));
+        setNewSubtaskTitle('');
+    };
+
+    const handleRemoveSubtask = (id: string) => {
+        setCurrentTask(prev => ({
+            ...prev,
+            subtasks: (prev.subtasks || []).filter(st => st.id !== id)
+        }));
+    };
+
     const toggleTaskSelection = (taskId: string) => {
         setSelectedTaskIds(prev => prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]);
     };
@@ -211,30 +237,198 @@ const TasksPage: React.FC = () => {
         }
     };
 
-    const handleExport = async (type: 'pdf' | 'excel') => {
+    const handleExportPDF = () => {
         const dateStr = new Date().toISOString().split('T')[0];
-        if (type === 'pdf') {
-            const doc = new jsPDF();
-            doc.text('Task Status Report', 20, 20);
-            autoTable(doc, {
-                head: [['Client', 'Task', 'Status', 'Due Date']],
-                body: filteredTasks.map(t => [t.clientName || 'N/A', t.title, t.status, t.dueDate])
-            });
-            doc.save(`Tasks_${dateStr}.pdf`);
-        } else {
-            const workbook = new ExcelJS.Workbook();
-            const sheet = workbook.addWorksheet('Tasks');
-            sheet.addRow(['Client', 'Task', 'Status', 'Due Date']);
-            filteredTasks.forEach(t => sheet.addRow([t.clientName || 'N/A', t.title, t.status, t.dueDate]));
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Tasks_${dateStr}.xlsx`;
-            a.click();
+        const doc = new jsPDF();
+
+        // Header Banner
+        doc.setFillColor(15, 23, 42); // Navy-900 like
+        doc.rect(0, 0, 210, 48, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('R. Sapkota & Associates', 105, 14, { align: 'center' });
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(180, 200, 230);
+        doc.text('Chartered Accountants  |  Kathmandu, Nepal', 105, 22, { align: 'center' });
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Tasks & Workflow Report', 105, 32, { align: 'center' });
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(180, 200, 230);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 40, { align: 'center' });
+
+        const rows = filteredTasks.map(t => [
+            t.clientName || 'Internal',
+            t.title,
+            t.status.replace('_', ' '),
+            t.priority,
+            t.dueDate,
+            t.assignedTo?.map(id => usersList.find(u => u.uid === id)?.displayName).filter(Boolean).join(', ') || 'Unassigned'
+        ]);
+
+        const getStatusColor = (status: string): [number, number, number] => {
+            if (status.includes('COMPLETED')) return [220, 252, 231];
+            if (status.includes('IN_PROGRESS')) return [219, 234, 254];
+            if (status.includes('UNDER_REVIEW')) return [254, 243, 199];
+            if (status.includes('HALTED')) return [254, 226, 226];
+            return [245, 245, 250];
+        };
+
+        autoTable(doc, {
+            head: [['Client', 'Task', 'Status', 'Priority', 'Due Date', 'Assigned To']],
+            body: rows,
+            startY: 60,
+            styles: { fontSize: 7.5, cellPadding: 3, lineColor: [220, 225, 235], lineWidth: 0.2 },
+            headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+            columnStyles: { 1: { cellWidth: 50 } },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 2) {
+                    const status = data.cell.raw as string;
+                    data.cell.styles.fillColor = getStatusColor(status);
+                    data.cell.styles.textColor = [30, 41, 59];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+        });
+
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7);
+            doc.setTextColor(150, 160, 175);
+            doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 8);
+            doc.text(`Page ${i} of ${pageCount}`, 196, doc.internal.pageSize.height - 8, { align: 'right' });
         }
-        toast.success('Exported successfully');
+
+        doc.save(`RSA_Tasks_${dateStr}.pdf`);
+        toast.success('Exported PDF successfully');
+    };
+
+    const handleExportExcel = async () => {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'R. Sapkota & Associates';
+        workbook.created = new Date();
+
+        const sheet = workbook.addWorksheet('Tasks Report', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        // Company Header Block
+        sheet.mergeCells('A1:F1');
+        const titleCell = sheet.getCell('A1');
+        titleCell.value = 'R. Sapkota & Associates';
+        titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        sheet.getRow(1).height = 32;
+
+        sheet.mergeCells('A2:F2');
+        const addrCell = sheet.getCell('A2');
+        addrCell.value = 'Chartered Accountants  |  Kathmandu, Nepal';
+        addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FFB4C8E6' } };
+        addrCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        sheet.getRow(2).height = 18;
+
+        sheet.mergeCells('A3:F3');
+        const reportTitleCell = sheet.getCell('A3');
+        reportTitleCell.value = 'Tasks & Workflow Report';
+        reportTitleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF1E293B' } };
+        reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        reportTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        sheet.getRow(3).height = 22;
+
+        sheet.mergeCells('A4:F4');
+        const periodCell = sheet.getCell('A4');
+        periodCell.value = `Generated: ${new Date().toLocaleString()}`;
+        periodCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
+        periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        sheet.getRow(4).height = 16;
+        sheet.getRow(5).height = 6;
+
+        const COLS = [
+            { header: 'Client', key: 'client', width: 25 },
+            { header: 'Task', key: 'title', width: 45 },
+            { header: 'Status', key: 'status', width: 18 },
+            { header: 'Priority', key: 'priority', width: 12 },
+            { header: 'Due Date', key: 'dueDate', width: 15 },
+            { header: 'Assigned To', key: 'assignedTo', width: 30 },
+        ];
+        sheet.columns = COLS;
+
+        const headerRow = sheet.getRow(6);
+        COLS.forEach((col, i) => {
+            const cell = headerRow.getCell(i + 1);
+            cell.value = col.header;
+            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = { bottom: { style: 'medium', color: { argb: 'FF3B82F6' } } };
+        });
+        headerRow.height = 22;
+
+        const statusFill: Record<string, string> = {
+            'COMPLETED': 'FFD1FAE5',
+            'IN_PROGRESS': 'FFDBEAFE',
+            'NOT_STARTED': 'FFF3F4F6',
+            'UNDER_REVIEW': 'FFFEF3C7',
+            'HALTED': 'FFFEE2E2',
+        };
+
+        filteredTasks.forEach((t, idx) => {
+            const assignees = t.assignedTo?.map(id => usersList.find(u => u.uid === id)?.displayName).filter(Boolean).join(', ') || 'Unassigned';
+            const row = sheet.addRow({
+                client: t.clientName || 'Internal',
+                title: t.title,
+                status: t.status.replace('_', ' '),
+                priority: t.priority,
+                dueDate: t.dueDate,
+                assignedTo: assignees,
+            });
+
+            const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
+            const statusBg = statusFill[t.status] || rowBg;
+
+            row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+                cell.font = { name: 'Calibri', size: 9 };
+                cell.alignment = { vertical: 'top', wrapText: true };
+                cell.fill = {
+                    type: 'pattern', pattern: 'solid',
+                    fgColor: { argb: colNum === 3 ? statusBg : rowBg }
+                };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                };
+            });
+            const statusCell = row.getCell(3);
+            statusCell.font = { name: 'Calibri', size: 9, bold: true };
+            statusCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+            const clientCell = row.getCell(1);
+            clientCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF0F4C75' } };
+
+            row.height = 22;
+        });
+
+        sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 6 }];
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `RSA_Tasks_${dateStr}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Exported Excel successfully');
     };
 
     const handleClientChange = (clientId: string) => {
@@ -343,8 +537,8 @@ const TasksPage: React.FC = () => {
                             </button>
                         )}
                         <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/5 mr-2">
-                            <button onClick={() => handleExport('pdf')} className="p-2 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={18} /></button>
-                            <button onClick={() => handleExport('excel')} className="p-2 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={18} /></button>
+                            <button onClick={handleExportPDF} className="p-2 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={18} /></button>
+                            <button onClick={handleExportExcel} className="p-2 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={18} /></button>
                         </div>
                         <button
                             onClick={() => setIsTemplateModalOpen(true)}
@@ -362,46 +556,7 @@ const TasksPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Row 2: Status Ribbon */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {[
-                        { label: 'TOTAL TASKS', count: statusStats.TOTAL, color: 'blue', icon: LayoutGrid },
-                        { label: 'HALTED', count: statusStats.HALTED, color: 'rose', icon: AlertTriangle },
-                        { label: 'NOT STARTED', count: statusStats.NOT_STARTED, color: 'gray', icon: Circle },
-                        { label: 'IN PROGRESS', count: statusStats.IN_PROGRESS, color: 'blue', icon: Clock },
-                        { label: 'UNDER REVIEW', count: statusStats.UNDER_REVIEW, color: 'amber', icon: Eye },
-                        { label: 'COMPLETED', count: statusStats.COMPLETED, color: 'emerald', icon: CheckCircle2 },
-                    ].map((item, idx) => {
-                        const getColorClasses = (color: string) => {
-                            switch (color) {
-                                case 'blue': return { bg: 'bg-blue-500/10', text: 'text-blue-500', border: 'hover:border-blue-500/30', glow: 'bg-blue-500/20', hoverBg: 'hover:bg-blue-500/5' };
-                                case 'rose': return { bg: 'bg-rose-500/10', text: 'text-rose-500', border: 'hover:border-rose-500/30', glow: 'bg-rose-500/20', hoverBg: 'hover:bg-rose-500/5' };
-                                case 'amber': return { bg: 'bg-amber-500/10', text: 'text-amber-500', border: 'hover:border-amber-500/30', glow: 'bg-amber-500/20', hoverBg: 'hover:bg-amber-500/5' };
-                                case 'emerald': return { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'hover:border-emerald-500/30', glow: 'bg-emerald-500/20', hoverBg: 'hover:bg-emerald-500/5' };
-                                default: return { bg: 'bg-gray-500/10', text: 'text-gray-500', border: 'hover:border-gray-500/30', glow: 'bg-gray-500/20', hoverBg: 'hover:bg-gray-500/5' };
-                            }
-                        };
-                        const classes = getColorClasses(item.color);
-
-                        return (
-                            <div
-                                key={idx}
-                                className={`glass-panel p-4 rounded-2xl border border-white/5 flex items-center gap-4 group transition-all duration-300 ${classes.border} ${classes.hoverBg}`}
-                            >
-                                <div className={`w-10 h-10 rounded-xl ${classes.bg} flex items-center justify-center ${classes.text} shrink-0 shadow-inner overflow-hidden relative`}>
-                                    <div className={`absolute inset-0 ${classes.glow} blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                                    <item.icon size={20} className="relative z-10 transition-transform group-hover:scale-110" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">{item.label}</p>
-                                    <p className="text-xl font-black text-white tabular-nums leading-none">{item.count}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* Row 3: Advanced Filters */}
+                {/* Row 2: Advanced Filters */}
                 <div className="flex items-center gap-4">
                     <div className="flex-1 relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
@@ -548,73 +703,101 @@ const TasksPage: React.FC = () => {
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:text-white transition-all hover:bg-white/10"><X size={20} /></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div className="space-y-6">
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+                            <div className="flex flex-col gap-8 max-w-3xl mx-auto w-full pb-8">
+                                {/* Title and Description block */}
+                                <div className="space-y-6 bg-white/5 p-6 rounded-2xl border border-white/5">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Task Title</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Task Title <span className="text-rose-500">*</span></label>
                                         <input
-                                            className="w-full glass-input text-lg font-bold"
+                                            className="w-full glass-input text-lg font-bold placeholder:font-normal"
                                             placeholder="What needs to be done?"
                                             value={currentTask.title || ''}
                                             onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Description</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Description</label>
                                         <textarea
-                                            className="w-full glass-input min-h-[150px] py-3 text-sm resize-none"
+                                            className="w-full glass-input min-h-[120px] py-3 text-sm resize-none"
                                             placeholder="Provide more context (mention staff using @)"
                                             value={currentTask.description || ''}
                                             onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })}
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Status</label>
-                                            <select
-                                                className="w-full glass-input text-xs"
-                                                value={currentTask.status}
-                                                onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })}
-                                            >
-                                                {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Priority</label>
-                                            <select
-                                                className="w-full glass-input text-xs"
-                                                value={currentTask.priority}
-                                                onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })}
-                                            >
-                                                {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Client</label>
-                                            <ClientSelect
-                                                clients={clientsList}
-                                                value={currentTask.clientIds?.[0] || ''}
-                                                onChange={(val) => handleClientChange(val as string)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Due Date</label>
-                                            <input
-                                                type="date"
-                                                className="w-full glass-input text-xs"
-                                                value={currentTask.dueDate || ''}
-                                                onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
-                                            />
-                                        </div>
+                                {/* Details block */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/5 p-6 rounded-2xl border border-white/5">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Status</label>
+                                        <select
+                                            className="w-full glass-input text-sm"
+                                            value={currentTask.status}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })}
+                                        >
+                                            {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
+                                        </select>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Assigned To</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Priority</label>
+                                        <select
+                                            className="w-full glass-input text-sm"
+                                            value={currentTask.priority}
+                                            onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })}
+                                        >
+                                            {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Client</label>
+                                        <ClientSelect
+                                            clients={clientsList}
+                                            value={currentTask.clientIds?.[0] || ''}
+                                            onChange={(val) => handleClientChange(val as string)}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Due Date</label>
+                                            <div className="flex items-center gap-2 bg-black/40 p-0.5 rounded-lg border border-white/10">
+                                                <button
+                                                    onClick={() => setDateMode('AD')}
+                                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${dateMode === 'AD' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-white'}`}
+                                                >
+                                                    AD
+                                                </button>
+                                                <button
+                                                    onClick={() => setDateMode('BS')}
+                                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${dateMode === 'BS' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-white'}`}
+                                                >
+                                                    BS
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {dateMode === 'AD' ? (
+                                            <div className="relative group">
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" size={16} />
+                                                <input
+                                                    type="date"
+                                                    value={currentTask.dueDate || ''}
+                                                    onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
+                                                    className="w-full h-[42px] glass-input text-sm pl-10 cursor-pointer"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <NepaliDatePicker
+                                                value={currentTask.dueDate || ''}
+                                                onChange={(adDate) => setCurrentTask({ ...currentTask, dueDate: adDate })}
+                                                placeholder="Select Nepali Date"
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Assigned To</label>
                                         <StaffSelect
                                             users={usersList}
                                             value={currentTask.assignedTo || []}
@@ -622,9 +805,64 @@ const TasksPage: React.FC = () => {
                                             multi={true}
                                         />
                                     </div>
+                                </div>
 
-                                    <div className="pt-4 border-t border-white/5">
-                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Activity & Comments</h4>
+                                {/* Subtasks Block */}
+                                <div className="space-y-4 bg-white/5 p-6 rounded-2xl border border-white/5">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1 flex items-center justify-between">
+                                        <span>Subtasks ({currentTask.subtasks?.length || 0})</span>
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newSubtaskTitle}
+                                            onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubtask())}
+                                            placeholder="Add a subtask..."
+                                            className="flex-1 glass-input text-sm"
+                                        />
+                                        <button
+                                            onClick={handleAddSubtask}
+                                            className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500/30 transition-all font-bold text-sm flex items-center gap-2"
+                                        >
+                                            <Plus size={16} /> Add
+                                        </button>
+                                    </div>
+                                    {currentTask.subtasks && currentTask.subtasks.length > 0 && (
+                                        <div className="space-y-2 mt-4">
+                                            {currentTask.subtasks.map((st, i) => (
+                                                <div key={st.id} className="flex items-center justify-between p-3 bg-black/20 rounded-xl border border-white/5 group">
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={st.isCompleted}
+                                                            onChange={(e) => {
+                                                                const updated = [...(currentTask.subtasks || [])];
+                                                                updated[i].isCompleted = e.target.checked;
+                                                                setCurrentTask({ ...currentTask, subtasks: updated });
+                                                            }}
+                                                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-0 focus:ring-offset-0 transition-all"
+                                                        />
+                                                        <span className={`text-sm ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}>
+                                                            {st.title}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleRemoveSubtask(st.id)}
+                                                        className="text-gray-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Comments Block */}
+                                <div className="space-y-4 bg-white/5 p-6 rounded-2xl border border-white/5">
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Activity & Comments</h4>
+                                    <div className="bg-black/20 rounded-xl p-4">
                                         <TaskComments
                                             comments={currentTask.comments || []}
                                             onAddComment={handleAddComment}

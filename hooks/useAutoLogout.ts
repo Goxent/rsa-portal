@@ -1,39 +1,61 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+
+// 30 minutes of inactivity
+const TIMEOUT_MS = 30 * 60 * 1000;
 
 export const useAutoLogout = () => {
     const { logout } = useAuth();
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        const checkAutoLogout = () => {
+        const handleLogout = async () => {
+            console.log("Auto-logout triggered due to inactivity");
+            try {
+                await logout();
+                window.location.href = '/#/login';
+            } catch (err) {
+                console.error("Logout failed", err);
+                window.location.href = '/#/login';
+            }
+        };
+
+        const resetTimer = () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(handleLogout, TIMEOUT_MS);
+        };
+
+        // Initialize timer
+        resetTimer();
+
+        // Listen for user activity
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        events.forEach(event => {
+            window.addEventListener(event, resetTimer, { passive: true });
+        });
+
+        // Keep the midnight check
+        const checkMidnightLogout = () => {
             const now = new Date();
-            // Check if it's between 12:00 AM (00:00) and 12:05 AM (00:05)
-            // This provides a 5-minute window to catch the event
             if (now.getHours() === 0 && now.getMinutes() <= 5) {
                 const todayStr = now.toLocaleDateString();
                 const lastLogoutDate = localStorage.getItem('last_auto_logout');
-
                 if (lastLogoutDate !== todayStr) {
-                    console.log("Auto-logout triggered at midnight");
                     localStorage.setItem('last_auto_logout', todayStr);
-
-                    logout().then(() => {
-                        window.location.href = '/#/login';
-                    }).catch(err => {
-                        console.error("Logout failed", err);
-                        // Force redirect anyway
-                        window.location.href = '/#/login';
-                    });
+                    handleLogout();
                 }
             }
         };
 
-        // Check every minute
-        const interval = setInterval(checkAutoLogout, 60000);
+        const interval = setInterval(checkMidnightLogout, 60000);
+        checkMidnightLogout();
 
-        // Also check immediately on mount
-        checkAutoLogout();
-
-        return () => clearInterval(interval);
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            clearInterval(interval);
+            events.forEach(event => {
+                window.removeEventListener(event, resetTimer);
+            });
+        };
     }, [logout]);
 };

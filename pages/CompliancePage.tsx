@@ -472,23 +472,43 @@ const CompliancePage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                                        <div className="flex items-center gap-2 overflow-hidden">
-                                            <div className="w-5 h-5 shrink-0 rounded-full bg-navy-800 flex items-center justify-center text-[7px] font-bold text-gray-300 uppercase">
-                                                {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
+                                    <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <div className="w-5 h-5 shrink-0 rounded-full bg-navy-800 flex items-center justify-center text-[7px] font-bold text-gray-300 uppercase">
+                                                    {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
+                                                </div>
+                                                <select
+                                                    value={client.auditorId || ''}
+                                                    onChange={async (e) => {
+                                                        const newAuditorId = e.target.value;
+                                                        try {
+                                                            await AuthService.updateClient({ ...client, auditorId: newAuditorId });
+                                                            setClients(clients.map(c => c.id === client.id ? { ...c, auditorId: newAuditorId } : c));
+                                                            toast.success(`Assigned ${staffList.find(s => s.uid === newAuditorId)?.displayName || 'Focal Person'} to ${client.name}`);
+                                                        } catch (error) {
+                                                            toast.error('Failed to update assignee');
+                                                        }
+                                                    }}
+                                                    className="bg-transparent text-[10px] text-gray-400 hover:text-white transition-colors cursor-pointer outline-none w-full truncate appearance-none"
+                                                >
+                                                    <option value="" className="bg-navy-900 text-gray-400">Unassigned Focal</option>
+                                                    {staffList.map(staff => (
+                                                        <option key={staff.uid} value={staff.uid} className="bg-navy-900 text-white">
+                                                            {staff.displayName}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
-                                            <span className="text-[10px] text-gray-400 truncate">
-                                                {staffList.find(s => s.uid === client.auditorId)?.displayName || 'Unassigned Focal'}
-                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    toast(`Viewing tasks for ${client.name}`, { icon: '🔍', duration: 1000 });
+                                                }}
+                                                className="text-[9px] font-bold text-brand-400 hover:text-brand-300 transition-colors shrink-0 ml-2"
+                                            >
+                                                VIEW TASKS
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                toast(`Viewing tasks for ${client.name}`, { icon: '🔍', duration: 1000 });
-                                            }}
-                                            className="text-[9px] font-bold text-brand-400 hover:text-brand-300 transition-colors shrink-0"
-                                        >
-                                            VIEW TASKS
-                                        </button>
                                     </div>
                                 </div>
                             ))}

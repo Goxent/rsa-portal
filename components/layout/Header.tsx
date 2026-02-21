@@ -12,13 +12,15 @@ interface HeaderProps {
     openCommandPalette: () => void;
     unreadCount: number;
     toggleNotifications: () => void;
+    isSidebarCollapsed: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
     toggleMobileMenu,
     openCommandPalette,
     unreadCount,
-    toggleNotifications
+    toggleNotifications,
+    isSidebarCollapsed
 }) => {
     const { user } = useAuth();
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -48,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({
     };
 
     return (
-        <header className="fixed top-0 right-0 left-0 md:left-auto w-full z-20 h-16 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-6 transition-all duration-300 md:w-[calc(100%-5rem)] md:ml-20">
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
 
             {/* Left: Mobile Toggle & Breadcrumbs */}
             <div className="flex items-center gap-4">
@@ -78,15 +80,7 @@ const Header: React.FC<HeaderProps> = ({
                     </div>
                 </div>
 
-                {/* Global Search Trigger */}
-                <button
-                    onClick={openCommandPalette}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-gray-400 hover:text-white transition-all group"
-                >
-                    <Search size={14} className="group-hover:text-blue-400 transition-colors" />
-                    <span className="text-xs hidden sm:inline">Search...</span>
-                    <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-black/20 rounded border border-white/10 text-gray-500">⌘K</kbd>
-                </button>
+
 
                 {/* Notifications */}
                 <button

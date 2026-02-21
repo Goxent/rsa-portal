@@ -99,12 +99,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                 <div className={`h-16 flex items-center border-b border-white/5 px-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     <div className="flex items-center space-x-3 overflow-hidden">
                         <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <img src="/rsa-logo.png" alt="RSA" className="w-5 h-5 object-contain" />
+                            <span className="text-white font-bold text-lg leading-none">R</span>
                         </div>
                         {!isCollapsed && (
                             <div className="animate-in fade-in duration-300">
-                                <h1 className="font-bold text-white leading-none tracking-tight">RSA Portal</h1>
-                                <p className="text-[9px] text-blue-400 font-medium uppercase tracking-wider mt-0.5">Audit & Tax</p>
+                                <h1 className="font-bold text-white text-lg leading-none tracking-tight">RSA Portal</h1>
                             </div>
                         )}
                     </div>

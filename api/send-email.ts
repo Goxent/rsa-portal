@@ -27,11 +27,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Gmail SMTP Configuration
-    const emailUser = process.env.EMAIL_USER;
+    const emailUser = process.env.EMAIL_USER || 'anil99sunar@gmail.com';
     const emailPass = process.env.EMAIL_PASSWORD;
 
-    if (!emailUser || !emailPass) {
-        console.error('Email credentials missing. EMAIL_USER or EMAIL_PASSWORD not set.');
+    if (!emailPass) {
+        console.error('Email credentials missing. EMAIL_PASSWORD not set.');
         return res.status(500).json({ error: 'Server configuration error: Missing Email Credentials.' });
     }
 
