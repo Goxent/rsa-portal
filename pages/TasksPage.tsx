@@ -152,7 +152,9 @@ const TasksPage: React.FC = () => {
         try {
             const taskToSave = cleanForFirestore(currentTask);
             if (isEditMode && currentTask.id) {
-                await updateTaskMutation.mutateAsync({ id: currentTask.id, updates: taskToSave });
+                // EXTREMELY IMPORTANT: Unpack comments out so it doesn't revert newer comments added to the DB
+                const { comments, ...updatesWithoutComments } = taskToSave;
+                await updateTaskMutation.mutateAsync({ id: currentTask.id, updates: updatesWithoutComments });
             } else {
                 await createTaskMutation.mutateAsync(taskToSave as Task);
             }
@@ -200,6 +202,12 @@ const TasksPage: React.FC = () => {
     const handleAddComment = (comment: TaskComment) => {
         if (currentTask.id) {
             addCommentMutation.mutate({ taskId: currentTask.id, comment });
+
+            // Optimistic UI update so it appears instantly
+            setCurrentTask(prev => ({
+                ...prev,
+                comments: [...(prev.comments || []), comment]
+            }));
         }
     };
 

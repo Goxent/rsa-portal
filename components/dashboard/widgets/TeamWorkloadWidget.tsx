@@ -114,7 +114,7 @@ const TeamWorkloadWidget: React.FC<TeamWorkloadWidgetProps> = ({
             </div>
 
             {/* Staff Workload Bars */}
-            <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+            <div className="space-y-2 max-h-[180px] overflow-y-auto custom-scrollbar pr-1 pb-1">
                 {allStaff.map((staff) => {
                     const barWidth = staff.taskCount === 0 ? 4 : Math.min((staff.taskCount / maxTasks) * 100, 100);
                     const isHovered = hoveredId === staff.uid;
@@ -195,7 +195,7 @@ const TeamWorkloadWidget: React.FC<TeamWorkloadWidgetProps> = ({
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-3 pt-1 border-t border-white/5">
+            <div className="flex items-center gap-3 pt-3 mt-2 border-t border-white/5">
                 {[
                     { color: 'bg-emerald-400', label: 'Free' },
                     { color: 'bg-brand-400', label: 'Active' },
