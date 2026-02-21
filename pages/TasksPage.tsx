@@ -4,7 +4,7 @@ import {
     LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2,
     AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search,
     Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet,
-    FileText, User, Edit2, MoreVertical, Box, ChevronRight, Eye, Clock, Circle
+    FileText, User, Edit2, MoreVertical, Box, ChevronRight, Eye, Clock, Circle, Activity
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -206,7 +206,9 @@ const TasksPage: React.FC = () => {
         const newSubtask: SubTask = {
             id: Math.random().toString(36).substring(2, 9),
             title: newSubtaskTitle.trim(),
-            isCompleted: false
+            isCompleted: false,
+            createdAt: new Date().toISOString(),
+            createdBy: user?.uid || 'unknown'
         };
         setCurrentTask(prev => ({
             ...prev,
@@ -454,7 +456,9 @@ const TasksPage: React.FC = () => {
             subtasks: (template.subtasks || []).map((s: string) => ({
                 id: Math.random().toString(36).substr(2, 9),
                 title: s,
-                isCompleted: false
+                isCompleted: false,
+                createdAt: new Date().toISOString(),
+                createdBy: user?.uid || 'unknown'
             })),
             dueDate: getCurrentDateUTC()
         });
@@ -696,31 +700,43 @@ const TasksPage: React.FC = () => {
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="glass-modal rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10 text-gray-100 overflow-hidden">
-                        <div className="px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                        <div className="px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">
+                            {/* Dynamic Accent Header based on Status */}
+                            <div className={`absolute top-0 left-0 w-full h-1 ${currentTask.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
+                                currentTask.status === TaskStatus.HALTED ? 'bg-rose-500' :
+                                    currentTask.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
+                                        currentTask.status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' : 'bg-gray-500'
+                                }`} />
                             <div>
-                                <h3 className="text-xl font-bold text-white mb-1">{isEditMode ? 'Edit Task' : 'Create New Task'}</h3>
-                                <p className="text-xs text-gray-400">Fill in the details below to manage the task.</p>
+                                <h3 className="text-xl font-black text-white tracking-wide uppercase flex items-center gap-2">
+                                    {isEditMode ? <Edit2 size={18} className="text-blue-400" /> : <Plus size={18} className="text-blue-400" />}
+                                    {isEditMode ? 'EDIT TASK' : 'NEW TASK'}
+                                </h3>
+                                {isEditMode && currentTask.id && (
+                                    <p className="text-[10px] text-gray-500 font-mono mt-1">ID: #{currentTask.id.substring(0, 6).toUpperCase()}</p>
+                                )}
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:text-white transition-all hover:bg-white/10"><X size={20} /></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-                            <div className="flex flex-col gap-8 max-w-3xl mx-auto w-full pb-8">
-                                {/* Title and Description block */}
-                                <div className="space-y-6 bg-white/5 p-6 rounded-2xl border border-white/5">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Task Title <span className="text-rose-500">*</span></label>
+                        <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar bg-gradient-to-b from-transparent to-black/20">
+                            <div className="flex flex-col gap-10 max-w-4xl mx-auto w-full pb-8">
+
+                                {/* Header: Title & Description */}
+                                <div className="space-y-6">
+                                    <div className="space-y-2 group">
                                         <input
-                                            className="w-full glass-input text-lg font-bold placeholder:font-normal"
-                                            placeholder="What needs to be done?"
+                                            autoFocus
+                                            className="w-full bg-transparent text-3xl md:text-4xl font-black text-white placeholder:text-gray-700 placeholder:font-bold focus:outline-none transition-all placeholder:tracking-tight"
+                                            placeholder="Task Title..."
                                             value={currentTask.title || ''}
                                             onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })}
                                         />
+                                        <div className="w-full h-[1px] bg-white/5 group-focus-within:bg-blue-500/50 transition-colors" />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Description</label>
+                                    <div>
                                         <textarea
-                                            className="w-full glass-input min-h-[120px] py-3 text-sm resize-none"
-                                            placeholder="Provide more context (mention staff using @)"
+                                            className="w-full bg-white/5 border border-white/5 focus:border-blue-500/50 rounded-2xl min-h-[140px] p-5 text-sm resize-none text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all shadow-inner"
+                                            placeholder="Add a more detailed description... (Type @ to mention staff)"
                                             value={currentTask.description || ''}
                                             onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })}
                                         />
@@ -728,21 +744,25 @@ const TasksPage: React.FC = () => {
                                 </div>
 
                                 {/* Details block */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/5 p-6 rounded-2xl border border-white/5">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Status</label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-[#0a0f1d] p-6 rounded-3xl border border-white/5 shadow-2xl">
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Activity size={12} className="text-blue-400" /> Status
+                                        </label>
                                         <select
-                                            className="w-full glass-input text-sm"
+                                            className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
                                             value={currentTask.status}
                                             onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as TaskStatus })}
                                         >
                                             {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
                                         </select>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Priority</label>
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <AlertTriangle size={12} className={currentTask.priority === 'URGENT' ? 'text-rose-400' : 'text-orange-400'} /> Priority
+                                        </label>
                                         <select
-                                            className="w-full glass-input text-sm"
+                                            className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
                                             value={currentTask.priority}
                                             onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as TaskPriority })}
                                         >
@@ -750,8 +770,10 @@ const TasksPage: React.FC = () => {
                                         </select>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Client</label>
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Briefcase size={12} className="text-indigo-400" /> Client
+                                        </label>
                                         <ClientSelect
                                             clients={clientsList}
                                             value={currentTask.clientIds?.[0] || ''}
@@ -759,45 +781,46 @@ const TasksPage: React.FC = () => {
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Due Date</label>
-                                            <div className="flex items-center gap-2 bg-black/40 p-0.5 rounded-lg border border-white/10">
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] lg:col-span-1">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Calendar size={12} className="text-emerald-400" /> Due Date
+                                            </label>
+                                            <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
                                                 <button
                                                     onClick={() => setDateMode('AD')}
-                                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${dateMode === 'AD' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-white'}`}
+                                                    className={`px-2 py-0.5 rounded font-bold text-[9px] transition-all ${dateMode === 'AD' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'}`}
                                                 >
                                                     AD
                                                 </button>
                                                 <button
                                                     onClick={() => setDateMode('BS')}
-                                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${dateMode === 'BS' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-white'}`}
+                                                    className={`px-2 py-0.5 rounded font-bold text-[9px] transition-all ${dateMode === 'BS' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'}`}
                                                 >
                                                     BS
                                                 </button>
                                             </div>
                                         </div>
                                         {dateMode === 'AD' ? (
-                                            <div className="relative group">
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" size={16} />
-                                                <input
-                                                    type="date"
-                                                    value={currentTask.dueDate || ''}
-                                                    onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
-                                                    className="w-full h-[42px] glass-input text-sm pl-10 cursor-pointer"
-                                                />
-                                            </div>
+                                            <input
+                                                type="date"
+                                                value={currentTask.dueDate || ''}
+                                                onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
+                                                className="w-full bg-transparent text-sm font-bold text-white focus:outline-none cursor-pointer"
+                                            />
                                         ) : (
                                             <NepaliDatePicker
                                                 value={currentTask.dueDate || ''}
                                                 onChange={(adDate) => setCurrentTask({ ...currentTask, dueDate: adDate })}
-                                                placeholder="Select Nepali Date"
+                                                placeholder="Select Date"
                                             />
                                         )}
                                     </div>
 
-                                    <div className="space-y-2 md:col-span-2">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Assigned To</label>
+                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-2 lg:col-span-2">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                            <UserCircle2 size={12} className="text-cyan-400" /> Assignees
+                                        </label>
                                         <StaffSelect
                                             users={usersList}
                                             value={currentTask.assignedTo || []}
