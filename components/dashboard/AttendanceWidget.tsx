@@ -345,7 +345,7 @@ const AttendanceWidget: React.FC = () => {
                 <div className="bg-navy-800/90 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
                     {/* Drag Handle / Status Icon */}
                     <div className={`p-2 rounded-xl ${status === 'CLOCKED_IN' ? 'bg-green-500/20 text-green-400 animate-pulse' :
-                            status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'
+                        status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'
                         }`}>
                         <Clock size={20} />
                     </div>
@@ -386,7 +386,11 @@ const AttendanceWidget: React.FC = () => {
 
     // Default Full Widget Render
     return (
-        <div className="glass-panel border-white/5 relative overflow-hidden group">
+        <div className="glass-panel border-white/5 relative group rounded-2xl">
+            {/* Background Decoration wrapper to clip blur without clipping the dropdown */}
+            <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none -z-10">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none translate-x-1/3 -translate-y-1/3"></div>
+            </div>
             {/* Header / Top Bar */}
             <div className="p-6 pb-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
                 <div>
@@ -396,8 +400,8 @@ const AttendanceWidget: React.FC = () => {
                             Attendance Center
                         </h2>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full border ${status === 'CLOCKED_IN' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                                status === 'COMPLETED' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                                    'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                            status === 'COMPLETED' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                                'bg-gray-500/10 border-gray-500/20 text-gray-400'
                             }`}>
                             {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}
                         </span>
@@ -545,8 +549,6 @@ const AttendanceWidget: React.FC = () => {
                 )}
             </div>
 
-            {/* Background Decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl -z-0 pointer-events-none translate-x-1/3 -translate-y-1/3"></div>
         </div>
     );
 };
