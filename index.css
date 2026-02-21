@@ -1,13 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+    :root {
+        /* Modular Spacing Scale (8px logical units) */
+        --s-1: 0.25rem;
+        /* 4px */
+        --s-2: 0.5rem;
+        /* 8px */
+        --s-3: 0.75rem;
+        /* 12px */
+        --s-4: 1rem;
+        /* 16px */
+        --s-5: 1.5rem;
+        /* 24px */
+        --s-6: 2rem;
+        /* 32px */
+        --s-8: 3rem;
+        /* 48px */
+        --s-10: 4rem;
+        /* 64px */
+        --s-12: 6rem;
+        /* 96px */
+    }
+
     body {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         @apply antialiased transition-colors duration-300;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: 'Inter Tight', sans-serif;
+        @apply font-semibold tracking-tight;
+    }
+
+    /* Standard Accessibility Focus Ring */
+    :focus-visible {
+        @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-900;
+    }
+
+    .light :focus-visible {
+        @apply ring-offset-white;
     }
 }
 

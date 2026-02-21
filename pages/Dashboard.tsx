@@ -17,6 +17,7 @@ import { useUsers } from '../hooks/useStaff';
 import { useClients } from '../hooks/useClients';
 import { useEvents } from '../hooks/useEvents';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Helper interface for the unified schedule list
 interface ScheduleItem {
@@ -242,43 +243,70 @@ const Dashboard: React.FC = () => {
     // Admin check for heatmap
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0 }
+    };
+
     return (
-        <div className="space-y-8">
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-8"
+        >
             {/* Attendance Widget - Moved to Top */}
-            <div className="w-full relative shadow-[inset_0_0_100px_rgba(59,130,246,0.1)] rounded-2xl">
+            <motion.div variants={itemVariants} className="w-full relative shadow-[inset_0_0_100px_rgba(59,130,246,0.1)] rounded-2xl overflow-hidden glass-panel border border-white/10">
                 <AttendanceWidget />
-            </div>
+            </motion.div>
 
             {/* Greetings & Focus Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-                <div className="lg:col-span-2">
+                <motion.div variants={itemVariants} className="lg:col-span-2">
                     <GreetingsWidget />
-                </div>
-                <div className="lg:col-span-1">
+                </motion.div>
+                <motion.div variants={itemVariants} className="lg:col-span-1">
                     <FocusWidget />
-                </div>
+                </motion.div>
             </div>
 
             {/* Compliance Banner - Show only if there are urgency deadlines */}
-            <div className="w-full">
+            <motion.div variants={itemVariants} className="w-full">
                 <ComplianceBanner deadlines={upcomingSchedule.filter(i => i.type === 'DEADLINE')} />
-            </div>
+            </motion.div>
 
             {/* Admin Exclusive: Workload Heatmap */}
             {isAdmin && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[300px]">
-                    <WorkloadHeatmap staffStats={staffStats} totalTasks={relevantTasks.length} />
-                    <AiInsightWidget />
+                    <motion.div variants={itemVariants}>
+                        <WorkloadHeatmap staffStats={staffStats} totalTasks={relevantTasks.length} />
+                    </motion.div>
+                    <motion.div variants={itemVariants}>
+                        <AiInsightWidget />
+                    </motion.div>
                 </div>
             )}
 
             {/* Widget Container */}
             {user && (
-                <WidgetContainer
-                    userId={user.uid}
-                    dashboardData={dashboardData}
-                    isAdmin={isAdmin}
-                />
+                <motion.div variants={itemVariants}>
+                    <WidgetContainer
+                        userId={user.uid}
+                        dashboardData={dashboardData}
+                        isAdmin={isAdmin}
+                    />
+                </motion.div>
             )}
 
             {/* Staff Detail Modal */}
@@ -353,7 +381,7 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 };
 

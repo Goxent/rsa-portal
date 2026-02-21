@@ -13,6 +13,8 @@ import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import NotificationPanel from './layout/NotificationPanel';
 
+import { motion, AnimatePresence } from 'framer-motion';
+
 const Layout: React.FC = () => {
   const { user } = useAuth();
 
@@ -108,24 +110,30 @@ const Layout: React.FC = () => {
 
   return (
     <>
-      {/* Global Command Palette */}
       <CommandPalette
         isOpen={showCommandPalette}
         onClose={() => setShowCommandPalette(false)}
       />
 
-      <div className="flex h-screen bg-[#0B1120] text-gray-100 font-sans overflow-hidden">
+      <div className="flex h-screen bg-transparent text-gray-100 font-sans overflow-hidden">
 
         {/* Sidebar */}
-        <Sidebar
-          isCollapsed={isSidebarCollapsed}
-          toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          isMobileOpen={isMobileMenuOpen}
-          closeMobileMenu={() => setIsMobileMenuOpen(false)}
-        />
+        <motion.div
+          initial={{ x: -260 }}
+          animate={{ x: 0 }}
+          transition={{ duration: 0.5, ease: "circOut" }}
+          className="z-50"
+        >
+          <Sidebar
+            isCollapsed={isSidebarCollapsed}
+            toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            isMobileOpen={isMobileMenuOpen}
+            closeMobileMenu={() => setIsMobileMenuOpen(false)}
+          />
+        </motion.div>
 
         {/* Main Content Wrapper */}
-        <div className={`flex-1 flex flex-col h-full transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+        <div className={`flex-1 flex flex-col h-full transition-all duration-500 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
 
           {/* Header */}
           <Header
@@ -136,7 +144,6 @@ const Layout: React.FC = () => {
             isSidebarCollapsed={isSidebarCollapsed}
           />
 
-          {/* Slide-over Notifications */}
           <NotificationPanel
             isOpen={showNotifications}
             onClose={() => setShowNotifications(false)}
@@ -145,12 +152,19 @@ const Layout: React.FC = () => {
 
           {/* Page Content */}
           <main className="flex-1 overflow-auto p-4 md:p-6 mt-16 scroll-smooth custom-scrollbar relative">
-            {!isOnline && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-2 rounded-lg mb-4 flex items-center justify-center animate-pulse">
-                <WifiOff size={18} className="mr-2" />
-                <span className="text-sm font-medium">You are currently offline. Changes will sync when connection is restored.</span>
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {!isOnline && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-2 rounded-lg mb-4 flex items-center justify-center"
+                >
+                  <WifiOff size={18} className="mr-2" />
+                  <span className="text-sm font-medium">You are currently offline. Changes will sync when connection is restored.</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <Outlet />
           </main>

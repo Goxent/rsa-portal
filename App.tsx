@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UserRole } from './types';
@@ -36,17 +37,27 @@ const PeerReviewPage = lazy(() => import('./pages/PeerReviewPage'));
 const ResourcePlanningPage = lazy(() => import('./pages/ResourcePlanningPage'));
 
 
-// Suspense wrapper for lazy-loaded components
 // Suspense wrapper for lazy-loaded components with Error Boundary
-const LazyPage = ({ children }: { children: React.ReactNode }) => (
-  <PageErrorBoundary>
-    <Suspense fallback={<PageLoader />}>
-      <div className="animate-fade-in w-full h-full">
-        {children}
-      </div>
-    </Suspense>
-  </PageErrorBoundary>
-);
+const LazyPage = ({ children }: { children: React.ReactNode }) => {
+  const { pathname } = useLocation();
+
+  return (
+    <PageErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="w-full h-full"
+        >
+          {children}
+        </motion.div>
+      </Suspense>
+    </PageErrorBoundary>
+  );
+};
 
 
 // Protected Route Wrapper

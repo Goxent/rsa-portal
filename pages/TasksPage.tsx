@@ -27,6 +27,7 @@ import TaskComments from '../components/TaskComments';
 import TaskMainView from '../components/tasks/TaskMainView';
 import NepaliDatePicker from '../components/NepaliDatePicker';
 import TaskDetailPane from '../components/tasks/TaskDetailPane';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -552,23 +553,27 @@ const TasksPage: React.FC = () => {
     }, [filteredTasks]);
 
     if (loading) return (
-        <div className="flex flex-col h-full bg-[#0a0f1d] p-8 space-y-8 animate-pulse">
+        <div className="flex flex-col h-full bg-transparent p-8 space-y-8 animate-pulse">
             <div className="h-40 bg-white/5 rounded-3xl" />
             <div className="flex-1 bg-white/5 rounded-3xl" />
         </div>
     );
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#0a0f1d] animate-in fade-in duration-500">
+        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-transparent">
             {/* --- PREMIUM WORKSPACE HEADER --- */}
-            <header className="flex-none bg-[#0f172a]/80 backdrop-blur-2xl border-b border-white/[0.05] p-6 pb-5 relative z-20">
+            <header className="flex-none glass-panel border-b border-white/[0.05] p-6 pb-5 relative z-20">
                 {/* Top Row: Title, Quick Toggles & Primary Actions */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-4 border-r border-white/10 pr-6">
-                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <motion.div
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20"
+                            >
                                 <Box className="text-white" size={24} />
-                            </div>
+                            </motion.div>
                             <div>
                                 <h1 className="text-2xl font-black text-white tracking-tight">Workflow</h1>
                                 <p className="text-xs font-medium text-gray-400">Manage firm tasks & projects</p>
@@ -636,7 +641,7 @@ const TasksPage: React.FC = () => {
 
                 {/* Bottom Row: Search & Filters */}
                 <div className="space-y-4">
-                    <div className="flex flex-col lg:flex-row items-center gap-4 bg-[#0a0f1d] p-3 rounded-2xl border border-white/[0.05]">
+                    <div className="flex flex-col lg:flex-row items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/[0.05]">
                         <div className="flex-1 relative group w-full lg:max-w-md">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
                             <input

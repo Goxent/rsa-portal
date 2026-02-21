@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Check, X, ChevronDown, User } from 'lucide-react';
 import { UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface StaffSelectProps {
     users?: UserProfile[]; // Optional, will fetch if not provided
@@ -141,64 +141,72 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
                 <ChevronDown size={14} className={`text-gray-500 transition-transform duration-200 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            {isOpen && (
-                <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    <div className="p-2 border-b border-white/10">
-                        <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder="Search staff..."
-                                className="w-full bg-black/40 text-white text-xs rounded-lg pl-9 pr-3 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
-                                value={searchTerm}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute z-[100] top-full left-0 right-0 mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+                    >
+                        <div className="p-2 border-b border-white/10">
+                            <div className="relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Search staff..."
+                                    className="w-full bg-black/40 text-white text-xs rounded-lg pl-9 pr-3 py-2 border border-white/5 focus:border-brand-500/50 focus:outline-none"
+                                    value={searchTerm}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
-                        {allOptions.length > 0 ? (
-                            allOptions.map(user => {
-                                const isSelected = Array.isArray(value) ? value.includes(user.uid) : value === user.uid;
-                                return (
-                                    <div
-                                        key={user.uid}
-                                        className={`px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-colors mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
-                                        onClick={(e) => handleSelect(user.uid, e)}
-                                    >
-                                        <div className="flex items-center">
-                                            {user.uid === 'ALL' ? (
-                                                <div className="w-8 h-8 rounded-full bg-brand-600/20 flex items-center justify-center text-[10px] font-bold mr-3 border border-brand-500/20 text-brand-400">
-                                                    ALL
-                                                </div>
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10">
-                                                    {getInitials(user.displayName)}
-                                                </div>
-                                            )}
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-white">{user.displayName}</span>
-                                                {user.uid !== 'ALL' && (
-                                                    <div className="flex items-center text-[10px] text-gray-500 space-x-2">
-                                                        <span>{user.position || user.role}</span>
-                                                        <span>•</span>
-                                                        <span>{user.department}</span>
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
+                            {allOptions.length > 0 ? (
+                                allOptions.map(user => {
+                                    const isSelected = Array.isArray(value) ? value.includes(user.uid) : value === user.uid;
+                                    return (
+                                        <div
+                                            key={user.uid}
+                                            className={`px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-colors mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
+                                            onClick={(e) => handleSelect(user.uid, e)}
+                                        >
+                                            <div className="flex items-center">
+                                                {user.uid === 'ALL' ? (
+                                                    <div className="w-8 h-8 rounded-full bg-brand-600/20 flex items-center justify-center text-[10px] font-bold mr-3 border border-brand-500/20 text-brand-400">
+                                                        ALL
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold mr-3 border border-white/5 group-hover:border-white/10">
+                                                        {getInitials(user.displayName)}
                                                     </div>
                                                 )}
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-white">{user.displayName}</span>
+                                                    {user.uid !== 'ALL' && (
+                                                        <div className="flex items-center text-[10px] text-gray-500 space-x-2">
+                                                            <span>{user.position || user.role}</span>
+                                                            <span>•</span>
+                                                            <span>{user.department}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
+                                            {isSelected && <Check size={14} className="text-brand-400" />}
                                         </div>
-                                        {isSelected && <Check size={14} className="text-brand-400" />}
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <div className="p-4 text-center text-gray-500 text-xs">No staff found</div>
-                        )}
-                    </div>
-                </div>
-            )}
+                                    );
+                                })
+                            ) : (
+                                <div className="p-4 text-center text-gray-500 text-xs">No staff found</div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

@@ -19,8 +19,10 @@ interface UseCommandPaletteReturn {
     clearSearch: () => void;
 }
 
-export const useCommandPalette = (): UseCommandPaletteReturn => {
-    const [isOpen, setIsOpen] = useState(false);
+export const useCommandPalette = (controlledIsOpen?: boolean, onControlledClose?: () => void): UseCommandPaletteReturn => {
+    const [internalIsOpen, setInternalIsOpen] = useState(false);
+    const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+    const setIsOpen = onControlledClose || setInternalIsOpen;
     const [search, setSearch] = useState('');
 
     // Register global hotkey (Cmd+K / Ctrl+K)
