@@ -700,7 +700,7 @@ const TasksPage: React.FC = () => {
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="glass-modal rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10 text-gray-100 overflow-hidden">
-                        <div className="px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">
+                        <div className="shrink-0 px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">
                             {/* Dynamic Accent Header based on Status */}
                             <div className={`absolute top-0 left-0 w-full h-1 ${currentTask.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
                                 currentTask.status === TaskStatus.HALTED ? 'bg-rose-500' :
@@ -726,7 +726,7 @@ const TasksPage: React.FC = () => {
                                     <div className="space-y-2 group">
                                         <input
                                             autoFocus
-                                            className="w-full bg-transparent text-3xl md:text-4xl font-black text-white placeholder:text-gray-700 placeholder:font-bold focus:outline-none transition-all placeholder:tracking-tight"
+                                            className="w-full bg-transparent text-3xl md:text-4xl font-black text-white placeholder:text-gray-700 placeholder:font-bold focus:outline-none focus:ring-0 border-none px-0 transition-all placeholder:tracking-tight ring-0"
                                             placeholder="Task Title..."
                                             value={currentTask.title || ''}
                                             onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })}
