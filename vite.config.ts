@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => {
         'react-is': path.resolve(__dirname, 'node_modules/react-is/index.js'),
       }
     },
+    build: {
+      sourcemap: false, // Disable source maps in production — prevents readable code in F12
+    },
     optimizeDeps: {
       include: ['react-is']
     }
