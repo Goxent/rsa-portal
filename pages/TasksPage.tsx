@@ -812,7 +812,7 @@ const TasksPage: React.FC = () => {
             </header>
 
             {/* --- WORKSPACE AREA --- */}
-            <main className="flex-1 overflow-hidden relative">
+            <main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative">
                 <TaskMainView
                     viewMode={viewMode}
                     tasks={filteredTasks}
