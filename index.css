@@ -374,3 +374,21 @@
             rgba(0, 0, 0, 0.05) 75%);
     background-size: 200% 100%;
 }
+
+/* Kanban horizontal scroll — slim track */
+.custom-scrollbar-x::-webkit-scrollbar {
+    height: 5px;
+}
+
+.custom-scrollbar-x::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar-x::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.25);
+    border-radius: 99px;
+}
+
+.custom-scrollbar-x::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.45);
+}
