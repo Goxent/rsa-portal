@@ -107,7 +107,7 @@ const TasksPage: React.FC = () => {
         const newFilters = [...savedFilters, {
             name,
             filters: {
-                filterPriority, filterStatus, filterStaff, filterClient, filterSignee, filterVat, filterItr, dateRange, searchTerm
+                filterPriority, filterStatus, filterStaff, filterClient, filterAuditor, filterVat, filterItr, dateRange, searchTerm
             }
         }];
         setSavedFilters(newFilters);
@@ -656,7 +656,7 @@ const TasksPage: React.FC = () => {
                     </div>
 
                     {/* Active Filter Pills */}
-                    {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterSignee !== 'ALL' || filterVat || filterItr || (dateRange.start || dateRange.end)) && (
+                    {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || filterVat || filterItr || (dateRange.start || dateRange.end)) && (
                         <div className="flex flex-wrap items-center gap-2 px-1">
                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mr-2">Active Filters:</span>
                             {searchTerm && (
