@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Phone, Briefcase, Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays } from 'lucide-react';
+import { X, Mail, Phone, Briefcase, Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays, ArrowRight } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -299,33 +299,106 @@ const Dashboard: React.FC = () => {
                         <ComplianceBanner deadlines={upcomingSchedule.filter(i => i.type === 'DEADLINE')} />
                     )}
 
-                    {/* Next 7 Days Schedule */}
-                    <div className="glass-panel border border-white/[0.06] rounded-2xl p-4">
-                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <CalendarDays size={13} className="text-blue-400" /> Next 7 Days
-                        </h3>
-                        {next7Days.length === 0 ? (
-                            <p className="text-xs text-gray-600 text-center py-4">No upcoming items</p>
-                        ) : (
-                            <div className="space-y-2">
-                                {next7Days.map(item => (
-                                    <div key={item.id} className="flex items-start gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:border-white/10 transition-colors">
-                                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${item.type === 'DEADLINE' ? 'bg-rose-400' : 'bg-blue-400'}`} />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-xs font-semibold text-gray-200 truncate">{item.title}</p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">
-                                                {new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                                {item.description && ` • ${item.description}`}
-                                            </p>
-                                        </div>
-                                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${item.type === 'DEADLINE' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
-                                            {item.type === 'DEADLINE' ? (item.subType ?? 'DUE') : 'EVENT'}
+                    {/* ── Upcoming Panel ── */}
+                    {(() => {
+                        const getRelativeDate = (dateStr: string) => {
+                            const today = new Date().toISOString().split('T')[0];
+                            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                            if (dateStr === today) return 'Today';
+                            if (dateStr === tomorrow) return 'Tomorrow';
+                            return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        };
+
+                        const items = upcomingSchedule.slice(0, 8);
+
+                        // Border color: blue = EVENT, red = URGENT deadline, amber = HIGH deadline, slate = rest
+                        const getBorderColor = (item: ScheduleItem) => {
+                            if (item.type === 'EVENT') return 'border-l-blue-500';
+                            if (item.subType === 'URGENT') return 'border-l-red-500';
+                            if (item.subType === 'HIGH') return 'border-l-amber-500';
+                            return 'border-l-slate-600';
+                        };
+
+                        // Subtype pill colors
+                        const getSubtypePill = (item: ScheduleItem) => {
+                            if (item.type === 'EVENT') return 'bg-blue-500/10 border-blue-500/20 text-blue-400';
+                            if (item.subType === 'URGENT') return 'bg-red-500/10 border-red-500/20 text-red-400';
+                            if (item.subType === 'HIGH') return 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+                            return 'bg-slate-500/10 border-slate-500/20 text-slate-400';
+                        };
+
+                        return (
+                            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 space-y-3">
+                                {/* Header */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <CalendarDays size={13} className="text-blue-400" />
+                                        <h3 className="text-xs font-black text-gray-300 uppercase tracking-widest">Upcoming</h3>
+                                        <span className="text-[10px] font-bold bg-white/[0.06] border border-white/[0.08] text-gray-500 rounded-full px-1.5 py-0.5 tabular-nums">
+                                            {upcomingSchedule.length}
                                         </span>
                                     </div>
-                                ))}
+                                </div>
+
+                                {/* Items */}
+                                {items.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-6 gap-1">
+                                        <span className="text-xl">🎉</span>
+                                        <p className="text-xs font-semibold text-emerald-400">Clear schedule ahead</p>
+                                        <p className="text-[10px] text-gray-600">No upcoming events or deadlines</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        {items.map(item => (
+                                            <div
+                                                key={item.id}
+                                                className={`flex items-stretch gap-0 rounded-xl overflow-hidden border-l-2 bg-white/[0.02] hover:bg-white/[0.04] transition-colors ${getBorderColor(item)}`}
+                                            >
+                                                {/* Icon column */}
+                                                <div className="flex items-center justify-center w-8 flex-shrink-0">
+                                                    {item.type === 'DEADLINE'
+                                                        ? <ClockIcon size={11} className="text-gray-500" />
+                                                        : <CalendarDays size={11} className="text-gray-500" />}
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="flex-1 min-w-0 py-2 pr-2">
+                                                    <div className="flex items-center justify-between gap-1.5">
+                                                        <p className="text-xs font-semibold text-gray-200 truncate leading-tight">
+                                                            {item.title}
+                                                        </p>
+                                                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${getSubtypePill(item)}`}>
+                                                            {item.type === 'DEADLINE' ? (item.subType ?? 'DUE') : (item.subType ?? 'EVENT')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className={`text-[10px] font-medium ${getRelativeDate(item.date) === 'Today' ? 'text-amber-400' :
+                                                                getRelativeDate(item.date) === 'Tomorrow' ? 'text-blue-400' :
+                                                                    'text-gray-500'
+                                                            }`}>{getRelativeDate(item.date)}</span>
+                                                        {item.description && (
+                                                            <>
+                                                                <span className="text-gray-700 text-[10px]">·</span>
+                                                                <span className="text-[10px] text-gray-600 truncate">{item.description}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* View all link */}
+                                <button
+                                    onClick={() => navigate('/calendar')}
+                                    className="flex items-center justify-center gap-1.5 w-full pt-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold"
+                                >
+                                    View all in Calendar <ArrowRight size={11} />
+                                </button>
                             </div>
-                        )}
-                    </div>
+                        );
+                    })()}
 
                     {/* Attendance Widget */}
                     <AttendanceWidget />
