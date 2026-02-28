@@ -295,8 +295,8 @@ const Dashboard: React.FC = () => {
                 <div className="w-[320px] flex-shrink-0 flex flex-col gap-4 sticky top-4 self-start">
 
                     {/* Compliance Banner (conditional) */}
-                    {upcomingSchedule.filter(i => i.type === 'DEADLINE').length > 0 && (
-                        <ComplianceBanner deadlines={upcomingSchedule.filter(i => i.type === 'DEADLINE')} />
+                    {upcomingSchedule.filter(i => i.type === 'DEADLINE' && i.subType === 'URGENT').length > 0 && (
+                        <ComplianceBanner deadlines={upcomingSchedule.filter(i => i.type === 'DEADLINE' && i.subType === 'URGENT')} />
                     )}
 
                     {/* ── Upcoming Panel ── */}
@@ -373,8 +373,8 @@ const Dashboard: React.FC = () => {
                                                     </div>
                                                     <div className="flex items-center gap-1.5 mt-0.5">
                                                         <span className={`text-[10px] font-medium ${getRelativeDate(item.date) === 'Today' ? 'text-amber-400' :
-                                                                getRelativeDate(item.date) === 'Tomorrow' ? 'text-blue-400' :
-                                                                    'text-gray-500'
+                                                            getRelativeDate(item.date) === 'Tomorrow' ? 'text-blue-400' :
+                                                                'text-gray-500'
                                                             }`}>{getRelativeDate(item.date)}</span>
                                                         {item.description && (
                                                             <>
