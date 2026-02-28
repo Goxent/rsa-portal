@@ -422,12 +422,12 @@ const TasksPage: React.FC = () => {
         sheet.getRow(5).height = 6;
 
         const COLS = [
-            { header: 'Client', key: 'client', width: 25 },
-            { header: 'Task', key: 'title', width: 45 },
-            { header: 'Status', key: 'status', width: 18 },
-            { header: 'Priority', key: 'priority', width: 12 },
-            { header: 'Due Date', key: 'dueDate', width: 15 },
-            { header: 'Assigned To', key: 'assignedTo', width: 30 },
+            { key: 'client', width: 25 },
+            { key: 'title', width: 45 },
+            { key: 'status', width: 18 },
+            { key: 'priority', width: 12 },
+            { key: 'dueDate', width: 15 },
+            { key: 'assignedTo', width: 30 },
         ];
         sheet.columns = COLS;
 
@@ -563,25 +563,26 @@ const TasksPage: React.FC = () => {
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-transparent">
             {/* --- PREMIUM WORKSPACE HEADER --- */}
             <header className="flex-none glass-panel border-b border-white/[0.05] p-6 pb-5 relative z-20">
-                {/* Top Row: Title, Quick Toggles & Primary Actions */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-4 border-r border-white/10 pr-6">
+                {/* Top Row: Title, Toggles & Actions — always horizontal, scrolls if needed */}
+                <div className="flex flex-nowrap items-center gap-4 overflow-x-auto mb-4 scrollbar-none">
+                    {/* Left: Branding + view toggles */}
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                        <div className="flex items-center gap-4 border-r border-white/10 pr-4">
                             <motion.div
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20"
+                                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0"
                             >
-                                <Box className="text-white" size={24} />
+                                <Box className="text-white" size={20} />
                             </motion.div>
-                            <div>
-                                <h1 className="text-2xl font-black text-white tracking-tight">Workflow</h1>
-                                <p className="text-xs font-medium text-gray-400">Manage firm tasks & projects</p>
+                            <div className="hidden sm:block">
+                                <h1 className="text-lg font-black text-white tracking-tight">Workflow</h1>
+                                <p className="text-[10px] font-medium text-gray-400">Manage firm tasks &amp; projects</p>
                             </div>
                         </div>
 
                         {/* View Modes */}
-                        <div className="flex items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05]">
+                        <div className="flex items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05] flex-shrink-0">
                             <button
                                 onClick={() => setViewMode('KANBAN')}
                                 className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
@@ -594,7 +595,7 @@ const TasksPage: React.FC = () => {
                             >
                                 <ListIcon size={14} /> List
                             </button>
-                            <div className="w-px h-6 bg-white/10 mx-2" />
+                            <div className="w-px h-6 bg-white/10 mx-1" />
                             <button
                                 onClick={() => setBoardMode('ALL')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${boardMode === 'ALL' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
@@ -610,31 +611,32 @@ const TasksPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    {/* Right: Actions — pinned right with ml-auto */}
+                    <div className="flex items-center gap-2 ml-auto flex-shrink-0">
                         {selectedTaskIds.length > 0 && (
                             <button
                                 onClick={handleBulkDelete}
-                                className="px-5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-rose-500/10"
+                                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-rose-500/10"
                             >
-                                <Trash2 size={16} /> Delete ({selectedTaskIds.length})
+                                <Trash2 size={15} /> Delete ({selectedTaskIds.length})
                             </button>
                         )}
                         <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
-                            <button onClick={handleExportPDF} title="Export PDF" className="p-2.5 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={18} /></button>
-                            <button onClick={handleExportExcel} title="Export Excel" className="p-2.5 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={18} /></button>
+                            <button onClick={handleExportPDF} title="Export PDF" className="p-2 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={16} /></button>
+                            <button onClick={handleExportExcel} title="Export Excel" className="p-2 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={16} /></button>
                         </div>
                         <button
                             onClick={() => setIsTemplateModalOpen(true)}
-                            className="px-5 py-2.5 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all"
+                            className="px-4 py-2 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all"
                         >
-                            <Sparkles size={16} className="text-amber-400" /> Templates
+                            <Sparkles size={14} className="text-amber-400" /> Templates
                         </button>
                         <button
                             onClick={handleOpenCreate}
                             disabled={!canCreateTask}
-                            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 border border-white/10"
+                            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 border border-white/10 flex-shrink-0"
                         >
-                            <Plus size={18} /> New Task
+                            <Plus size={16} /> New Task
                         </button>
                     </div>
                 </div>
