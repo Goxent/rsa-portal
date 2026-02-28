@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Phone, Briefcase, Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays, ArrowRight } from 'lucide-react';
+import { X, Mail, Phone, Briefcase, Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays, ArrowRight, BarChart2 } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -407,9 +407,50 @@ const Dashboard: React.FC = () => {
 
             {/* ── 4. ADMIN SECTION ──────────────────────────────────────── */}
             {isAdmin && (
-                <div className="flex-none grid grid-cols-1 lg:grid-cols-2 gap-5 min-h-[300px]">
-                    <WorkloadHeatmap staffStats={staffStats} totalTasks={relevantTasks.length} />
-                    <AiInsightWidget />
+                <div className="flex-none flex flex-col gap-4 min-h-[300px] mt-2">
+                    {/* Section Header */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                                <BarChart2 size={16} className="text-violet-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-bold text-white">Team Overview</h2>
+                                <p className="text-[10px] text-gray-500">Admin view • Workload & AI insights</p>
+                            </div>
+                        </div>
+                        <button onClick={() => navigate('/staff')} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
+                            Full Report <ArrowRight size={12} />
+                        </button>
+                    </div>
+
+                    {/* 3-Stat Bar */}
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl px-4 py-2 flex items-center justify-between">
+                            <span className="text-[11px] font-medium text-gray-400">Busy Staff</span>
+                            <span className="text-sm font-bold text-white tabular-nums">{staffStats.busy.length}</span>
+                        </div>
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl px-4 py-2 flex items-center justify-between">
+                            <span className="text-[11px] font-medium text-gray-400">Available</span>
+                            <span className="text-sm font-bold text-emerald-400 tabular-nums">{staffStats.free.length}</span>
+                        </div>
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl px-4 py-2 flex items-center justify-between">
+                            <span className="text-[11px] font-medium text-gray-400">In Progress</span>
+                            <span className="text-sm font-bold text-blue-400 tabular-nums">
+                                {taskData.find(d => d.name === 'In Progress')?.value || 0}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Widgets Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4">
+                            <WorkloadHeatmap staffStats={staffStats} totalTasks={relevantTasks.length} />
+                        </div>
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4">
+                            <AiInsightWidget />
+                        </div>
+                    </div>
                 </div>
             )}
 
