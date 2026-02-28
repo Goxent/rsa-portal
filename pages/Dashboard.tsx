@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Phone, Briefcase, Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays, Circle } from 'lucide-react';
+import { X, Mail, Phone, Briefcase, Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -52,13 +52,6 @@ const Dashboard: React.FC = () => {
     const isLoading = tasksLoading || usersLoading || eventsLoading || clientsLoading;
 
     // ── Derived Attendance State (for command strip) ───────────────────────
-    const todayAttendance = useMemo(() => {
-        const todayStr = new Date().toLocaleDateString('en-CA');
-        return (attendanceHistory as any[]).find(r => r.date === todayStr) ?? null;
-    }, [attendanceHistory]);
-
-    const isClockedIn = todayAttendance && !todayAttendance.clockOut;
-    const clockInTime: string | null = todayAttendance?.clockIn ?? null;
 
     // ── Computed Dashboard Data ────────────────────────────────────────────
     const {
@@ -220,58 +213,58 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-col gap-5 h-full overflow-y-auto overflow-x-hidden pb-6 custom-scrollbar">
 
             {/* ── 1. COMMAND STRIP ──────────────────────────────────────── */}
-            <div className="flex-none glass-panel border border-white/[0.06] rounded-2xl px-5 py-3 flex flex-wrap items-center gap-3">
+            <div className="flex-none bg-white/[0.02] border border-white/[0.05] rounded-2xl px-5 py-3 flex flex-wrap items-center justify-between gap-3">
 
-                {/* Date pill */}
-                <div className="flex items-center gap-2 bg-white/5 border border-white/[0.07] rounded-full px-4 py-1.5 flex-shrink-0">
-                    <CalendarDays size={13} className="text-blue-400" />
-                    <span className="text-xs font-semibold text-gray-200">{adDate}</span>
-                    {bsDate && (
-                        <>
-                            <span className="text-white/20">•</span>
-                            <span className="text-xs font-semibold text-blue-300">{bsDate} BS</span>
-                        </>
-                    )}
+                {/* Left: Date */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <CalendarDays size={13} className="text-blue-400" />
+                        <span className="font-medium text-white">{adDate}</span>
+                        {bsDate && (
+                            <>
+                                <span className="text-gray-600">|</span>
+                                <span className="text-gray-500">{bsDate} BS</span>
+                            </>
+                        )}
+                    </div>
                 </div>
 
-                {/* Micro-stat pills */}
-                <div className="flex items-center gap-2 flex-1 flex-wrap justify-center">
-                    <button onClick={() => navigate('/tasks')} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/[0.06] rounded-full px-4 py-1.5 transition-all group">
-                        <CheckSquare size={12} className="text-blue-400" />
-                        <span className="text-sm font-black text-white tabular-nums">{allTasks.length}</span>
-                        <span className="text-[11px] text-gray-400 group-hover:text-gray-300">Total Tasks</span>
+                {/* Center: Micro-stat pills */}
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                    <button onClick={() => navigate('/tasks')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
+                        <CheckSquare size={11} className="text-blue-400" />
+                        <span className="text-white tabular-nums">{relevantTasks.length}</span>
+                        <span className="text-gray-500 font-normal">Total Tasks</span>
                     </button>
-                    <button onClick={() => navigate('/tasks')} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/[0.06] rounded-full px-4 py-1.5 transition-all group">
-                        <ClockIcon size={12} className="text-amber-400" />
-                        <span className="text-sm font-black text-white tabular-nums">{myOpenTasks}</span>
-                        <span className="text-[11px] text-gray-400 group-hover:text-gray-300">My Open</span>
+                    <button onClick={() => navigate('/tasks')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
+                        <ClockIcon size={11} className="text-amber-400" />
+                        <span className="text-white tabular-nums">{myOpenTasks}</span>
+                        <span className="text-gray-500 font-normal">My Open</span>
                     </button>
-                    <button onClick={() => navigate('/clients')} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/[0.06] rounded-full px-4 py-1.5 transition-all group">
-                        <Building2 size={12} className="text-emerald-400" />
-                        <span className="text-sm font-black text-white tabular-nums">{allClients.length}</span>
-                        <span className="text-[11px] text-gray-400 group-hover:text-gray-300">Clients</span>
+                    <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
+                        <Building2 size={11} className="text-emerald-400" />
+                        <span className="text-white tabular-nums">{allClients.length}</span>
+                        <span className="text-gray-500 font-normal">Clients</span>
                     </button>
                     {isAdmin && (
-                        <button onClick={() => navigate('/staff')} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/[0.06] rounded-full px-4 py-1.5 transition-all group">
-                            <Users size={12} className="text-violet-400" />
-                            <span className="text-sm font-black text-white tabular-nums">{usersForMap.length}</span>
-                            <span className="text-[11px] text-gray-400 group-hover:text-gray-300">Active Staff</span>
+                        <button onClick={() => navigate('/staff')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
+                            <Users size={11} className="text-violet-400" />
+                            <span className="text-white tabular-nums">{usersForMap.length}</span>
+                            <span className="text-gray-500 font-normal">Staff</span>
                         </button>
                     )}
                 </div>
 
-                {/* Clock-in status pill */}
-                <div className={`flex items-center gap-2 rounded-full px-4 py-1.5 border flex-shrink-0 ${isClockedIn
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                    : todayAttendance
-                        ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                        : 'bg-white/5 border-white/[0.07] text-gray-500'
-                    }`}>
-                    <Circle size={8} className={isClockedIn ? 'fill-emerald-400 text-emerald-400 animate-pulse' : 'fill-current'} />
-                    <span className="text-[11px] font-bold">
-                        {isClockedIn
-                            ? `Clocked In${clockInTime ? ` since ${clockInTime.substring(0, 5)}` : ''}`
-                            : todayAttendance ? 'Shift Completed' : 'Not Clocked In'}
+                {/* Right: Day progress */}
+                <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
+                    <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-blue-500/60 rounded-full transition-all duration-1000"
+                            style={{ width: `${Math.min(Math.max((new Date().getHours() / 17) * 100, 0), 100)}%` }}
+                        />
+                    </div>
+                    <span className="text-gray-600 font-mono">
+                        {Math.min(Math.max(Math.round(((new Date().getHours() - 9) / 8) * 100), 0), 100)}% of work day
                     </span>
                 </div>
             </div>
