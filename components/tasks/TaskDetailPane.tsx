@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
     X, Edit2, ShieldAlert, Tag, Calendar, UserCircle2,
     Briefcase, Activity, AlertTriangle, Clock, Plus,
-    Trash2, Save, Loader2, CheckCircle2
+    Trash2, Save, Loader2, CheckCircle2, Check
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment } from '../../types';
 import StaffSelect from '../StaffSelect';
@@ -52,6 +52,36 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     onRemoveSubtask,
     onAddComment
 }) => {
+    const initialTaskRef = useRef<Partial<Task> | null>(null);
+    const [showDiscardBanner, setShowDiscardBanner] = useState(false);
+
+    // Snapshot task state whenever the pane opens
+    useEffect(() => {
+        if (isOpen) {
+            initialTaskRef.current = JSON.parse(JSON.stringify(task));
+            setShowDiscardBanner(false);
+        }
+    }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const hasUnsavedChanges = isOpen
+        ? JSON.stringify(task) !== JSON.stringify(initialTaskRef.current)
+        : false;
+
+    const handleCloseAttempt = () => {
+        if (hasUnsavedChanges) {
+            setShowDiscardBanner(true);
+        } else {
+            onClose();
+        }
+    };
+
+    const handleSave = () => {
+        onSave();
+        // Reset snapshot so banner doesn't re-trigger after save
+        initialTaskRef.current = JSON.parse(JSON.stringify(task));
+        setShowDiscardBanner(false);
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -63,7 +93,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         className="absolute inset-0 bg-black/80 backdrop-blur-md"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                     />
 
                     {/* Centered Modal */}
@@ -96,12 +126,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 )}
                             </div>
                             <button
-                                onClick={onClose}
+                                onClick={handleCloseAttempt}
                                 className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:text-white transition-all hover:bg-white/10"
                             >
                                 <X size={20} />
                             </button>
                         </div>
+
+
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-8 md:p-10 custom-scrollbar bg-gradient-to-b from-transparent to-black/20">
@@ -211,14 +243,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             value={task.teamLeaderId || ''}
                                             onChange={(e) => onChange({ teamLeaderId: e.target.value })}
                                         >
-                                            <option value="" className="bg-transparent text-gray-900">- Select Leader -</option>
-                                            {usersList
-                                                .filter(u => task.assignedTo?.includes(u.uid))
-                                                .map(u => (
-                                                    <option key={u.uid} value={u.uid} className="bg-transparent text-gray-900">{u.displayName}</option>
-                                                ))
-                                            }
+                                            <option value="" className="bg-[#1e293b] text-gray-300">- Select Leader -</option>
+                                            {usersList.map(u => (
+                                                <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-gray-200">{u.displayName}</option>
+                                            ))}
                                         </select>
+                                        {task.teamLeaderId && !task.assignedTo?.includes(task.teamLeaderId) && (
+                                            <p className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-1">
+                                                <ShieldAlert size={10} /> Team leader must be one of the assignees
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
@@ -278,16 +312,18 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         <div key={st.id} className="flex flex-col gap-3 p-4 bg-black/20 rounded-xl border border-white/5 group">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-start gap-3 flex-1">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={st.isCompleted}
-                                                        onChange={(e) => {
+                                                    <div
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             const updated = [...(task.subtasks || [])];
-                                                            updated[i].isCompleted = e.target.checked;
+                                                            updated[i] = { ...updated[i], isCompleted: !updated[i].isCompleted };
                                                             onChange({ subtasks: updated });
                                                         }}
-                                                        className="w-5 h-5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-blue-500/50 cursor-pointer appearance-none checked:bg-blue-500 transition-colors mt-0.5 shrink-0 relative flex items-center justify-center after:content-['\2713'] after:absolute after:text-white after:opacity-0 checked:after:opacity-100 after:text-sm after:font-bold"
-                                                    />
+                                                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all flex-shrink-0 mt-0.5
+                                                            ${st.isCompleted ? 'bg-blue-500 border-blue-500' : 'border-slate-600 bg-transparent hover:border-blue-400'}`}
+                                                    >
+                                                        {st.isCompleted && <Check size={12} className="text-white" strokeWidth={3} />}
+                                                    </div>
                                                     <div className="flex flex-col gap-2 flex-1">
                                                         <span className={`text-[14px] font-bold leading-tight ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-200 group-hover:text-blue-200 transition-colors'}`}>
                                                             {st.title}
@@ -348,13 +384,13 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             ) : <div />}
                             <div className="flex gap-3">
                                 <button
-                                    onClick={onClose}
+                                    onClick={handleCloseAttempt}
                                     className="px-6 py-2.5 text-gray-400 hover:text-white text-sm font-bold bg-white/5 rounded-xl transition-all border border-white/5 hover:bg-white/10"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={onSave}
+                                    onClick={handleSave}
                                     disabled={isSaving}
                                     className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 group"
                                 >
@@ -363,6 +399,39 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 </button>
                             </div>
                         </div>
+
+                        {/* Unsaved changes discard banner */}
+                        <AnimatePresence>
+                            {showDiscardBanner && (
+                                <motion.div
+                                    key="discard-banner"
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 12 }}
+                                    transition={{ duration: 0.18 }}
+                                    className="px-8 py-4 bg-amber-500/10 border-t border-amber-500/20 flex items-center justify-between gap-4"
+                                >
+                                    <div className="flex items-center gap-2 text-amber-400">
+                                        <AlertTriangle size={15} className="flex-shrink-0" />
+                                        <span className="text-xs font-semibold">You have unsaved changes. Discard them?</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                            onClick={() => setShowDiscardBanner(false)}
+                                            className="px-4 py-1.5 text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/20 transition-all"
+                                        >
+                                            Keep Editing
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowDiscardBanner(false); onClose(); }}
+                                            className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600/80 hover:bg-rose-600 rounded-lg transition-all"
+                                        >
+                                            Discard Changes
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </motion.div>
                 </div>
             )}

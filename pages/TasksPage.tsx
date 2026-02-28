@@ -639,20 +639,126 @@ const TasksPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Bottom Row: Search & Filters */}
-                <div className="space-y-4">
-                    <div className="flex flex-col lg:flex-row items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/[0.05]">
-                        <div className="flex-1 relative group w-full lg:max-w-md">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
+                {/* Bottom: Status Stats Strip + Search/Filter Row */}
+                <div className="space-y-3">
+
+                    {/* Status Stats Strip */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {([
+                            { key: 'ALL', label: 'Total', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                            { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                            { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-600 border-blue-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-blue-400', dot: 'bg-blue-400' },
+                            { key: 'UNDER_REVIEW', label: 'Under Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
+                            { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
+                            { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
+                        ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
+                            const isActive = filterStatus === key;
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => setFilterStatus(key)}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'
+                                        }`}
+                                >
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
+                                    {label}
+                                    <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Search + Filters Row */}
+                    <div className="flex items-center bg-white/5 p-3 rounded-2xl border border-white/[0.05] gap-0">
+                        {/* Search — fixed width */}
+                        <div className="flex-shrink-0 w-64 relative group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={15} />
                             <input
                                 type="text"
-                                placeholder="Search tasks, clients, or keywords..."
+                                placeholder="Search tasks or clients..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-11 bg-transparent border-r border-white/5 pl-12 pr-4 text-sm text-white placeholder:text-gray-500 focus:outline-none transition-all"
+                                className="w-full h-9 bg-transparent border-r border-white/10 pl-9 pr-3 text-sm text-white placeholder:text-gray-500 focus:outline-none transition-all"
                             />
                         </div>
-                        {/* Filters ... (Keep existing filters but wrap in a flex container if needed) */}
+
+                        {/* Filters — horizontally scrollable */}
+                        <div className="flex items-center gap-2 overflow-x-auto pl-3 scrollbar-none flex-1 min-w-0">
+                            <div className="flex items-center gap-1 text-gray-500 flex-shrink-0">
+                                <Filter size={13} />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Filters:</span>
+                            </div>
+
+                            <div className="relative flex-shrink-0">
+                                <select
+                                    value={groupBy}
+                                    onChange={(e) => setGroupBy(e.target.value as any)}
+                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
+                                >
+                                    <option value="NONE" className="bg-[#0f172a]">Group: None</option>
+                                    <option value="AUDITOR" className="bg-[#0f172a]">Group: Auditor</option>
+                                    <option value="ASSIGNEE" className="bg-[#0f172a]">Group: Staff</option>
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
+                            </div>
+
+                            <div className="relative flex-shrink-0">
+                                <select
+                                    value={filterStaff}
+                                    onChange={(e) => setFilterStaff(e.target.value)}
+                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors max-w-[130px] truncate"
+                                >
+                                    <option value="ALL" className="bg-[#0f172a]">Staff: All</option>
+                                    {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#0f172a]">{u.displayName}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
+                            </div>
+
+                            <div className="relative flex-shrink-0">
+                                <select
+                                    value={filterPriority}
+                                    onChange={(e) => setFilterPriority(e.target.value)}
+                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
+                                >
+                                    <option value="ALL" className="bg-[#0f172a]">Priority: All</option>
+                                    {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#0f172a]">{p}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
+                            </div>
+
+                            <div className="relative flex-shrink-0">
+                                <select
+                                    value={filterAuditor}
+                                    onChange={(e) => setFilterAuditor(e.target.value)}
+                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
+                                >
+                                    <option value="ALL" className="bg-[#0f172a]">Auditor: All</option>
+                                    {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#0f172a]">{s}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
+                            </div>
+
+                            <div className="w-px h-5 bg-white/10 flex-shrink-0" />
+
+                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={filterVat}
+                                    onChange={(e) => setFilterVat(e.target.checked)}
+                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                                />
+                                <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-blue-400' : 'text-gray-300'}`}>VAT</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={filterItr}
+                                    onChange={(e) => setFilterItr(e.target.checked)}
+                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                                />
+                                <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-blue-400' : 'text-gray-300'}`}>ITR</span>
+                            </label>
+                        </div>
                     </div>
 
                     {/* Active Filter Pills */}
@@ -733,82 +839,7 @@ const TasksPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto px-2">
-                    <div className="flex items-center gap-1 text-gray-400">
-                        <Filter size={14} />
-                        <span className="text-xs font-bold uppercase tracking-wider">Filters:</span>
-                    </div>
 
-                    <div className="relative group/select">
-                        <select
-                            value={groupBy}
-                            onChange={(e) => setGroupBy(e.target.value as any)}
-                            className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
-                        >
-                            <option value="NONE" className="bg-[#0f172a]">Group: None</option>
-                            <option value="AUDITOR" className="bg-[#0f172a]">Group by: Auditor</option>
-                            <option value="ASSIGNEE" className="bg-[#0f172a]">Group by: Staff</option>
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
-                    </div>
-
-                    <div className="relative group/select">
-                        <select
-                            value={filterStaff}
-                            onChange={(e) => setFilterStaff(e.target.value)}
-                            className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors max-w-[140px] truncate"
-                        >
-                            <option value="ALL" className="bg-[#0f172a]">Staff: All</option>
-                            {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#0f172a]">{u.displayName}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
-                    </div>
-
-                    <div className="relative group/select">
-                        <select
-                            value={filterPriority}
-                            onChange={(e) => setFilterPriority(e.target.value)}
-                            className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
-                        >
-                            <option value="ALL" className="bg-[#0f172a]">Priority: All</option>
-                            {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#0f172a]">{p}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
-                    </div>
-
-                    <div className="relative group/select">
-                        <select
-                            value={filterAuditor}
-                            onChange={(e) => setFilterAuditor(e.target.value)}
-                            className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-4 pr-9 py-2 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
-                        >
-                            <option value="ALL" className="bg-[#0f172a]">Auditor: All</option>
-                            {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#0f172a]">{s}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
-                    </div>
-
-                    <div className="w-px h-6 bg-white/10 hidden lg:block" />
-
-                    <label className="flex items-center gap-2 cursor-pointer group bg-white/5 hover:bg-white/10 px-3 py-2 rounded-lg border border-white/5 transition-colors">
-                        <input
-                            type="checkbox"
-                            checked={filterVat}
-                            onChange={(e) => setFilterVat(e.target.checked)}
-                            className="w-4 h-4 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
-                        />
-                        <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-blue-400' : 'text-gray-300'}`}>VAT</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer group bg-white/5 hover:bg-white/10 px-3 py-2 rounded-lg border border-white/5 transition-colors">
-                        <input
-                            type="checkbox"
-                            checked={filterItr}
-                            onChange={(e) => setFilterItr(e.target.checked)}
-                            className="w-4 h-4 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
-                        />
-                        <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-blue-400' : 'text-gray-300'}`}>ITR</span>
-                    </label>
-                </div>
             </header>
 
             {/* --- WORKSPACE AREA --- */}
