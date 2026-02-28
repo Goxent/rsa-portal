@@ -194,6 +194,12 @@ const Dashboard: React.FC = () => {
 
     // Command strip derived values
     const myOpenTasks = allTasks.filter(t => t.assignedTo.includes(user?.uid ?? '') && t.status !== 'COMPLETED').length;
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    const completedToday = allTasks.filter(t =>
+        t.assignedTo.includes(user?.uid ?? '') &&
+        t.status === 'COMPLETED' &&
+        (t.completedAt ?? '').startsWith(todayStr)
+    ).length;
     const bsDate = useMemo(() => {
         try { return new NepaliDate(new Date()).format('DD MMMM YYYY'); }
         catch { return ''; }
@@ -256,10 +262,10 @@ const Dashboard: React.FC = () => {
 
                 {/* Clock-in status pill */}
                 <div className={`flex items-center gap-2 rounded-full px-4 py-1.5 border flex-shrink-0 ${isClockedIn
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                        : todayAttendance
-                            ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                            : 'bg-white/5 border-white/[0.07] text-gray-500'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    : todayAttendance
+                        ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                        : 'bg-white/5 border-white/[0.07] text-gray-500'
                     }`}>
                     <Circle size={8} className={isClockedIn ? 'fill-emerald-400 text-emerald-400 animate-pulse' : 'fill-current'} />
                     <span className="text-[11px] font-bold">
@@ -272,7 +278,9 @@ const Dashboard: React.FC = () => {
 
             {/* ── 2. HERO ROW (60/40) ───────────────────────────────────── */}
             <div className="flex-none grid grid-cols-1 lg:grid-cols-5 gap-5">
-                <div className="lg:col-span-3"><GreetingsWidget /></div>
+                <div className="lg:col-span-3">
+                    <GreetingsWidget pendingCount={myOpenTasks} completedToday={completedToday} />
+                </div>
                 <div className="lg:col-span-2"><FocusWidget /></div>
             </div>
 
@@ -383,8 +391,8 @@ const Dashboard: React.FC = () => {
                                                     <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">{task.clientName} • Due: {task.dueDate}</p>
                                                 </div>
                                                 <span className={`px-2 py-1 rounded text-xs font-medium border ${task.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400' :
-                                                        task.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400' :
-                                                            'bg-gray-100 dark:bg-gray-500/10 border-gray-200 dark:border-gray-500/20 text-gray-700 dark:text-gray-400'
+                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400' :
+                                                        'bg-gray-100 dark:bg-gray-500/10 border-gray-200 dark:border-gray-500/20 text-gray-700 dark:text-gray-400'
                                                     }`}>
                                                     {task.status.replace('_', ' ')}
                                                 </span>
