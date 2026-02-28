@@ -183,37 +183,31 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 
     return (
         <div className="space-y-4">
-            {/* Toolbar */}
-            <div className="sticky top-0 z-40 bg-slate-50/80 dark:bg-[#0a0e1a]/80 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 flex justify-between items-center border-b border-transparent transition-all shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-                <div className="flex gap-2">
-                    {isEditing ? (
-                        <>
-                            <button
-                                onClick={() => setShowWidgetPicker(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-medium transition-all"
-                            >
-                                <Plus size={16} />
-                                Add Widget
-                            </button>
-                            <button
-                                onClick={() => setIsEditing(false)}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-sm font-medium transition-all"
-                            >
-                                <Save size={16} />
-                                Done
-                            </button>
-                        </>
-                    ) : (
+            {/* Toolbar — right-aligned, no sticky */}
+            <div className="flex justify-end items-center mb-4 gap-2">
+                {isEditing ? (
+                    <>
                         <button
-                            onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white rounded-xl text-sm font-medium transition-all"
+                            onClick={() => setShowWidgetPicker(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all"
                         >
-                            <Edit3 size={16} />
-                            Customize
+                            <Plus size={13} /> Add Widget
                         </button>
-                    )}
-                </div>
+                        <button
+                            onClick={() => setIsEditing(false)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all"
+                        >
+                            <Save size={13} /> Done
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.06] hover:bg-white/[0.10] text-gray-300 hover:text-white rounded-lg text-xs font-bold transition-all border border-white/[0.08]"
+                    >
+                        <Edit3 size={13} /> Customize Layout
+                    </button>
+                )}
             </div>
 
             {/* Widget Grid */}
@@ -226,7 +220,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     items={widgets.map((w) => w.id)}
                     strategy={rectSortingStrategy}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-200 ${isEditing ? 'border-2 border-dashed border-blue-500/20 rounded-2xl p-2' : ''}`}>
                         {widgets.map((widget) => (
                             <WidgetWrapper
                                 key={widget.id}
