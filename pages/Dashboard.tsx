@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Phone, Briefcase, Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays, ArrowRight, BarChart2 } from 'lucide-react';
+import { Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays, ArrowRight, BarChart2 } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -173,10 +173,6 @@ const Dashboard: React.FC = () => {
         };
     }, [user, allTasks, usersForMap, allEvents, allClients, lateCount]);
 
-    // Modal State for Staff Details
-    const [selectedStaff, setSelectedStaff] = useState<UserProfile | null>(null);
-    const [selectedStaffTasks, setSelectedStaffTasks] = useState<Task[]>([]);
-
     const dashboardData = {
         activeStaffCount, taskData, recentTasks, upcomingSchedule,
         staffStats, userMap, staffPerformance, clientStats,
@@ -278,10 +274,11 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* ── 3. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
-            <div className="flex gap-5 min-h-0">
+            <div className="flex gap-5 flex-none">
 
                 {/* Left: Widget Grid */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex flex-col gap-5">
+                    <AttendanceWidget />
                     {user && (
                         <WidgetContainer
                             userId={user.uid}
@@ -399,9 +396,6 @@ const Dashboard: React.FC = () => {
                             </div>
                         );
                     })()}
-
-                    {/* Attendance Widget */}
-                    <AttendanceWidget />
                 </div>
             </div>
 
@@ -449,69 +443,6 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4">
                             <AiInsightWidget />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Staff Detail Modal */}
-            {selectedStaff && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="p-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-white/5">
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                                    {selectedStaff.displayName?.charAt(0)}
-                                </div>
-                                {selectedStaff.displayName}
-                                <span className="text-gray-500 text-sm font-normal">({selectedStaff.role})</span>
-                            </h2>
-                            <button onClick={() => setSelectedStaff(null)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-xl border border-slate-200 dark:border-white/5">
-                                    <p className="text-slate-500 dark:text-gray-500 text-xs uppercase font-bold mb-1">Email</p>
-                                    <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300"><Mail size={14} /> {selectedStaff.email}</div>
-                                </div>
-                                <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-xl border border-slate-200 dark:border-white/5">
-                                    <p className="text-slate-500 dark:text-gray-500 text-xs uppercase font-bold mb-1">Phone</p>
-                                    <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300"><Phone size={14} /> {selectedStaff.phoneNumber || 'N/A'}</div>
-                                </div>
-                                <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-xl border border-slate-200 dark:border-white/5">
-                                    <p className="text-slate-500 dark:text-gray-500 text-xs uppercase font-bold mb-1">Department</p>
-                                    <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300"><Briefcase size={14} /> {selectedStaff.department || 'Unassigned'}</div>
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-md font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                                    <ClockIcon size={16} className="text-brand-500 dark:text-brand-400" /> Recent Activity
-                                </h3>
-                                {selectedStaffTasks.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {selectedStaffTasks.map(task => (
-                                            <div key={task.id} className="bg-white dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/5 flex items-center justify-between">
-                                                <div>
-                                                    <h4 className="font-medium text-slate-900 dark:text-white">{task.title}</h4>
-                                                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">{task.clientName} • Due: {task.dueDate}</p>
-                                                </div>
-                                                <span className={`px-2 py-1 rounded text-xs font-medium border ${task.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400' :
-                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400' :
-                                                        'bg-gray-100 dark:bg-gray-500/10 border-gray-200 dark:border-gray-500/20 text-gray-700 dark:text-gray-400'
-                                                    }`}>
-                                                    {task.status.replace('_', ' ')}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8 text-slate-500 dark:text-gray-500 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/5 border-dashed">
-                                        No recent tasks found
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
                 </div>
