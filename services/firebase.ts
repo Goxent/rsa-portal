@@ -12,7 +12,7 @@ import {
     ActionCodeSettings,
     sendPasswordResetEmail,
     setPersistence,
-    browserSessionPersistence
+    browserLocalPersistence
 } from 'firebase/auth';
 import {
     getFirestore,
@@ -73,8 +73,8 @@ try {
 
 export const auth = getAuth(app!);
 
-// Enforce Session persistence for better security (Auto-logout on browser close)
-setPersistence(auth, browserSessionPersistence).catch(console.error);
+// Use local persistence so the session survives new tabs; inactivity timeout is handled in AuthContext
+setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 // Initialize Firestore with Persistent Cache (New API)
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
@@ -1002,7 +1002,42 @@ export const AuthService = {
     },
 
     /**
-     * Save a new event with metadata and validation
+     * Resolve the set of user UIDs to notify based on event visibility rules.
+     * Returns { uids: string[] } — the creator is excluded (they already know).
+     */
+    resolveEventRecipients: async (
+        event: Partial<CalendarEvent>,
+        creatorId: string,
+        allUsers?: UserProfile[]
+    ): Promise<UserProfile[]> => {
+        // Fetch all users only once (caller can pass them in to avoid extra read)
+        const users: UserProfile[] = allUsers || await AuthService.getAllUsers();
+        const activeUsers = users.filter(u => u.uid !== creatorId && u.status === 'Active');
+
+        const { visibility, teamIds, department } = event as CalendarEvent;
+
+        // TEAM  → only the selected teamIds
+        if (visibility === 'TEAM' && teamIds && teamIds.length > 0) {
+            return activeUsers.filter(u => teamIds.includes(u.uid));
+        }
+
+        // PUBLIC, FIRM_EVENT, HOLIDAY → everyone
+        if (visibility === 'PUBLIC') {
+            return activeUsers;
+        }
+
+        // DEPARTMENT → same department
+        if (visibility === 'DEPARTMENT' && department) {
+            return activeUsers.filter(u => u.department === department);
+        }
+
+        // PRIVATE → no one else
+        return [];
+    },
+
+    /**
+     * Save a new event with metadata and validation.
+     * Sends in-app and email notifications to all relevant recipients.
      */
     saveEvent: async (event: CalendarEvent) => {
         const { id, ...data } = event;
@@ -1023,42 +1058,71 @@ export const AuthService = {
         };
 
         const docRef = await addDoc(collection(db, 'events'), eventData);
+        const eventId = docRef.id;
+        const calendarLink = `${window.location.origin}/#/calendar`;
+        const dateLabel = event.date + (event.time ? ' at ' + event.time : '');
 
-        // Send notifications to participants if applicable
-        if (event.participants && event.participants.length > 0) {
-            for (const participantId of event.participants) {
-                await AuthService.createNotification({
-                    userId: participantId,
-                    title: 'Event Invitation',
-                    message: `You've been invited to: ${event.title}`,
-                    type: 'INFO',
-                    category: 'EVENT',
-                    link: '/calendar'
-                });
+        // ── Determine recipients ──────────────────────────────────────────────
+        // 1. Visibility-based recipients (TEAM / PUBLIC / DEPARTMENT)
+        const visibilityRecipients = await AuthService.resolveEventRecipients(event, event.createdBy);
 
-                // Email Notification
-                try {
-                    // Actual lookup
-                    const pDoc = await getDoc(doc(db, 'users', participantId));
-                    if (pDoc.exists()) {
-                        const pData = pDoc.data() as UserProfile;
-                        if (pData.email) {
-                            await EmailService.sendEventInvitation(
-                                pData.email,
-                                pData.displayName || 'Colleague',
-                                event.title,
-                                event.date + ' ' + (event.time || ''),
-                                `${window.location.origin}/#/calendar`
-                            );
-                        }
-                    }
-                } catch (err) {
-                    console.error("Failed to send event email", err);
+        // 2. Explicit participant invitees (RSVP list) — merge without duplicates
+        const participantIds = new Set(event.participants || []);
+        const visibilityIds = new Set(visibilityRecipients.map(u => u.uid));
+        const allRecipientIds = new Set([...visibilityIds, ...participantIds]);
+
+        // For participant-only lookups we may need their profiles too
+        const allUserProfiles: Record<string, UserProfile> = {};
+        visibilityRecipients.forEach(u => { allUserProfiles[u.uid] = u; });
+
+        // Fetch profiles for any extra participants not already in visibilityRecipients
+        const missingIds = [...participantIds].filter(pid => !allUserProfiles[pid]);
+        for (const pid of missingIds) {
+            try {
+                const pDoc = await getDoc(doc(db, 'users', pid));
+                if (pDoc.exists()) allUserProfiles[pid] = { uid: pid, ...pDoc.data() } as UserProfile;
+            } catch { /* skip bad refs */ }
+        }
+
+        // ── Send notifications and emails ─────────────────────────────────────
+        const notifTitle = event.type === 'FIRM_EVENT' || event.type === 'HOLIDAY'
+            ? `📅 ${event.type === 'HOLIDAY' ? 'Holiday' : 'Firm Event'}: ${event.title}`
+            : `New Event: ${event.title}`;
+
+        for (const uid of allRecipientIds) {
+            const isRsvpInvitee = participantIds.has(uid);
+            const message = isRsvpInvitee
+                ? `You've been invited to "${event.title}" on ${dateLabel}`
+                : `"${event.title}" has been added to the calendar on ${dateLabel}`;
+
+            // In-app notification
+            await AuthService.createNotification({
+                userId: uid,
+                title: notifTitle,
+                message,
+                type: 'INFO',
+                category: 'EVENT',
+                link: '/calendar'
+            });
+
+            // Email notification
+            try {
+                const profile = allUserProfiles[uid];
+                if (profile?.email) {
+                    await EmailService.sendEventInvitation(
+                        profile.email,
+                        profile.displayName || 'Colleague',
+                        event.title,
+                        dateLabel,
+                        calendarLink
+                    );
                 }
+            } catch (err) {
+                console.error(`Failed to send event email to ${uid}`, err);
             }
         }
 
-        return docRef.id;
+        return eventId;
     },
 
     /**

@@ -644,31 +644,33 @@ const TasksPage: React.FC = () => {
                 {/* Bottom: Status Stats Strip + Search/Filter Row */}
                 <div className="space-y-3">
 
-                    {/* Status Stats Strip */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {([
-                            { key: 'ALL', label: 'Total', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                            { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                            { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-600 border-blue-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-blue-400', dot: 'bg-blue-400' },
-                            { key: 'UNDER_REVIEW', label: 'Under Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
-                            { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
-                            { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
-                        ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
-                            const isActive = filterStatus === key;
-                            return (
-                                <button
-                                    key={key}
-                                    onClick={() => setFilterStatus(key)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'
-                                        }`}
-                                >
-                                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
-                                    {label}
-                                    <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                    {/* Status Stats Strip — only shown in List view (Kanban board columns already show counts) */}
+                    {viewMode === 'LIST' && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {([
+                                { key: 'ALL', label: 'Total', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                                { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                                { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-600 border-blue-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-blue-400', dot: 'bg-blue-400' },
+                                { key: 'UNDER_REVIEW', label: 'Under Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
+                                { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
+                                { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
+                            ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
+                                const isActive = filterStatus === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => setFilterStatus(key)}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'
+                                            }`}
+                                    >
+                                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
+                                        {label}
+                                        <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
 
                     {/* Search + Filters Row */}
                     <div className="flex items-center bg-white/5 p-3 rounded-2xl border border-white/[0.05] gap-0">
@@ -842,10 +844,10 @@ const TasksPage: React.FC = () => {
                 </div>
 
 
-            </header>
+            </header >
 
             {/* --- WORKSPACE AREA --- */}
-            <main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative">
+            < main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative" >
                 <TaskMainView
                     viewMode={viewMode}
                     tasks={filteredTasks}

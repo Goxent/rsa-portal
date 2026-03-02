@@ -240,200 +240,206 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
             {/* Full height wrapper */}
             <div className="h-full flex flex-col min-h-0">
 
-                {/* Board scroll container — this is THE element that scrolls horizontally */}
-                <div
-                    ref={boardRef}
-                    className="flex-1 min-h-0 flex items-stretch gap-3 overflow-x-auto overflow-y-hidden px-4 py-4 kanban-scroll"
-                >
-                    {/* Left scroll arrow — sticky to viewport left inside the scroll row */}
-                    <div className="sticky left-0 z-30 self-center flex-shrink-0">
+                {/* Relative wrapper so arrows can be absolutely pinned to edges */}
+                <div className="relative flex-1 min-h-0">
+
+                    {/* Left scroll arrow — pinned to left edge of the viewport area */}
+                    <div className="absolute left-1 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
                         <button
                             onClick={() => scroll('left')}
-                            className="w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm"
+                            className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm"
                         >
                             <ChevronLeft size={16} />
                         </button>
                     </div>
-                    {columns.map(col => {
-                        const status = groupBy === 'NONE' ? col as TaskStatus : null;
-                        const userId = groupBy === 'ASSIGNEE' ? col as string : null;
-                        const auditorName = groupBy === 'AUDITOR' ? col as string : null;
-                        const colUser = userId ? usersList.find(u => u.uid === userId) : null;
 
-                        const title = status
-                            ? (S[status]?.label ?? status.replace('_', ' '))
-                            : userId ? (colUser?.displayName ?? 'Unknown')
-                                : auditorName ?? '';
-
-                        const isCollapsed = status ? collapsedColumns.includes(status) : false;
-                        const cfg = (status ? S[status] : null) ?? FALLBACK_COL;
-
-                        const colTasks = tasks.filter(t => {
-                            if (status) return t.status === status;
-                            if (userId) return t.assignedTo.includes(userId);
-                            if (auditorName) {
-                                const tc = clientsList.find(c => t.clientIds?.includes(c.id));
-                                return tc?.signingAuthority === auditorName;
-                            }
-                            return false;
-                        });
-
-                        return (
-                            <Droppable key={col} droppableId={col.toString()} type="TASK">
-                                {(prov, snap) => (
-                                    <div
-                                        ref={prov.innerRef}
-                                        {...prov.droppableProps}
-                                        className={[
-                                            'flex flex-col flex-shrink-0 rounded-2xl overflow-hidden',
-                                            'border transition-colors duration-200',
-                                            isCollapsed ? 'w-10' : 'w-[290px]',
-                                            snap.isDraggingOver
-                                                ? `border-white/20 ring-2 ${cfg.ring} shadow-xl`
-                                                : 'border-white/[0.06]',
-                                            // Full height of the parent flex container:
-                                            'h-full',
-                                        ].join(' ')}
-                                    >
-                                        {/* ── Column header ── */}
-                                        <div
-                                            className={[
-                                                'relative flex-shrink-0',
-                                                cfg.headerBg,
-                                                'border-b border-white/[0.06] backdrop-blur-sm',
-                                                isCollapsed
-                                                    ? 'flex flex-col items-center py-4 gap-4 cursor-pointer min-h-full'
-                                                    : 'flex items-center justify-between px-4 py-3 cursor-pointer',
-                                            ].join(' ')}
-                                            onClick={() => status && toggleColumnCollapse(status)}
-                                        >
-                                            {/* Colour stripe at top */}
-                                            <div className={`absolute top-0 left-0 right-0 h-[3px] ${cfg.topBar}`} />
-
-                                            {isCollapsed ? (
-                                                <>
-                                                    {/* Collapsed: stacked dot → count → vertical title */}
-                                                    <div className={`w-2 h-2 rounded-full ${cfg.dot} flex-shrink-0 mt-1`} />
-                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${cfg.countBg} tabular-nums`}>
-                                                        {colTasks.length}
-                                                    </span>
-                                                    <span
-                                                        className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] flex-1"
-                                                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
-                                                    >
-                                                        {title}
-                                                    </span>
-                                                    {status && <ChevronRight size={12} className="text-slate-600 flex-shrink-0" />}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-2 h-2 rounded-full ${cfg.dot} flex-shrink-0`} />
-                                                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.1em]">{title}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${cfg.countBg}`}>
-                                                            {colTasks.length}
-                                                        </span>
-                                                        {status && <ChevronDown size={13} className="text-slate-600" />}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* ── Column body — THIS scrolls vertically ── */}
-                                        {!isCollapsed && (
-                                            <div className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 p-2.5 custom-scrollbar ${cfg.bodyBg}`}>
-                                                {colTasks.map((task, i) => (
-                                                    <TaskCard
-                                                        key={task.id}
-                                                        task={task}
-                                                        index={i}
-                                                        usersList={usersList}
-                                                        selectedTaskIds={selectedTaskIds}
-                                                        onToggleSelection={onToggleSelection}
-                                                        onClick={handleOpenEdit}
-                                                    />
-                                                ))}
-                                                {prov.placeholder}
-
-                                                {/* Empty drop zone */}
-                                                {colTasks.length === 0 && (
-                                                    <div className="flex-1 flex flex-col items-center justify-center gap-2 min-h-[100px] rounded-xl border-2 border-dashed border-white/[0.05] text-[10px] text-slate-700 font-bold uppercase tracking-widest">
-                                                        <div className={`w-4 h-4 rounded-full ${cfg.dot} opacity-20`} />
-                                                        Drop here
-                                                    </div>
-                                                )}
-
-                                                {/* Quick add */}
-                                                {status && (
-                                                    <AnimatePresence mode="wait">
-                                                        {quickAddStatus === status ? (
-                                                            <motion.div
-                                                                key="input"
-                                                                initial={{ opacity: 0, y: 6 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                exit={{ opacity: 0, y: 6 }}
-                                                                transition={{ duration: 0.12 }}
-                                                                className="bg-[#161d2d] border border-slate-700 rounded-xl p-3 shadow-2xl"
-                                                            >
-                                                                <input
-                                                                    autoFocus
-                                                                    type="text"
-                                                                    placeholder="Task title..."
-                                                                    value={quickAddTitle}
-                                                                    onChange={e => setQuickAddTitle(e.target.value)}
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === 'Enter') submitQuickAdd(status);
-                                                                        if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
-                                                                    }}
-                                                                    className="w-full bg-transparent text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none mb-2.5 font-medium"
-                                                                />
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-[9px] text-slate-600 font-medium uppercase tracking-wider">↵ to save · Esc to cancel</span>
-                                                                    <div className="flex gap-1.5">
-                                                                        <button onClick={() => { setQuickAddStatus(null); setQuickAddTitle(''); }}
-                                                                            className="w-6 h-6 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors">
-                                                                            <X size={12} />
-                                                                        </button>
-                                                                        <button onClick={() => submitQuickAdd(status)}
-                                                                            className="px-2.5 h-6 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1">
-                                                                            <Plus size={11} /> Add
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        ) : (
-                                                            <motion.button
-                                                                key="btn"
-                                                                initial={{ opacity: 0 }}
-                                                                animate={{ opacity: 1 }}
-                                                                exit={{ opacity: 0 }}
-                                                                onClick={() => setQuickAddStatus(status)}
-                                                                className="w-full py-2 rounded-xl border border-dashed border-slate-800 text-slate-700 hover:text-slate-400 hover:border-slate-600 hover:bg-white/[0.02] transition-all text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 group"
-                                                            >
-                                                                <Plus size={12} className="group-hover:scale-110 transition-transform" /> Add task
-                                                            </motion.button>
-                                                        )}
-                                                    </AnimatePresence>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </Droppable>
-                        );
-                    })}
-                    {/* Right scroll arrow — sticky to viewport right inside the scroll row */}
-                    <div className="sticky right-0 z-30 self-center flex-shrink-0">
+                    {/* Right scroll arrow — pinned to right edge of the viewport area */}
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
                         <button
                             onClick={() => scroll('right')}
-                            className="w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm"
+                            className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm"
                         >
                             <ChevronRight size={16} />
                         </button>
                     </div>
-                </div>
+
+                    {/* Board scroll container — scrolls horizontally */}
+                    <div
+                        ref={boardRef}
+                        className="h-full flex items-stretch gap-3 overflow-x-auto overflow-y-hidden px-10 py-4 kanban-scroll"
+                    >
+                        {columns.map(col => {
+                            const status = groupBy === 'NONE' ? col as TaskStatus : null;
+                            const userId = groupBy === 'ASSIGNEE' ? col as string : null;
+                            const auditorName = groupBy === 'AUDITOR' ? col as string : null;
+                            const colUser = userId ? usersList.find(u => u.uid === userId) : null;
+
+                            const title = status
+                                ? (S[status]?.label ?? status.replace('_', ' '))
+                                : userId ? (colUser?.displayName ?? 'Unknown')
+                                    : auditorName ?? '';
+
+                            const isCollapsed = status ? collapsedColumns.includes(status) : false;
+                            const cfg = (status ? S[status] : null) ?? FALLBACK_COL;
+
+                            const colTasks = tasks.filter(t => {
+                                if (status) return t.status === status;
+                                if (userId) return t.assignedTo.includes(userId);
+                                if (auditorName) {
+                                    const tc = clientsList.find(c => t.clientIds?.includes(c.id));
+                                    return tc?.signingAuthority === auditorName;
+                                }
+                                return false;
+                            });
+
+                            return (
+                                <Droppable key={col} droppableId={col.toString()} type="TASK">
+                                    {(prov, snap) => (
+                                        <div
+                                            ref={prov.innerRef}
+                                            {...prov.droppableProps}
+                                            className={[
+                                                'flex flex-col flex-shrink-0 rounded-2xl overflow-hidden',
+                                                'border transition-colors duration-200',
+                                                isCollapsed ? 'w-10' : 'w-[290px]',
+                                                snap.isDraggingOver
+                                                    ? `border-white/20 ring-2 ${cfg.ring} shadow-xl`
+                                                    : 'border-white/[0.06]',
+                                                // Full height of the parent flex container:
+                                                'h-full',
+                                            ].join(' ')}
+                                        >
+                                            {/* ── Column header ── */}
+                                            <div
+                                                className={[
+                                                    'relative flex-shrink-0',
+                                                    cfg.headerBg,
+                                                    'border-b border-white/[0.06] backdrop-blur-sm',
+                                                    isCollapsed
+                                                        ? 'flex flex-col items-center py-4 gap-4 cursor-pointer min-h-full'
+                                                        : 'flex items-center justify-between px-4 py-3 cursor-pointer',
+                                                ].join(' ')}
+                                                onClick={() => status && toggleColumnCollapse(status)}
+                                            >
+                                                {/* Colour stripe at top */}
+                                                <div className={`absolute top-0 left-0 right-0 h-[3px] ${cfg.topBar}`} />
+
+                                                {isCollapsed ? (
+                                                    <>
+                                                        {/* Collapsed: stacked dot → count → vertical title */}
+                                                        <div className={`w-2 h-2 rounded-full ${cfg.dot} flex-shrink-0 mt-1`} />
+                                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${cfg.countBg} tabular-nums`}>
+                                                            {colTasks.length}
+                                                        </span>
+                                                        <span
+                                                            className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] flex-1"
+                                                            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
+                                                        >
+                                                            {title}
+                                                        </span>
+                                                        {status && <ChevronRight size={12} className="text-slate-600 flex-shrink-0" />}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-2 h-2 rounded-full ${cfg.dot} flex-shrink-0`} />
+                                                            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.1em]">{title}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${cfg.countBg}`}>
+                                                                {colTasks.length}
+                                                            </span>
+                                                            {status && <ChevronDown size={13} className="text-slate-600" />}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* ── Column body — THIS scrolls vertically ── */}
+                                            {!isCollapsed && (
+                                                <div className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 p-2.5 custom-scrollbar ${cfg.bodyBg}`}>
+                                                    {colTasks.map((task, i) => (
+                                                        <TaskCard
+                                                            key={task.id}
+                                                            task={task}
+                                                            index={i}
+                                                            usersList={usersList}
+                                                            selectedTaskIds={selectedTaskIds}
+                                                            onToggleSelection={onToggleSelection}
+                                                            onClick={handleOpenEdit}
+                                                        />
+                                                    ))}
+                                                    {prov.placeholder}
+
+                                                    {/* Empty drop zone */}
+                                                    {colTasks.length === 0 && (
+                                                        <div className="flex-1 flex flex-col items-center justify-center gap-2 min-h-[100px] rounded-xl border-2 border-dashed border-white/[0.05] text-[10px] text-slate-700 font-bold uppercase tracking-widest">
+                                                            <div className={`w-4 h-4 rounded-full ${cfg.dot} opacity-20`} />
+                                                            Drop here
+                                                        </div>
+                                                    )}
+
+                                                    {/* Quick add */}
+                                                    {status && (
+                                                        <AnimatePresence mode="wait">
+                                                            {quickAddStatus === status ? (
+                                                                <motion.div
+                                                                    key="input"
+                                                                    initial={{ opacity: 0, y: 6 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, y: 6 }}
+                                                                    transition={{ duration: 0.12 }}
+                                                                    className="bg-[#161d2d] border border-slate-700 rounded-xl p-3 shadow-2xl"
+                                                                >
+                                                                    <input
+                                                                        autoFocus
+                                                                        type="text"
+                                                                        placeholder="Task title..."
+                                                                        value={quickAddTitle}
+                                                                        onChange={e => setQuickAddTitle(e.target.value)}
+                                                                        onKeyDown={e => {
+                                                                            if (e.key === 'Enter') submitQuickAdd(status);
+                                                                            if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
+                                                                        }}
+                                                                        className="w-full bg-transparent text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none mb-2.5 font-medium"
+                                                                    />
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-[9px] text-slate-600 font-medium uppercase tracking-wider">↵ to save · Esc to cancel</span>
+                                                                        <div className="flex gap-1.5">
+                                                                            <button onClick={() => { setQuickAddStatus(null); setQuickAddTitle(''); }}
+                                                                                className="w-6 h-6 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors">
+                                                                                <X size={12} />
+                                                                            </button>
+                                                                            <button onClick={() => submitQuickAdd(status)}
+                                                                                className="px-2.5 h-6 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1">
+                                                                                <Plus size={11} /> Add
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            ) : (
+                                                                <motion.button
+                                                                    key="btn"
+                                                                    initial={{ opacity: 0 }}
+                                                                    animate={{ opacity: 1 }}
+                                                                    exit={{ opacity: 0 }}
+                                                                    onClick={() => setQuickAddStatus(status)}
+                                                                    className="w-full py-2 rounded-xl border border-dashed border-slate-800 text-slate-700 hover:text-slate-400 hover:border-slate-600 hover:bg-white/[0.02] transition-all text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 group"
+                                                                >
+                                                                    <Plus size={12} className="group-hover:scale-110 transition-transform" /> Add task
+                                                                </motion.button>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </Droppable>
+                            );
+                        })}
+                    </div>{/* end boardRef scrollable div */}
+                </div>{/* end relative wrapper */}
             </div>
         </DragDropContext>
     );

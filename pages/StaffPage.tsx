@@ -130,11 +130,24 @@ const StaffPage: React.FC = () => {
             .toUpperCase();
     };
 
-    const filteredUsers = users.filter(u =>
-        u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.department.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // A–Z sort helper for role display
+    const getRoleLabel = (role: UserRole): string => {
+        switch (role) {
+            case UserRole.MASTER_ADMIN: return 'Master Admin';
+            case UserRole.ADMIN: return 'Admin';
+            case UserRole.STAFF:
+            case UserRole.MANAGER: return 'User';
+            default: return String(role);
+        }
+    };
+
+    const filteredUsers = users
+        .filter(u =>
+            u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.department.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -214,7 +227,7 @@ const StaffPage: React.FC = () => {
                                                 </h3>
                                                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-white/70 font-mono border border-white/10 backdrop-blur-sm">
-                                                        {staff.role}
+                                                        {getRoleLabel(staff.role)}
                                                     </span>
                                                     <span className={`text-[10px] px-2 py-0.5 rounded-full border backdrop-blur-sm font-bold uppercase tracking-wider ${staff.status === 'Active'
                                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
@@ -298,8 +311,8 @@ const StaffPage: React.FC = () => {
                                         {staff.displayName}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-white">{staff.position || staff.role}</div>
-                                        <div className="text-xs text-gray-500">{staff.role}</div>
+                                        <div className="text-white">{staff.position || getRoleLabel(staff.role)}</div>
+                                        <div className="text-xs text-gray-500">{getRoleLabel(staff.role)}</div>
                                     </td>
                                     <td className="px-6 py-4 text-xs">
                                         <div>{staff.email}</div>
@@ -357,12 +370,11 @@ const StaffPage: React.FC = () => {
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Role / Permission</label>
                                     <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
-                                        <option value={UserRole.STAFF}>Staff</option>
-                                        <option value={UserRole.MANAGER}>Manager</option>
+                                        <option value={UserRole.STAFF}>User</option>
                                         {(user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.ADMIN) && <option value={UserRole.ADMIN}>Admin</option>}
                                         {user?.role === UserRole.MASTER_ADMIN && <option value={UserRole.MASTER_ADMIN}>Master Admin</option>}
                                     </select>
-                                    <div className="text-[10px] text-gray-500 mt-1">* Only Master Admin can assign Admin/Master roles</div>
+                                    <div className="text-[10px] text-gray-500 mt-1">* Only Master Admin can assign Admin roles</div>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Department</label>

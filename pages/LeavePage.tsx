@@ -531,45 +531,47 @@ const LeavePage: React.FC = () => {
                             </div>
                         </div>
                     )}
-                    {/* Adjust Balance Modal */}
-                    {isAdjustModalOpen && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                            <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-white/10">
-                                <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                                    <h3 className="text-lg font-bold text-white">Adjust Leave Balance</h3>
-                                    <button onClick={() => setIsAdjustModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
-                                </div>
-                                <div className="p-6">
-                                    <p className="text-sm text-gray-400 mb-4">Set manual leave adjustment for <span className="text-white font-bold">{adjustmentData.name}</span>. Positive values increase "taken" count (reducing balance).</p>
+                </>
+            )}
 
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Days to Adjust</label>
-                                            <input
-                                                type="number"
-                                                className="w-full rounded-lg px-4 py-3 bg-navy-900/50 border border-white/10 text-white focus:border-brand-500 outline-none font-mono text-center text-2xl"
-                                                value={adjustmentData.amount}
-                                                onChange={(e) => setAdjustmentData({ ...adjustmentData, amount: parseInt(e.target.value) || 0 })}
-                                            />
-                                            <div className="flex justify-between mt-2 px-1">
-                                                <button onClick={() => setAdjustmentData(d => ({ ...d, amount: d.amount - 1 }))} className="text-[10px] text-emerald-400 font-bold hover:underline">-1 Day</button>
-                                                <button onClick={() => setAdjustmentData(d => ({ ...d, amount: d.amount + 1 }))} className="text-[10px] text-orange-400 font-bold hover:underline">+1 Day</button>
-                                            </div>
-                                        </div>
+            {/* Adjust Balance Modal — rendered at top level so it works from any tab */}
+            {isAdjustModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
+                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-white/10">
+                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <h3 className="text-lg font-bold text-white">Adjust Leave Balance</h3>
+                            <button onClick={() => setIsAdjustModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-gray-400 mb-4">Set manual leave adjustment for <span className="text-white font-bold">{adjustmentData.name}</span>. Positive values increase "taken" count (reducing balance).</p>
 
-                                        <button
-                                            onClick={handleAdjustLeave}
-                                            disabled={isSaving}
-                                            className="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-brand-500/20 disabled:opacity-50"
-                                        >
-                                            {isSaving ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Save Adjustment'}
-                                        </button>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Days to Adjust</label>
+                                    <input
+                                        type="number"
+                                        className="w-full rounded-lg px-4 py-3 bg-navy-900/50 border border-white/10 text-white focus:border-brand-500 outline-none font-mono text-center text-2xl"
+                                        value={adjustmentData.amount}
+                                        onChange={(e) => setAdjustmentData({ ...adjustmentData, amount: parseInt(e.target.value) || 0 })}
+                                    />
+                                    <div className="flex justify-between mt-2 px-1">
+                                        <button type="button" onClick={() => setAdjustmentData(d => ({ ...d, amount: d.amount - 1 }))} className="text-[10px] text-emerald-400 font-bold hover:underline">-1 Day</button>
+                                        <button type="button" onClick={() => setAdjustmentData(d => ({ ...d, amount: d.amount + 1 }))} className="text-[10px] text-orange-400 font-bold hover:underline">+1 Day</button>
                                     </div>
                                 </div>
+
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleAdjustLeave(e as any)}
+                                    disabled={isSaving}
+                                    className="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-brand-500/20 disabled:opacity-50"
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Save Adjustment'}
+                                </button>
                             </div>
                         </div>
-                    )}
-                </>
+                    </div>
+                </div>
             )}
         </div>
     );
