@@ -24,12 +24,16 @@ const MobileTabs: React.FC = () => {
                             }`
                         }
                     >
-                        <Icon size={22} className={`mb-0.5 ${isActive ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : ''}`} />
-                        <span className={`text-[10px] font-semibold tracking-wide ${isActive ? 'opacity-100' : 'opacity-80'}`}>{tab.label}</span>
+                        {({ isActive }) => (
+                            <>
+                                <Icon size={22} className={`mb-0.5 transition-all ${isActive ? 'text-brand-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : ''}`} />
+                                <span className={`text-[10px] font-semibold tracking-wide transition-opacity ${isActive ? 'opacity-100' : 'opacity-80'}`}>{tab.label}</span>
 
-                        {/* Active indicator dot */}
-                        {isActive && (
-                            <div className="absolute top-1 w-1 h-1 rounded-full bg-brand-400" />
+                                {/* Active indicator dot */}
+                                {isActive && (
+                                    <div className="absolute top-1 w-1 h-1 rounded-full bg-brand-400" />
+                                )}
+                            </>
                         )}
                     </NavLink>
                 );
