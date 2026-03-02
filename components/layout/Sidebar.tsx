@@ -10,16 +10,16 @@ import {
     BarChart3,
     FileStack,
     BookOpen,
-    UserCog,
     Trophy,
     Settings,
     LogOut,
     ChevronLeft,
     ChevronRight,
-    Menu,
     X,
     PieChart,
-    Users
+    Users,
+    Pin,
+    Activity
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -31,9 +31,47 @@ interface SidebarProps {
     closeMobileMenu: () => void;
 }
 
+const ALL_NAV_ITEMS = [
+    { id: 'dashboard', to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'tasks', to: '/tasks', icon: CheckSquare, label: 'Tasks & Workflow' },
+    { id: 'clients', to: '/clients', icon: Building2, label: 'Clients' },
+    { id: 'calendar', to: '/calendar', icon: Calendar, label: 'Calendar' },
+    { id: 'attendance', to: '/attendance', icon: Clock, label: 'Attendance' },
+    { id: 'compliance', to: '/compliance', icon: AlertCircle, label: 'Compliance' },
+    { id: 'leaves', to: '/leaves', icon: Calendar, label: 'Leaves & Requests' },
+    { id: 'staff', to: '/staff', icon: Users, label: 'Staff Directory', adminOnly: true },
+    { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true },
+    { id: 'performance', to: '/performance', icon: Trophy, label: 'Performance', adminOnly: true },
+    { id: 'my-performance', to: '/my-performance', icon: PieChart, label: 'My Performance' },
+    { id: 'templates', to: '/templates', icon: FileStack, label: 'Templates' },
+    { id: 'knowledge-base', to: '/knowledge-base', icon: BookOpen, label: 'Knowledge Base' },
+    { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', adminOnly: true },
+    { id: 'settings', to: '/settings', icon: Settings, label: 'Settings', masterAdminOnly: true }
+];
+
+const CORE_ITEM_IDS = ['dashboard', 'tasks', 'clients', 'calendar', 'attendance'];
+
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobileOpen, closeMobileMenu }) => {
     const { user, logout } = useAuth();
     const location = useLocation();
+
+    const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
+        try {
+            return JSON.parse(localStorage.getItem('rsa_pinned_nav') || '[]');
+        } catch { return []; }
+    });
+
+    const [isMoreOpen, setIsMoreOpen] = useState(true);
+
+    const togglePin = (e: React.MouseEvent, id: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setPinnedIds(prev => {
+            const next = prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id];
+            localStorage.setItem('rsa_pinned_nav', JSON.stringify(next));
+            return next;
+        });
+    };
 
     const handleLogout = () => {
         logout().then(() => {
@@ -41,12 +79,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
         });
     };
 
-    const NavItem = ({ to, icon: Icon, label, exact = false }: { to: string, icon: any, label: string, exact?: boolean }) => {
+    const NavItem = ({ item }: { item: any }) => {
+        const isPinned = pinnedIds.includes(item.id);
+        const Icon = item.icon;
+
         return (
             <NavLink
-                to={to}
-                end={exact}
+                to={item.to}
+                end={item.exact}
                 onClick={closeMobileMenu}
+                onContextMenu={(e) => togglePin(e, item.id)}
                 className={({ isActive }) =>
                     `flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-1 group relative overflow-hidden ${isActive
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
@@ -54,15 +96,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                     }`
                 }
             >
-                <div className="relative z-10 flex items-center min-w-0">
+                <div className="relative z-10 flex items-center min-w-0 w-full">
                     <Icon size={isCollapsed ? 20 : 18} className={`shrink-0 transition-all duration-300 ${!isCollapsed ? 'mr-3' : 'mx-auto'}`} />
-                    {!isCollapsed && <span className="font-medium text-sm truncate transition-opacity duration-300">{label}</span>}
+                    {!isCollapsed && (
+                        <div className="flex-1 flex items-center justify-between min-w-0">
+                            <span className="font-medium text-sm truncate transition-opacity duration-300">{item.label}</span>
+                            <button
+                                onClick={(e) => togglePin(e, item.id)}
+                                className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-1 rounded hover:bg-white/10 ${isPinned ? 'text-brand-400 opacity-100' : 'text-gray-500'}`}
+                                title={isPinned ? "Unpin from Favorites" : "Pin to Favorites"}
+                            >
+                                <Pin size={12} className={isPinned ? "fill-brand-400/20" : ""} />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* Tooltip for Collapsed State */}
                 {isCollapsed && (
-                    <div className="absolute left-full ml-4 px-2 py-1 bg-navy-900 text-white text-xs rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none drop-shadow-lg">
-                        {label}
+                    <div className="absolute left-full ml-4 px-2 py-1 bg-navy-900 text-white text-xs rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none drop-shadow-lg flex items-center gap-2">
+                        {item.label}
+                        {isPinned && <Pin size={10} className="text-brand-400" />}
                     </div>
                 )}
             </NavLink>
@@ -108,7 +161,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         )}
                     </div>
 
-                    {/* Collapse Toggle (Desktop Only) */}
                     <button
                         onClick={toggleCollapse}
                         className="hidden md:flex p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
@@ -116,7 +168,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                     </button>
 
-                    {/* Close Menu (Mobile Only) */}
                     <button
                         onClick={closeMobileMenu}
                         className="md:hidden p-1 text-gray-400"
@@ -127,39 +178,47 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-4 px-3 space-y-1">
-                    <SectionLabel label="Workspace" />
-                    <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-                    <NavItem to="/tasks" icon={CheckSquare} label="Tasks & Workflow" />
-                    <NavItem to="/calendar" icon={Calendar} label="Calendar" />
-                    <NavItem to="/compliance" icon={AlertCircle} label="Compliance" />
 
-                    <SectionLabel label="People" />
-                    <NavItem to="/attendance" icon={Clock} label="Attendance" />
-                    <NavItem to="/leaves" icon={Calendar} label="Leavs & Requests" />
-                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                        <NavItem to="/staff" icon={Users} label="Staff Directory" />
+                    {/* Favorites Section */}
+                    {pinnedIds.length > 0 && (
+                        <div className="mb-4">
+                            <SectionLabel label="Favorites" />
+                            {pinnedIds.map(id => {
+                                const item = ALL_NAV_ITEMS.find(i => i.id === id);
+                                if (!item) return null;
+                                if (item.adminOnly && user?.role !== UserRole.ADMIN && user?.role !== UserRole.MASTER_ADMIN) return null;
+                                if (item.masterAdminOnly && user?.role !== UserRole.MASTER_ADMIN) return null;
+                                return <NavItem key={`pinned-${item.id}`} item={item} />;
+                            })}
+                        </div>
                     )}
 
-                    <SectionLabel label="Insights" />
-                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                        <>
-                            <NavItem to="/workload" icon={BarChart3} label="Resource Planning" />
-                            <NavItem to="/performance" icon={Trophy} label="Performance" />
-                        </>
-                    )}
-                    {/* Staff Performance View */}
-                    <NavItem to="/my-performance" icon={PieChart} label="My Performance" />
+                    <SectionLabel label="Core" />
+                    {ALL_NAV_ITEMS.filter(i => CORE_ITEM_IDS.includes(i.id)).map(item => (
+                        <NavItem key={`core-${item.id}`} item={item} />
+                    ))}
 
+                    <div className="mt-6">
+                        <button
+                            onClick={() => setIsMoreOpen(!isMoreOpen)}
+                            className="w-full flex items-center justify-between px-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 hover:text-gray-300 transition-colors"
+                        >
+                            <span>More</span>
+                            {!isCollapsed && (
+                                <ChevronRight size={14} className={`transition-transform duration-200 ${isMoreOpen ? 'rotate-90' : ''}`} />
+                            )}
+                        </button>
 
-                    <SectionLabel label="Assets" />
-                    <NavItem to="/clients" icon={Building2} label="Clients" />
-                    <NavItem to="/templates" icon={FileStack} label="Templates" />
-                    <NavItem to="/knowledge-base" icon={BookOpen} label="Knowledge Base" />
-
-                    <SectionLabel label="System" />
-                    {user?.role === UserRole.MASTER_ADMIN && (
-                        <NavItem to="/settings" icon={Settings} label="Settings" />
-                    )}
+                        {isMoreOpen && (
+                            <div className="space-y-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                                {ALL_NAV_ITEMS.filter(i => !CORE_ITEM_IDS.includes(i.id)).map(item => {
+                                    if (item.adminOnly && user?.role !== UserRole.ADMIN && user?.role !== UserRole.MASTER_ADMIN) return null;
+                                    if (item.masterAdminOnly && user?.role !== UserRole.MASTER_ADMIN) return null;
+                                    return <NavItem key={`more-${item.id}`} item={item} />;
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </nav>
 
                 {/* Footer / User Profile */}

@@ -4,7 +4,6 @@ import { WifiOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AppNotification } from '../types';
-import CommandPalette from './CommandPalette';
 import { useAutoLogout } from '../hooks/useAutoLogout';
 import { getCurrentDateUTC } from '../utils/dates';
 
@@ -12,6 +11,7 @@ import { getCurrentDateUTC } from '../utils/dates';
 import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import NotificationPanel from './layout/NotificationPanel';
+import MobileTabs from './layout/MobileTabs';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,9 +28,6 @@ const Layout: React.FC = () => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  // Command Palette State
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Connectivity State
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -52,19 +49,6 @@ const Layout: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
-
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Toggle Command Palette (Cmd+K or Ctrl+K)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowCommandPalette(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Fetch Notifications & Late Warning
@@ -110,11 +94,6 @@ const Layout: React.FC = () => {
 
   return (
     <>
-      <CommandPalette
-        isOpen={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-      />
-
       <div className="flex h-screen bg-transparent text-gray-100 font-sans overflow-hidden">
 
         {/* Sidebar */}
@@ -122,7 +101,7 @@ const Layout: React.FC = () => {
           initial={{ x: -260 }}
           animate={{ x: 0 }}
           transition={{ duration: 0.5, ease: "circOut" }}
-          className="z-50"
+          className="z-50 hidden md:block"
         >
           <Sidebar
             isCollapsed={isSidebarCollapsed}
@@ -138,7 +117,6 @@ const Layout: React.FC = () => {
           {/* Header */}
           <Header
             toggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            openCommandPalette={() => setShowCommandPalette(true)}
             unreadCount={unreadCount}
             toggleNotifications={() => setShowNotifications(!showNotifications)}
             isSidebarCollapsed={isSidebarCollapsed}
@@ -151,7 +129,7 @@ const Layout: React.FC = () => {
           />
 
           {/* Page Content */}
-          <main className="flex-1 overflow-auto p-4 md:p-6 mt-16 scroll-smooth custom-scrollbar relative">
+          <main className="flex-1 overflow-auto p-4 md:p-6 mt-16 pb-24 md:pb-6 scroll-smooth custom-scrollbar relative">
             <AnimatePresence mode="wait">
               {!isOnline && (
                 <motion.div
@@ -168,6 +146,8 @@ const Layout: React.FC = () => {
 
             <Outlet />
           </main>
+
+          <MobileTabs />
         </div>
       </div>
     </>

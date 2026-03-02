@@ -24,6 +24,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
+const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage'));
 const StaffPage = lazy(() => import('./pages/StaffPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
@@ -35,7 +36,7 @@ const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const MyPerformancePage = lazy(() => import('./pages/MyPerformancePage'));
 const PeerReviewPage = lazy(() => import('./pages/PeerReviewPage'));
 const ResourcePlanningPage = lazy(() => import('./pages/ResourcePlanningPage'));
-
+const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
 
 // Suspense wrapper for lazy-loaded components with Error Boundary
 const LazyPage = ({ children }: { children: React.ReactNode }) => {
@@ -177,6 +178,7 @@ const App: React.FC = () => {
                     <Route path="dashboard" element={<LazyPage><Dashboard /></LazyPage>} />
                     <Route path="attendance" element={<LazyPage><AttendancePage /></LazyPage>} />
                     <Route path="clients" element={<LazyPage><ClientsPage /></LazyPage>} />
+                    <Route path="clients/:clientId" element={<LazyPage><ClientDetailPage /></LazyPage>} />
                     <Route path="tasks" element={<LazyPage><TasksPage /></LazyPage>} />
                     <Route path="calendar" element={<LazyPage><CalendarPage /></LazyPage>} />
                     <Route path="workload" element={
@@ -191,6 +193,11 @@ const App: React.FC = () => {
                     <Route path="staff" element={<LazyPage><StaffPage /></LazyPage>} />
                     <Route path="performance" element={<LazyPage><PerformancePage /></LazyPage>} />
                     <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />
+                    <Route path="audit-log" element={
+                      <AdminRoute>
+                        <LazyPage><AuditLogPage /></LazyPage>
+                      </AdminRoute>
+                    } />
                     <Route path="compliance" element={<LazyPage><CompliancePage /></LazyPage>} />
                     <Route path="templates" element={<LazyPage><TemplatesPage /></LazyPage>} />
                     <Route path="my-performance" element={<LazyPage><MyPerformancePage /></LazyPage>} />

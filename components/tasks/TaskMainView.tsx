@@ -2,12 +2,13 @@ import React, { useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import {
     List as ListIcon, Plus, X, Check, Tag,
-    Calendar, Clock, CheckCircle2, AlertTriangle,
+    Calendar, Clock, CheckCircle2, AlertTriangle, UserCircle2,
     GripVertical, ChevronLeft, ChevronRight, ChevronDown
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile, UserRole, Client } from '../../types';
 import { SIGNING_AUTHORITIES } from '../../constants/firmData';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useMedia } from 'react-use';
 import TaskCard from './TaskCard';
 
 interface TaskMainViewProps {
@@ -24,6 +25,8 @@ interface TaskMainViewProps {
     groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE';
     onQuickAdd: (status: TaskStatus, title: string) => Promise<void>;
     clientsList: Client[];
+    onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => void;
+    onOpenReassign?: (taskId: string) => void;
 }
 
 // ── Status config — deliberate, non-AI colour palette ──────────────────────
@@ -125,8 +128,9 @@ const getPriorityStyle = (p: TaskPriority) => {
 const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode, tasks, onDragEnd, handleOpenEdit, usersList,
     collapsedColumns, toggleColumnCollapse, selectedTaskId,
-    selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList,
+    selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign
 }) => {
+    const isMobile = useMedia('(max-width: 768px)', false);
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
     const [quickAddTitle, setQuickAddTitle] = React.useState('');
     const boardRef = useRef<HTMLDivElement>(null);
@@ -149,70 +153,130 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     // ── LIST VIEW ──────────────────────────────────────────────────────────
     if (viewMode === 'LIST') {
         return (
-            <div className="h-full overflow-y-auto p-6 custom-scrollbar">
-                <div className="min-w-[900px] max-w-7xl mx-auto">
-                    <div className="grid grid-cols-[24px_1fr_160px_130px_110px_130px] gap-x-4 px-5 py-3 border-b border-white/[0.06] text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 sticky top-0 bg-[#0a0f1e]/95 backdrop-blur-md z-10">
-                        <div />
-                        <div>Task / Client</div>
-                        <div>Assigned</div>
-                        <div>Status</div>
-                        <div>Priority</div>
-                        <div className="text-right">Due</div>
-                    </div>
+            <div className="h-full overflow-y-auto p-4 md:p-6 custom-scrollbar">
+                <div className="min-w-full md:min-w-[900px] max-w-7xl mx-auto overflow-x-hidden md:overflow-x-visible">
+                    {!isMobile && (
+                        <div className="grid grid-cols-[24px_1fr_160px_130px_110px_130px] gap-x-4 px-5 py-3 border-b border-white/[0.06] text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 sticky top-0 bg-[#0a0f1e]/95 backdrop-blur-md z-10">
+                            <div />
+                            <div>Task / Client</div>
+                            <div>Assigned</div>
+                            <div>Status</div>
+                            <div>Priority</div>
+                            <div className="text-right">Due</div>
+                        </div>
+                    )}
                     {tasks.map(task => {
                         const sc = S[task.status];
                         const pc = P[task.priority] ?? P[TaskPriority.LOW];
                         const isOverdue = task.dueDate && new Date(task.dueDate) < new Date()
                             && task.status !== TaskStatus.COMPLETED && task.status !== TaskStatus.ARCHIVED;
-                        return (
+                        const content = (
                             <div
-                                key={task.id}
                                 onClick={() => handleOpenEdit(task)}
-                                className={`grid grid-cols-[24px_1fr_160px_130px_110px_130px] gap-x-4 px-5 py-3.5 items-center cursor-pointer group rounded-lg transition-all mb-0.5
-                                    hover:bg-white/[0.03] border border-transparent hover:border-white/[0.06]
-                                    ${selectedTaskId === task.id ? 'bg-blue-500/[0.06] border-blue-500/20' : ''}`}
+                                className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-[24px_1fr_160px_130px_110px_130px]'} gap-x-4 px-5 py-4 md:py-3.5 items-center cursor-pointer group rounded-lg transition-all mb-0.5
+                                    hover:bg-white/[0.03] border border-transparent ${!isMobile && 'hover:border-white/[0.06]'}
+                                    ${selectedTaskId === task.id ? 'bg-blue-500/[0.06] border-blue-500/20' : 'bg-[#0a0f1e]'}`}
                             >
-                                <div onClick={e => e.stopPropagation()} className="flex items-center justify-center">
-                                    <div className={`relative w-4 h-4 rounded border cursor-pointer flex items-center justify-center transition-all
-                                        ${selectedTaskIds.includes(task.id) ? 'bg-blue-600 border-blue-500' : 'border-slate-700 bg-transparent opacity-0 group-hover:opacity-100'}`}
-                                        onClick={() => onToggleSelection(task.id)}>
-                                        {selectedTaskIds.includes(task.id) && <Check size={9} className="text-white" strokeWidth={3.5} />}
+                                {/* Selected Checkbox (Hidden on true mobile view for space, or keeping if needed) */}
+                                {!isMobile && (
+                                    <div onClick={e => e.stopPropagation()} className="flex items-center justify-center">
+                                        <div className={`relative w-4 h-4 rounded border cursor-pointer flex items-center justify-center transition-all
+                                            ${selectedTaskIds.includes(task.id) ? 'bg-blue-600 border-blue-500' : 'border-slate-700 bg-transparent opacity-0 group-hover:opacity-100'}`}
+                                            onClick={() => onToggleSelection(task.id)}>
+                                            {selectedTaskIds.includes(task.id) && <Check size={9} className="text-white" strokeWidth={3.5} />}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                                 <div className="min-w-0">
-                                    <div className="flex items-center gap-2 mb-0.5">
-                                        <span className="text-[13px] font-semibold text-slate-200 truncate group-hover:text-white transition-colors">{task.title}</span>
-                                        {task.tags?.map(t => <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-500">{t}</span>)}
+                                    <div className="flex items-center gap-2 mb-1 md:mb-0.5">
+                                        <span className="text-sm md:text-[13px] font-semibold text-slate-200 truncate group-hover:text-white transition-colors">{task.title}</span>
+                                        {task.tags?.map(t => <span key={t} className="hidden md:inline text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-500">{t}</span>)}
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] text-slate-600">
-                                        {task.clientName && <><Tag size={9} /> <span className="truncate max-w-[140px]">{task.clientName}</span></>}
-                                        <span className="font-mono text-slate-700">#{task.id.substring(0, 5).toUpperCase()}</span>
+                                    <div className="flex items-center gap-2 text-[11px] md:text-[10px] text-slate-600">
+                                        {task.clientName && <><Tag size={10} /> <span className="truncate max-w-[160px] md:max-w-[140px]">{task.clientName}</span></>}
+                                        <span className="font-mono text-slate-700 hidden md:inline">#{task.id.substring(0, 5).toUpperCase()}</span>
                                     </div>
-                                </div>
-                                <div className="flex -space-x-1.5">
-                                    {task.assignedTo.slice(0, 4).map((uid, i) => {
-                                        const u = usersList.find(x => x.uid === uid);
-                                        return (
-                                            <div key={uid} title={u?.displayName}
-                                                style={{ backgroundColor: avatarColor(i) }}
-                                                className="w-6 h-6 rounded-full border-2 border-[#0a0f1e] flex items-center justify-center text-[9px] font-black text-white">
-                                                {u?.displayName?.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase() ?? '?'}
+
+                                    {/* Mobile Only Meta Row */}
+                                    {isMobile && (
+                                        <div className="flex flex-wrap items-center gap-3 mt-3">
+                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wide ${pc.badge}`}>{pc.label}</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${sc?.dot ?? 'bg-slate-500'}`} />
+                                                <span className="text-[10px] text-slate-400 font-medium">{sc?.label ?? task.status.replace('_', ' ')}</span>
                                             </div>
-                                        );
-                                    })}
-                                    {task.assignedTo.length > 4 && <div className="w-6 h-6 rounded-full bg-slate-700 border-2 border-[#0a0f1e] flex items-center justify-center text-[9px] text-slate-400">+{task.assignedTo.length - 4}</div>}
+                                            <div className={`text-[10px] font-medium flex items-center gap-1 ml-auto ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
+                                                {isOverdue ? <AlertTriangle size={10} className="animate-pulse" /> : <Calendar size={10} />}
+                                                {formatDate(task.dueDate)}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${sc?.dot ?? 'bg-slate-500'}`} />
-                                    <span className="text-[11px] text-slate-400 font-medium">{sc?.label ?? task.status.replace('_', ' ')}</span>
-                                </div>
-                                <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wide ${pc.badge}`}>{pc.label}</span>
-                                <div className={`text-right text-[11px] font-medium flex items-center justify-end gap-1 ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
-                                    {isOverdue ? <AlertTriangle size={10} className="animate-pulse" /> : <Calendar size={10} />}
-                                    {formatDate(task.dueDate)}
-                                </div>
+                                {!isMobile && (
+                                    <>
+                                        <div className="flex -space-x-1.5">
+                                            {task.assignedTo.slice(0, 4).map((uid, i) => {
+                                                const u = usersList.find(x => x.uid === uid);
+                                                return (
+                                                    <div key={uid} title={u?.displayName}
+                                                        style={{ backgroundColor: avatarColor(i) }}
+                                                        className="w-6 h-6 rounded-full border-2 border-[#0a0f1e] flex items-center justify-center text-[9px] font-black text-white">
+                                                        {u?.displayName?.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase() ?? '?'}
+                                                    </div>
+                                                );
+                                            })}
+                                            {task.assignedTo.length > 4 && <div className="w-6 h-6 rounded-full bg-slate-700 border-2 border-[#0a0f1e] flex items-center justify-center text-[9px] text-slate-400">+{task.assignedTo.length - 4}</div>}
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${sc?.dot ?? 'bg-slate-500'}`} />
+                                            <span className="text-[11px] text-slate-400 font-medium">{sc?.label ?? task.status.replace('_', ' ')}</span>
+                                        </div>
+                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wide ${pc.badge}`}>{pc.label}</span>
+                                        <div className={`text-right text-[11px] font-medium flex items-center justify-end gap-1 ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
+                                            {isOverdue ? <AlertTriangle size={10} className="animate-pulse" /> : <Calendar size={10} />}
+                                            {formatDate(task.dueDate)}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         );
+
+                        if (isMobile) {
+                            return (
+                                <div key={task.id} className="relative mb-2 rounded-xl overflow-hidden bg-slate-800 border border-white/[0.06]">
+                                    {/* Action items underneath */}
+                                    <div className="absolute inset-y-0 right-0 w-[140px] flex">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onUpdateTaskStatus?.(task.id, TaskStatus.COMPLETED); }}
+                                            className="flex-1 bg-emerald-600/90 hover:bg-emerald-500 flex flex-col items-center justify-center text-emerald-50 transition-colors"
+                                        >
+                                            <CheckCircle2 size={18} className="mb-1" />
+                                            <span className="text-[10px] font-bold">Done</span>
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onOpenReassign?.(task.id); }}
+                                            className="flex-1 bg-blue-600/90 hover:bg-blue-500 flex flex-col items-center justify-center text-blue-50 transition-colors"
+                                        >
+                                            <UserCircle2 size={18} className="mb-1" />
+                                            <span className="text-[10px] font-bold">Assign</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Swipe wrapper */}
+                                    <motion.div
+                                        drag="x"
+                                        dragConstraints={{ left: -140, right: 0 }}
+                                        dragElastic={0.1}
+                                        dragDirectionLock
+                                        className="relative z-10 w-full"
+                                    >
+                                        {content}
+                                    </motion.div>
+                                </div>
+                            );
+                        }
+
+                        return <React.Fragment key={task.id}>{content}</React.Fragment>;
                     })}
                     {tasks.length === 0 && (
                         <div className="py-32 flex flex-col items-center justify-center text-center">

@@ -67,7 +67,6 @@ export const useUpdateTask = () => {
             if (Object.keys(updates).length > 1 || !updates.status) {
                 toast.success('Task updated');
             }
-            queryClient.invalidateQueries({ queryKey: taskKeys.all });
         },
 
         onError: (error: Error, _variables, context: any) => {
@@ -76,6 +75,10 @@ export const useUpdateTask = () => {
                 queryClient.setQueryData(taskKeys.all, context.previous);
             }
             toast.error(`Failed to update task: ${error.message}`);
+        },
+
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: taskKeys.all });
         },
     });
 };

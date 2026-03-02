@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, Menu, Clock } from 'lucide-react';
 import Breadcrumbs from './Breadcrumbs';
+import HeaderSearch from './HeaderSearch';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { getCurrentDateUTC } from '../../utils/dates';
@@ -9,7 +10,6 @@ import NepaliDate from 'nepali-date-converter';
 
 interface HeaderProps {
     toggleMobileMenu: () => void;
-    openCommandPalette: () => void;
     unreadCount: number;
     toggleNotifications: () => void;
     isSidebarCollapsed: boolean;
@@ -17,7 +17,6 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({
     toggleMobileMenu,
-    openCommandPalette,
     unreadCount,
     toggleNotifications,
     isSidebarCollapsed
@@ -54,29 +53,35 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Left: Mobile Toggle & Breadcrumbs */}
             <div className="flex items-center gap-4">
-                <button
-                    onClick={toggleMobileMenu}
-                    className="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5"
-                >
-                    <Menu size={20} />
-                </button>
-
                 <div className="hidden md:block">
                     <Breadcrumbs />
                 </div>
+                {/* Mobile Logo substitute */}
+                <div className="md:hidden flex items-center">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <span className="text-white font-bold text-lg leading-none">R</span>
+                    </div>
+                </div>
             </div>
+
+            {/* Center: Search Bar */}
+            <HeaderSearch />
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3 md:gap-6">
 
                 {/* Real-time Clock (Desktop Only) */}
-                <div className="hidden lg:flex flex-col items-end mr-2 text-right">
+                <div className="hidden xl:flex flex-col items-end mr-2 text-right font-mono">
                     <div className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
                         <Clock size={12} className="text-blue-400" />
                         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
-                    <div className="text-[10px] text-gray-500 font-mono">
-                        {getNepaliDateStr()} • {currentTime.toLocaleDateString()}
+                    <div className="text-[10px] text-gray-400 group relative flex items-center justify-end cursor-help w-full mt-0.5">
+                        <span className="border-b border-dashed border-gray-600 hover:text-white transition-colors">{currentTime.toLocaleDateString()}</span>
+                        {/* Tooltip */}
+                        <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-navy-900 text-white text-xs rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none drop-shadow-xl font-sans">
+                            {getNepaliDateStr()} BS
+                        </div>
                     </div>
                 </div>
 

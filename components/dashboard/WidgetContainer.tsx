@@ -34,14 +34,25 @@ import ImpactStatsWidget from './widgets/ImpactStatsWidget';
 import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
 import AllTasksWidget from './widgets/AllTasksWidget';
 
+// Newly Migrated from static layout
+import AttendanceWidget from './AttendanceWidget';
+import GreetingsWidget from './widgets/GreetingsWidget';
+import FocusWidget from './widgets/FocusWidget';
+import ComplianceBanner from './widgets/ComplianceBanner';
+import WorkloadHeatmap from './widgets/WorkloadHeatmap';
+import AiInsightWidget from './widgets/AiInsightWidget';
+import { UserRole } from '../../types';
+
 interface WidgetContainerProps {
     userId: string;
+    userRole: UserRole;
     isAdmin: boolean;
     dashboardData: any; // Passed from Dashboard.tsx
 }
 
 const WidgetContainer: React.FC<WidgetContainerProps> = ({
     userId,
+    userRole,
     isAdmin,
     dashboardData,
 }) => {
@@ -71,24 +82,21 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     WIDGET_REGISTRY.some((meta) => meta.type === w.type)
                 );
 
-                // Version check: if admin layout is missing 'all-tasks', update it
-                const needsReset = isAdmin && !validConfig.some((w: WidgetConfig) => w.type === 'all-tasks');
-                if (needsReset || validConfig.length === 0) {
-                    const fresh = getDefaultWidgetConfig(isAdmin);
+                // If no widgets are left (e.g if they were all old types), provide defaults
+                if (validConfig.length === 0) {
+                    const fresh = getDefaultWidgetConfig(userRole);
                     setWidgets(fresh);
                     AuthService.saveWidgetConfig(userId, fresh);
                 } else {
                     setWidgets(validConfig);
                 }
             } else {
-                const fresh = getDefaultWidgetConfig(isAdmin);
+                const fresh = getDefaultWidgetConfig(userRole);
                 setWidgets(fresh);
-                // Save default to Firestore immediately? Optional.
-                // AuthService.saveWidgetConfig(userId, fresh); 
             }
         };
         loadWidgets();
-    }, [userId, isAdmin]);
+    }, [userId, userRole]);
 
     // Save widget config
     const saveWidgetConfig = (config: WidgetConfig[]) => {
@@ -147,6 +155,18 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         const props = { ...dashboardData, widget };
 
         switch (widget.type) {
+            case 'greetings':
+                return <GreetingsWidget pendingCount={dashboardData.myOpenTasks} completedToday={dashboardData.completedToday} />;
+            case 'attendance':
+                return <AttendanceWidget />;
+            case 'compliance-banner':
+                return <ComplianceBanner deadlines={dashboardData.upcomingSchedule.filter((i: any) => i.type === 'DEADLINE' && i.subType === 'URGENT')} />;
+            case 'focus':
+                return <FocusWidget />;
+            case 'workload-heatmap':
+                return <WorkloadHeatmap staffStats={dashboardData.staffStats} totalTasks={dashboardData.relevantTasks?.length || 0} />;
+            case 'ai-insight':
+                return <AiInsightWidget />;
             case 'impact-stats':
                 return <ImpactStatsWidget {...props} />;
             case 'compliance-countdown':

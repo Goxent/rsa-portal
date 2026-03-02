@@ -6,12 +6,6 @@ import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import WidgetContainer from '../components/dashboard/WidgetContainer';
-import AttendanceWidget from '../components/dashboard/AttendanceWidget';
-import GreetingsWidget from '../components/dashboard/widgets/GreetingsWidget';
-import FocusWidget from '../components/dashboard/widgets/FocusWidget';
-import ComplianceBanner from '../components/dashboard/widgets/ComplianceBanner';
-import WorkloadHeatmap from '../components/dashboard/widgets/WorkloadHeatmap';
-import AiInsightWidget from '../components/dashboard/widgets/AiInsightWidget';
 import { useTasks } from '../hooks/useTasks';
 import { useUsers } from '../hooks/useStaff';
 import { useClients } from '../hooks/useClients';
@@ -173,12 +167,6 @@ const Dashboard: React.FC = () => {
         };
     }, [user, allTasks, usersForMap, allEvents, allClients, lateCount]);
 
-    const dashboardData = {
-        activeStaffCount, taskData, recentTasks, upcomingSchedule,
-        staffStats, userMap, staffPerformance, clientStats,
-        recentCompletedTasks, isLoading,
-    };
-
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     // Command strip derived values
@@ -203,6 +191,12 @@ const Dashboard: React.FC = () => {
         const limitStr = limit.toLocaleDateString('en-CA');
         return upcomingSchedule.filter(i => i.date >= today && i.date <= limitStr).slice(0, 6);
     }, [upcomingSchedule]);
+
+    const dashboardData = {
+        activeStaffCount, taskData, recentTasks, upcomingSchedule,
+        staffStats, userMap, staffPerformance, clientStats,
+        recentCompletedTasks, isLoading, myOpenTasks, completedToday
+    };
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
@@ -265,23 +259,15 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── 2. HERO ROW (60/40) ───────────────────────────────────── */}
-            <div className="flex-none grid grid-cols-1 lg:grid-cols-5 gap-5">
-                <div className="lg:col-span-3">
-                    <GreetingsWidget pendingCount={myOpenTasks} completedToday={completedToday} />
-                </div>
-                <div className="lg:col-span-2"><FocusWidget /></div>
-            </div>
-
-            {/* ── 3. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
+            {/* ── 2. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
             <div className="flex gap-5 flex-none">
 
                 {/* Left: Widget Grid */}
                 <div className="flex-1 min-w-0 flex flex-col gap-5">
-                    <AttendanceWidget />
                     {user && (
                         <WidgetContainer
                             userId={user.uid}
+                            userRole={user.role}
                             dashboardData={dashboardData}
                             isAdmin={isAdmin}
                         />
@@ -290,11 +276,6 @@ const Dashboard: React.FC = () => {
 
                 {/* Right: Sticky Sidebar */}
                 <div className="w-[320px] flex-shrink-0 flex flex-col gap-4 sticky top-4 self-start">
-
-                    {/* Compliance Banner (conditional) */}
-                    {upcomingSchedule.filter(i => i.type === 'DEADLINE' && i.subType === 'URGENT').length > 0 && (
-                        <ComplianceBanner deadlines={upcomingSchedule.filter(i => i.type === 'DEADLINE' && i.subType === 'URGENT')} />
-                    )}
 
                     {/* ── Upcoming Panel ── */}
                     {(() => {
@@ -436,15 +417,7 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Widgets Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4">
-                            <WorkloadHeatmap staffStats={staffStats} totalTasks={relevantTasks.length} />
-                        </div>
-                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4">
-                            <AiInsightWidget />
-                        </div>
-                    </div>
+                    {/* Widgets Grid - Moved to Main Dynamic Area */}
                 </div>
             )}
         </div>

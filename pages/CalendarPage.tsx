@@ -13,6 +13,8 @@ import { toBS, toAD } from '../utils/dates';
 import { ComplianceService } from '../services/advanced';
 import NepaliDate from 'nepali-date-converter';
 import * as XLSX from 'xlsx';
+import { DndContext, useDraggable, useDroppable, DragEndEvent, DragStartEvent, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { useTasks, useUpdateTask } from '../hooks/useTasks';
 
 // Helpers
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -28,6 +30,59 @@ const bsMonths = [
     "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"
 ];
 
+const DraggableTask = ({ task, canDrag }: { task: Task, canDrag: boolean }) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: `task-${task.id}`,
+        disabled: !canDrag,
+        data: { task }
+    });
+
+    const style = transform ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 50 : 'auto',
+    } : undefined;
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...listeners}
+            {...attributes}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            onClick={(e) => { e.stopPropagation(); }}
+        >
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></div>
+            <div className="text-[10px] text-blue-200 truncate font-medium leading-none">
+                {task.title}
+            </div>
+        </div>
+    );
+};
+
+const DroppableDay = ({ dateStr, isToday, isSelected, onClick, children }: any) => {
+    const { isOver, setNodeRef } = useDroppable({
+        id: dateStr,
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            onClick={onClick}
+            className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
+                ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                : isSelected
+                    ? 'border-blue-500/50 bg-gradient-to-br from-blue-600/20 to-indigo-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
+                    : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
+                } ${isOver ? 'ring-2 ring-blue-500 bg-blue-500/10 border-blue-500/50' : ''}`}
+        >
+            {/* Hover Effect Light */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+            {children}
+        </div>
+    );
+};
+
 const CalendarPage: React.FC = () => {
     const { user } = useAuth();
 
@@ -40,6 +95,11 @@ const CalendarPage: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [showOnlyMyEvents, setShowOnlyMyEvents] = useState(false);
+
+    // Queries
+    const { data: allTasks = [] } = useTasks();
+    const updateTaskMutation = useUpdateTask();
+    const [activeDragTask, setActiveDragTask] = useState<Task | null>(null);
 
     // UI State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -152,6 +212,36 @@ const CalendarPage: React.FC = () => {
         setSelectedEventIds(newSelected);
     };
 
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        if (active.data.current?.task) {
+            setActiveDragTask(active.data.current.task);
+        }
+    };
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over) {
+            setActiveDragTask(null);
+            return;
+        }
+
+        const taskIdStr = active.id.toString();
+        if (taskIdStr.startsWith('task-')) {
+            const taskId = taskIdStr.replace('task-', '');
+            const newDateStr = over.id.toString(); // We set id of DroppableDay to dateStr
+
+            try {
+                await updateTaskMutation.mutateAsync({ id: taskId, updates: { dueDate: newDateStr } });
+                toast.success(`Task due date updated to ${newDateStr}`);
+            } catch (error) {
+                toast.error('Failed to update task due date');
+            }
+        }
+
+        setActiveDragTask(null);
+    };
+
     const handleSelectAll = () => {
         if (selectedEventIds.size === events.length) {
             setSelectedEventIds(new Set());
@@ -233,9 +323,9 @@ const CalendarPage: React.FC = () => {
     const getItemsForDay = (day: number) => {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayEvents = events.filter(ev => ev.date === dateStr);
-        const dayTasks = [] as Task[]; // Tasks might be fetched separately if needed
+        const dayTasks = allTasks.filter(t => t.dueDate === dateStr);
 
-        return { events: dayEvents, tasks: dayTasks };
+        return { events: dayEvents, tasks: dayTasks, dateStr };
     };
 
     const { events: selectedDayEvents, tasks: selectedDayTasks } = selectedDate ? getItemsForDay(selectedDate) : { events: [], tasks: [] };
@@ -248,7 +338,11 @@ const CalendarPage: React.FC = () => {
         const totalSlots = [...blanks, ...days];
 
         return (
-            <>
+            <DndContext
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
                 <div className="grid grid-cols-7 gap-3 lg:gap-4 mb-2">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
                         <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-rose-400' : 'text-blue-300/70'}`}>
@@ -260,7 +354,7 @@ const CalendarPage: React.FC = () => {
                     {totalSlots.map((day, index) => {
                         if (!day) return <div key={`blank-${index}`} className="min-h-[120px] rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm"></div>;
 
-                        const { events: dayEvents } = getItemsForDay(day);
+                        const { events: dayEvents, tasks: dayTasks, dateStr } = getItemsForDay(day);
                         const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                         const isSelected = day === selectedDate;
 
@@ -269,19 +363,13 @@ const CalendarPage: React.FC = () => {
                         const bsDay = bsDateString.split('-')[2];
 
                         return (
-                            <div
+                            <DroppableDay
                                 key={day}
+                                dateStr={dateStr}
+                                isToday={isToday}
+                                isSelected={isSelected}
                                 onClick={() => setSelectedDate(day)}
-                                className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
-                                    ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-                                    : isSelected
-                                        ? 'border-blue-500/50 bg-gradient-to-br from-blue-600/20 to-indigo-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
-                                        : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
-                                    }`}
                             >
-                                {/* Hover Effect Light */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-
                                 <div className="flex justify-between items-start mb-2 relative z-10">
                                     <span className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday
                                         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
@@ -296,25 +384,38 @@ const CalendarPage: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-1.5 mt-1 overflow-hidden flex-1 relative z-10">
-                                    {dayEvents.slice(0, 3).map((ev, i) => (
-                                        <div key={`ev-${i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                    {dayTasks.slice(0, 3).map((task, i) => (
+                                        <DraggableTask key={`task-${task.id}`} task={task} canDrag={user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER} />
+                                    ))}
+                                    {dayEvents.slice(0, Math.max(0, 3 - dayTasks.length)).map((ev, i) => (
+                                        <div key={`ev-${ev.id || i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
                                             <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ev.color || '#fff' }}></div>
                                             <div className="text-[10px] text-gray-300 truncate font-medium leading-none">
                                                 {ev.title}
                                             </div>
                                         </div>
                                     ))}
-                                    {dayEvents.length > 3 && (
+                                    {(dayEvents.length + dayTasks.length) > 3 && (
                                         <div className="text-[10px] text-gray-400 font-medium px-1">
-                                            +{dayEvents.length - 3} more
+                                            +{(dayEvents.length + dayTasks.length) - 3} more
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </DroppableDay>
                         );
                     })}
                 </div>
-            </>
+                <DragOverlay>
+                    {activeDragTask ? (
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500 border border-blue-400 shadow-xl shadow-black/50 opacity-90 scale-105 rotate-2 cursor-grabbing pointer-events-none">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white shrink-0"></div>
+                            <div className="text-[10px] text-white truncate font-medium leading-none">
+                                {activeDragTask.title}
+                            </div>
+                        </div>
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
         );
     };
 

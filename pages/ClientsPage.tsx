@@ -8,6 +8,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Client, UserRole, UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
@@ -19,6 +20,7 @@ import { INITIAL_CLIENTS } from '../constants/initialClients';
 
 const ClientsPage: React.FC = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     // Data State
@@ -506,7 +508,10 @@ const ClientsPage: React.FC = () => {
                             </div>
 
                             {/* Card Body */}
-                            <div className="p-6 space-y-5 bg-navy-900/40 backdrop-blur-sm">
+                            <div
+                                className="p-6 space-y-5 bg-navy-900/40 backdrop-blur-sm cursor-pointer hover:bg-navy-800/50 transition-colors"
+                                onClick={() => navigate(`/clients/${client.id}`)}
+                            >
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Service</p>

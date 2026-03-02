@@ -5,7 +5,7 @@ import {
     AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search,
     Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet,
     FileText, User, Edit2, MoreVertical, Box, ChevronRight, Eye, Clock, Circle, Activity,
-    ArrowRight, Tag
+    ArrowRight, Tag, GanttChartSquare
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -27,12 +27,14 @@ import TaskComments from '../components/TaskComments';
 import TaskMainView from '../components/tasks/TaskMainView';
 import NepaliDatePicker from '../components/NepaliDatePicker';
 import TaskDetailPane from '../components/tasks/TaskDetailPane';
+import TaskTimelineView from '../components/tasks/TaskTimelineView';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
+import { useMedia } from 'react-use';
 
 const TasksPage: React.FC = () => {
     const { user } = useAuth();
@@ -53,11 +55,29 @@ const TasksPage: React.FC = () => {
     const deleteTaskMutation = useDeleteTask();
     const addCommentMutation = useAddTaskComment();
 
-    const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN'>('KANBAN');
+    const isMobile = useMedia('(max-width: 768px)', false);
+
+    const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN' | 'TIMELINE'>(isMobile ? 'LIST' : 'KANBAN');
     const [boardMode, setBoardMode] = useState<'ALL' | 'MY'>('ALL');
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (isMobile && (viewMode === 'KANBAN' || viewMode === 'TIMELINE')) {
+            setViewMode('LIST');
+        }
+    }, [isMobile, viewMode]);
     const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(undefined);
     const [collapsedColumns, setCollapsedColumns] = useState<TaskStatus[]>([]);
+
+    const toggleTaskSelection = (taskId: string) => {
+        setSelectedTaskIds(prev =>
+            prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
+        );
+    };
+
+    // Bulk Actions State
+    const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
+    const [showBulkAssignMenu, setShowBulkAssignMenu] = useState(false);
 
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -249,10 +269,63 @@ const TasksPage: React.FC = () => {
             await deleteTaskMutation.mutateAsync(taskId);
             setIsModalOpen(false);
             setSelectedTaskId(undefined);
+            setSelectedTaskIds(prev => prev.filter(id => id !== taskId));
             toast.success('Task deleted');
         } catch (error) {
             toast.error('Failed to delete task');
         }
+    };
+
+    // --- BULK ACTIONS ---
+    const handleBulkDelete = async () => {
+        if (!selectedTaskIds.length) return;
+        if (!window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} tasks?`)) return;
+        try {
+            await Promise.all(selectedTaskIds.map(id => deleteTaskMutation.mutateAsync(id)));
+            toast.success(`${selectedTaskIds.length} tasks deleted`);
+            setSelectedTaskIds([]);
+        } catch (error) {
+            toast.error('Failed to delete some tasks');
+        }
+    };
+
+    const handleBulkStatusChange = async (newStatus: TaskStatus) => {
+        if (!selectedTaskIds.length) return;
+        setShowBulkStatusMenu(false);
+        try {
+            await Promise.all(selectedTaskIds.map(id => updateTaskMutation.mutateAsync({ id, updates: { status: newStatus } })));
+            toast.success(`${selectedTaskIds.length} tasks moved to ${newStatus.replace('_', ' ')}`);
+            setSelectedTaskIds([]);
+        } catch (error) {
+            toast.error('Failed to update status');
+        }
+    };
+
+    const handleBulkReassign = async (staffId: string) => {
+        if (!selectedTaskIds.length) return;
+        setShowBulkAssignMenu(false);
+        try {
+            await Promise.all(selectedTaskIds.map(async id => {
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    const assignedSet = new Set(task.assignedTo || []);
+                    assignedSet.add(staffId);
+                    await updateTaskMutation.mutateAsync({ id, updates: { assignedTo: Array.from(assignedSet) } });
+                }
+            }));
+            const staffName = usersList.find(u => u.uid === staffId)?.displayName || 'Staff';
+            toast.success(`${selectedTaskIds.length} tasks reassigned to ${staffName}`);
+            setSelectedTaskIds([]);
+        } catch (error) {
+            toast.error('Failed to reassign tasks');
+        }
+    };
+
+    const handleBulkExport = () => {
+        if (!selectedTaskIds.length) return;
+        const tasksToExport = tasks.filter(t => selectedTaskIds.includes(t.id));
+        handleExportExcel(tasksToExport);
+        setSelectedTaskIds([]);
     };
 
     const handleAddComment = (comment: TaskComment) => {
@@ -288,21 +361,6 @@ const TasksPage: React.FC = () => {
             ...prev,
             subtasks: (prev.subtasks || []).filter(st => st.id !== id)
         }));
-    };
-
-    const toggleTaskSelection = (taskId: string) => {
-        setSelectedTaskIds(prev => prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]);
-    };
-
-    const handleBulkDelete = async () => {
-        if (!window.confirm(`Delete ${selectedTaskIds.length} tasks ? `)) return;
-        try {
-            await Promise.all(selectedTaskIds.map(id => deleteTaskMutation.mutateAsync(id)));
-            setSelectedTaskIds([]);
-            toast.success('Tasks deleted');
-        } catch (error) {
-            toast.error('Failed to delete some tasks');
-        }
     };
 
     const handleExportPDF = () => {
@@ -377,7 +435,7 @@ const TasksPage: React.FC = () => {
         toast.success('Exported PDF successfully');
     };
 
-    const handleExportExcel = async () => {
+    const handleExportExcel = async (tasksToRun: Task[] = filteredTasks) => {
         const dateStr = new Date().toISOString().split('T')[0];
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'R. Sapkota & Associates';
@@ -422,12 +480,12 @@ const TasksPage: React.FC = () => {
         sheet.getRow(5).height = 6;
 
         const COLS = [
-            { key: 'client', width: 25 },
-            { key: 'title', width: 45 },
-            { key: 'status', width: 18 },
-            { key: 'priority', width: 12 },
-            { key: 'dueDate', width: 15 },
-            { key: 'assignedTo', width: 30 },
+            { header: 'Client', key: 'client', width: 25 },
+            { header: 'Task Title', key: 'title', width: 45 },
+            { header: 'Status', key: 'status', width: 18 },
+            { header: 'Priority', key: 'priority', width: 12 },
+            { header: 'Due Date', key: 'dueDate', width: 15 },
+            { header: 'Assigned To', key: 'assignedTo', width: 30 },
         ];
         sheet.columns = COLS;
 
@@ -450,7 +508,7 @@ const TasksPage: React.FC = () => {
             'HALTED': 'FFFEE2E2',
         };
 
-        filteredTasks.forEach((t, idx) => {
+        tasksToRun.forEach((t, idx) => {
             const assignees = t.assignedTo?.map(id => usersList.find(u => u.uid === id)?.displayName).filter(Boolean).join(', ') || 'Unassigned';
             const row = sheet.addRow({
                 client: t.clientName || 'Internal',
@@ -583,12 +641,14 @@ const TasksPage: React.FC = () => {
 
                         {/* View Modes */}
                         <div className="flex items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05] flex-shrink-0">
-                            <button
-                                onClick={() => setViewMode('KANBAN')}
-                                className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                <LayoutGrid size={14} /> Board
-                            </button>
+                            {!isMobile && (
+                                <button
+                                    onClick={() => setViewMode('KANBAN')}
+                                    className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                                >
+                                    <LayoutGrid size={14} /> Board
+                                </button>
+                            )}
                             <button
                                 onClick={() => setViewMode('LIST')}
                                 className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
@@ -623,7 +683,7 @@ const TasksPage: React.FC = () => {
                         )}
                         <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
                             <button onClick={handleExportPDF} title="Export PDF" className="p-2 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={16} /></button>
-                            <button onClick={handleExportExcel} title="Export Excel" className="p-2 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={16} /></button>
+                            <button onClick={() => handleExportExcel()} title="Export Excel" className="p-2 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={16} /></button>
                         </div>
                         <button
                             onClick={() => setIsTemplateModalOpen(true)}
@@ -848,39 +908,55 @@ const TasksPage: React.FC = () => {
 
             {/* --- WORKSPACE AREA --- */}
             < main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative" >
-                <TaskMainView
-                    viewMode={viewMode}
-                    tasks={filteredTasks}
-                    onDragEnd={onDragEnd}
-                    handleOpenEdit={handleOpenEdit}
-                    usersList={usersList}
-                    clientsList={clientsList}
-                    collapsedColumns={collapsedColumns}
-                    toggleColumnCollapse={(status) => setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
-                    selectedTaskId={selectedTaskId}
-                    selectedTaskIds={selectedTaskIds}
-                    onToggleSelection={toggleTaskSelection}
-                    groupBy={groupBy}
-                    onQuickAdd={async (status, title) => {
-                        try {
-                            const newTask: any = {
-                                title,
-                                status,
-                                priority: TaskPriority.MEDIUM,
-                                assignedTo: [],
-                                subtasks: [],
-                                dueDate: getCurrentDateUTC(),
-                                clientIds: [],
-                                teamLeaderId: '',
-                                comments: []
-                            };
-                            await createTaskMutation.mutateAsync(newTask);
-                            toast.success('Task created');
-                        } catch (error) {
-                            toast.error('Failed to create task');
-                        }
-                    }}
-                />
+                {viewMode === 'TIMELINE' ? (
+                    <TaskTimelineView
+                        tasks={filteredTasks}
+                        usersList={usersList}
+                        clientsList={clientsList}
+                        handleOpenEdit={handleOpenEdit}
+                        groupBy={groupBy}
+                    />
+                ) : (
+                    <TaskMainView
+                        viewMode={viewMode as 'LIST' | 'KANBAN'}
+                        tasks={filteredTasks}
+                        onDragEnd={onDragEnd}
+                        handleOpenEdit={handleOpenEdit}
+                        usersList={usersList}
+                        clientsList={clientsList}
+                        collapsedColumns={collapsedColumns}
+                        toggleColumnCollapse={(status) => setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
+                        selectedTaskId={selectedTaskId}
+                        selectedTaskIds={selectedTaskIds}
+                        onToggleSelection={toggleTaskSelection}
+                        groupBy={groupBy}
+                        onUpdateTaskStatus={(taskId, status) => {
+                            updateTaskMutation.mutate({ id: taskId, updates: { status } });
+                        }}
+                        onOpenReassign={(taskId) => {
+                            setSelectedTaskIds([taskId]);
+                            setShowBulkAssignMenu(true);
+                        }}
+                        onQuickAdd={async (status, title) => {
+                            try {
+                                const newTask: any = {
+                                    title,
+                                    status,
+                                    priority: TaskPriority.MEDIUM,
+                                    assignedTo: [],
+                                    subtasks: [],
+                                    dueDate: getCurrentDateUTC(),
+                                    clientIds: [],
+                                    teamLeaderId: '',
+                                    comments: []
+                                };
+                                await createTaskMutation.mutateAsync(newTask);
+                            } catch (error) {
+                                console.error(error);
+                            }
+                        }}
+                    />
+                )}
             </main >
 
             {/* Modals for Create/Edit/Templates */}

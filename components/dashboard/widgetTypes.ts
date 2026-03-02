@@ -13,7 +13,13 @@ export type WidgetType =
     | 'client-stats'
     | 'staff-stats'
     | 'impact-stats'
-    | 'compliance-countdown';
+    | 'compliance-countdown'
+    | 'greetings'
+    | 'attendance'
+    | 'compliance-banner'
+    | 'focus'
+    | 'ai-insight'
+    | 'workload-heatmap';
 
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
 
@@ -134,31 +140,48 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         defaultSize: 'sm',
         adminOnly: true,
     },
+    { type: 'greetings', title: 'Greetings', description: 'Welcome banner and overview', icon: 'Sun', defaultSize: 'lg' },
+    { type: 'attendance', title: 'Attendance', description: 'Clock in/out actions', icon: 'Clock', defaultSize: 'md' },
+    { type: 'compliance-banner', title: 'Action Needed', description: 'Urgent compliance deadlines alert', icon: 'AlertTriangle', defaultSize: 'full' },
+    { type: 'focus', title: 'Focus Timer', description: 'Pomodoro timer for focused work', icon: 'Target', defaultSize: 'md' },
+    { type: 'ai-insight', title: 'AI Insights', description: 'AI-generated task insights', icon: 'Sparkles', defaultSize: 'md', adminOnly: true },
+    { type: 'workload-heatmap', title: 'Workload Map', description: 'Heatmap of staff task distribution', icon: 'LayoutGrid', defaultSize: 'lg', adminOnly: true },
 ];
 
-// Default widget layout for new users
-export const getDefaultWidgetConfig = (isAdmin: boolean): WidgetConfig[] => {
-    if (isAdmin) {
-        // Admin: work management + event management focused
-        return [
-            { id: 'w_stats', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
-            { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-            { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 2, size: 'full', visible: true },
-            { id: 'w_workload', type: 'team-workload', title: 'Team Workload', position: 3, size: 'md', visible: true },
-            { id: 'w_activity', type: 'recent-activity', title: 'Recent Activity', position: 4, size: 'md', visible: true },
-        ];
-    }
+import { UserRole } from '../../types';
 
-    // Staff: personal task + performance focused
-    return [
-        { id: 'w1', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
-        { id: 'w3', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-        { id: 'w2', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
-        { id: 'w4', type: 'quick-actions', title: 'Quick Actions', position: 3, size: 'sm', visible: true },
-        { id: 'w5', type: 'performance', title: 'Performance', position: 4, size: 'sm', visible: true },
-        { id: 'w_comp', type: 'compliance-countdown', title: 'Tax Deadlines', position: 5, size: 'md', visible: true },
-        { id: 'w_act', type: 'recent-activity', title: 'Recent Activity', position: 6, size: 'md', visible: true },
-    ];
+// Default widget layout for new users
+export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
+    switch (role) {
+        case UserRole.STAFF:
+            return [
+                { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
+                { id: 'w_att', type: 'attendance', title: 'Attendance', position: 1, size: 'md', visible: true },
+                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
+                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 3, size: 'full', visible: true },
+            ];
+        case UserRole.MANAGER:
+            return [
+                { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
+                { id: 'w_wl', type: 'team-workload', title: 'Team Workload', position: 1, size: 'md', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 2, size: 'md', visible: true },
+                { id: 'w_sstat', type: 'staff-stats', title: 'Department Overview', position: 3, size: 'sm', visible: true },
+            ];
+        case UserRole.ADMIN:
+        case UserRole.MASTER_ADMIN:
+        default:
+            return [
+                { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
+                { id: 'w_focus', type: 'focus', title: 'Focus Timer', position: 1, size: 'md', visible: true },
+                { id: 'w_att', type: 'attendance', title: 'Attendance', position: 2, size: 'md', visible: true },
+                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 3, size: 'full', visible: true },
+                { id: 'w_heat', type: 'workload-heatmap', title: 'Workload Map', position: 4, size: 'lg', visible: true },
+                { id: 'w_ai', type: 'ai-insight', title: 'AI Insights', position: 5, size: 'md', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 6, size: 'md', visible: true },
+                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 7, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 8, size: 'md', visible: true },
+            ];
+    }
 };
 
 // Size class mapping for Tailwind
