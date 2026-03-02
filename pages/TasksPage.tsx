@@ -655,6 +655,14 @@ const TasksPage: React.FC = () => {
                             >
                                 <ListIcon size={14} /> List
                             </button>
+                            {!isMobile && (
+                                <button
+                                    onClick={() => setViewMode('TIMELINE')}
+                                    className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'TIMELINE' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                                >
+                                    <GanttChartSquare size={14} /> Timeline
+                                </button>
+                            )}
                             <div className="w-px h-6 bg-white/10 mx-1" />
                             <button
                                 onClick={() => setBoardMode('ALL')}

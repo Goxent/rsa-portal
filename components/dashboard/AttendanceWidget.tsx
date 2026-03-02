@@ -57,7 +57,7 @@ const SearchableClientSelect = ({
     );
 
     return (
-        <div className="relative w-full" ref={wrapperRef}>
+        <div className={`relative w-full ${isOpen ? 'z-[100]' : 'z-10'}`} ref={wrapperRef}>
             {/* Trigger Button */}
             <button
                 type="button"
@@ -386,7 +386,7 @@ const AttendanceWidget: React.FC = () => {
 
     // Default Full Widget Render
     return (
-        <div className="glass-panel border-white/5 relative group rounded-2xl">
+        <div className="glass-panel border-white/5 relative group rounded-2xl hover:z-40 focus-within:z-50">
             {/* Background Decoration wrapper to clip blur without clipping the dropdown */}
             <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none -z-10">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none translate-x-1/3 -translate-y-1/3"></div>

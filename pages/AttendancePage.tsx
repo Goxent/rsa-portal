@@ -119,7 +119,7 @@ const AttendancePage: React.FC = () => {
                 // 1. Check Attendance Record
                 const record = history.find(r => r.userId === u.uid && r.date === dateStr);
                 if (record) {
-                    report.push({ ...record, type: 'RECORD' });
+                    report.push({ ...record, userName: record.userName || u.displayName, type: 'RECORD' });
                     return;
                 }
 
