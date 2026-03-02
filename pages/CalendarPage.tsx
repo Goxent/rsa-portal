@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import EventModal from '../components/EventModal';
 import EmptyState from '../components/common/EmptyState';
 import { generateRecurringInstances, canEditEvent, canDeleteEvent, getVisibilityBadge, formatEventTime } from '../utils/eventUtils';
-import { toBS, toAD } from '../utils/dateUtils';
+import { toBS, toAD } from '../utils/dates';
 import { ComplianceService } from '../services/advanced';
 import NepaliDate from 'nepali-date-converter';
 import * as XLSX from 'xlsx';

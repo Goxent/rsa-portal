@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { Clock, CalendarDays } from 'lucide-react';
-import { toBS } from '../../../utils/dateUtils';
+import { toBS } from '../../../utils/dates';
 import { motion } from 'framer-motion';
 
 interface GreetingsWidgetProps {
