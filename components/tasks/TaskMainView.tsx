@@ -307,9 +307,10 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                 {/* Relative wrapper so arrows can be absolutely pinned to edges */}
                 <div className="relative flex-1 min-h-0">
 
-                    {/* Left scroll arrow — fixed to left edge of screen */}
-                    <div className="fixed left-[70px] top-1/2 -translate-y-1/2 z-[40] pointer-events-none md:left-[270px]">
+                    {/* Left scroll arrow — absolute to the kanban board wrapper */}
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-[40] pointer-events-none">
                         <button
+                            type="button"
                             onClick={() => scroll('left')}
                             className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm"
                         >
@@ -317,9 +318,10 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                         </button>
                     </div>
 
-                    {/* Right scroll arrow — fixed to right edge of screen */}
-                    <div className="fixed right-6 top-1/2 -translate-y-1/2 z-[40] pointer-events-none md:right-[400px]">
+                    {/* Right scroll arrow — absolute to the kanban board wrapper */}
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 z-[40] pointer-events-none">
                         <button
+                            type="button"
                             onClick={() => scroll('right')}
                             className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm"
                         >

@@ -621,10 +621,10 @@ const TasksPage: React.FC = () => {
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-transparent">
             {/* --- PREMIUM WORKSPACE HEADER --- */}
             <header className="flex-none glass-panel border-b border-white/[0.05] p-6 pb-5 relative z-20">
-                {/* Top Row: Title, Toggles & Actions — always horizontal, scrolls if needed */}
-                <div className="flex flex-nowrap items-center gap-4 overflow-x-auto mb-4 scrollbar-none">
+                {/* Top Row: Title, Toggles & Actions — wraps on small screens so everything is visible */}
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     {/* Left: Branding + view toggles */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-4 flex-wrap">
                         <div className="flex items-center gap-4 border-r border-white/10 pr-4">
                             <motion.div
                                 initial={{ scale: 0.8, opacity: 0 }}
@@ -640,7 +640,7 @@ const TasksPage: React.FC = () => {
                         </div>
 
                         {/* View Modes */}
-                        <div className="flex items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05] flex-shrink-0">
+                        <div className="flex flex-wrap items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05]">
                             {!isMobile && (
                                 <button
                                     onClick={() => setViewMode('KANBAN')}
@@ -663,7 +663,7 @@ const TasksPage: React.FC = () => {
                                     <GanttChartSquare size={14} /> Timeline
                                 </button>
                             )}
-                            <div className="w-px h-6 bg-white/10 mx-1" />
+                            <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
                             <button
                                 onClick={() => setBoardMode('ALL')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${boardMode === 'ALL' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
@@ -679,8 +679,8 @@ const TasksPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Right: Actions — pinned right statically or sticky */}
-                    <div className="flex items-center gap-2 flex-shrink-0 absolute right-6 bg-[#0a0f1e]/80 backdrop-blur-md px-2 py-1 rounded-xl z-[40]">
+                    {/* Right: Actions */}
+                    <div className="flex flex-wrap items-center gap-2">
                         {selectedTaskIds.length > 0 && (
                             <button
                                 onClick={handleBulkDelete}
