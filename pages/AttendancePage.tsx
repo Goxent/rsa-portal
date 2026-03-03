@@ -13,6 +13,7 @@ import StaffSelect from '../components/StaffSelect';
 import ManualAttendanceModal from '../components/attendance/ManualAttendanceModal';
 import { FileText, Download, Filter, Search, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, AlertTriangle, Briefcase, ChevronRight, User, Edit2, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import NepaliDatePicker from '../components/NepaliDatePicker';
 
 const AttendancePage: React.FC = () => {
     const { user } = useAuth();
@@ -37,6 +38,8 @@ const AttendancePage: React.FC = () => {
     const [filterStaffId, setFilterStaffId] = useState<string>('ALL');
     const [filterStartDate, setFilterStartDate] = useState<string>('');
     const [filterEndDate, setFilterEndDate] = useState<string>('');
+    const [useNepaliFrom, setUseNepaliFrom] = useState(false);
+    const [useNepaliTo, setUseNepaliTo] = useState(false);
 
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
 
@@ -480,28 +483,60 @@ const AttendancePage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                        <CalendarIcon size={10} /> From Date
-                    </label>
-                    <input
-                        type="date"
-                        value={filterStartDate}
-                        onChange={(e) => setFilterStartDate(e.target.value)}
-                        className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none hover:bg-black/40 transition-all"
-                    />
+                <div className="space-y-2 relative z-50">
+                    <div className="flex items-center justify-between ml-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                            <CalendarIcon size={10} /> From Date
+                        </label>
+                        <button
+                            onClick={() => setUseNepaliFrom(!useNepaliFrom)}
+                            className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${useNepaliFrom ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-500'}`}
+                        >
+                            {useNepaliFrom ? 'BS' : 'AD'}
+                        </button>
+                    </div>
+                    {useNepaliFrom ? (
+                        <NepaliDatePicker
+                            value={filterStartDate || ''}
+                            onChange={(ad) => setFilterStartDate(ad)}
+                            className="w-full"
+                        />
+                    ) : (
+                        <input
+                            type="date"
+                            value={filterStartDate}
+                            onChange={(e) => setFilterStartDate(e.target.value)}
+                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none hover:bg-black/40 transition-all h-[42px]"
+                        />
+                    )}
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                        <CalendarIcon size={10} /> To Date
-                    </label>
-                    <input
-                        type="date"
-                        value={filterEndDate}
-                        onChange={(e) => setFilterEndDate(e.target.value)}
-                        className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none hover:bg-black/40 transition-all"
-                    />
+                <div className="space-y-2 relative z-50">
+                    <div className="flex items-center justify-between ml-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                            <CalendarIcon size={10} /> To Date
+                        </label>
+                        <button
+                            onClick={() => setUseNepaliTo(!useNepaliTo)}
+                            className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${useNepaliTo ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-500'}`}
+                        >
+                            {useNepaliTo ? 'BS' : 'AD'}
+                        </button>
+                    </div>
+                    {useNepaliTo ? (
+                        <NepaliDatePicker
+                            value={filterEndDate || ''}
+                            onChange={(ad) => setFilterEndDate(ad)}
+                            className="w-full"
+                        />
+                    ) : (
+                        <input
+                            type="date"
+                            value={filterEndDate}
+                            onChange={(e) => setFilterEndDate(e.target.value)}
+                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none hover:bg-black/40 transition-all h-[42px]"
+                        />
+                    )}
                 </div>
 
                 <button onClick={loadData} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-500/10 text-brand-400 rounded-xl border border-brand-500/20 hover:bg-brand-500/20 transition-all font-bold text-sm">

@@ -74,11 +74,28 @@ const EventModal: React.FC<EventModalProps> = ({
             }
             setSelectedTeamMembers(event.teamIds || []);
         } else {
-            setFormData(prev => ({
-                ...prev,
+            setFormData({
+                title: '',
                 date: selectedDate || getLocalDateString(),
+                time: '',
+                endTime: '',
+                description: '',
+                type: 'GENERAL',
+                visibility: 'PRIVATE',
+                location: '',
+                color: '',
+                teamIds: [],
+                participants: [],
+                rsvpRequired: false,
+                isRecurring: false,
                 createdBy: user.uid,
-            }));
+            });
+            setSelectedTeamMembers([]);
+            setRecurrenceRule({
+                frequency: 'WEEKLY',
+                interval: 1,
+                daysOfWeek: [],
+            });
         }
     }, [event, selectedDate, user.uid]);
 
