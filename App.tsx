@@ -177,8 +177,16 @@ const App: React.FC = () => {
                     <Route index element={<Navigate to="/dashboard" replace />} />
                     <Route path="dashboard" element={<LazyPage><Dashboard /></LazyPage>} />
                     <Route path="attendance" element={<LazyPage><AttendancePage /></LazyPage>} />
-                    <Route path="clients" element={<LazyPage><ClientsPage /></LazyPage>} />
-                    <Route path="clients/:clientId" element={<LazyPage><ClientDetailPage /></LazyPage>} />
+                    <Route path="clients" element={
+                      <AdminRoute>
+                        <LazyPage><ClientsPage /></LazyPage>
+                      </AdminRoute>
+                    } />
+                    <Route path="clients/:clientId" element={
+                      <AdminRoute>
+                        <LazyPage><ClientDetailPage /></LazyPage>
+                      </AdminRoute>
+                    } />
                     <Route path="tasks" element={<LazyPage><TasksPage /></LazyPage>} />
                     <Route path="calendar" element={<LazyPage><CalendarPage /></LazyPage>} />
                     <Route path="workload" element={
@@ -190,8 +198,16 @@ const App: React.FC = () => {
 
                     <Route path="knowledge-base" element={<LazyPage><KnowledgeBasePage /></LazyPage>} />
                     <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />
-                    <Route path="staff" element={<LazyPage><StaffPage /></LazyPage>} />
-                    <Route path="performance" element={<LazyPage><PerformancePage /></LazyPage>} />
+                    <Route path="staff" element={
+                      <AdminRoute>
+                        <LazyPage><StaffPage /></LazyPage>
+                      </AdminRoute>
+                    } />
+                    <Route path="performance" element={
+                      <AdminRoute>
+                        <LazyPage><PerformancePage /></LazyPage>
+                      </AdminRoute>
+                    } />
                     <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />
                     <Route path="audit-log" element={
                       <AdminRoute>

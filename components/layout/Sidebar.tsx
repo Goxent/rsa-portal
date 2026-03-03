@@ -34,7 +34,7 @@ interface SidebarProps {
 const ALL_NAV_ITEMS = [
     { id: 'dashboard', to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'tasks', to: '/tasks', icon: CheckSquare, label: 'Tasks & Workflow' },
-    { id: 'clients', to: '/clients', icon: Building2, label: 'Clients' },
+    { id: 'clients', to: '/clients', icon: Building2, label: 'Clients', adminOnly: true },
     { id: 'calendar', to: '/calendar', icon: Calendar, label: 'Calendar' },
     { id: 'attendance', to: '/attendance', icon: Clock, label: 'Attendance' },
     { id: 'compliance', to: '/compliance', icon: AlertCircle, label: 'Compliance' },
@@ -194,9 +194,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                     )}
 
                     <SectionLabel label="Core" />
-                    {ALL_NAV_ITEMS.filter(i => CORE_ITEM_IDS.includes(i.id)).map(item => (
-                        <NavItem key={`core-${item.id}`} item={item} />
-                    ))}
+                    {ALL_NAV_ITEMS.filter(i => CORE_ITEM_IDS.includes(i.id)).map(item => {
+                        if (item.adminOnly && user?.role !== UserRole.ADMIN && user?.role !== UserRole.MASTER_ADMIN) return null;
+                        if (item.masterAdminOnly && user?.role !== UserRole.MASTER_ADMIN) return null;
+                        return <NavItem key={`core-${item.id}`} item={item} />
+                    })}
 
                     <div className="mt-6">
                         <button
