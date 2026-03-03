@@ -38,8 +38,9 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
             ref={setNodeRef}
             style={style}
             className={`
+        relative group
         ${getWidgetSizeClasses(widget.size)}
-        ${isDragging ? 'z-50 opacity-80 scale-105' : 'z-0'}
+        ${isDragging ? 'z-50 opacity-80 scale-105' : 'z-0 focus-within:z-[999]'}
         transition-all duration-200
       `}
         >

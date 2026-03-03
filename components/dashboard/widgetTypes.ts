@@ -176,10 +176,9 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
                 { id: 'w_att', type: 'attendance', title: 'Attendance', position: 2, size: 'md', visible: true },
                 { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 3, size: 'full', visible: true },
                 { id: 'w_heat', type: 'workload-heatmap', title: 'Workload Map', position: 4, size: 'lg', visible: true },
-                { id: 'w_ai', type: 'ai-insight', title: 'AI Insights', position: 5, size: 'md', visible: true },
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 6, size: 'md', visible: true },
-                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 7, size: 'full', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 8, size: 'md', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 5, size: 'md', visible: true },
+                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 6, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 7, size: 'md', visible: true },
             ];
     }
 };
