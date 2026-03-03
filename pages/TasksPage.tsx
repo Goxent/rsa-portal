@@ -641,6 +641,12 @@ const TasksPage: React.FC = () => {
 
                         {/* View Modes */}
                         <div className="flex flex-wrap items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05]">
+                            <button
+                                onClick={() => setViewMode('LIST')}
+                                className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                <ListIcon size={14} /> List
+                            </button>
                             {!isMobile && (
                                 <button
                                     onClick={() => setViewMode('KANBAN')}
@@ -649,12 +655,6 @@ const TasksPage: React.FC = () => {
                                     <LayoutGrid size={14} /> Board
                                 </button>
                             )}
-                            <button
-                                onClick={() => setViewMode('LIST')}
-                                className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                <ListIcon size={14} /> List
-                            </button>
                             {!isMobile && (
                                 <button
                                     onClick={() => setViewMode('TIMELINE')}
