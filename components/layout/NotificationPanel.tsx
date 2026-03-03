@@ -26,8 +26,6 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
         return () => window.removeEventListener('keydown', handleEsc);
     }, [onClose]);
 
-    if (!isOpen) return null;
-
     const handleMarkAllRead = async () => {
         const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
         if (unreadIds.length > 0) {
@@ -136,6 +134,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
             </div>
         );
     };
+
+    if (!isOpen) return null;
 
     return (
         <>
