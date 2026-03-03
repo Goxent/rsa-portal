@@ -27,6 +27,7 @@ interface TaskMainViewProps {
     clientsList: Client[];
     onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => void;
     onOpenReassign?: (taskId: string) => void;
+    onSelectAll?: () => void;
 }
 
 // ── Status config — deliberate, non-AI colour palette ──────────────────────
@@ -128,7 +129,7 @@ const getPriorityStyle = (p: TaskPriority) => {
 const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode, tasks, onDragEnd, handleOpenEdit, usersList,
     collapsedColumns, toggleColumnCollapse, selectedTaskId,
-    selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign
+    selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll
 }) => {
     const isMobile = useMedia('(max-width: 768px)', false);
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
@@ -150,6 +151,8 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
         boardRef.current?.scrollBy({ left: dir === 'right' ? 360 : -360, behavior: 'smooth' });
     };
 
+    const allSelected = tasks.length > 0 && selectedTaskIds.length === tasks.length;
+
     // ── LIST VIEW ──────────────────────────────────────────────────────────
     if (viewMode === 'LIST') {
         return (
@@ -157,7 +160,15 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                 <div className="min-w-full md:min-w-[900px] max-w-7xl mx-auto overflow-x-hidden md:overflow-x-visible">
                     {!isMobile && (
                         <div className="grid grid-cols-[24px_1fr_160px_130px_110px_130px] gap-x-4 px-5 py-3 border-b border-white/[0.06] text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 sticky top-0 bg-[#0a0f1e]/95 backdrop-blur-md z-10">
-                            <div />
+                            <div className="flex items-center justify-center">
+                                <button
+                                    onClick={onSelectAll}
+                                    title="Select All Visible Tasks"
+                                    className={`relative w-4 h-4 rounded border flex items-center justify-center transition-all ${allSelected ? 'bg-blue-600 border-blue-500' : 'border-slate-600 hover:border-slate-400 bg-transparent'}`}
+                                >
+                                    {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
+                                </button>
+                            </div>
                             <div>Task / Client</div>
                             <div>Assigned</div>
                             <div>Status</div>

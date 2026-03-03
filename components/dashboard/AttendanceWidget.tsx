@@ -386,7 +386,7 @@ const AttendanceWidget: React.FC = () => {
 
     // Default Full Widget Render
     return (
-        <div className="glass-panel border-white/5 relative group rounded-2xl hover:z-40 focus-within:z-50">
+        <div className="glass-panel border-white/5 relative group rounded-2xl z-20 hover:z-40 focus-within:z-[100]">
             {/* Background Decoration wrapper to clip blur without clipping the dropdown */}
             <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none -z-10">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none translate-x-1/3 -translate-y-1/3"></div>
@@ -488,7 +488,7 @@ const AttendanceWidget: React.FC = () => {
 
                             <div className="space-y-2">
                                 {workLogs.map((log, index) => (
-                                    <div key={log.id} className="bg-white/5 border border-white/5 rounded-xl p-3 flex gap-3 group hover:border-white/10 transition-colors">
+                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-white/5 border border-white/5 rounded-xl p-3 flex gap-3 group hover:border-white/10 transition-colors">
                                         {/* Client Select */}
                                         <div className="w-1/3 min-w-[180px]">
                                             <SearchableClientSelect

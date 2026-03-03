@@ -937,6 +937,13 @@ const TasksPage: React.FC = () => {
                         selectedTaskId={selectedTaskId}
                         selectedTaskIds={selectedTaskIds}
                         onToggleSelection={toggleTaskSelection}
+                        onSelectAll={() => {
+                            if (selectedTaskIds.length === filteredTasks.length) {
+                                setSelectedTaskIds([]); // Deselect all
+                            } else {
+                                setSelectedTaskIds(filteredTasks.map(t => t.id)); // Select all filtered
+                            }
+                        }}
                         groupBy={groupBy}
                         onUpdateTaskStatus={(taskId, status) => {
                             updateTaskMutation.mutate({ id: taskId, updates: { status } });
