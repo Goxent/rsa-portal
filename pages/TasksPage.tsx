@@ -679,8 +679,8 @@ const TasksPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Right: Actions — pinned right with ml-auto */}
-                    <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+                    {/* Right: Actions — pinned right statically or sticky */}
+                    <div className="flex items-center gap-2 flex-shrink-0 absolute right-6 bg-[#0a0f1e]/80 backdrop-blur-md px-2 py-1 rounded-xl z-[40]">
                         {selectedTaskIds.length > 0 && (
                             <button
                                 onClick={handleBulkDelete}
