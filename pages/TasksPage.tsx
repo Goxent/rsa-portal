@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
     LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2,
     AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search,
     Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet,
     FileText, User, Edit2, MoreVertical, Box, ChevronRight, Eye, Clock, Circle, Activity,
-    ArrowRight, Tag, GanttChartSquare
+    ArrowRight, Tag, GanttChartSquare, Bookmark, SlidersHorizontal
 } from 'lucide-react';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext'; // Import ModalContext
@@ -40,6 +42,7 @@ const TasksPage: React.FC = () => {
     const { user } = useAuth();
     const { openModal } = useModal();
     const queryClient = useQueryClient();
+    const [searchParams] = useSearchParams();
 
     // -- DATA FETCHING (React Query) --
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: tasksLoading } = useInfiniteTasks();
@@ -63,6 +66,47 @@ const TasksPage: React.FC = () => {
     const [boardMode, setBoardMode] = useState<'ALL' | 'MY'>('ALL');
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
+    // Bulk Actions State
+    const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
+    const [showBulkAssignMenu, setShowBulkAssignMenu] = useState(false);
+
+    // Confirmation Modal State (replaces window.confirm)
+    const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({
+        open: false, title: '', message: '', onConfirm: () => { }
+    });
+
+    // Saved Filters UI State
+    const [showSavedFilters, setShowSavedFilters] = useState(false);
+    const [savedFilterName, setSavedFilterName] = useState('');
+    const savedFiltersRef = useRef<HTMLDivElement>(null);
+
+    // Collapsible Filter Panel
+    const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+    // Dropdown Refs
+    const statusMenuRef = useRef<HTMLDivElement>(null);
+    const assignMenuRef = useRef<HTMLDivElement>(null);
+
+    // Click outside handler
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+                setShowBulkStatusMenu(false);
+            }
+            if (assignMenuRef.current && !assignMenuRef.current.contains(event.target as Node)) {
+                setShowBulkAssignMenu(false);
+            }
+            if (savedFiltersRef.current && !savedFiltersRef.current.contains(event.target as Node)) {
+                setShowSavedFilters(false);
+            }
+        };
+
+        if (showBulkStatusMenu || showBulkAssignMenu || showSavedFilters) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showBulkStatusMenu, showBulkAssignMenu, showSavedFilters]);
+
     useEffect(() => {
         if (isMobile && (viewMode === 'KANBAN' || viewMode === 'TIMELINE')) {
             setViewMode('LIST');
@@ -77,10 +121,6 @@ const TasksPage: React.FC = () => {
         );
     };
 
-    // Bulk Actions State
-    const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
-    const [showBulkAssignMenu, setShowBulkAssignMenu] = useState(false);
-
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -92,6 +132,17 @@ const TasksPage: React.FC = () => {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [formError, setFormError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+
+    // Initial query param check
+    useEffect(() => {
+        if (searchParams.get('board') === 'MY') {
+            setBoardMode('MY');
+        }
+        const staffParam = searchParams.get('staff');
+        if (staffParam) {
+            setFilterStaff(staffParam);
+        }
+    }, [searchParams]);
 
     // Permissions check
     const canCreateTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
@@ -160,6 +211,10 @@ const TasksPage: React.FC = () => {
         if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase()) && !t.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
         if (filterStaff !== 'ALL' && !t.assignedTo.includes(filterStaff)) return false;
         if (filterClient !== 'ALL' && !t.clientIds?.includes(filterClient)) return false;
+
+        // Date Range Filter
+        if (dateRange.start && t.dueDate && t.dueDate < dateRange.start) return false;
+        if (dateRange.end && t.dueDate && t.dueDate > dateRange.end) return false;
 
         // Advanced Filters
         if (filterAuditor !== 'ALL' || filterVat || filterItr) {
@@ -268,29 +323,42 @@ const TasksPage: React.FC = () => {
     };
 
     const handleDeleteTask = async (taskId: string) => {
-        if (!window.confirm('Are you sure you want to delete this task?')) return;
-        try {
-            await deleteTaskMutation.mutateAsync(taskId);
-            setIsModalOpen(false);
-            setSelectedTaskId(undefined);
-            setSelectedTaskIds(prev => prev.filter(id => id !== taskId));
-            toast.success('Task deleted');
-        } catch (error) {
-            toast.error('Failed to delete task');
-        }
+        setConfirmModal({
+            open: true,
+            title: 'Delete Task',
+            message: 'Are you sure you want to delete this task? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await deleteTaskMutation.mutateAsync(taskId);
+                    setIsModalOpen(false);
+                    setSelectedTaskId(undefined);
+                    setSelectedTaskIds(prev => prev.filter(id => id !== taskId));
+                    toast.success('Task deleted');
+                } catch (error) {
+                    toast.error('Failed to delete task');
+                }
+            }
+        });
     };
 
     // --- BULK ACTIONS ---
     const handleBulkDelete = async () => {
         if (!selectedTaskIds.length) return;
-        if (!window.confirm(`Are you sure you want to delete ${selectedTaskIds.length} tasks?`)) return;
-        try {
-            await Promise.all(selectedTaskIds.map(id => deleteTaskMutation.mutateAsync(id)));
-            toast.success(`${selectedTaskIds.length} tasks deleted`);
-            setSelectedTaskIds([]);
-        } catch (error) {
-            toast.error('Failed to delete some tasks');
-        }
+        const count = selectedTaskIds.length;
+        setConfirmModal({
+            open: true,
+            title: `Delete ${count} Tasks`,
+            message: `Are you sure you want to delete ${count} task${count > 1 ? 's' : ''}? This action cannot be undone.`,
+            onConfirm: async () => {
+                try {
+                    await Promise.all(selectedTaskIds.map(id => deleteTaskMutation.mutateAsync(id)));
+                    toast.success(`${count} tasks deleted`);
+                    setSelectedTaskIds([]);
+                } catch (error) {
+                    toast.error('Failed to delete some tasks');
+                }
+            }
+        });
     };
 
     const handleBulkStatusChange = async (newStatus: TaskStatus) => {
@@ -614,6 +682,29 @@ const TasksPage: React.FC = () => {
         return stats;
     }, [filteredTasks]);
 
+    // Count active (non-default) filters for the filter badge
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filterStatus !== 'ALL') count++;
+        if (filterPriority !== 'ALL') count++;
+        if (filterStaff !== 'ALL') count++;
+        if (filterClient !== 'ALL') count++;
+        if (filterAuditor !== 'ALL') count++;
+        if (filterVat) count++;
+        if (filterItr) count++;
+        if (dateRange.start) count++;
+        if (dateRange.end) count++;
+        if (searchTerm) count++;
+        return count;
+    }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, filterVat, filterItr, dateRange, searchTerm]);
+
+    const deleteSavedFilter = (index: number) => {
+        const updated = savedFilters.filter((_, i) => i !== index);
+        setSavedFilters(updated);
+        localStorage.setItem('rsa_task_filters', JSON.stringify(updated));
+        toast.success('Filter deleted');
+    };
+
     if (loading) return (
         <div className="flex flex-col h-full bg-transparent p-8 space-y-8 animate-pulse">
             <div className="h-40 bg-white/5 rounded-3xl" />
@@ -686,12 +777,91 @@ const TasksPage: React.FC = () => {
                     {/* Right: Actions */}
                     <div className="flex flex-wrap items-center gap-2">
                         {selectedTaskIds.length > 0 && (
-                            <button
-                                onClick={handleBulkDelete}
-                                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-rose-500/10"
-                            >
-                                <Trash2 size={15} /> Delete ({selectedTaskIds.length})
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {/* Bulk Status Dropdown */}
+                                <div className="relative" ref={statusMenuRef}>
+                                    <button
+                                        onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
+                                        className="px-4 py-2 bg-slate-500/10 hover:bg-slate-500/20 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-white/5"
+                                    >
+                                        <Activity size={14} className="text-blue-400" /> Status ({selectedTaskIds.length})
+                                        <ChevronDown size={14} className={`transition-transform ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {showBulkStatusMenu && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 10 }}
+                                                className="absolute top-full left-0 mt-2 w-48 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                                            >
+                                                {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
+                                                    <button
+                                                        key={status}
+                                                        onClick={() => {
+                                                            handleBulkStatusChange(status as TaskStatus);
+                                                            setShowBulkStatusMenu(false);
+                                                        }}
+                                                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between group"
+                                                    >
+                                                        {status.replace(/_/g, ' ')}
+                                                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* Bulk Reassign Dropdown */}
+                                <div className="relative" ref={assignMenuRef}>
+                                    <button
+                                        onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
+                                        className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-cyan-500/10"
+                                    >
+                                        <UserCircle2 size={14} /> Reassign ({selectedTaskIds.length})
+                                        <ChevronDown size={14} className={`transition-transform ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {showBulkAssignMenu && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 10 }}
+                                                className="absolute top-full left-0 mt-2 w-56 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-64 overflow-y-auto custom-scrollbar"
+                                            >
+                                                <div className="p-2 border-b border-white/5 bg-white/5">
+                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Select Staff</p>
+                                                </div>
+                                                {usersList.map((st) => (
+                                                    <button
+                                                        key={st.uid}
+                                                        onClick={() => {
+                                                            handleBulkReassign(st.uid);
+                                                            setShowBulkAssignMenu(false);
+                                                        }}
+                                                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3"
+                                                    >
+                                                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px] text-blue-400">
+                                                            {getInitials(st.displayName)}
+                                                        </div>
+                                                        <span className="truncate">{st.displayName}</span>
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-rose-500/10"
+                                >
+                                    <Trash2 size={15} /> Delete ({selectedTaskIds.length})
+                                </button>
+                            </div>
                         )}
                         <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
                             <button onClick={handleExportPDF} title="Export PDF" className="p-2 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={16} /></button>
@@ -703,6 +873,73 @@ const TasksPage: React.FC = () => {
                         >
                             <Sparkles size={14} className="text-amber-400" /> Templates
                         </button>
+                        {/* Saved Filters Dropdown */}
+                        <div className="relative" ref={savedFiltersRef}>
+                            <button
+                                onClick={() => setShowSavedFilters(!showSavedFilters)}
+                                className="px-4 py-2 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all"
+                            >
+                                <Bookmark size={14} className="text-violet-400" /> Saved
+                                {savedFilters.length > 0 && (
+                                    <span className="ml-1 w-4 h-4 rounded-full bg-violet-500/30 text-violet-300 text-[9px] font-black flex items-center justify-center">{savedFilters.length}</span>
+                                )}
+                            </button>
+                            <AnimatePresence>
+                                {showSavedFilters && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 10 }}
+                                        className="absolute top-full right-0 mt-2 w-72 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                                    >
+                                        <div className="p-3 border-b border-white/5 bg-white/[0.03]">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Saved Filters</p>
+                                        </div>
+                                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                            {savedFilters.length === 0 ? (
+                                                <div className="p-4 text-center text-xs text-gray-600">No saved filters yet</div>
+                                            ) : (
+                                                savedFilters.map((f, i) => (
+                                                    <div key={i} className="flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors group">
+                                                        <button
+                                                            onClick={() => { applySavedFilter(f.filters); setShowSavedFilters(false); toast.success(`Applied filter "${f.name}"`); }}
+                                                            className="flex-1 text-left text-xs font-bold text-gray-300 hover:text-white transition-colors truncate"
+                                                        >
+                                                            {f.name}
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); deleteSavedFilter(i); }}
+                                                            className="ml-2 p-1 rounded text-gray-600 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                        <div className="p-3 border-t border-white/5 bg-white/[0.02]">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Filter name..."
+                                                    value={savedFilterName}
+                                                    onChange={e => setSavedFilterName(e.target.value)}
+                                                    onKeyDown={e => { if (e.key === 'Enter' && savedFilterName.trim()) { saveCurrentFilters(savedFilterName.trim()); setSavedFilterName(''); } }}
+                                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 px-3 py-1.5 focus:outline-none focus:border-violet-500/50 placeholder:text-gray-600"
+                                                />
+                                                <button
+                                                    onClick={() => { if (savedFilterName.trim()) { saveCurrentFilters(savedFilterName.trim()); setSavedFilterName(''); } }}
+                                                    disabled={!savedFilterName.trim()}
+                                                    className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1"
+                                                >
+                                                    <Save size={11} /> Save
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                         <button
                             onClick={handleOpenCreate}
                             disabled={!canCreateTask}
@@ -713,36 +950,8 @@ const TasksPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Bottom: Status Stats Strip + Search/Filter Row */}
+                {/* Bottom: Search/Filter Row + Collapsible Panel */}
                 <div className="space-y-3">
-
-                    {/* Status Stats Strip — only shown in List view (Kanban board columns already show counts) */}
-                    {viewMode === 'LIST' && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                            {([
-                                { key: 'ALL', label: 'Total', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                                { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                                { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-600 border-blue-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-blue-400', dot: 'bg-blue-400' },
-                                { key: 'UNDER_REVIEW', label: 'Under Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
-                                { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
-                                { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
-                            ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
-                                const isActive = filterStatus === key;
-                                return (
-                                    <button
-                                        key={key}
-                                        onClick={() => setFilterStatus(key)}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'
-                                            }`}
-                                    >
-                                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
-                                        {label}
-                                        <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
 
                     {/* Search + Filters Row */}
                     <div className="flex items-center bg-white/5 p-3 rounded-2xl border border-white/[0.05] gap-0">
@@ -758,13 +967,8 @@ const TasksPage: React.FC = () => {
                             />
                         </div>
 
-                        {/* Filters — horizontally scrollable */}
+                        {/* Inline filter selects */}
                         <div className="flex items-center gap-2 overflow-x-auto pl-3 scrollbar-none flex-1 min-w-0">
-                            <div className="flex items-center gap-1 text-gray-500 flex-shrink-0">
-                                <Filter size={13} />
-                                <span className="text-[10px] font-bold uppercase tracking-wider">Filters:</span>
-                            </div>
-
                             <div className="relative flex-shrink-0">
                                 <select
                                     value={groupBy}
@@ -814,28 +1018,120 @@ const TasksPage: React.FC = () => {
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
                             </div>
 
+                            {/* Date range inputs */}
+                            <div className="w-px h-5 bg-white/10 flex-shrink-0" />
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <Calendar size={12} className="text-gray-500" />
+                                <input
+                                    type="date"
+                                    value={dateRange.start}
+                                    onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))}
+                                    placeholder="From"
+                                    title="Due date from"
+                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 px-3 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors [color-scheme:dark]"
+                                />
+                                <span className="text-gray-600 text-[10px] font-bold">to</span>
+                                <input
+                                    type="date"
+                                    value={dateRange.end}
+                                    onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))}
+                                    placeholder="To"
+                                    title="Due date to"
+                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 px-3 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors [color-scheme:dark]"
+                                />
+                            </div>
+
                             <div className="w-px h-5 bg-white/10 flex-shrink-0" />
 
-                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
-                                <input
-                                    type="checkbox"
-                                    checked={filterVat}
-                                    onChange={(e) => setFilterVat(e.target.checked)}
-                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
-                                />
-                                <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-blue-400' : 'text-gray-300'}`}>VAT</span>
-                            </label>
-                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
-                                <input
-                                    type="checkbox"
-                                    checked={filterItr}
-                                    onChange={(e) => setFilterItr(e.target.checked)}
-                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
-                                />
-                                <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-blue-400' : 'text-gray-300'}`}>ITR</span>
-                            </label>
+                            {/* Filter panel toggle button */}
+                            <button
+                                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                                className={`flex items-center gap-1.5 flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                    showFilterPanel
+                                        ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                                        : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-300'
+                                }`}
+                            >
+                                <SlidersHorizontal size={13} />
+                                More
+                                {activeFilterCount > 0 && (
+                                    <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-black flex items-center justify-center">{activeFilterCount}</span>
+                                )}
+                                <ChevronDown size={12} className={`transition-transform ${showFilterPanel ? 'rotate-180' : ''}`} />
+                            </button>
                         </div>
                     </div>
+
+                    {/* Collapsible Filter Panel */}
+                    <AnimatePresence>
+                        {showFilterPanel && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                            >
+                                <div className="bg-white/[0.03] rounded-2xl border border-white/[0.05] p-4 space-y-4">
+                                    {/* Status Stats Strip */}
+                                    {viewMode === 'LIST' && (
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Status</p>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                {([
+                                                    { key: 'ALL', label: 'Total', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                                                    { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                                                    { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-600 border-blue-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-blue-400', dot: 'bg-blue-400' },
+                                                    { key: 'UNDER_REVIEW', label: 'Under Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
+                                                    { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
+                                                    { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
+                                                ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
+                                                    const isActive = filterStatus === key;
+                                                    return (
+                                                        <button
+                                                            key={key}
+                                                            onClick={() => setFilterStatus(key)}
+                                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'
+                                                                }`}
+                                                        >
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
+                                                            {label}
+                                                            <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Toggles Row: VAT, ITR */}
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tax Type</p>
+                                        <div className="flex items-center gap-3">
+                                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filterVat}
+                                                    onChange={(e) => setFilterVat(e.target.checked)}
+                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                                                />
+                                                <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-blue-400' : 'text-gray-300'}`}>VAT</span>
+                                            </label>
+                                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filterItr}
+                                                    onChange={(e) => setFilterItr(e.target.checked)}
+                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                                                />
+                                                <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-blue-400' : 'text-gray-300'}`}>ITR</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Active Filter Pills */}
                     {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || filterVat || filterItr || (dateRange.start || dateRange.end)) && (
@@ -976,8 +1272,11 @@ const TasksPage: React.FC = () => {
                                 }
                             }}
                         />
-                        {hasNextPage && (
-                            <div className="flex justify-center p-4 bg-[#0a0f1e] z-10 border-t border-white/[0.06]">
+                        {hasNextPage && filteredTasks.length > 0 && (
+                            <div className="flex flex-col items-center gap-2 p-4 bg-[#0a0f1e] z-10 border-t border-white/[0.06]">
+                                <span className="text-[10px] font-bold text-gray-500 tabular-nums">
+                                    Showing {filteredTasks.length} of {tasks.length} tasks
+                                </span>
                                 <button
                                     onClick={() => fetchNextPage()}
                                     disabled={isFetchingNextPage}
@@ -1028,6 +1327,41 @@ const TasksPage: React.FC = () => {
                 )
             }
             {isTemplateManagerOpen && <TemplateManager onClose={() => setIsTemplateManagerOpen(false)} />}
+
+            {/* Confirmation Modal (replaces window.confirm) */}
+            <AnimatePresence>
+                {confirmModal.open && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                        onClick={() => setConfirmModal(p => ({ ...p, open: false }))}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <ConfirmationModal
+                                title={confirmModal.title}
+                                message={confirmModal.message}
+                                variant="danger"
+                                confirmLabel="Delete"
+                                cancelLabel="Cancel"
+                                onConfirm={() => {
+                                    confirmModal.onConfirm();
+                                    setConfirmModal(p => ({ ...p, open: false }));
+                                }}
+                                onClose={() => setConfirmModal(p => ({ ...p, open: false }))}
+                            />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div >
     );
 };

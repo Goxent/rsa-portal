@@ -280,6 +280,9 @@ export interface Resource {
   previewLink?: string;
   fileId?: string;
   downloadUrl?: string; // For documents that need direct download
+  fileSize?: number; // File size in bytes
+  createdBy?: string; // UID of the uploader
+  createdByName?: string; // Display name of the uploader
 }
 
 export interface TaskTemplate {

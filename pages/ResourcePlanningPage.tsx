@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AuthService } from '../services/firebase';
 import { Task, UserProfile, TaskStatus } from '../types';
 import {
     LayoutDashboard, AlertTriangle, CheckCircle2, Clock, Briefcase,
     Loader2, ChevronDown, ChevronUp, Search, Users, Zap,
-    TrendingUp, TrendingDown, Filter, X, ArrowUpRight
+    TrendingUp, TrendingDown, Filter, X, ArrowUpRight, ExternalLink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useUsers } from '../hooks/useStaff';
+import { useTasks } from '../hooks/useTasks';
 import StaffCapacityHeatmap from '../components/resource-planning/StaffCapacityHeatmap';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -128,12 +130,15 @@ const StaffCard: React.FC<{
 };
 
 // ─── Task Card ────────────────────────────────────────────────────────────────
-const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+const TaskCard: React.FC<{ task: Task; onClick?: () => void }> = ({ task, onClick }) => {
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
     const dueDateStr = task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
 
     return (
-        <div className="p-4 bg-white/3 rounded-xl border border-white/8 hover:bg-white/6 hover:border-white/15 transition-all duration-150 group">
+        <div
+            onClick={onClick}
+            className={`p-4 bg-white/3 rounded-xl border border-white/8 hover:bg-white/6 hover:border-white/15 transition-all duration-150 group ${onClick ? 'cursor-pointer' : ''}`}
+        >
             <div className="flex items-start justify-between gap-2 mb-2">
                 <span className={`text-[10px] px-2 py-0.5 rounded-md border font-bold uppercase tracking-wide ${getPriorityStyle(task.priority)}`}>
                     {task.priority || 'LOW'}
@@ -164,35 +169,20 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const ResourcePlanningPage: React.FC = () => {
     const { user: currentUser } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [users, setUsers] = useState<UserProfile[]>([]);
-    const [tasks, setTasks] = useState<Task[]>([]);
+    const navigate = useNavigate();
+
+    // React Query — shared cached data with Dashboard and TasksPage
+    const { data: users = [], isLoading: usersLoading } = useUsers();
+    const { data: tasks = [], isLoading: tasksLoading } = useTasks();
+    const loading = usersLoading || tasksLoading;
+
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [sortKey, setSortKey] = useState<SortKey>('totalTasks');
     const [sortAsc, setSortAsc] = useState(false);
     const [filter, setFilter] = useState<FilterKey>('all');
     const [search, setSearch] = useState('');
-    const [showHeatmap, setShowHeatmap] = useState(false);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const [fetchedUsers, fetchedTasks] = await Promise.all([
-                    AuthService.getAllUsers(),
-                    AuthService.getAllTasks()
-                ]);
-                setUsers(fetchedUsers);
-                setTasks(fetchedTasks);
-            } catch (error) {
-                console.error('Failed to fetch resource data:', error);
-                toast.error('Failed to load resource data');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+    const [showHeatmap, setShowHeatmap] = useState(true);
+    const [overloadThreshold, setOverloadThreshold] = useState(5);
 
     const workloadData: StaffWorkload[] = useMemo(() => {
         return users.map(user => {
@@ -214,7 +204,7 @@ const ResourcePlanningPage: React.FC = () => {
     }, [users, tasks]);
 
     const activeTasks = tasks.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED);
-    const overloadedCount = workloadData.filter(d => d.totalTasks >= 5).length;
+    const overloadedCount = workloadData.filter(d => d.totalTasks >= overloadThreshold).length;
     const freeCount = workloadData.filter(d => d.totalTasks === 0).length;
     const totalOverdue = workloadData.reduce((sum, d) => sum + d.overdue, 0);
     const totalHighRisk = workloadData.reduce((sum, d) => sum + d.highRisk, 0);
@@ -222,7 +212,7 @@ const ResourcePlanningPage: React.FC = () => {
     const filteredData = useMemo(() => {
         let data = [...workloadData];
         // Filter
-        if (filter === 'overloaded') data = data.filter(d => d.totalTasks >= 5);
+        if (filter === 'overloaded') data = data.filter(d => d.totalTasks >= overloadThreshold);
         else if (filter === 'free') data = data.filter(d => d.totalTasks === 0);
         else if (filter === 'atrisk') data = data.filter(d => d.highRisk > 0 || d.overdue > 0);
         // Search
@@ -235,7 +225,7 @@ const ResourcePlanningPage: React.FC = () => {
             return sortAsc ? diff : -diff;
         });
         return data;
-    }, [workloadData, filter, search, sortKey, sortAsc]);
+    }, [workloadData, filter, search, sortKey, sortAsc, overloadThreshold]);
 
     const maxTasks = Math.max(...workloadData.map(d => d.totalTasks), 1);
     const selectedStaff = workloadData.find(d => d.uid === selectedUser);
@@ -292,6 +282,7 @@ const ResourcePlanningPage: React.FC = () => {
                         label: 'Team Members',
                         sub: `${freeCount} available`,
                         accent: 'border-brand-500/20 bg-brand-500/5',
+                        leftBorder: 'border-l-brand-500',
                     },
                     {
                         icon: <Briefcase size={14} className="text-indigo-400" />,
@@ -299,6 +290,7 @@ const ResourcePlanningPage: React.FC = () => {
                         label: 'Active Tasks',
                         sub: `${workloadData.length > 0 ? (activeTasks.length / workloadData.length).toFixed(1) : 0} avg`,
                         accent: 'border-indigo-500/20 bg-indigo-500/5',
+                        leftBorder: 'border-l-indigo-500',
                     },
                     {
                         icon: <AlertTriangle size={14} className="text-red-400" />,
@@ -306,6 +298,7 @@ const ResourcePlanningPage: React.FC = () => {
                         label: 'Overloaded',
                         sub: overloadedCount > 0 ? 'Action needed' : 'All balanced',
                         accent: overloadedCount > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-emerald-500/20 bg-emerald-500/5',
+                        leftBorder: overloadedCount > 0 ? 'border-l-red-500' : 'border-l-emerald-500',
                     },
                     {
                         icon: <Clock size={14} className="text-amber-400" />,
@@ -313,18 +306,21 @@ const ResourcePlanningPage: React.FC = () => {
                         label: 'Overdue Tasks',
                         sub: `${totalHighRisk} high risk`,
                         accent: totalOverdue > 0 ? 'border-amber-500/25 bg-amber-500/8' : 'border-emerald-500/20 bg-emerald-500/5',
+                        leftBorder: totalOverdue > 0 ? 'border-l-amber-500' : 'border-l-emerald-500',
                     },
                 ].map((kpi, i) => (
-                    <div key={i} className={`rounded-xl border p-3 ${kpi.accent}`}>
-                        <div className="flex items-center gap-2 mb-1">{kpi.icon}</div>
-                        <div className="text-xl font-bold text-white mb-0.5">{kpi.value}</div>
-                        <div className="text-[10px] font-medium text-gray-300 uppercase tracking-tight">{kpi.label}</div>
-                        <div className="text-[10px] text-gray-500/80 mt-0.5">{kpi.sub}</div>
+                    <div key={i} className={`rounded-xl border border-l-2 p-4 ${kpi.accent} ${kpi.leftBorder}`}>
+                        <div className="flex items-center justify-between mb-2">
+                            {kpi.icon}
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{kpi.label}</span>
+                        </div>
+                        <div className="text-2xl font-black text-white tabular-nums">{kpi.value}</div>
+                        <div className="text-[11px] text-gray-400 mt-1">{kpi.sub}</div>
                     </div>
                 ))}
             </div>
 
-            {/* ── Heatmap (collapsible) ── */}
+            {/* ── Heatmap (shown by default, above staff cards) ── */}
             {showHeatmap && (
                 <div className="animate-in slide-in-from-top-2 duration-300">
                     <div className="glass-panel rounded-2xl border border-white/5 p-1 h-[420px]">
@@ -362,7 +358,7 @@ const ResourcePlanningPage: React.FC = () => {
                         <div className="flex items-center gap-1.5 bg-white/5 border border-white/8 rounded-xl p-1">
                             {([
                                 { key: 'all', label: 'All' },
-                                { key: 'overloaded', label: '🔴 Overloaded' },
+                                { key: 'overloaded', label: `🔴 Overloaded (≥${overloadThreshold})` },
                                 { key: 'atrisk', label: '⚠️ At Risk' },
                                 { key: 'free', label: '🟢 Free' },
                             ] as { key: FilterKey; label: string }[]).map(f => (
@@ -374,6 +370,19 @@ const ResourcePlanningPage: React.FC = () => {
                                     {f.label}
                                 </button>
                             ))}
+                        </div>
+
+                        {/* Overload threshold control */}
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                            <span className="whitespace-nowrap">Overload at:</span>
+                            <input
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={overloadThreshold}
+                                onChange={e => setOverloadThreshold(Math.max(1, parseInt(e.target.value) || 1))}
+                                className="w-12 bg-white/5 border border-white/10 rounded-lg text-xs text-center text-white py-1 focus:outline-none focus:border-brand-500/50"
+                            />
                         </div>
 
                         {/* Sort */}
@@ -475,10 +484,17 @@ const ResourcePlanningPage: React.FC = () => {
                                             const priorityOrder: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
                                             return (priorityOrder[a.priority || 'LOW'] || 2) - (priorityOrder[b.priority || 'LOW'] || 2);
                                         })
-                                        .map(task => <TaskCard key={task.id} task={task} />)
+                                        .map(task => <TaskCard key={task.id} task={task} onClick={() => navigate(`/tasks?staff=${selectedUser}`)} />)
                                     }
                                 </div>
                             )}
+                            {/* Navigate to full workflow view */}
+                            <button
+                                onClick={() => navigate(`/tasks?staff=${selectedUser}`)}
+                                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-bold hover:bg-brand-500/20 transition-all"
+                            >
+                                <ExternalLink size={13} /> View all in Workflow →
+                            </button>
                         </div>
                     </div>
                 )}
@@ -494,7 +510,7 @@ const ResourcePlanningPage: React.FC = () => {
                             <h3 className="font-bold text-red-200 text-sm">Overloaded Staff ({overloadedCount})</h3>
                         </div>
                         <div className="space-y-2">
-                            {workloadData.filter(d => d.totalTasks >= 5).map(d => (
+                            {workloadData.filter(d => d.totalTasks >= overloadThreshold).map(d => (
                                 <div key={d.uid} className="flex items-center justify-between text-xs">
                                     <span className="text-red-300 font-medium">{d.name}</span>
                                     <div className="flex items-center gap-3 text-gray-400">

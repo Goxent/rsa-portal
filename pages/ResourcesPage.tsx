@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Folder, FileText, Search, ExternalLink, Grid, List, BookOpen, Shield, Calculator, FileCheck, Users, Eye, X, Mail, Sparkles, Send, Bot, Plus, ChevronRight, Home, PenTool, Save, Trash2, ArrowLeft, Download, File } from 'lucide-react';
+import { Folder, FileText, Search, ExternalLink, Grid, List, BookOpen, Shield, Calculator, FileCheck, Users, Eye, X, Mail, Sparkles, Send, Bot, Plus, ChevronRight, Home, PenTool, Save, Trash2, ArrowLeft, Download, File, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AiService } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,8 @@ import { AuthService } from '../services/firebase';
 import { StorageService } from '../services/storage';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const ResourceIcon = ({ type, size = 24, className = "" }: { type: string, size?: number, className?: string }) => {
     switch (type) {
@@ -21,6 +23,46 @@ const ResourceIcon = ({ type, size = 24, className = "" }: { type: string, size?
     }
 };
 
+const TYPE_BADGE_STYLES: Record<string, string> = {
+    folder: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
+    pdf: 'bg-rose-500/15 text-rose-300 border-rose-500/25',
+    sheet: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
+    doc: 'bg-blue-500/15 text-blue-300 border-blue-500/25',
+    article: 'bg-purple-500/15 text-purple-300 border-purple-500/25',
+    image: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/25',
+};
+
+const formatFileSize = (bytes?: number): string | null => {
+    if (!bytes || bytes <= 0) return null;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+/** Basic markdown→HTML for article rendering */
+const renderMarkdown = (text: string): string => {
+    let html = text
+        // Escape HTML entities
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        // Headings (### → h3, ## → h2, # → h1)
+        .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold text-white mt-4 mb-2">$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-white mt-5 mb-2">$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-white mt-6 mb-3">$1</h1>')
+        // Bold and italic
+        .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Bullet lists
+        .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-gray-300">$1</li>')
+        // Line breaks
+        .replace(/\n\n/g, '</p><p class="mb-3 text-gray-300">')
+        .replace(/\n/g, '<br/>');
+    return `<p class="mb-3 text-gray-300">${html}</p>`;
+};
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 const ResourcesPage: React.FC = () => {
     const { user } = useAuth();
     const [resources, setResources] = useState<Resource[]>([]);
@@ -31,6 +73,7 @@ const ResourcesPage: React.FC = () => {
     // AI & Editor State
     const [previewResource, setPreviewResource] = useState<Resource | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [editorMode, setEditorMode] = useState<'split' | 'edit' | 'preview'>('split');
     const [showAiPanel, setShowAiPanel] = useState(false);
     const [aiQuery, setAiQuery] = useState('');
     const [aiResponse, setAiResponse] = useState('');
@@ -42,7 +85,11 @@ const ResourcesPage: React.FC = () => {
         title: '', type: 'folder', category: 'General', link: ''
     });
     const [isUploadMode, setIsUploadMode] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
     const [viewDoc, setViewDoc] = useState<{ url: string; type: string; title: string; downloadUrl?: string } | null>(null);
+
+    // Delete confirmation
+    const [deleteTarget, setDeleteTarget] = useState<Resource | null>(null);
 
     useEffect(() => {
         loadResources();
@@ -88,6 +135,7 @@ const ResourcesPage: React.FC = () => {
             setAiResponse('');
             setAiQuery('');
         } else {
+            // Route ALL non-article docs through DocumentViewer
             setViewDoc({
                 url: res.link || '',
                 type: res.type,
@@ -110,8 +158,13 @@ const ResourcesPage: React.FC = () => {
         setIsResearching(false);
     };
 
-    const handleAddResource = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // Fix #5: Convert form onSubmit to regular async function
+    const handleAddResource = async () => {
+        if (!newResource.title?.trim()) {
+            toast.error('Please enter a title');
+            return;
+        }
+        setIsCreating(true);
         try {
             const res: Resource = {
                 id: '',
@@ -123,7 +176,10 @@ const ResourcesPage: React.FC = () => {
                 downloadUrl: newResource.downloadUrl,
                 content: newResource.content || '',
                 parentId: currentFolderId,
-                updatedAt: new Date().toISOString().split('T')[0]
+                updatedAt: new Date().toISOString().split('T')[0],
+                fileSize: newResource.fileSize,
+                createdBy: user?.uid,
+                createdByName: user?.displayName,
             };
             await AuthService.addResource(res);
             await loadResources();
@@ -133,6 +189,8 @@ const ResourcesPage: React.FC = () => {
             toast.success('Resource created successfully!');
         } catch (error: any) {
             toast.error(error.message || "Failed to create resource.");
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -144,12 +202,12 @@ const ResourcesPage: React.FC = () => {
         await AuthService.updateResource(updated);
     };
 
-    const handleDeleteResource = async (res: Resource) => {
-        if (confirm(`Delete "${res.title}"?`)) {
-            if (previewResource?.id === res.id) setPreviewResource(null);
-            await AuthService.deleteResource(res.id);
-            setResources(resources.filter(r => r.id !== res.id));
-        }
+    // Fix #1: Delete now uses modal flow via deleteTarget
+    const executeDelete = async (res: Resource) => {
+        if (previewResource?.id === res.id) setPreviewResource(null);
+        await AuthService.deleteResource(res.id);
+        setResources(resources.filter(r => r.id !== res.id));
+        toast.success(`"${res.title}" deleted`);
     };
 
     const getColorGradient = (id: string, type: string) => {
@@ -242,6 +300,7 @@ const ResourcesPage: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {filteredResources.map((res, index) => {
                                 const bgGradient = getColorGradient(res.id, res.type);
+                                const sizeStr = formatFileSize(res.fileSize);
                                 return (
                                     <div
                                         key={res.id}
@@ -257,7 +316,7 @@ const ResourcesPage: React.FC = () => {
                                                 </div>
                                                 {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDeleteResource(res); }}
+                                                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(res); }}
                                                         className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-all backdrop-blur-md"
                                                     >
                                                         <Trash2 size={16} />
@@ -268,10 +327,24 @@ const ResourcesPage: React.FC = () => {
                                                 {res.title}
                                             </h3>
                                         </div>
-                                        <div className="p-4 bg-navy-900/40 backdrop-blur-sm flex-1 flex flex-col justify-end">
+                                        <div className="p-4 bg-navy-900/40 backdrop-blur-sm flex-1 flex flex-col justify-end gap-2">
+                                            {/* Type badge + size */}
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wide ${TYPE_BADGE_STYLES[res.type] || 'bg-gray-500/15 text-gray-300 border-gray-500/25'}`}>
+                                                    {res.type}
+                                                </span>
+                                                {sizeStr && (
+                                                    <span className="text-[10px] text-gray-500">{sizeStr}</span>
+                                                )}
+                                            </div>
                                             <div className="flex items-center justify-between text-xs text-gray-400">
                                                 <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">{res.category || 'General'}</span>
-                                                <span>{res.updatedAt}</span>
+                                                <div className="flex flex-col items-end gap-0.5">
+                                                    <span>{res.updatedAt}</span>
+                                                    {res.createdByName && (
+                                                        <span className="text-[10px] text-gray-500">by {res.createdByName}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -286,6 +359,7 @@ const ResourcesPage: React.FC = () => {
                                         <th className="px-6 py-4 font-heading">Name</th>
                                         <th className="px-6 py-4 font-heading">Category</th>
                                         <th className="px-6 py-4 font-heading">Type</th>
+                                        <th className="px-6 py-4 font-heading">Size</th>
                                         <th className="px-6 py-4 font-heading">Updated</th>
                                         <th className="px-6 py-4 font-heading text-right">Action</th>
                                     </tr>
@@ -297,15 +371,25 @@ const ResourcesPage: React.FC = () => {
                                                 <div className={`p-2 rounded-lg bg-white/5 ${getListGradient(res.id, res.type)}`}>
                                                     <ResourceIcon type={res.type} size={18} />
                                                 </div>
-                                                <span className="font-medium text-white group-hover:text-blue-300 transition-colors">{res.title}</span>
+                                                <div>
+                                                    <span className="font-medium text-white group-hover:text-blue-300 transition-colors">{res.title}</span>
+                                                    {res.createdByName && (
+                                                        <div className="text-[10px] text-gray-500">by {res.createdByName}</div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4"><span className="bg-white/5 border border-white/10 px-2 py-1 rounded text-xs">{res.category || '-'}</span></td>
-                                            <td className="px-6 py-4 capitalize text-gray-400 text-xs">{res.type}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase ${TYPE_BADGE_STYLES[res.type] || 'bg-gray-500/15 text-gray-300 border-gray-500/25'}`}>
+                                                    {res.type}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-400 text-xs">{formatFileSize(res.fileSize) || '—'}</td>
                                             <td className="px-6 py-4 text-gray-400 text-xs">{res.updatedAt}</td>
                                             <td className="px-6 py-4 text-right">
                                                 {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDeleteResource(res); }}
+                                                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(res); }}
                                                         className="text-gray-500 hover:text-red-400 p-2 transition-colors opacity-0 group-hover:opacity-100"
                                                     >
                                                         <Trash2 size={16} />
@@ -332,7 +416,7 @@ const ResourcesPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Add Resource Modal */}
+            {/* ── Add Resource Modal (Fix #5: <div> instead of <form>) ── */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
                     <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-lg border border-white/10">
@@ -340,10 +424,10 @@ const ResourcesPage: React.FC = () => {
                             <h3 className="text-lg font-bold text-white font-heading">Add to {currentFolderId ? 'Current Folder' : 'Library Root'}</h3>
                             <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
                         </div>
-                        <form onSubmit={handleAddResource} className="p-6 space-y-4">
+                        <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Title</label>
-                                <input required className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newResource.title} onChange={e => setNewResource({ ...newResource, title: e.target.value })} placeholder="Resource Name..." />
+                                <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newResource.title} onChange={e => setNewResource({ ...newResource, title: e.target.value })} placeholder="Resource Name..." />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -371,19 +455,27 @@ const ResourcesPage: React.FC = () => {
                                         </div>
                                     </div>
                                     {isUploadMode ? (
-                                        <FileUploader onUploadComplete={(fileData) => setNewResource({ ...newResource, title: newResource.title || fileData.name, link: fileData.url, type: fileData.type as any, fileId: fileData.id, downloadUrl: StorageService.getDownloadUrl(fileData.id) })} />
+                                        <FileUploader onUploadComplete={(fileData) => setNewResource({ ...newResource, title: newResource.title || fileData.name, link: fileData.url, type: fileData.type as any, fileId: fileData.id, downloadUrl: StorageService.getDownloadUrl(fileData.id), fileSize: (fileData as any).size })} />
                                     ) : (
-                                        <input required={!isUploadMode} className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newResource.link} onChange={e => setNewResource({ ...newResource, link: e.target.value })} placeholder="https://..." />
+                                        <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newResource.link} onChange={e => setNewResource({ ...newResource, link: e.target.value })} placeholder="https://..." />
                                     )}
                                 </div>
                             )}
-                            <button type="submit" className="w-full bg-brand-600 text-white py-2.5 rounded-lg font-bold hover:bg-brand-700 transition-all shadow-lg mt-4">Create Resource</button>
-                        </form>
+                            <button
+                                type="button"
+                                onClick={handleAddResource}
+                                disabled={isCreating || !newResource.title?.trim()}
+                                className="w-full bg-brand-600 text-white py-2.5 rounded-lg font-bold hover:bg-brand-700 transition-all shadow-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isCreating && <Loader2 size={16} className="animate-spin" />}
+                                {isCreating ? 'Creating...' : 'Create Resource'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* Viewer/AI Modal (Preserved functionality, updated style) */}
+            {/* ── Article Viewer/Editor Modal (Fix #2: Markdown split view) ── */}
             {previewResource && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className={`glass-modal h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-300 border border-white/10 ${showAiPanel ? 'w-[95%] max-w-7xl' : 'w-full max-w-6xl'}`}>
@@ -394,9 +486,18 @@ const ResourcesPage: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                                 {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && previewResource.type === 'article' && (
-                                    <button onClick={() => { if (isEditing) handleSaveArticle(previewResource.content || ''); setIsEditing(!isEditing); }} className={`px-3 py-1.5 rounded-lg text-sm border ${isEditing ? 'bg-green-600 border-green-500 text-white' : 'bg-white/5 border-white/10 text-gray-300'}`}>
-                                        {isEditing ? 'Save' : 'Edit'}
-                                    </button>
+                                    <>
+                                        <button onClick={() => { if (isEditing) handleSaveArticle(previewResource.content || ''); setIsEditing(!isEditing); }} className={`px-3 py-1.5 rounded-lg text-sm border ${isEditing ? 'bg-green-600 border-green-500 text-white' : 'bg-white/5 border-white/10 text-gray-300'}`}>
+                                            {isEditing ? 'Save' : 'Edit'}
+                                        </button>
+                                        {isEditing && (
+                                            <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10">
+                                                <button onClick={() => setEditorMode('edit')} className={`px-2 py-1 text-[10px] rounded-md transition-all ${editorMode === 'edit' ? 'bg-brand-500 text-white' : 'text-gray-400'}`}>Edit</button>
+                                                <button onClick={() => setEditorMode('split')} className={`px-2 py-1 text-[10px] rounded-md transition-all ${editorMode === 'split' ? 'bg-brand-500 text-white' : 'text-gray-400'}`}>Split</button>
+                                                <button onClick={() => setEditorMode('preview')} className={`px-2 py-1 text-[10px] rounded-md transition-all ${editorMode === 'preview' ? 'bg-brand-500 text-white' : 'text-gray-400'}`}>Preview</button>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                                 <button onClick={() => setShowAiPanel(!showAiPanel)} className={`px-3 py-1.5 rounded-lg text-sm border flex items-center gap-2 ${showAiPanel ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-purple-300'}`}>
                                     <Sparkles size={14} /> AI
@@ -405,17 +506,59 @@ const ResourcesPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex flex-1 overflow-hidden">
-                            <div className={`flex-1 bg-navy-900 relative ${showAiPanel ? 'w-2/3' : 'w-full'} overflow-y-auto custom-scrollbar`}>
+                            <div className={`flex-1 bg-navy-900 relative ${showAiPanel ? 'w-2/3' : 'w-full'} overflow-hidden`}>
                                 {previewResource.type === 'article' ? (
                                     isEditing ? (
-                                        <textarea className="w-full h-full bg-navy-950 p-8 text-gray-200 font-mono outline-none resize-none" value={previewResource.content || ''} onChange={(e) => setPreviewResource({ ...previewResource, content: e.target.value })} />
+                                        <div className="flex h-full">
+                                            {/* Editor pane */}
+                                            {(editorMode === 'edit' || editorMode === 'split') && (
+                                                <div className={`${editorMode === 'split' ? 'w-1/2 border-r border-white/10' : 'w-full'} flex flex-col`}>
+                                                    <div className="px-4 py-2 bg-white/3 border-b border-white/10 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Markdown</div>
+                                                    <textarea
+                                                        className="w-full flex-1 bg-navy-950 p-6 text-gray-200 font-mono text-sm outline-none resize-none"
+                                                        value={previewResource.content || ''}
+                                                        onChange={(e) => setPreviewResource({ ...previewResource, content: e.target.value })}
+                                                        placeholder="Write markdown here... (# Headings, **bold**, *italic*, - lists)"
+                                                    />
+                                                </div>
+                                            )}
+                                            {/* Preview pane */}
+                                            {(editorMode === 'preview' || editorMode === 'split') && (
+                                                <div className={`${editorMode === 'split' ? 'w-1/2' : 'w-full'} flex flex-col overflow-y-auto custom-scrollbar`}>
+                                                    <div className="px-4 py-2 bg-white/3 border-b border-white/10 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Preview</div>
+                                                    <div
+                                                        className="p-6 prose prose-invert max-w-none leading-relaxed"
+                                                        dangerouslySetInnerHTML={{ __html: renderMarkdown(previewResource.content || '') }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
                                     ) : (
-                                        <div className="p-8 prose prose-invert max-w-none text-gray-300 whitespace-pre-wrap leading-relaxed">
-                                            {previewResource.content || <div className="text-center opacity-50 py-20">No content.</div>}
+                                        <div className="p-8 overflow-y-auto custom-scrollbar h-full">
+                                            {previewResource.content ? (
+                                                <div
+                                                    className="prose prose-invert max-w-none leading-relaxed"
+                                                    dangerouslySetInnerHTML={{ __html: renderMarkdown(previewResource.content) }}
+                                                />
+                                            ) : (
+                                                <div className="text-center opacity-50 py-20">No content.</div>
+                                            )}
                                         </div>
                                     )
                                 ) : (
-                                    <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewResource.link || '')}&embedded=true`} className="w-full h-full border-none" title="Preview" />
+                                    /* Fix #4: non-article should not be reachable here since handleOpenResource routes to DocumentViewer,
+                                       but as a fallback, show download prompt */
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                                        <ResourceIcon type={previewResource.type} size={48} />
+                                        <p className="text-lg font-semibold text-white">{previewResource.title}</p>
+                                        <p className="text-sm text-gray-500">Cannot preview this file inline.</p>
+                                        {previewResource.downloadUrl && (
+                                            <a href={previewResource.downloadUrl} target="_blank" rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-all">
+                                                <Download size={16} /> Download File
+                                            </a>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             {showAiPanel && (
@@ -437,6 +580,37 @@ const ResourcesPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* ── Delete Confirmation Modal (Fix #1) ── */}
+            {deleteTarget && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
+                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-md border border-white/10">
+                        <div className="px-6 py-4 border-b border-white/10 bg-white/5">
+                            <h3 className="text-lg font-bold text-white">Delete resource?</h3>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-gray-300 text-sm mb-6">
+                                Are you sure you want to delete <span className="font-bold text-white">"{deleteTarget.title}"</span>? This action cannot be undone.
+                            </p>
+                            <div className="flex items-center justify-end gap-3">
+                                <button
+                                    onClick={() => setDeleteTarget(null)}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={async () => { await executeDelete(deleteTarget); setDeleteTarget(null); }}
+                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-700 transition-all shadow-lg shadow-red-900/30"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <DocumentViewer isOpen={!!viewDoc} onClose={() => setViewDoc(null)} url={viewDoc?.url || ''} type={viewDoc?.type || 'file'} title={viewDoc?.title || ''} downloadUrl={viewDoc?.downloadUrl} />
         </div>
     );

@@ -182,6 +182,7 @@ const Dashboard: React.FC = () => {
         catch { return ''; }
     }, []);
     const adDate = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const workDayPct = Math.min(Math.max(Math.round(((new Date().getHours() - 9) / 8) * 100), 0), 100);
 
     // Next 7 days schedule for sidebar
     const next7Days = useMemo(() => {
@@ -226,7 +227,7 @@ const Dashboard: React.FC = () => {
                         <span className="text-white tabular-nums">{relevantTasks.length}</span>
                         <span className="text-gray-500 font-normal">Total Tasks</span>
                     </button>
-                    <button onClick={() => navigate('/tasks')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
+                    <button onClick={() => navigate('/tasks?board=MY')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
                         <ClockIcon size={11} className="text-amber-400" />
                         <span className="text-white tabular-nums">{myOpenTasks}</span>
                         <span className="text-gray-500 font-normal">My Open</span>
@@ -250,17 +251,17 @@ const Dashboard: React.FC = () => {
                     <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-blue-500/60 rounded-full transition-all duration-1000"
-                            style={{ width: `${Math.min(Math.max((new Date().getHours() / 17) * 100, 0), 100)}%` }}
+                            style={{ width: `${workDayPct}%` }}
                         />
                     </div>
                     <span className="text-gray-600 font-mono">
-                        {Math.min(Math.max(Math.round(((new Date().getHours() - 9) / 8) * 100), 0), 100)}% of work day
+                        {workDayPct}% of work day
                     </span>
                 </div>
             </div>
 
             {/* ── 2. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
-            <div className="flex gap-5 flex-none">
+            <div className="flex flex-col xl:flex-row gap-5 flex-none">
 
                 {/* Left: Widget Grid */}
                 <div className="flex-1 min-w-0 flex flex-col gap-5">
@@ -275,7 +276,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Right: Sticky Sidebar */}
-                <div className="w-[320px] flex-shrink-0 flex flex-col gap-4 sticky top-4 self-start">
+                <div className="w-full xl:w-[320px] flex-shrink-0 flex flex-col gap-4 sticky top-4 self-start max-h-none xl:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
 
                     {/* ── Upcoming Panel ── */}
                     {(() => {
@@ -382,7 +383,7 @@ const Dashboard: React.FC = () => {
 
             {/* ── 4. ADMIN SECTION ──────────────────────────────────────── */}
             {isAdmin && (
-                <div className="flex-none flex flex-col gap-4 min-h-[300px] mt-2">
+                <div className="flex-none flex flex-col gap-4 mt-2">
                     {/* Section Header */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
