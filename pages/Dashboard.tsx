@@ -74,7 +74,7 @@ const Dashboard: React.FC = () => {
         usersForMap.forEach(u => (uMap[u.uid] = u));
 
         const allUsers = isAdmin ? usersForMap : [user];
-        const activeCount = isAdmin ? Math.floor(allUsers.length * 0.9) : 0;
+        const activeStaffCount = isAdmin ? allUsers.filter(u => u.status === 'Active').length : 0;
 
         const relTasks = isAdmin ? allTasks : allTasks.filter(t => t.assignedTo.includes(user.uid));
 
@@ -160,7 +160,7 @@ const Dashboard: React.FC = () => {
         const cStats = { total: allClients.length, active: activeClients.length, mySigned: mySignedClients.length, byService: serviceDist };
 
         return {
-            userMap: uMap, activeStaffCount: activeCount, taskData: tData,
+            userMap: uMap, activeStaffCount: activeStaffCount, taskData: tData,
             recentTasks: recTasks, recentCompletedTasks: recCompleted,
             upcomingSchedule: mergedSchedule, relevantTasks: relTasks,
             staffStats: sStats, clientStats: cStats, staffPerformance: sPerf,
