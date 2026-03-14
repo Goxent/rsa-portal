@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { AuthService, auth, db } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -39,19 +39,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // User is signed in, fetch their profile from Firestore
         setEmailVerified(firebaseUser.emailVerified);
         try {
-          // Use transaction to prevent race conditions
-          await runTransaction(db, async (transaction) => {
-            const userRef = doc(db, 'users', firebaseUser.uid);
-            const userDoc = await transaction.get(userRef);
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userRef);
 
-            if (userDoc.exists()) {
-              const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
-              setUser(userData);
-            } else {
-              console.warn("User authenticated but no profile found in Firestore. Waiting for creation or invalid user.");
-              // Do NOT create default profile. Rigid security.
-            }
-          });
+          if (userDoc.exists()) {
+            const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
+            setUser(userData);
+          } else {
+            console.warn('User authenticated but no profile found in Firestore. Waiting for creation or invalid user.');
+            // Do NOT create default profile. Rigid security.
+          }
 
           // Cleanup old notifications (non-blocking)
           AuthService.cleanupOldNotifications(firebaseUser.uid).catch(console.error);
