@@ -109,6 +109,11 @@ const StaffPage: React.FC = () => {
         try {
             if (isEditing && selectedUser) {
                 await AuthService.updateUserProfile(selectedUser.uid, formData);
+
+                // If admin marks user as inactive, remove their login ability
+                if (formData.status === 'Inactive' && formData.email) {
+                    await AuthService.deleteStaffUser(selectedUser.uid, formData.email);
+                }
             } else {
                 await AuthService.createStaffUser(formData);
             }

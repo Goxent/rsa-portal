@@ -216,7 +216,8 @@ const LoginPage: React.FC = () => {
               <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl flex items-start gap-2">
                 <AlertCircle size={16} className="text-blue-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-200">
-                  Only emails already listed in the Staff Directory will be accepted.
+                  Only emails added to the Staff Directory by an Administrator can register.<br />
+                  If you need access, contact your manager or admin.
                 </p>
               </div>
             )}

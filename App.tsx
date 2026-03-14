@@ -60,19 +60,16 @@ const LazyPage = ({ children }: { children: React.ReactNode }) => {
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, emailVerified } = useAuth();
   const location = useLocation();
 
   if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.status === 'Pending Approval') return <Navigate to="/pending-approval" replace />;
 
-  // User must be logged in
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Block users pending approval
-  if (user.status === 'Pending Approval') {
-    return <Navigate to="/pending-approval" replace />;
+  // Block unverified email/password users — Google users are verified by default
+  if (!emailVerified && location.pathname !== '/verify-email') {
+    return <Navigate to="/verify-email" replace />;
   }
 
   // Check if profile setup is complete

@@ -32,7 +32,8 @@ import {
     limit,
     startAfter,
     QueryDocumentSnapshot,
-    arrayUnion
+    arrayUnion,
+    writeBatch
 } from 'firebase/firestore';
 import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification } from '../types';
 import { getCurrentDateUTC } from '../utils/dates';
@@ -156,14 +157,26 @@ export const AuthService = {
     register: async (email: string, pass: string): Promise<UserProfile> => {
         let userCredential;
         try {
-            // STEP 1: Create Auth User FIRST (to bypass unauthenticated Firestore rules)
+            const normalizedInputEmail = email.toLowerCase().trim();
+
+            // STEP 1: CHECK ALLOWLIST FIRST — before creating any auth account
+            const allowlistRef = doc(db, 'staffAllowlist', normalizedInputEmail);
+            const allowlistSnap = await getDoc(allowlistRef);
+
+            if (!allowlistSnap.exists()) {
+                throw new Error(
+                    'This email is not registered in the Staff Directory. ' +
+                    'Please contact your administrator to be added before signing up.'
+                );
+            }
+
+            // STEP 2: Create Auth User FIRST (to bypass unauthenticated Firestore rules)
             userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             const uid = userCredential.user.uid;
 
-            // STEP 2: Validate email is in users directory (Staff Directory)
+            // STEP 3: Validate email is in users directory (Staff Directory)
             // Fix: Case-insensitive check. Fetch all users (small collection) and find match
             const usersSnapshot = await getDocs(collection(db, 'users'));
-            const normalizedInputEmail = email.toLowerCase().trim();
 
             const existingUserDoc = usersSnapshot.docs.find(doc => {
                 const data = doc.data() as UserProfile;
@@ -391,6 +404,48 @@ export const AuthService = {
             uid: tempId,
             status: 'Pending Signup'
         });
+
+        if (staffData.email) {
+            await setDoc(doc(db, 'staffAllowlist', staffData.email.toLowerCase().trim()), {
+                email: staffData.email.toLowerCase().trim(),
+                addedBy: auth.currentUser?.uid || 'admin',
+                addedAt: new Date().toISOString(),
+                displayName: staffData.displayName || '',
+                role: staffData.role || UserRole.STAFF,
+                department: staffData.department || 'General',
+            });
+        }
+    },
+
+    deleteStaffUser: async (uid: string, email: string) => {
+        if (uid) {
+            await deleteDoc(doc(db, 'users', uid));
+        }
+        if (email) {
+            await deleteDoc(doc(db, 'staffAllowlist', email.toLowerCase().trim()));
+        }
+    },
+
+    migrateExistingStaffToAllowlist: async () => {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const batch = writeBatch(db);
+
+        usersSnap.forEach(userDoc => {
+            const userData = userDoc.data() as UserProfile;
+            if (userData.email && userData.status !== 'Inactive') {
+                const allowlistRef = doc(db, 'staffAllowlist', userData.email.toLowerCase().trim());
+                batch.set(allowlistRef, {
+                    email: userData.email.toLowerCase().trim(),
+                    addedBy: 'migration',
+                    addedAt: new Date().toISOString(),
+                    displayName: userData.displayName || '',
+                    role: userData.role || UserRole.STAFF,
+                    department: userData.department || 'General',
+                }, { merge: true }); // merge: true avoids overwriting manual entries
+            }
+        });
+
+        await batch.commit();
     },
 
     // Fetch All Users (Staff Directory)

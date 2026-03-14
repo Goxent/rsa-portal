@@ -14,6 +14,7 @@ const SystemSettingsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
+    const [isMigrating, setIsMigrating] = useState(false);
 
     useEffect(() => {
         if (!user || user.role !== UserRole.MASTER_ADMIN) {
@@ -59,6 +60,20 @@ const SystemSettingsPage: React.FC = () => {
             setStatusMessage({ type: 'error', text: "Failed to seed demo data." });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleMigrateAllowlist = async () => {
+        if (!window.confirm("This will copy all existing active staff emails into the new Staff Allowlist. Proceed?")) return;
+        setIsMigrating(true);
+        try {
+            await AuthService.migrateExistingStaffToAllowlist();
+            setStatusMessage({ type: 'success', text: "Staff allowlist migration completed successfully." });
+        } catch (error: any) {
+            console.error(error);
+            setStatusMessage({ type: 'error', text: "Failed to migrate allowlist: " + error.message });
+        } finally {
+            setIsMigrating(false);
         }
     };
 
@@ -203,6 +218,14 @@ const SystemSettingsPage: React.FC = () => {
                         </h3>
                         <p className="text-xs text-gray-400 mb-4">Permanent system-wide actions. Use with extreme caution.</p>
                         <div className="space-y-3">
+                            <button
+                                onClick={handleMigrateAllowlist}
+                                disabled={isMigrating}
+                                className="w-full bg-blue-600/20 hover:bg-blue-600 text-blue-200 py-2.5 rounded-xl text-sm font-bold transition-all border border-blue-500/30 mb-2 flex items-center justify-center disabled:opacity-50"
+                            >
+                                {isMigrating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                                Migrate Staff to Allowlist
+                            </button>
                             <button
                                 onClick={handleSeedData}
                                 className="w-full bg-brand-600/20 hover:bg-brand-600 text-brand-200 py-2.5 rounded-xl text-sm font-bold transition-all border border-brand-500/30 mb-2"
