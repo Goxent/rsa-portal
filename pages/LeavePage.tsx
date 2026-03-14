@@ -10,10 +10,11 @@ const ARTICLESHIP_LEAVE_LIMIT = 120; // 3 Years Total
 
 const LeavePage: React.FC = () => {
     const { user } = useAuth();
+    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
     const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
     const [allStaff, setAllStaff] = useState<UserProfile[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'my' | 'admin'>('my');
+    const [activeTab, setActiveTab] = useState<'my' | 'admin'>(isAdmin ? 'admin' : 'my');
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
     const [adjustmentData, setAdjustmentData] = useState({ uid: '', name: '', amount: 0 });
     const [newRequest, setNewRequest] = useState({
@@ -27,9 +28,8 @@ const LeavePage: React.FC = () => {
     useEffect(() => {
         if (user) {
             loadLeaves();
-            if (user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN) {
+            if (isAdmin) {
                 AuthService.getAllStaff().then(setAllStaff);
-                setActiveTab('admin');
             }
         }
     }, [user]);

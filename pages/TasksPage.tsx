@@ -107,14 +107,16 @@ const TasksPage: React.FC = () => {
     const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
     // Auto-persistence Effects
-    useEffect(() => { localStorage.setItem('rsa_filter_priority', filterPriority); }, [filterPriority]);
-    useEffect(() => { localStorage.setItem('rsa_filter_status', filterStatus); }, [filterStatus]);
-    useEffect(() => { localStorage.setItem('rsa_filter_client', filterClient); }, [filterClient]);
-    useEffect(() => { localStorage.setItem('rsa_filter_groupby', groupBy); }, [groupBy]);
-    useEffect(() => { localStorage.setItem('rsa_filter_staff', filterStaff); }, [filterStaff]);
-    useEffect(() => { localStorage.setItem('rsa_filter_auditor', filterAuditor); }, [filterAuditor]);
-    useEffect(() => { localStorage.setItem('rsa_filter_vat', String(filterVat)); }, [filterVat]);
-    useEffect(() => { localStorage.setItem('rsa_filter_itr', String(filterItr)); }, [filterItr]);
+    useEffect(() => {
+        localStorage.setItem('rsa_filter_priority', filterPriority);
+        localStorage.setItem('rsa_filter_status', filterStatus);
+        localStorage.setItem('rsa_filter_client', filterClient);
+        localStorage.setItem('rsa_filter_groupby', groupBy);
+        localStorage.setItem('rsa_filter_staff', filterStaff);
+        localStorage.setItem('rsa_filter_auditor', filterAuditor);
+        localStorage.setItem('rsa_filter_vat', String(filterVat));
+        localStorage.setItem('rsa_filter_itr', String(filterItr));
+    }, [filterPriority, filterStatus, filterClient, groupBy, filterStaff, filterAuditor, filterVat, filterItr]);
 
     // LocalStorage for saved filters
     const [savedFilters, setSavedFilters] = useState<{ name: string; filters: any }[]>([]);
