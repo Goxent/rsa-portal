@@ -28,7 +28,7 @@ export const useCreateTask = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (newTask: Task) => AuthService.saveTask(newTask),
+        mutationFn: (newTask: Task) => AuthService.saveTask(newTask, true),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: taskKeys.all });
             toast.success('Task created successfully');
@@ -102,13 +102,34 @@ export const useAddTaskComment = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ taskId, comment }: { taskId: string; comment: any }) => AuthService.addTaskComment(taskId, comment),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: taskKeys.all });
-            toast.success('Comment added');
+        mutationFn: ({ taskId, comment }: { taskId: string; comment: any }) =>
+            AuthService.addTaskComment(taskId, comment),
+
+        onMutate: async ({ taskId, comment }) => {
+            await queryClient.cancelQueries({ queryKey: taskKeys.all });
+            const previous = queryClient.getQueryData<Task[]>(taskKeys.all);
+
+            queryClient.setQueryData<Task[]>(taskKeys.all, (old = []) =>
+                old.map(t =>
+                    t.id === taskId
+                        ? { ...t, comments: [...(t.comments || []), comment] }
+                        : t
+                )
+            );
+
+            return { previous };
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to add comment: ${error.message}`);
-        }
+
+        onError: (_err, _vars, context: any) => {
+            if (context?.previous) {
+                queryClient.setQueryData(taskKeys.all, context.previous);
+            }
+            toast.error('Failed to add comment');
+        },
+
+        onSettled: (_, __, { taskId }) => {
+            // Only invalidate the specific task, not all tasks
+            queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
+        },
     });
 };

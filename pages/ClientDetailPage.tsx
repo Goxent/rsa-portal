@@ -4,15 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import {
     ArrowLeft, Building2, Briefcase, BadgeCheck, Phone, Mail, MapPin,
     Calendar as CalIcon, FileText, CheckCircle2, Activity, ShieldCheck,
-    Clock, Tag, User
+    Clock, Tag, User, Plus
 } from 'lucide-react';
 import { Client, Task, UserProfile } from '../types';
 import { ComplianceEvent } from '../types/advanced';
 import { AuthService } from '../services/firebase';
-import { ComplianceService } from '../services/advanced';
+import { ComplianceService, complianceKeys } from '../services/advanced';
 import { PageLoader } from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/common/EmptyState';
 import { useTasks } from '../hooks/useTasks';
+import { clientKeys } from '../hooks/useClients';
+import { userKeys } from '../hooks/useStaff';
 import NepaliDate from 'nepali-date-converter';
 
 type Tab = 'TASKS' | 'COMPLIANCE' | 'ACTIVITY';
@@ -25,12 +27,12 @@ const ClientDetailPage: React.FC = () => {
 
     // Fetch Client Data
     const { data: clients = [], isLoading: clientsLoading } = useQuery({
-        queryKey: ['clients'],
+        queryKey: clientKeys.all,
         queryFn: AuthService.getAllClients
     });
 
     const { data: staffList = [], isLoading: staffLoading } = useQuery({
-        queryKey: ['staff'],
+        queryKey: userKeys.all,
         queryFn: AuthService.getAllStaff
     });
 
@@ -39,8 +41,8 @@ const ClientDetailPage: React.FC = () => {
 
     // Fetch Compliance
     const { data: complianceEvents = [], isLoading: complianceLoading } = useQuery({
-        queryKey: ['compliance'],
-        queryFn: ComplianceService.getEvents
+        queryKey: complianceKeys.all,
+        queryFn: () => ComplianceService.getEvents()
     });
 
     const client = clients.find(c => c.id === clientId);
@@ -71,7 +73,7 @@ const ClientDetailPage: React.FC = () => {
         const completions = clientTasks.filter(t => t.status === 'COMPLETED').map(t => ({
             id: `${t.id}_comp`,
             title: `Task "${t.title}" was marked as completed`,
-            date: t.updatedAt || t.createdAt,
+            date: (t as any).updatedAt || t.createdAt,
             type: 'TASK_COMPLETED'
         }));
 
@@ -134,8 +136,8 @@ const ClientDetailPage: React.FC = () => {
                                     {client.code}
                                 </span>
                                 <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider border ${client.status === 'Active'
-                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                    : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                                     }`}>
                                     {client.status}
                                 </span>
@@ -193,8 +195,8 @@ const ClientDetailPage: React.FC = () => {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-6 py-3 rounded-t-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === tab
-                                    ? 'bg-white/10 text-white border-b-2 border-brand-500'
-                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                ? 'bg-white/10 text-white border-b-2 border-brand-500'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             {tab === 'TASKS' && <CheckCircle2 size={16} />}
@@ -216,8 +218,8 @@ const ClientDetailPage: React.FC = () => {
                                             <div className="flex justify-between items-start mb-3">
                                                 <h4 className="font-bold text-white text-sm line-clamp-2">{task.title}</h4>
                                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${task.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                                                        task.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                                                            'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                                        'bg-gray-500/20 text-gray-400 border-gray-500/30'
                                                     }`}>
                                                     {task.status.replace('_', ' ')}
                                                 </span>

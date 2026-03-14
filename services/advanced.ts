@@ -184,6 +184,8 @@ export const ChatService = {
 // COMPLIANCE SERVICE
 // =============================================
 
+export const complianceKeys = { all: ['compliance'] as const };
+
 export const ComplianceService = {
     async createEvent(event: Omit<ComplianceEvent, 'id'>): Promise<string> {
         const docRef = await addDoc(collection(db, 'complianceEvents'), event);

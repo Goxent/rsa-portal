@@ -632,12 +632,11 @@ export const AuthService = {
         return { tasks, lastVisible };
     },
 
-    saveTask: async (task: Task) => {
+    saveTask: async (task: Task, isNew: boolean) => {
         if (!auth.currentUser) throw new Error("Unauthenticated");
 
         let taskId = task.id;
-        let isNew = false;
-        if (task.id && !task.id.startsWith('t_')) {
+        if (!isNew) {
             const { id, ...data } = task;
             await updateDoc(doc(db, 'tasks', id), data);
         } else {

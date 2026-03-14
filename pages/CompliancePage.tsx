@@ -191,7 +191,7 @@ const CompliancePage: React.FC = () => {
                         ]
                     };
 
-                    await AuthService.saveTask(newTask);
+                    await AuthService.saveTask(newTask, true);
                     createdCount++;
                 }
             }

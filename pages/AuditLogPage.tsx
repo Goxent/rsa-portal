@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Search, Filter, FileSpreadsheet, Activity, ListIcon, ShieldAlert, ArrowRight } from 'lucide-react';
+import { Search, Filter, FileSpreadsheet, Activity, ListIcon, ShieldAlert, ArrowRight, X } from 'lucide-react';
 import { UserRole } from '../types';
 import * as ExcelJS from 'exceljs';
 import { toast } from 'react-hot-toast';
@@ -32,7 +32,8 @@ const AuditLogPage: React.FC = () => {
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
     useEffect(() => {
-        if (user?.role !== UserRole.ADMIN) {
+        const canViewLogs = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+        if (!canViewLogs) {
             setLoading(false);
             return;
         }
@@ -147,7 +148,8 @@ const AuditLogPage: React.FC = () => {
         toast.success('Audit logs exported successfully');
     };
 
-    if (user?.role !== UserRole.ADMIN) {
+    const canViewLogs = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+    if (!canViewLogs) {
         return (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-transparent">
                 <ShieldAlert size={48} className="text-red-500/50 mb-4" />
