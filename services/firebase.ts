@@ -39,6 +39,7 @@ import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, Task
 import { getCurrentDateUTC } from '../utils/dates';
 import { EmailService } from './email';
 import { toast } from 'react-hot-toast';
+import { logClientAction, logUserAction, logTaskAction, logLeaveAction, AuditAction, createAuditLog } from './auditLog';
 
 // Load Config from Environment Variables
 const firebaseConfig = {
@@ -118,6 +119,15 @@ export const AuthService = {
             // Fetch Profile from Firestore
             const userDoc = await getDoc(doc(db, 'users', uid));
             if (userDoc.exists()) {
+                await createAuditLog({
+                    userId: uid,
+                    userName: email,
+                    action: AuditAction.LOGIN_SUCCESS,
+                    targetType: 'system',
+                    targetId: uid,
+                    targetName: 'Auth',
+                    details: { method: 'Email/Password' }
+                });
                 return { uid, ...userDoc.data() } as UserProfile;
             } else {
                 // Fallback: If Auth successful but no Profile, create one!
@@ -136,9 +146,28 @@ export const AuthService = {
                     gender: 'Other'
                 };
                 await setDoc(doc(db, 'users', uid), newUser);
+                await createAuditLog({
+                    userId: uid,
+                    userName: newUser.displayName,
+                    action: AuditAction.USER_CREATED,
+                    targetType: 'user',
+                    targetId: uid,
+                    targetName: newUser.displayName,
+                    details: { method: 'Fallback during login' }
+                });
                 return newUser;
             }
         } catch (error: any) {
+            // Log failure
+            await createAuditLog({
+                userId: 'anonymous',
+                userName: email,
+                action: AuditAction.LOGIN_FAILURE,
+                targetType: 'system',
+                targetId: 'auth',
+                targetName: 'Login Attempt',
+                details: { error: error.message, email }
+            });
             // Provide user-friendly error messages
             if (error.code === 'auth/user-not-found') {
                 throw new Error('No account found with this email. Please sign up first.');
@@ -361,6 +390,19 @@ export const AuthService = {
     },
 
     logout: async () => {
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await createAuditLog({
+                userId: auth.currentUser.uid,
+                userName: userName,
+                action: AuditAction.LOGOUT,
+                targetType: 'system',
+                targetId: auth.currentUser.uid,
+                targetName: 'Auth',
+                details: {}
+            });
+        }
         await signOut(auth);
     },
 
@@ -393,6 +435,18 @@ export const AuthService = {
 
     updateUserProfile: async (uid: string, data: Partial<UserProfile>) => {
         await updateDoc(doc(db, 'users', uid), data);
+        if (auth.currentUser) {
+            const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'System';
+            await logUserAction(
+                AuditAction.USER_UPDATED,
+                auth.currentUser.uid,
+                adminName,
+                uid,
+                data.displayName || 'Unknown',
+                { updates: data }
+            );
+        }
     },
 
     // Admin creating a placeholder user (profile only)
@@ -414,6 +468,18 @@ export const AuthService = {
                 role: staffData.role || UserRole.STAFF,
                 department: staffData.department || 'General',
             });
+            if (auth.currentUser) {
+                const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+                const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
+                await logUserAction(
+                    AuditAction.USER_CREATED,
+                    auth.currentUser.uid,
+                    adminName,
+                    tempId,
+                    staffData.displayName || staffData.email,
+                    { staffData }
+                );
+            }
         }
     },
 
@@ -423,6 +489,18 @@ export const AuthService = {
         }
         if (email) {
             await deleteDoc(doc(db, 'staffAllowlist', email.toLowerCase().trim()));
+        }
+        if (auth.currentUser) {
+            const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
+            await logUserAction(
+                AuditAction.USER_DELETED,
+                auth.currentUser.uid,
+                adminName,
+                uid,
+                email,
+                { email }
+            );
         }
     },
 
@@ -463,6 +541,18 @@ export const AuthService = {
 
     updateUserRole: async (uid: string, role: UserRole) => {
         await updateDoc(doc(db, 'users', uid), { role });
+        if (auth.currentUser) {
+            const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
+            await logUserAction(
+                AuditAction.USER_ROLE_CHANGED,
+                auth.currentUser.uid,
+                adminName,
+                uid,
+                'User',
+                { newRole: role }
+            );
+        }
     },
 
     seedDemoData: async () => {
@@ -530,12 +620,36 @@ export const AuthService = {
             ...data,
             createdAt: new Date().toISOString()
         });
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await logClientAction(
+                AuditAction.CLIENT_CREATED,
+                auth.currentUser.uid,
+                userName,
+                ref.id,
+                data.name,
+                { clientData: data }
+            );
+        }
         return ref.id;
     },
 
     updateClient: async (client: Client) => {
         const { id, ...data } = client;
         await updateDoc(doc(db, 'clients', id), data);
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await logClientAction(
+                AuditAction.CLIENT_UPDATED,
+                auth.currentUser.uid,
+                userName,
+                id,
+                data.name,
+                { updates: data }
+            );
+        }
     },
 
     deleteClient: async (id: string) => {
@@ -552,6 +666,18 @@ export const AuthService = {
 
         // Soft delete: Mark as Inactive
         await updateDoc(doc(db, 'clients', id), { status: 'Inactive' });
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'Admin';
+            await logClientAction(
+                AuditAction.CLIENT_DELETED,
+                auth.currentUser.uid,
+                userName,
+                id,
+                'Client',
+                { status: 'Inactive' }
+            );
+        }
     },
 
     // --- TASKS ---
@@ -638,7 +764,7 @@ export const AuthService = {
         let taskId = task.id;
         if (!isNew) {
             const { id, ...data } = task;
-            await updateDoc(doc(db, 'tasks', id), data);
+            await updateDoc(doc(db, 'tasks', id!), data);
         } else {
             const { id, ...data } = task;
             const docRef = await addDoc(collection(db, 'tasks'), {
@@ -647,6 +773,19 @@ export const AuthService = {
             });
             taskId = docRef.id;
             isNew = true;
+        }
+
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await logTaskAction(
+                isNew ? AuditAction.TASK_CREATED : AuditAction.TASK_UPDATED,
+                auth.currentUser.uid,
+                userName,
+                taskId!,
+                task.title,
+                { taskData: task, isNew }
+            );
         }
 
         // Notify assigned users (Only on creation for now to avoid spam)
@@ -796,6 +935,18 @@ export const AuthService = {
         }
 
         await deleteDoc(doc(db, 'tasks', taskId));
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'Admin';
+            await logTaskAction(
+                AuditAction.TASK_DELETED,
+                auth.currentUser.uid,
+                userName,
+                taskId,
+                'Task',
+                {}
+            );
+        }
     },
 
     updateTask: async (taskId: string, updates: Partial<Task>) => {
@@ -815,7 +966,44 @@ export const AuthService = {
             }
         }
 
-        await updateDoc(doc(db, 'tasks', taskId), updates);
+        await updateDoc(doc(db, 'tasks', taskId), {
+            ...updates,
+            updatedAt: new Date().toISOString()
+        });
+
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await logTaskAction(
+                AuditAction.TASK_UPDATED,
+                auth.currentUser.uid,
+                userName,
+                taskId,
+                updates.title || 'Task',
+                { updates }
+            );
+        }
+    },
+
+    updateTaskStatusOnly: async (taskId: string, newStatus: TaskStatus): Promise<void> => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+        await updateDoc(doc(db, 'tasks', taskId), {
+            status: newStatus,
+            updatedAt: new Date().toISOString()
+        });
+
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await logTaskAction(
+                AuditAction.TASK_UPDATED,
+                auth.currentUser.uid,
+                userName,
+                taskId,
+                `Status changed to ${newStatus}`,
+                { newStatus }
+            );
+        }
     },
 
     handleStatusChange: async (task: Task, newStatus: TaskStatus) => {
@@ -1315,14 +1503,42 @@ export const AuthService = {
     },
 
     requestLeave: async (leave: LeaveRequest) => {
-        const { id, ...data } = leave;
-        await addDoc(collection(db, 'leaves'), data);
+        const ref = await addDoc(collection(db, 'leaves'), {
+            ...leave,
+            createdAt: new Date().toISOString()
+        });
+
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await logLeaveAction(
+                AuditAction.LEAVE_REQUESTED,
+                auth.currentUser.uid,
+                userName,
+                ref.id,
+                leave.type,
+                { leave }
+            );
+        }
     },
 
     updateLeaveStatus: async (id: string, status: 'APPROVED' | 'REJECTED') => {
         const leaveDoc = doc(db, 'leaves', id);
         const leaveData = (await getDoc(leaveDoc)).data() as LeaveRequest;
         await updateDoc(leaveDoc, { status });
+
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'Admin';
+            await logLeaveAction(
+                status === 'APPROVED' ? AuditAction.LEAVE_APPROVED : AuditAction.LEAVE_REJECTED,
+                auth.currentUser.uid,
+                userName,
+                id,
+                'Leave Request',
+                { status }
+            );
+        }
 
         // Notify user about leave status
         await AuthService.createNotification({
@@ -1342,12 +1558,46 @@ export const AuthService = {
     },
 
     addResource: async (resource: Resource) => {
-        const { id, ...data } = resource;
-        await addDoc(collection(db, 'resources'), data);
+        const { id, ...data } = resource; // Destructure to exclude 'id' if present in the input object
+        const ref = await addDoc(collection(db, 'resources'), {
+            ...data, // Use 'data' which excludes 'id'
+            createdAt: new Date().toISOString()
+        });
+
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            await createAuditLog({
+                userId: auth.currentUser.uid,
+                userName: userName,
+                action: AuditAction.RESOURCE_CREATED,
+                targetType: 'resource',
+                targetId: ref.id,
+                targetName: resource.title,
+                details: { type: resource.type }
+            });
+        }
     },
 
     deleteResource: async (id: string) => {
+        const resourceDoc = await getDoc(doc(db, 'resources', id));
+        const resourceData = resourceDoc.exists() ? resourceDoc.data() as Resource : null;
+
         await deleteDoc(doc(db, 'resources', id));
+
+        if (auth.currentUser) {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'Admin';
+            await createAuditLog({
+                userId: auth.currentUser.uid,
+                userName: userName,
+                action: AuditAction.RESOURCE_DELETED,
+                targetType: 'resource',
+                targetId: id,
+                targetName: 'Resource',
+                details: {}
+            });
+        }
     },
 
     updateResource: async (resource: Resource) => {

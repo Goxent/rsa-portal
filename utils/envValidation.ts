@@ -12,6 +12,11 @@ interface EnvConfig {
     VITE_FIREBASE_APP_ID: string;
     VITE_FIREBASE_MEASUREMENT_ID: string;
     VITE_CLAUDE_API_KEY?: string; // Optional
+    VITE_GEMINI_API_KEY?: string;
+    VITE_ANTHROPIC_API_KEY?: string;
+    VITE_APPWRITE_ENDPOINT?: string;
+    VITE_APPWRITE_PROJECT_ID?: string;
+    VITE_APPWRITE_BUCKET_ID?: string;
 }
 
 const REQUIRED_ENV_VARS: (keyof EnvConfig)[] = [
@@ -26,6 +31,11 @@ const REQUIRED_ENV_VARS: (keyof EnvConfig)[] = [
 
 const OPTIONAL_ENV_VARS: (keyof EnvConfig)[] = [
     'VITE_CLAUDE_API_KEY',
+    'VITE_GEMINI_API_KEY',
+    'VITE_ANTHROPIC_API_KEY',
+    'VITE_APPWRITE_ENDPOINT',
+    'VITE_APPWRITE_PROJECT_ID',
+    'VITE_APPWRITE_BUCKET_ID',
 ];
 
 export function validateEnvironment(): { valid: boolean; errors: string[] } {
@@ -65,5 +75,10 @@ export function getEnvConfig(): EnvConfig {
         VITE_FIREBASE_APP_ID: import.meta.env.VITE_FIREBASE_APP_ID,
         VITE_FIREBASE_MEASUREMENT_ID: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
         VITE_CLAUDE_API_KEY: import.meta.env.VITE_CLAUDE_API_KEY,
+        VITE_GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY,
+        VITE_ANTHROPIC_API_KEY: import.meta.env.VITE_ANTHROPIC_API_KEY,
+        VITE_APPWRITE_ENDPOINT: import.meta.env.VITE_APPWRITE_ENDPOINT,
+        VITE_APPWRITE_PROJECT_ID: import.meta.env.VITE_APPWRITE_PROJECT_ID,
+        VITE_APPWRITE_BUCKET_ID: import.meta.env.VITE_APPWRITE_BUCKET_ID,
     };
 }

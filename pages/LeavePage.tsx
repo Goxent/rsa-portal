@@ -5,6 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { LeaveRequest, UserRole, UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { leaveSchema, LeaveFormValues } from '../utils/validationSchemas';
 
 const ARTICLESHIP_LEAVE_LIMIT = 120; // 3 Years Total
 
@@ -17,12 +20,18 @@ const LeavePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'my' | 'admin'>(isAdmin ? 'admin' : 'my');
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
     const [adjustmentData, setAdjustmentData] = useState({ uid: '', name: '', amount: 0 });
-    const [newRequest, setNewRequest] = useState({
-        type: 'Sick',
-        startDate: '',
-        endDate: '',
-        reason: ''
+
+    // Form Setup
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<LeaveFormValues>({
+        resolver: zodResolver(leaveSchema),
+        defaultValues: {
+            type: 'SICK',
+            startDate: '',
+            endDate: '',
+            reason: ''
+        }
     });
+
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
@@ -74,8 +83,7 @@ const LeavePage: React.FC = () => {
         }
     });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: LeaveFormValues) => {
         if (isSaving) return;
         setIsSaving(true);
         try {
@@ -83,17 +91,17 @@ const LeavePage: React.FC = () => {
                 id: '',
                 userId: user?.uid || 'unknown',
                 userName: user?.displayName || 'User',
-                type: newRequest.type as any,
-                startDate: newRequest.startDate,
-                endDate: newRequest.endDate,
-                reason: newRequest.reason,
+                type: data.type as any,
+                startDate: data.startDate,
+                endDate: data.endDate,
+                reason: data.reason,
                 status: 'PENDING',
                 createdAt: new Date().toISOString().split('T')[0]
             };
             await AuthService.requestLeave(request);
             await loadLeaves();
             setIsModalOpen(false);
-            setNewRequest({ type: 'Sick', startDate: '', endDate: '', reason: '' });
+            reset();
             toast.success('Leave request submitted successfully!');
         } catch (error: any) {
             toast.error(error.message || 'Failed to submit leave request');
@@ -461,24 +469,22 @@ const LeavePage: React.FC = () => {
                                     <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
                                 </div>
 
-                                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                                <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
                                     <div className="relative">
                                         <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Leave Type</label>
                                         <div className="relative">
                                             <select
-                                                className="w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer border border-gray-600 bg-gray-800 text-white focus:ring-2 focus:ring-blue-500"
-                                                value={newRequest.type}
-                                                onChange={(e) => setNewRequest({ ...newRequest, type: e.target.value })}
+                                                className={`w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer border ${errors.type ? 'border-red-500' : 'border-gray-600'} bg-gray-800 text-white focus:ring-2 focus:ring-blue-500`}
+                                                {...register('type')}
                                             >
-                                                <option value="Sick">Sick Leave</option>
-                                                <option value="Casual">Casual Leave</option>
-                                                <option value="Exam">Exam Leave</option>
-                                                <option value="Home">Home Leave</option>
-                                                <option value="Other">Other</option>
-                                                <option value="Unpaid">Unpaid Leave</option>
+                                                <option value="SICK">Sick Leave</option>
+                                                <option value="CASUAL">Casual Leave</option>
+                                                <option value="EARNED">Earned Leave</option>
+                                                <option value="UNPAID">Unpaid Leave</option>
                                             </select>
                                             <ChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={16} />
                                         </div>
+                                        {errors.type && <p className="text-red-400 text-xs mt-1">{errors.type.message}</p>}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -486,34 +492,31 @@ const LeavePage: React.FC = () => {
                                             <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Start Date</label>
                                             <input
                                                 type="date"
-                                                required
-                                                className="w-full rounded-lg px-3 py-2 text-sm glass-input"
-                                                value={newRequest.startDate}
-                                                onChange={(e) => setNewRequest({ ...newRequest, startDate: e.target.value })}
+                                                className={`w-full rounded-lg px-3 py-2 text-sm glass-input ${errors.startDate ? 'border-red-500' : ''}`}
+                                                {...register('startDate')}
                                             />
+                                            {errors.startDate && <p className="text-red-400 text-xs mt-1">{errors.startDate.message}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">End Date</label>
                                             <input
                                                 type="date"
-                                                required
-                                                className="w-full rounded-lg px-3 py-2 text-sm glass-input"
-                                                value={newRequest.endDate}
-                                                onChange={(e) => setNewRequest({ ...newRequest, endDate: e.target.value })}
+                                                className={`w-full rounded-lg px-3 py-2 text-sm glass-input ${errors.endDate ? 'border-red-500' : ''}`}
+                                                {...register('endDate')}
                                             />
+                                            {errors.endDate && <p className="text-red-400 text-xs mt-1">{errors.endDate.message}</p>}
                                         </div>
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Reason</label>
                                         <textarea
-                                            required
                                             rows={3}
                                             placeholder="e.g. Not feeling well, Family emergency..."
-                                            className="w-full rounded-lg px-3 py-2 text-sm glass-input"
-                                            value={newRequest.reason}
-                                            onChange={(e) => setNewRequest({ ...newRequest, reason: e.target.value })}
+                                            className={`w-full rounded-lg px-3 py-2 text-sm glass-input ${errors.reason ? 'border-red-500' : ''}`}
+                                            {...register('reason')}
                                         />
+                                        {errors.reason && <p className="text-red-400 text-xs mt-1">{errors.reason.message}</p>}
                                     </div>
 
                                     <div className="pt-2">

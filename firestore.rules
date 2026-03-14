@@ -17,6 +17,13 @@ service cloud.firestore {
       return isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
     }
 
+    // AUDIT LOGS - Only admins can read, authenticated users can write (logging)
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Audit logs are immutable
+    }
+
     // USERS COLLECTION
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -81,16 +88,8 @@ service cloud.firestore {
     }
 
     // TASK TEMPLATES (Simple)
-    match /task_templates/{templateId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
     // WORKFLOWS
-    match /workflows/{workflowId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
+    // Covered below in ADVANCED FEATURES COLLECTIONS
     
     // =============================================
     // ADVANCED FEATURES COLLECTIONS
@@ -98,17 +97,9 @@ service cloud.firestore {
     
     // TIME TRACKING
     match /timeEntries/{entryId} {
-      // Users can read their own entries, admins can read all
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
-        isAdmin()
-      );
-      
-      // Users can create/update their own entries
-      allow create, update: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-      
-      // Only admins can delete entries
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
     
     // CHAT CHANNELS - Admin-only creation, member-based read access
@@ -156,19 +147,13 @@ service cloud.firestore {
     
     // TEMPLATES (Corrected collection name)
     match /task_templates/{templateId} {
-      // All authenticated users can read templates
       allow read: if isAuthenticated();
-      
-      // Only admins can create, update, or delete
       allow create, update, delete: if isAdmin();
     }
     
     // WORKFLOWS
     match /workflows/{workflowId} {
-      // All authenticated users can read workflows
       allow read: if isAuthenticated();
-      
-      // Only admins can create, update, or delete
       allow create, update, delete: if isAdmin();
     }
     
@@ -183,16 +168,10 @@ service cloud.firestore {
 
     // EVENTS (Consolidated Rule)
     match /events/{eventId} {
-      // All authenticated users can read events
       allow read: if isAuthenticated();
-      
-      // Authenticated users can create events
       allow create: if isAuthenticated();
-      
-      // Creators can update/delete their own events, Admins can do anything
       allow update, delete: if isAuthenticated() && (
-        resource.data.createdBy == request.auth.uid || 
-        isAdmin()
+        resource.data.createdBy == request.auth.uid || isAdmin()
       );
     }
 

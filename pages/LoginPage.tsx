@@ -3,14 +3,18 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, Loader2, ShieldCheck, User, Check, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginFormValues } from '../utils/validationSchemas';
 
 const LoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
 
-  // Form States
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Form setup
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues & { confirmPassword?: string }>({
+    resolver: zodResolver(loginSchema),
+  });
+
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
 
   // Rate Limiting Logic
@@ -59,8 +63,7 @@ const LoginPage: React.FC = () => {
   const { login, googleLogin, signup } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginFormValues & { confirmPassword?: string }) => {
     setLoading(true);
 
     try {
@@ -72,7 +75,7 @@ const LoginPage: React.FC = () => {
 
         // LOGIN LOGIC
         try {
-          await login(email, password);
+          await login(data.email, data.password);
           clearAttempts();
           navigate('/dashboard');
           toast.success('Welcome back!');
@@ -82,10 +85,10 @@ const LoginPage: React.FC = () => {
         }
       } else {
         // SIGNUP LOGIC
-        if (password !== confirmPassword) {
+        if (data.password !== data.confirmPassword) {
           throw new Error("Passwords must match");
         }
-        await signup(email, password);
+        await signup(data.email, data.password);
         navigate('/dashboard');
         toast.success('Account created successfully!');
       }
@@ -157,20 +160,19 @@ const LoginPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
                 <input
                   type="email"
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  className={`w-full bg-white/5 border ${errors.email ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/50'} rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all`}
                   placeholder="your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register('email')}
                 />
               </div>
+              {errors.email && <p className="text-red-400 text-xs ml-1 mt-1">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1">
@@ -186,13 +188,12 @@ const LoginPage: React.FC = () => {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
                 <input
                   type="password"
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  className={`w-full bg-white/5 border ${errors.password ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/50'} rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all`}
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register('password')}
                 />
               </div>
+              {errors.password && <p className="text-red-400 text-xs ml-1 mt-1">{errors.password.message}</p>}
             </div>
 
             {!isLogin && (
@@ -202,11 +203,9 @@ const LoginPage: React.FC = () => {
                   <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
                   <input
                     type="password"
-                    required
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                     placeholder="Confirm password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    {...register('confirmPassword')}
                   />
                 </div>
               </div>

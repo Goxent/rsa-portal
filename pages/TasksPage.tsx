@@ -13,7 +13,7 @@ import { useModal } from '../context/ModalContext'; // Import ModalContext
 import { AuthService } from '../services/firebase'; // Keep for static helpers if any, or verify removal
 // import { TemplateService } from '../services/templates'; // Removed
 import { getCurrentDateUTC } from '../utils/dates';
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useAddTaskComment, taskKeys } from '../hooks/useTasks';
+import { useInfiniteTasks, useCreateTask, useUpdateTask, useDeleteTask, useAddTaskComment, useUpdateTaskStatus, taskKeys } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
 import { useUsers } from '../hooks/useStaff';
 import { useTemplates } from '../hooks/useTemplates';
@@ -42,7 +42,8 @@ const TasksPage: React.FC = () => {
     const queryClient = useQueryClient();
 
     // -- DATA FETCHING (React Query) --
-    const { data: tasks = [], isLoading: tasksLoading } = useTasks();
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: tasksLoading } = useInfiniteTasks();
+    const tasks = data?.pages.flatMap(page => page.tasks) ?? [];
     const { data: usersList = [], isLoading: usersLoading } = useUsers();
     const { data: clientsList = [], isLoading: clientsLoading } = useClients();
     const { data: templates = [], isLoading: templatesLoading } = useTemplates();
@@ -52,6 +53,7 @@ const TasksPage: React.FC = () => {
     // -- MUTATIONS --
     const createTaskMutation = useCreateTask();
     const updateTaskMutation = useUpdateTask();
+    const updateTaskStatusMutation = useUpdateTaskStatus();
     const deleteTaskMutation = useDeleteTask();
     const addCommentMutation = useAddTaskComment();
 
@@ -577,7 +579,7 @@ const TasksPage: React.FC = () => {
         }
 
         const newStatus = destination.droppableId as TaskStatus;
-        updateTaskMutation.mutate({ id: draggableId, updates: { status: newStatus } });
+        updateTaskStatusMutation.mutate({ id: draggableId, status: newStatus });
     };
 
     const handleTemplateSelect = (template: any) => {
@@ -917,7 +919,7 @@ const TasksPage: React.FC = () => {
             </header >
 
             {/* --- WORKSPACE AREA --- */}
-            < main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative" >
+            <main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative">
                 {viewMode === 'TIMELINE' ? (
                     <TaskTimelineView
                         tasks={filteredTasks}
@@ -927,54 +929,67 @@ const TasksPage: React.FC = () => {
                         groupBy={groupBy}
                     />
                 ) : (
-                    <TaskMainView
-                        viewMode={viewMode as 'LIST' | 'KANBAN'}
-                        tasks={filteredTasks}
-                        onDragEnd={onDragEnd}
-                        handleOpenEdit={handleOpenEdit}
-                        usersList={usersList}
-                        clientsList={clientsList}
-                        collapsedColumns={collapsedColumns}
-                        toggleColumnCollapse={(status) => setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
-                        selectedTaskId={selectedTaskId}
-                        selectedTaskIds={selectedTaskIds}
-                        onToggleSelection={toggleTaskSelection}
-                        onSelectAll={() => {
-                            if (selectedTaskIds.length === filteredTasks.length) {
-                                setSelectedTaskIds([]); // Deselect all
-                            } else {
-                                setSelectedTaskIds(filteredTasks.map(t => t.id)); // Select all filtered
-                            }
-                        }}
-                        groupBy={groupBy}
-                        onUpdateTaskStatus={(taskId, status) => {
-                            updateTaskMutation.mutate({ id: taskId, updates: { status } });
-                        }}
-                        onOpenReassign={(taskId) => {
-                            setSelectedTaskIds([taskId]);
-                            setShowBulkAssignMenu(true);
-                        }}
-                        onQuickAdd={async (status, title) => {
-                            try {
-                                const newTask: any = {
-                                    title,
-                                    status,
-                                    priority: TaskPriority.MEDIUM,
-                                    assignedTo: [],
-                                    subtasks: [],
-                                    dueDate: getCurrentDateUTC(),
-                                    clientIds: [],
-                                    teamLeaderId: '',
-                                    comments: []
-                                };
-                                await createTaskMutation.mutateAsync(newTask);
-                            } catch (error) {
-                                console.error(error);
-                            }
-                        }}
-                    />
+                    <>
+                        <TaskMainView
+                            viewMode={viewMode as 'LIST' | 'KANBAN'}
+                            tasks={filteredTasks}
+                            onDragEnd={onDragEnd}
+                            handleOpenEdit={handleOpenEdit}
+                            usersList={usersList}
+                            clientsList={clientsList}
+                            collapsedColumns={collapsedColumns}
+                            toggleColumnCollapse={(status) => setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
+                            selectedTaskId={selectedTaskId}
+                            selectedTaskIds={selectedTaskIds}
+                            onToggleSelection={toggleTaskSelection}
+                            onSelectAll={() => {
+                                if (selectedTaskIds.length === filteredTasks.length) {
+                                    setSelectedTaskIds([]); // Deselect all
+                                } else {
+                                    setSelectedTaskIds(filteredTasks.map(t => t.id)); // Select all filtered
+                                }
+                            }}
+                            groupBy={groupBy}
+                            onUpdateTaskStatus={(taskId, status) => {
+                                updateTaskStatusMutation.mutate({ id: taskId, status });
+                            }}
+                            onOpenReassign={(taskId) => {
+                                setSelectedTaskIds([taskId]);
+                                setShowBulkAssignMenu(true);
+                            }}
+                            onQuickAdd={async (status, title) => {
+                                try {
+                                    const newTask: any = {
+                                        title,
+                                        status,
+                                        priority: TaskPriority.MEDIUM,
+                                        assignedTo: [],
+                                        subtasks: [],
+                                        dueDate: getCurrentDateUTC(),
+                                        clientIds: [],
+                                        teamLeaderId: '',
+                                        comments: []
+                                    };
+                                    await createTaskMutation.mutateAsync(newTask);
+                                } catch (error) {
+                                    console.error(error);
+                                }
+                            }}
+                        />
+                        {hasNextPage && (
+                            <div className="flex justify-center p-4 bg-[#0a0f1e] z-10 border-t border-white/[0.06]">
+                                <button
+                                    onClick={() => fetchNextPage()}
+                                    disabled={isFetchingNextPage}
+                                    className="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] uppercase tracking-widest transition-colors disabled:opacity-50"
+                                >
+                                    {isFetchingNextPage ? 'Loading...' : 'Load More Tasks'}
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
-            </main >
+            </main>
 
             {/* Modals for Create/Edit/Templates */}
             {/* Task Detail Slide-over */}

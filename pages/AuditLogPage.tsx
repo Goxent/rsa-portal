@@ -11,14 +11,21 @@ import { toast } from 'react-hot-toast';
 interface AuditLogEntry {
     id?: string;
     action: string;
-    entityType: string;
-    entityId: string;
-    details?: string;
+    // New fields
+    userName?: string;
+    targetType?: string;
+    targetId?: string;
+    targetName?: string;
+    // Old fields (for compatibility if any existing data)
+    performedBy?: string;
+    adminName?: string;
+    entityType?: string;
+    entityId?: string;
+
+    details?: string | any;
     oldData?: any;
     newData?: any;
-    performedBy: string;
     timestamp: any;
-    adminName?: string;
 }
 
 const AuditLogPage: React.FC = () => {
@@ -64,10 +71,11 @@ const AuditLogPage: React.FC = () => {
 
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
-            const matchesSearch = log.details?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.adminName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.entityType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.entityId.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesSearch =
+                (log.details && typeof log.details === 'string' && log.details.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (log.userName || log.adminName || log.performedBy || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (log.targetType || log.entityType || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (log.targetId || log.entityId || '').toLowerCase().includes(searchTerm.toLowerCase());
 
             let matchesAction = true;
             if (actionFilter !== 'ALL') {
@@ -101,8 +109,8 @@ const AuditLogPage: React.FC = () => {
             { header: 'Timestamp', key: 'timestamp', width: 22 },
             { header: 'User', key: 'user', width: 20 },
             { header: 'Action', key: 'action', width: 15 },
-            { header: 'Entity Type', key: 'entityType', width: 15 },
-            { header: 'Entity ID', key: 'entityId', width: 25 },
+            { header: 'Entity Type', key: 'targetType', width: 15 },
+            { header: 'Entity ID', key: 'targetId', width: 25 },
             { header: 'Details/Changes', key: 'details', width: 50 },
         ];
 
@@ -129,10 +137,10 @@ const AuditLogPage: React.FC = () => {
 
             sheet.addRow({
                 timestamp: format(logDate, 'yyyy-MM-dd HH:mm:ss'),
-                user: log.adminName || log.performedBy || 'System',
+                user: log.userName || log.adminName || log.performedBy || 'System',
                 action: log.action,
-                entityType: log.entityType,
-                entityId: log.entityId,
+                targetType: log.targetType || log.entityType || 'Unknown',
+                targetId: log.targetId || log.entityId || 'N/A',
                 details: changesText
             });
         });
@@ -283,7 +291,7 @@ const AuditLogPage: React.FC = () => {
                                                     <span className="text-gray-500">{format(logDate, 'HH:mm:ss')}</span>
                                                 </td>
                                                 <td className="p-4 text-xs font-bold text-gray-300">
-                                                    {log.adminName || log.performedBy || 'System'}
+                                                    {log.userName || log.adminName || log.performedBy || 'System'}
                                                 </td>
                                                 <td className="p-4">
                                                     <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wide inline-block ${getActionColor(log.action)}`}>
@@ -291,13 +299,15 @@ const AuditLogPage: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td className="p-4 text-xs text-gray-400 uppercase tracking-widest font-bold">
-                                                    {log.entityType}
-                                                    <div className="font-mono text-[9px] text-gray-600 normal-case mt-0.5" title={log.entityId}>
-                                                        ID: {log.entityId.substring(0, 8)}...
+                                                    {log.targetType || log.entityType || 'Unknown'}
+                                                    <div className="font-mono text-[9px] text-gray-600 normal-case mt-0.5" title={log.targetId || log.entityId}>
+                                                        ID: {(log.targetId || log.entityId || 'N/A').substring(0, 8)}...
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <p className="text-xs text-gray-300 mb-1">{log.details}</p>
+                                                    <p className="text-xs text-gray-300 mb-1">
+                                                        {typeof log.details === 'string' ? log.details : (log.targetName ? `Action on ${log.targetName}` : '')}
+                                                    </p>
 
                                                     {log.oldData && log.newData && (
                                                         <div className="mt-2 bg-black/20 rounded border border-white/5 p-2 overflow-x-auto">

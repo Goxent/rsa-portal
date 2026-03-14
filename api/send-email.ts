@@ -3,8 +3,9 @@ import nodemailer from 'nodemailer';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS for development/production
+    const allowedOrigin = process.env.VITE_APP_URL || process.env.FRONTEND_URL || 'https://rsa-portal.web.app'; // Must be restricted in production
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
         'Access-Control-Allow-Headers',

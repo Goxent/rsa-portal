@@ -16,10 +16,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Prioritize Server Env Vars, fallback to Client provided key
     let apiKey = clientApiKey;
     if (!apiKey) {
-        apiKey = process.env.VITE_GEMINI_API_KEY ||
-            process.env.VITE_CLAUDE_API_KEY ||
-            process.env.VITE_ANTHROPIC_API_KEY ||
-            process.env.VITE_OPENAI_API_KEY;
+        apiKey = process.env.GEMINI_API_KEY ||
+            process.env.CLAUDE_API_KEY ||
+            process.env.ANTHROPIC_API_KEY ||
+            process.env.OPENAI_API_KEY;
     }
 
     if (!apiKey) {

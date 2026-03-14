@@ -22,6 +22,15 @@ export const useTasks = () => {
     });
 };
 
+export const useInfiniteTasks = () => {
+    return useInfiniteQuery({
+        queryKey: taskKeys.all,
+        queryFn: ({ pageParam }) => AuthService.getPaginatedTasks(pageParam, 30),
+        getNextPageParam: (lastPage) => lastPage.lastVisible ?? undefined,
+        initialPageParam: undefined as any,
+    });
+};
+
 // --- MUTATIONS ---
 
 export const useCreateTask = () => {
@@ -77,6 +86,28 @@ export const useUpdateTask = () => {
             toast.error(`Failed to update task: ${error.message}`);
         },
 
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: taskKeys.all });
+        },
+    });
+};
+
+export const useUpdateTaskStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
+            AuthService.updateTaskStatusOnly(id, status),
+        onMutate: async ({ id, status }) => {
+            await queryClient.cancelQueries({ queryKey: taskKeys.all });
+            const previous = queryClient.getQueryData<Task[]>(taskKeys.all);
+            queryClient.setQueryData<Task[]>(taskKeys.all, old =>
+                (old || []).map(t => t.id === id ? { ...t, status } : t)
+            );
+            return { previous };
+        },
+        onError: (_err, _vars, context: any) => {
+            if (context?.previous) queryClient.setQueryData(taskKeys.all, context.previous);
+        },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: taskKeys.all });
         },

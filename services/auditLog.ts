@@ -20,6 +20,7 @@ export enum AuditAction {
     TASK_STATUS_CHANGED = 'TASK_STATUS_CHANGED',
 
     // Leave Management
+    LEAVE_REQUESTED = 'LEAVE_REQUESTED',
     LEAVE_APPROVED = 'LEAVE_APPROVED',
     LEAVE_REJECTED = 'LEAVE_REJECTED',
 
@@ -30,16 +31,23 @@ export enum AuditAction {
     // System Actions
     SETTINGS_CHANGED = 'SETTINGS_CHANGED',
     BACKUP_CREATED = 'BACKUP_CREATED',
+
+    // Authentication
+    LOGIN_SUCCESS = 'LOGIN_SUCCESS',
+    LOGIN_FAILURE = 'LOGIN_FAILURE',
+    LOGOUT = 'LOGOUT',
 }
 
 export interface AuditLog {
     userId: string;
-    userDisplayName: string;
+    userName: string; // Map to performedBy/adminName in UI
     action: AuditAction;
     targetType: 'user' | 'client' | 'task' | 'leave' | 'resource' | 'system';
     targetId: string;
     targetName?: string;
-    details?: Record<string, any>;
+    details?: string | Record<string, any>;
+    oldData?: any;
+    newData?: any;
     timestamp: string;
     ipAddress?: string;
 }
@@ -49,7 +57,7 @@ export interface AuditLog {
  */
 export const createAuditLog = async (log: Omit<AuditLog, 'timestamp'>) => {
     try {
-        await addDoc(collection(db, 'audit_logs'), {
+        await addDoc(collection(db, 'auditLogs'), {
             ...log,
             timestamp: new Date().toISOString(),
             ipAddress: 'N/A', // Could be enhanced with IP detection
@@ -73,7 +81,7 @@ export const logClientAction = async (
 ) => {
     await createAuditLog({
         userId,
-        userDisplayName,
+        userName: userDisplayName,
         action,
         targetType: 'client',
         targetId: clientId,
@@ -95,7 +103,7 @@ export const logUserAction = async (
 ) => {
     await createAuditLog({
         userId: adminUserId,
-        userDisplayName: adminDisplayName,
+        userName: adminDisplayName,
         action,
         targetType: 'user',
         targetId: targetUserId,
@@ -117,11 +125,33 @@ export const logTaskAction = async (
 ) => {
     await createAuditLog({
         userId,
-        userDisplayName,
+        userName: userDisplayName,
         action,
         targetType: 'task',
         targetId: taskId,
         targetName: taskTitle,
+        details,
+    });
+};
+
+/**
+ * Helper function to log leave operations
+ */
+export const logLeaveAction = async (
+    action: AuditAction,
+    userId: string,
+    userName: string,
+    leaveId: string,
+    leaveType: string,
+    details?: string | Record<string, any>
+) => {
+    await createAuditLog({
+        userId,
+        userName,
+        action,
+        targetType: 'leave',
+        targetId: leaveId,
+        targetName: leaveType,
         details,
     });
 };

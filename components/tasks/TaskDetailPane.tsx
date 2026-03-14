@@ -10,12 +10,15 @@ import ClientSelect from '../ClientSelect';
 import TaskComments from '../TaskComments';
 import NepaliDatePicker from '../NepaliDatePicker';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { taskSchema, TaskFormValues } from '../../utils/validationSchemas';
 
 interface TaskDetailPaneProps {
     task: Partial<Task>;
     isOpen: boolean;
     onClose: () => void;
-    onSave: () => void;
+    onSave: (taskData: any) => void;
     onDelete: (id: string) => void;
     onChange: (updates: Partial<Task>) => void;
     usersList: UserProfile[];
@@ -60,8 +63,32 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         if (isOpen) {
             initialTaskRef.current = JSON.parse(JSON.stringify(task));
             setShowDiscardBanner(false);
+            reset({
+                title: task.title || '',
+                clientId: task.clientIds?.[0] || '',
+                dueDate: task.dueDate || '',
+                priority: task.priority || TaskPriority.MEDIUM,
+                status: task.status || TaskStatus.NOT_STARTED,
+                estimatedHours: task.totalTimeSpent || 0,
+                assignedTo: task.assignedTo || [],
+                description: task.description || '',
+            });
         }
-    }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isOpen, task.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<TaskFormValues>({
+        resolver: zodResolver(taskSchema),
+        defaultValues: {
+            title: task.title || '',
+            clientId: task.clientIds?.[0] || '',
+            dueDate: task.dueDate || '',
+            priority: task.priority || TaskPriority.MEDIUM,
+            status: task.status || TaskStatus.NOT_STARTED,
+            estimatedHours: task.totalTimeSpent || 0,
+            assignedTo: task.assignedTo || [],
+            description: task.description || '',
+        }
+    });
 
     const hasUnsavedChanges = isOpen
         ? JSON.stringify(task) !== JSON.stringify(initialTaskRef.current)
@@ -75,10 +102,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     };
 
-    const handleSave = () => {
-        onSave();
+    const handleSave = (data: TaskFormValues) => {
+        const fullSaveData = {
+            ...task,
+            title: data.title,
+            description: data.description,
+            priority: data.priority,
+            status: data.status,
+            dueDate: data.dueDate,
+            assignedTo: data.assignedTo,
+            totalTimeSpent: data.estimatedHours,
+            clientIds: data.clientId ? [data.clientId] : [],
+            clientName: clientsList.find(c => c.id === data.clientId)?.name || undefined,
+        };
+        onSave(fullSaveData);
         // Reset snapshot so banner doesn't re-trigger after save
-        initialTaskRef.current = JSON.parse(JSON.stringify(task));
+        initialTaskRef.current = JSON.parse(JSON.stringify(fullSaveData));
         setShowDiscardBanner(false);
     };
 
@@ -143,65 +182,66 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     <div className="space-y-2 group">
                                         <input
                                             autoFocus
-                                            className="w-full bg-transparent text-3xl md:text-4xl font-black text-white placeholder:text-gray-700 placeholder:font-bold focus:outline-none focus:ring-0 border-none px-0 transition-all placeholder:tracking-tight ring-0"
+                                            className={`w-full bg-transparent text-3xl md:text-4xl font-black ${errors.title ? 'text-red-400' : 'text-white'} placeholder:text-gray-700 placeholder:font-bold focus:outline-none focus:ring-0 border-none px-0 transition-all placeholder:tracking-tight ring-0`}
                                             placeholder="Task Title..."
-                                            value={task.title || ''}
-                                            onChange={(e) => onChange({ title: e.target.value })}
+                                            {...register('title')}
                                         />
-                                        <div className="w-full h-[1px] bg-white/5 group-focus-within:bg-blue-500/50 transition-colors" />
+                                        <div className={`w-full h-[1px] ${errors.title ? 'bg-red-500/50' : 'bg-white/5'} group-focus-within:bg-blue-500/50 transition-colors`} />
+                                        {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>}
                                     </div>
                                     <div>
                                         <textarea
                                             className="w-full bg-white/5 border border-white/5 focus:border-blue-500/50 rounded-2xl min-h-[140px] p-5 text-sm resize-none text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all shadow-inner"
                                             placeholder="Add a more detailed description... (Type @ to mention staff)"
-                                            value={task.description || ''}
-                                            onChange={(e) => onChange({ description: e.target.value })}
+                                            {...register('description')}
                                         />
                                     </div>
                                 </div>
 
                                 {/* Details Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/20 p-6 rounded-3xl border border-white/5 shadow-2xl">
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.status ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                             <Activity size={12} className="text-blue-400" /> Status
                                         </label>
                                         <select
                                             className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
-                                            value={task.status}
-                                            onChange={(e) => onChange({ status: e.target.value as TaskStatus })}
+                                            {...register('status')}
                                         >
                                             {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
                                         </select>
                                     </div>
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.priority ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                            <AlertTriangle size={12} className={task.priority === 'URGENT' ? 'text-rose-400' : 'text-orange-400'} /> Priority
+                                            <AlertTriangle size={12} className={watch('priority') === 'URGENT' ? 'text-rose-400' : 'text-orange-400'} /> Priority
                                         </label>
                                         <select
                                             className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
-                                            value={task.priority}
-                                            onChange={(e) => onChange({ priority: e.target.value as TaskPriority })}
+                                            {...register('priority')}
                                         >
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
                                         </select>
                                     </div>
 
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.clientId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                             <Briefcase size={12} className="text-indigo-400" /> Client
                                         </label>
-                                        <ClientSelect
-                                            clients={clientsList}
-                                            value={task.clientIds?.[0] || ''}
-                                            onChange={(val) => {
-                                                const c = clientsList.find(c => c.id === val);
-                                                if (c) onChange({ clientIds: [val as string], clientName: c.name });
-                                            }}
+                                        <Controller
+                                            name="clientId"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <ClientSelect
+                                                    clients={clientsList}
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                />
+                                            )}
                                         />
+                                        {errors.clientId && <p className="text-red-400 text-xs mt-1">{errors.clientId.message}</p>}
                                     </div>
 
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.dueDate ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
                                         <div className="flex items-center justify-between mb-2">
                                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                                 <Calendar size={12} className="text-emerald-400" /> Due Date
@@ -218,20 +258,25 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 ))}
                                             </div>
                                         </div>
-                                        {dateMode === 'AD' ? (
-                                            <input
-                                                type="date"
-                                                value={task.dueDate || ''}
-                                                onChange={(e) => onChange({ dueDate: e.target.value })}
-                                                className="w-full bg-transparent text-sm font-bold text-white focus:outline-none cursor-pointer"
-                                            />
-                                        ) : (
-                                            <NepaliDatePicker
-                                                value={task.dueDate || ''}
-                                                onChange={(adDate) => onChange({ dueDate: adDate })}
-                                                placeholder="Select Date"
-                                            />
-                                        )}
+                                        <Controller
+                                            name="dueDate"
+                                            control={control}
+                                            render={({ field }) => dateMode === 'AD' ? (
+                                                <input
+                                                    type="date"
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    className="w-full bg-transparent text-sm font-bold text-white focus:outline-none cursor-pointer"
+                                                />
+                                            ) : (
+                                                <NepaliDatePicker
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    placeholder="Select Date"
+                                                />
+                                            )}
+                                        />
+                                        {errors.dueDate && <p className="text-red-400 text-xs mt-1">{errors.dueDate.message}</p>}
                                     </div>
 
                                     <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
@@ -248,7 +293,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-gray-200">{u.displayName}</option>
                                             ))}
                                         </select>
-                                        {task.teamLeaderId && !task.assignedTo?.includes(task.teamLeaderId) && (
+                                        {task.teamLeaderId && !watch('assignedTo')?.includes(task.teamLeaderId) && (
                                             <p className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-1">
                                                 <ShieldAlert size={10} /> Team leader must be one of the assignees
                                             </p>
@@ -259,11 +304,17 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                             <UserCircle2 size={12} className="text-cyan-400" /> Assignees
                                         </label>
-                                        <StaffSelect
-                                            users={usersList}
-                                            value={task.assignedTo || []}
-                                            onChange={(val) => onChange({ assignedTo: val as string[] })}
-                                            multi={true}
+                                        <Controller
+                                            name="assignedTo"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <StaffSelect
+                                                    users={usersList}
+                                                    value={field.value || []}
+                                                    onChange={field.onChange}
+                                                    multi={true}
+                                                />
+                                            )}
                                         />
                                     </div>
 
@@ -276,9 +327,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 type="number"
                                                 min="0"
                                                 className="w-32 bg-black/40 text-lg font-black text-white p-3 rounded-xl border border-white/5 focus:border-blue-500/50 focus:outline-none text-center"
-                                                value={task.totalTimeSpent || ''}
-                                                onChange={(e) => onChange({ totalTimeSpent: parseInt(e.target.value) || 0 })}
                                                 placeholder="0"
+                                                {...register('estimatedHours', { valueAsNumber: true })}
                                             />
                                             <span className="text-xs text-gray-500 font-bold max-w-[200px] leading-relaxed">
                                                 Track total time spent working on this task.
@@ -390,7 +440,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleSave}
+                                    onClick={handleSubmit(handleSave)}
                                     disabled={isSaving}
                                     className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 group"
                                 >

@@ -24,7 +24,7 @@ import {
     updateDoc,
 } from 'firebase/firestore';
 
-const AUDIT_COLLECTION = 'audit_logs';
+const AUDIT_COLLECTION = 'auditLogs';
 const ALERTS_COLLECTION = 'security_alerts';
 const MAX_LOGS_PER_QUERY = 500;
 

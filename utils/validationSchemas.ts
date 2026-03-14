@@ -10,7 +10,7 @@ export const taskSchema = z.object({
     clientId: z.string().min(1, 'Client is required'),
     dueDate: z.string().min(1, 'Due date is required'),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
-    status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'CLIENT_REVIEW', 'COMPLETED']),
+    status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'UNDER_REVIEW', 'HALTED', 'COMPLETED', 'ARCHIVED']),
     estimatedHours: z.number().min(0).optional(),
     tags: z.array(z.string()).optional(),
     assignedTo: z.array(z.string()).optional(),

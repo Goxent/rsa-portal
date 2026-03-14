@@ -40,7 +40,7 @@ export const useCommandPalette = (controlledIsOpen?: boolean, onControlledClose?
     }, { enableOnFormTags: true, enabled: isOpen });
 
     // Get all commands
-    const allCommands = useMemo(() => CommandRegistry.getAll(), [isOpen]);
+    const allCommands = useMemo(() => CommandRegistry.getAll(), []);
 
     // Setup Fuse.js for fuzzy search
     const fuse = useMemo(() => new Fuse(allCommands, {
