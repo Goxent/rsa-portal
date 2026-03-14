@@ -24,7 +24,6 @@ import TaskStatsWidget from './widgets/TaskStatsWidget';
 import MyTasksWidget from './widgets/MyTasksWidget';
 import CalendarWidget from './widgets/CalendarWidget';
 import QuickActionsWidget from './widgets/QuickActionsWidget';
-import PerformanceWidget from './widgets/PerformanceWidget';
 import TeamWorkloadWidget from './widgets/TeamWorkloadWidget';
 import PendingActionsWidget from './widgets/PendingActionsWidget';
 import RecentActivityWidget from './widgets/RecentActivityWidget';
@@ -181,8 +180,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <CalendarWidget {...props} />;
             case 'quick-actions':
                 return <QuickActionsWidget {...props} />;
-            case 'performance':
-                return <PerformanceWidget {...props} />;
             case 'team-workload':
                 return <TeamWorkloadWidget {...props} />;
 

@@ -6,7 +6,6 @@ export type WidgetType =
     | 'team-workload'
     | 'pending-actions'
     | 'calendar'
-    | 'performance'
     | 'quick-actions'
     | 'recent-activity'
     | 'task-stats'
@@ -101,13 +100,6 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         description: 'Events and deadlines calendar view',
         icon: 'Calendar',
         defaultSize: 'md',
-    },
-    {
-        type: 'performance',
-        title: 'Performance',
-        description: 'Your performance metrics and scores',
-        icon: 'TrendingUp',
-        defaultSize: 'sm',
     },
     {
         type: 'quick-actions',

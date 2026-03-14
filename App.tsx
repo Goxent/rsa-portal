@@ -29,12 +29,8 @@ const StaffPage = lazy(() => import('./pages/StaffPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
 const SystemSettingsPage = lazy(() => import('./pages/SystemSettingsPage'));
-const PerformancePage = lazy(() => import('./pages/PerformancePage'));
-const KnowledgeBasePage = lazy(() => import('./pages/KnowledgeBasePage'));
 const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
-const MyPerformancePage = lazy(() => import('./pages/MyPerformancePage'));
-const PeerReviewPage = lazy(() => import('./pages/PeerReviewPage'));
 const ResourcePlanningPage = lazy(() => import('./pages/ResourcePlanningPage'));
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
 
@@ -196,16 +192,11 @@ const App: React.FC = () => {
                     } />
                     <Route path="resources" element={<LazyPage><ResourcesPage /></LazyPage>} />
 
-                    <Route path="knowledge-base" element={<LazyPage><KnowledgeBasePage /></LazyPage>} />
+                    <Route path="knowledge-base" element={<Navigate to="/templates" replace />} />
                     <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />
                     <Route path="staff" element={
                       <AdminRoute>
                         <LazyPage><StaffPage /></LazyPage>
-                      </AdminRoute>
-                    } />
-                    <Route path="performance" element={
-                      <AdminRoute>
-                        <LazyPage><PerformancePage /></LazyPage>
                       </AdminRoute>
                     } />
                     <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />
@@ -216,9 +207,11 @@ const App: React.FC = () => {
                     } />
                     <Route path="compliance" element={<LazyPage><CompliancePage /></LazyPage>} />
                     <Route path="templates" element={<LazyPage><TemplatesPage /></LazyPage>} />
-                    <Route path="my-performance" element={<LazyPage><MyPerformancePage /></LazyPage>} />
-                    <Route path="peer-reviews" element={<LazyPage><PeerReviewPage /></LazyPage>} />
-                    {/* Redirect legacy /workflow to /tasks */}
+                    {/* Removed: /performance, /my-performance, /peer-reviews */}
+                    {/* Redirect legacy routes */}
+                    <Route path="performance" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="my-performance" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="peer-reviews" element={<Navigate to="/dashboard" replace />} />
                     <Route path="workflow" element={<Navigate to="/tasks" replace />} />
 
                   </Route>

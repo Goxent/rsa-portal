@@ -8,15 +8,12 @@ import {
     AlertCircle,
     Building2,
     BarChart3,
-    FileStack,
-    BookOpen,
-    Trophy,
+    Library,
     Settings,
     LogOut,
     ChevronLeft,
     ChevronRight,
     X,
-    PieChart,
     Users,
     Pin,
     Activity
@@ -41,10 +38,7 @@ const ALL_NAV_ITEMS = [
     { id: 'leaves', to: '/leaves', icon: Calendar, label: 'Leaves & Requests' },
     { id: 'staff', to: '/staff', icon: Users, label: 'Staff Directory', adminOnly: true },
     { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true },
-    { id: 'performance', to: '/performance', icon: Trophy, label: 'Performance', adminOnly: true },
-    { id: 'my-performance', to: '/my-performance', icon: PieChart, label: 'My Performance' },
-    { id: 'templates', to: '/templates', icon: FileStack, label: 'Templates' },
-    { id: 'knowledge-base', to: '/knowledge-base', icon: BookOpen, label: 'Knowledge Base' },
+    { id: 'templates', to: '/templates', icon: Library, label: 'Resources' },
     { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', adminOnly: true },
     { id: 'settings', to: '/settings', icon: Settings, label: 'Settings', masterAdminOnly: true }
 ];
