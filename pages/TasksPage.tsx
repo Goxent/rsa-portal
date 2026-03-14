@@ -171,37 +171,6 @@ const TasksPage: React.FC = () => {
         localStorage.setItem('rsa_filter_itr', String(filterItr));
     }, [filterPriority, filterStatus, filterClient, groupBy, filterStaff, filterAuditor, filterVat, filterItr]);
 
-    // LocalStorage for saved filters
-    const [savedFilters, setSavedFilters] = useState<{ name: string; filters: any }[]>([]);
-    useEffect(() => {
-        const saved = localStorage.getItem('rsa_task_filters');
-        if (saved) setSavedFilters(JSON.parse(saved));
-    }, []);
-
-    const saveCurrentFilters = (name: string) => {
-        const newFilters = [...savedFilters, {
-            name,
-            filters: {
-                filterPriority, filterStatus, filterStaff, filterClient, filterAuditor, filterVat, filterItr, dateRange, searchTerm
-            }
-        }];
-        setSavedFilters(newFilters);
-        localStorage.setItem('rsa_task_filters', JSON.stringify(newFilters));
-        toast.success(`Filter "${name}" saved`);
-    };
-
-    const applySavedFilter = (filter: any) => {
-        setFilterPriority(filter.filterPriority || 'ALL');
-        setFilterStatus(filter.filterStatus || 'ALL');
-        setFilterStaff(filter.filterStaff || 'ALL');
-        setFilterClient(filter.filterClient || 'ALL');
-        setFilterAuditor(filter.filterAuditor || 'ALL');
-        setFilterVat(!!filter.filterVat);
-        setFilterItr(!!filter.filterItr);
-        setDateRange(filter.dateRange || { start: '', end: '' });
-        setSearchTerm(filter.searchTerm || '');
-    };
-
     const filteredTasks = tasks.filter(t => {
         if (boardMode === 'MY' && user) {
             if (!t.assignedTo.includes(user.uid)) return false;
@@ -211,10 +180,6 @@ const TasksPage: React.FC = () => {
         if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase()) && !t.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
         if (filterStaff !== 'ALL' && !t.assignedTo.includes(filterStaff)) return false;
         if (filterClient !== 'ALL' && !t.clientIds?.includes(filterClient)) return false;
-
-        // Date Range Filter
-        if (dateRange.start && t.dueDate && t.dueDate < dateRange.start) return false;
-        if (dateRange.end && t.dueDate && t.dueDate > dateRange.end) return false;
 
         // Advanced Filters
         if (filterAuditor !== 'ALL' || filterVat || filterItr) {
@@ -698,13 +663,6 @@ const TasksPage: React.FC = () => {
         return count;
     }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, filterVat, filterItr, dateRange, searchTerm]);
 
-    const deleteSavedFilter = (index: number) => {
-        const updated = savedFilters.filter((_, i) => i !== index);
-        setSavedFilters(updated);
-        localStorage.setItem('rsa_task_filters', JSON.stringify(updated));
-        toast.success('Filter deleted');
-    };
-
     if (loading) return (
         <div className="flex flex-col h-full bg-transparent p-8 space-y-8 animate-pulse">
             <div className="h-40 bg-white/5 rounded-3xl" />
@@ -873,79 +831,13 @@ const TasksPage: React.FC = () => {
                         >
                             <Sparkles size={14} className="text-amber-400" /> Templates
                         </button>
-                        {/* Saved Filters Dropdown */}
-                        <div className="relative" ref={savedFiltersRef}>
-                            <button
-                                onClick={() => setShowSavedFilters(!showSavedFilters)}
-                                className="px-4 py-2 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all"
-                            >
-                                <Bookmark size={14} className="text-violet-400" /> Saved
-                                {savedFilters.length > 0 && (
-                                    <span className="ml-1 w-4 h-4 rounded-full bg-violet-500/30 text-violet-300 text-[9px] font-black flex items-center justify-center">{savedFilters.length}</span>
-                                )}
-                            </button>
-                            <AnimatePresence>
-                                {showSavedFilters && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 10 }}
-                                        className="absolute top-full right-0 mt-2 w-72 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
-                                    >
-                                        <div className="p-3 border-b border-white/5 bg-white/[0.03]">
-                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Saved Filters</p>
-                                        </div>
-                                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                                            {savedFilters.length === 0 ? (
-                                                <div className="p-4 text-center text-xs text-gray-600">No saved filters yet</div>
-                                            ) : (
-                                                savedFilters.map((f, i) => (
-                                                    <div key={i} className="flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors group">
-                                                        <button
-                                                            onClick={() => { applySavedFilter(f.filters); setShowSavedFilters(false); toast.success(`Applied filter "${f.name}"`); }}
-                                                            className="flex-1 text-left text-xs font-bold text-gray-300 hover:text-white transition-colors truncate"
-                                                        >
-                                                            {f.name}
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); deleteSavedFilter(i); }}
-                                                            className="ml-2 p-1 rounded text-gray-600 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
-                                                        >
-                                                            <Trash2 size={12} />
-                                                        </button>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                        <div className="p-3 border-t border-white/5 bg-white/[0.02]">
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Filter name..."
-                                                    value={savedFilterName}
-                                                    onChange={e => setSavedFilterName(e.target.value)}
-                                                    onKeyDown={e => { if (e.key === 'Enter' && savedFilterName.trim()) { saveCurrentFilters(savedFilterName.trim()); setSavedFilterName(''); } }}
-                                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 px-3 py-1.5 focus:outline-none focus:border-violet-500/50 placeholder:text-gray-600"
-                                                />
-                                                <button
-                                                    onClick={() => { if (savedFilterName.trim()) { saveCurrentFilters(savedFilterName.trim()); setSavedFilterName(''); } }}
-                                                    disabled={!savedFilterName.trim()}
-                                                    className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1"
-                                                >
-                                                    <Save size={11} /> Save
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                        
                         <button
                             onClick={handleOpenCreate}
                             disabled={!canCreateTask}
-                            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 border border-white/10 flex-shrink-0"
+                            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-black flex justify-center items-center gap-2 transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 border border-white/10 flex-shrink-0"
                         >
-                            <Plus size={16} /> New Task
+                            <Plus size={18} strokeWidth={3} /> Create New Task
                         </button>
                     </div>
                 </div>
@@ -1017,31 +909,6 @@ const TasksPage: React.FC = () => {
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
                             </div>
-
-                            {/* Date range inputs */}
-                            <div className="w-px h-5 bg-white/10 flex-shrink-0" />
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <Calendar size={12} className="text-gray-500" />
-                                <input
-                                    type="date"
-                                    value={dateRange.start}
-                                    onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))}
-                                    placeholder="From"
-                                    title="Due date from"
-                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 px-3 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors [color-scheme:dark]"
-                                />
-                                <span className="text-gray-600 text-[10px] font-bold">to</span>
-                                <input
-                                    type="date"
-                                    value={dateRange.end}
-                                    onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))}
-                                    placeholder="To"
-                                    title="Due date to"
-                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 px-3 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors [color-scheme:dark]"
-                                />
-                            </div>
-
-                            <div className="w-px h-5 bg-white/10 flex-shrink-0" />
 
                             {/* Filter panel toggle button */}
                             <button
