@@ -140,8 +140,8 @@ const StaffPage: React.FC = () => {
         switch (role) {
             case UserRole.MASTER_ADMIN: return 'Master Admin';
             case UserRole.ADMIN: return 'Admin';
-            case UserRole.STAFF:
-            case UserRole.MANAGER: return 'User';
+            case UserRole.MANAGER: return 'Manager';
+            case UserRole.STAFF: return 'User';
             default: return String(role);
         }
     };

@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { ComplianceEvent } from '../types/advanced';
 import { ComplianceService } from '../services/advanced';
-import { Client, UserProfile, TaskStatus, TaskPriority, Task } from '../types';
+import { Client, UserProfile, TaskStatus, TaskPriority, Task, UserRole } from '../types';
 import { AuthService } from '../services/firebase';
 import { nepaliMonths } from '../utils/nepaliDate';
 import { toast } from 'react-hot-toast';
@@ -228,7 +228,7 @@ const CompliancePage: React.FC = () => {
         return colors[category as keyof typeof colors] || 'text-gray-400 bg-gray-500/20';
     };
 
-    const canEdit = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN' || user?.role === 'MANAGER';
+    const canEdit = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
 
     // VAT Filing Restriction & Countdown Logic
     const npNow = new NepaliDate();

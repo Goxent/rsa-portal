@@ -37,7 +37,7 @@ const ALL_NAV_ITEMS = [
     { id: 'compliance', to: '/compliance', icon: AlertCircle, label: 'Compliance' },
     { id: 'leaves', to: '/leaves', icon: Calendar, label: 'Leaves & Requests' },
     { id: 'staff', to: '/staff', icon: Users, label: 'Staff Directory', adminOnly: true },
-    { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true },
+    { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true, managerAllowed: true },
     { id: 'templates', to: '/templates', icon: Library, label: 'Resources' },
     { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', adminOnly: true },
     { id: 'settings', to: '/settings', icon: Settings, label: 'Settings', masterAdminOnly: true }
@@ -76,6 +76,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
             window.location.href = '/#/login';
         }
     };
+
+    const isManager = user?.role === UserRole.MANAGER;
+    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+
+    const filterVisibleItems = (item: any) => {
+        if (item.masterAdminOnly) return user?.role === UserRole.MASTER_ADMIN;
+        if (item.adminOnly) return isAdmin || (isManager && item.managerAllowed);
+        return true;
+    };
+
+    const visibleItems = ALL_NAV_ITEMS.filter(filterVisibleItems);
 
     const NavItem = ({ item }: { item: any }) => {
         const isPinned = pinnedIds.includes(item.id);
@@ -183,9 +194,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                             <SectionLabel label="Favorites" />
                             {pinnedIds.map(id => {
                                 const item = ALL_NAV_ITEMS.find(i => i.id === id);
-                                if (!item) return null;
-                                if (item.adminOnly && user?.role !== UserRole.ADMIN && user?.role !== UserRole.MASTER_ADMIN) return null;
-                                if (item.masterAdminOnly && user?.role !== UserRole.MASTER_ADMIN) return null;
+                                if (!item || !filterVisibleItems(item)) return null;
                                 return <NavItem key={`pinned-${item.id}`} item={item} />;
                             })}
                         </div>
@@ -193,8 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
 
                     <SectionLabel label="Core" />
                     {ALL_NAV_ITEMS.filter(i => CORE_ITEM_IDS.includes(i.id)).map(item => {
-                        if (item.adminOnly && user?.role !== UserRole.ADMIN && user?.role !== UserRole.MASTER_ADMIN) return null;
-                        if (item.masterAdminOnly && user?.role !== UserRole.MASTER_ADMIN) return null;
+                        if (!filterVisibleItems(item)) return null;
                         return <NavItem key={`core-${item.id}`} item={item} />
                     })}
 
@@ -212,8 +220,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         {isMoreOpen && (
                             <div className="space-y-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {ALL_NAV_ITEMS.filter(i => !CORE_ITEM_IDS.includes(i.id)).map(item => {
-                                    if (item.adminOnly && user?.role !== UserRole.ADMIN && user?.role !== UserRole.MASTER_ADMIN) return null;
-                                    if (item.masterAdminOnly && user?.role !== UserRole.MASTER_ADMIN) return null;
+                                    if (!filterVisibleItems(item)) return null;
                                     return <NavItem key={`more-${item.id}`} item={item} />;
                                 })}
                             </div>
