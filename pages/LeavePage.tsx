@@ -4,6 +4,7 @@ import { CalendarDays, CheckCircle, Clock, Plus, X, AlertCircle, AlertTriangle, 
 import { useAuth } from '../context/AuthContext';
 import { LeaveRequest, UserRole, UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
+import toast from 'react-hot-toast';
 
 const ARTICLESHIP_LEAVE_LIMIT = 120; // 3 Years Total
 
@@ -67,10 +68,8 @@ const LeavePage: React.FC = () => {
     myApprovedLeaves.forEach(l => {
         const days = calculateDays(l.startDate, l.endDate);
         if (breakdown[l.type as keyof typeof breakdown] !== undefined) {
-            // @ts-ignore
             breakdown[l.type as keyof typeof breakdown] += days;
         } else {
-            // Map legacy types or others
             breakdown.Other += days;
         }
     });
@@ -95,9 +94,9 @@ const LeavePage: React.FC = () => {
             await loadLeaves();
             setIsModalOpen(false);
             setNewRequest({ type: 'Sick', startDate: '', endDate: '', reason: '' });
-            alert(`[SYSTEM]: Leave request submitted.`);
+            toast.success('Leave request submitted successfully!');
         } catch (error: any) {
-            alert('Error: ' + error.message);
+            toast.error(error.message || 'Failed to submit leave request');
         } finally {
             setIsSaving(false);
         }
@@ -118,12 +117,12 @@ const LeavePage: React.FC = () => {
             await AuthService.updateUserProfile(adjustmentData.uid, {
                 leaveAdjustment: adjustmentData.amount
             });
-            alert(`[SYSTEM]: Adjusted leave balance for ${adjustmentData.name}`);
+            toast.success(`Leave balance adjusted successfully`);
             setIsAdjustModalOpen(false);
             const users = await AuthService.getAllStaff();
             setAllStaff(users);
         } catch (error: any) {
-            alert('Error: ' + error.message);
+            toast.error(error.message || 'Failed to adjust leave balance');
         } finally {
             setIsSaving(false);
         }

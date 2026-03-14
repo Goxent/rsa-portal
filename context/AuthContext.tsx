@@ -30,13 +30,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [emailVerified, setEmailVerified] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // ── Inactivity constants ─────────────────────────────────────────────────
-  const INACTIVITY_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 hours
-  const LAST_ACTIVE_KEY = 'rsa_last_active';
-
-  const touchActivity = () => localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-
-  // ── Auth state listener + inactivity setup ───────────────────────────────
+  // ── Auth state listener ──────────────────────────────────────────────────
+  // Note: inactivity auto-logout is handled exclusively by useAutoLogout hook
+  // in components/Layout.tsx — do not add a second timer here.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -72,29 +68,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
-
-  // ── Inactivity auto-logout (4 hours) ─────────────────────────────────────
-  useEffect(() => {
-    // Seed the timestamp on mount if not already set
-    if (!localStorage.getItem(LAST_ACTIVE_KEY)) touchActivity();
-
-    const events: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
-    events.forEach(e => window.addEventListener(e, touchActivity, { passive: true }));
-
-    // Check every 60 seconds whether 4 hours of inactivity have passed
-    const timer = setInterval(() => {
-      const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
-      if (last && Date.now() - last > INACTIVITY_LIMIT_MS && auth.currentUser) {
-        AuthService.logout().catch(console.error);
-        localStorage.removeItem(LAST_ACTIVE_KEY);
-      }
-    }, 60_000);
-
-    return () => {
-      events.forEach(e => window.removeEventListener(e, touchActivity));
-      clearInterval(timer);
-    };
   }, []);
 
   const login = async (email: string, pass: string) => {
@@ -141,7 +114,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AuthService.logout();
       setUser(null);
       setEmailVerified(false);
-      localStorage.removeItem('rsa_last_active'); // Reset inactivity timer on explicit logout
     } catch (error) {
       console.error('Logout error:', error);
       throw error;

@@ -67,10 +67,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
         });
     };
 
-    const handleLogout = () => {
-        logout().then(() => {
-            window.location.href = '/login';
-        });
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (err) {
+            console.error('Logout error:', err);
+        } finally {
+            window.location.href = '/#/login';
+        }
     };
 
     const NavItem = ({ item }: { item: any }) => {

@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-// 30 minutes of inactivity
-const TIMEOUT_MS = 30 * 60 * 1000;
+// 4 hours of inactivity (single source of truth — AuthContext has no timer)
+const TIMEOUT_MS = 4 * 60 * 60 * 1000;
 
 export const useAutoLogout = () => {
     const { logout } = useAuth();

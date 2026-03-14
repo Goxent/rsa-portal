@@ -186,7 +186,7 @@ export interface LeaveRequest {
   id: string;
   userId: string;
   userName: string;
-  type: 'Sick' | 'Casual' | 'Annual' | 'Unpaid' | 'Exam';
+  type: 'Sick' | 'Casual' | 'Annual' | 'Unpaid' | 'Exam' | 'Home' | 'Other';
   startDate: string;
   endDate: string;
   reason: string;
