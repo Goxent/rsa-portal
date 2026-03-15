@@ -46,24 +46,31 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
         >
             <div
                 className={`
-          glass-panel rounded-2xl h-full
-          ${isDragging ? 'shadow-2xl ring-2 ring-brand-500' : ''}
+          relative w-full h-full rounded-2xl overflow-hidden
+          bg-slate-50/80 dark:bg-[#0d1526]/60 backdrop-blur-xl
+          border border-slate-200/50 dark:border-white/[0.03]
+          shadow-sm hover:shadow-md dark:shadow-none
+          transition-all duration-300
+          ${isDragging ? 'shadow-2xl ring-2 ring-brand-500/50 scale-105' : ''}
           ${isEditing ? 'ring-1 ring-dashed ring-slate-400 dark:ring-white/20' : ''}
         `}
             >
+                {/* Subtle top glow line for premium feel */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent"></div>
+
                 {/* Widget Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200/50 dark:border-white/[0.05] bg-white/40 dark:bg-white/[0.01]">
+                    <div className="flex items-center gap-2.5">
                         {isEditing && (
                             <button
                                 {...attributes}
                                 {...listeners}
                                 className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
                             >
-                                <GripVertical size={16} className="text-slate-400 dark:text-gray-400" />
+                                <GripVertical size={16} className="text-slate-400 dark:text-gray-500" />
                             </button>
                         )}
-                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{widget.title}</h3>
+                        <h3 className="text-[13px] font-bold tracking-wide text-slate-800 dark:text-gray-200 uppercase">{widget.title}</h3>
                     </div>
 
                     {isEditing && (

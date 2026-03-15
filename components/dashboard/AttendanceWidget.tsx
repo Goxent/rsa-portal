@@ -386,10 +386,13 @@ const AttendanceWidget: React.FC = () => {
 
     // Default Full Widget Render
     return (
-        <div className="glass-panel border-white/5 relative group rounded-2xl z-20 hover:z-40 focus-within:z-[100]">
-            {/* Background Decoration wrapper to clip blur without clipping the dropdown */}
+        <div className="relative w-full rounded-2xl overflow-hidden bg-slate-50/80 dark:bg-[#0d1526]/60 backdrop-blur-xl border border-slate-200/50 dark:border-white/[0.03] shadow-sm hover:shadow-md dark:shadow-none transition-all duration-300 z-10">
+            {/* Subtle top glow line for premium feel */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent"></div>
+            
+            {/* Subtle Accent Glow */}
             <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none -z-10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none translate-x-1/3 -translate-y-1/3"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-[80px] pointer-events-none translate-x-1/2 -translate-y-1/2"></div>
             </div>
             {/* Header / Top Bar */}
             <div className="p-6 pb-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
@@ -465,9 +468,9 @@ const AttendanceWidget: React.FC = () => {
                     <button
                         onClick={handleClockIn}
                         disabled={loading || (isLate && !lateReason)}
-                        className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                        className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-xl font-bold shadow-lg shadow-black/10 dark:shadow-white/10 transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
                     >
-                        {loading ? <Loader2 className="animate-spin" /> : <Play className="fill-current" />}
+                        {loading ? <Loader2 className="animate-spin text-brand-500" /> : <Play size={18} className="fill-current text-brand-500 dark:text-brand-600" />}
                         Start Work Day
                     </button>
                 ) : (
@@ -515,7 +518,7 @@ const AttendanceWidget: React.FC = () => {
                                         {status !== 'COMPLETED' && workLogs.length > 1 && (
                                             <button
                                                 onClick={() => removeLog(log.id)}
-                                                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all h-[38px] w-[38px] flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                                className="p-2 text-slate-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all h-[38px] w-[38px] flex items-center justify-center opacity-0 group-hover:opacity-100"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -527,13 +530,13 @@ const AttendanceWidget: React.FC = () => {
 
                         {/* Clock Out Button */}
                         {status === 'CLOCKED_IN' && (
-                            <div className="pt-4 border-t border-white/5">
+                            <div className="pt-4 border-t border-slate-200/50 dark:border-white/[0.05]">
                                 <button
                                     onClick={handleClockOut}
                                     disabled={loading}
-                                    className="w-full py-3 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group"
+                                    className="w-full py-3 bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-gray-300 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 group shadow-sm hover:shadow"
                                 >
-                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current" size={18} />}
+                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current text-red-500" size={18} />}
                                     Clock Out & Save Logs
                                 </button>
                             </div>

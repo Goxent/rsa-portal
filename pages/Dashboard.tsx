@@ -204,60 +204,55 @@ const Dashboard: React.FC = () => {
     return (
         <div className="flex flex-col gap-5 h-full overflow-y-auto overflow-x-hidden pb-6 custom-scrollbar">
 
-            {/* ── 1. COMMAND STRIP ──────────────────────────────────────── */}
-            <div className="flex-none bg-white/[0.02] border border-white/[0.05] rounded-2xl px-5 py-3 flex flex-wrap items-center justify-between gap-3">
-
-                {/* Left: Date */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <CalendarDays size={13} className="text-blue-400" />
-                        <span className="font-medium text-white">{adDate}</span>
-                        {bsDate && (
-                            <>
-                                <span className="text-gray-600">|</span>
-                                <span className="text-gray-500">{bsDate} BS</span>
-                            </>
-                        )}
+            {/* ── 1. UNIFIED HEADER (Replaces Command Strip & Greetings Widget) ── */}
+            <div className="flex-none flex flex-col md:flex-row items-start md:items-end justify-between gap-4 px-2 py-2">
+                <div>
+                    <div className="flex items-center gap-3 mb-1">
+                        <h1 className="text-2xl font-black text-white tracking-tight">
+                            {(() => {
+                                const h = new Date().getHours();
+                                if (h < 12) return 'Good Morning, ';
+                                if (h < 17) return 'Good Afternoon, ';
+                                return 'Good Evening, ';
+                            })()}
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+                                {user?.displayName?.split(' ')[0] ?? 'Team'}
+                            </span>
+                        </h1>
                     </div>
+                    <p className="text-gray-400 text-sm">
+                        {completedToday > 0
+                            ? `${completedToday} task${completedToday !== 1 ? 's' : ''} completed today. ${myOpenTasks > 0 ? `${myOpenTasks} still open.` : 'All clear!'}`
+                            : `${myOpenTasks > 0 ? `${myOpenTasks} task${myOpenTasks !== 1 ? 's' : ''} pending.` : 'Your workspace is ready. No pending tasks.'}`
+                        }
+                    </p>
                 </div>
 
-                {/* Center: Micro-stat pills */}
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                    <button onClick={() => navigate('/tasks')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
-                        <CheckSquare size={11} className="text-blue-400" />
-                        <span className="text-white tabular-nums">{relevantTasks.length}</span>
-                        <span className="text-gray-500 font-normal">Total Tasks</span>
+                {/* Right: Clean Global Stats */}
+                <div className="flex items-center gap-6 text-sm">
+                    <button onClick={() => navigate('/tasks')} className="flex flex-col items-end group hover:opacity-80 transition-opacity">
+                        <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Tasks</span>
+                        <div className="flex items-center gap-1.5 text-white font-bold">
+                            <CheckSquare size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                            {relevantTasks.length}
+                        </div>
                     </button>
-                    <button onClick={() => navigate('/tasks?board=MY')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
-                        <ClockIcon size={11} className="text-amber-400" />
-                        <span className="text-white tabular-nums">{myOpenTasks}</span>
-                        <span className="text-gray-500 font-normal">My Open</span>
-                    </button>
-                    <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
-                        <Building2 size={11} className="text-emerald-400" />
-                        <span className="text-white tabular-nums">{allClients.length}</span>
-                        <span className="text-gray-500 font-normal">Clients</span>
+                    <button onClick={() => navigate('/clients')} className="flex flex-col items-end group hover:opacity-80 transition-opacity">
+                        <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Clients</span>
+                        <div className="flex items-center gap-1.5 text-white font-bold">
+                            <Building2 size={14} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                            {allClients.length}
+                        </div>
                     </button>
                     {isAdmin && (
-                        <button onClick={() => navigate('/staff')} className="flex items-center gap-2 px-3 py-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-full text-xs font-bold text-gray-300 transition-all">
-                            <Users size={11} className="text-violet-400" />
-                            <span className="text-white tabular-nums">{usersForMap.length}</span>
-                            <span className="text-gray-500 font-normal">Staff</span>
+                        <button onClick={() => navigate('/staff')} className="flex flex-col items-end group hover:opacity-80 transition-opacity">
+                            <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Staff</span>
+                            <div className="flex items-center gap-1.5 text-white font-bold">
+                                <Users size={14} className="text-violet-400 group-hover:scale-110 transition-transform" />
+                                {usersForMap.length}
+                            </div>
                         </button>
                     )}
-                </div>
-
-                {/* Right: Day progress */}
-                <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
-                    <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-blue-500/60 rounded-full transition-all duration-1000"
-                            style={{ width: `${workDayPct}%` }}
-                        />
-                    </div>
-                    <span className="text-gray-600 font-mono">
-                        {workDayPct}% of work day
-                    </span>
                 </div>
             </div>
 
@@ -309,7 +304,7 @@ const Dashboard: React.FC = () => {
                         };
 
                         return (
-                            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 space-y-3">
+                            <div className="bg-transparent space-y-3">
                                 {/* Header */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -333,7 +328,7 @@ const Dashboard: React.FC = () => {
                                         {items.map(item => (
                                             <div
                                                 key={item.id}
-                                                className={`flex items-stretch gap-0 rounded-xl overflow-hidden border-l-2 bg-white/[0.02] hover:bg-white/[0.04] transition-colors ${getBorderColor(item)}`}
+                                                className={`flex items-stretch gap-0 rounded-lg overflow-hidden border-l-2 bg-white/[0.01] hover:bg-white/[0.03] transition-colors ${getBorderColor(item)}`}
                                             >
                                                 {/* Icon column */}
                                                 <div className="flex items-center justify-center w-8 flex-shrink-0">
