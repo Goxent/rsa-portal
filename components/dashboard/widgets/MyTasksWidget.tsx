@@ -12,24 +12,20 @@ interface MyTasksWidgetProps {
 const getPriorityConfig = (priority: string) => {
     switch (priority) {
         case 'URGENT': return {
-            label: 'Urgent', text: 'text-red-400',
-            bg: 'bg-red-500/10 border-red-500/20',
-            border: 'border-l-red-500',
+            label: 'Urgent', text: 'text-red-500 dark:text-red-400',
+            dot: 'bg-red-500',
         };
         case 'HIGH': return {
-            label: 'High', text: 'text-orange-400',
-            bg: 'bg-orange-500/10 border-orange-500/20',
-            border: 'border-l-amber-500',
+            label: 'High', text: 'text-amber-500 dark:text-amber-400',
+            dot: 'bg-amber-500',
         };
         case 'MEDIUM': return {
-            label: 'Medium', text: 'text-yellow-400',
-            bg: 'bg-yellow-500/10 border-yellow-500/20',
-            border: 'border-l-yellow-500',
+            label: 'Medium', text: 'text-blue-500 dark:text-blue-400',
+            dot: 'bg-blue-500',
         };
         default: return {
-            label: 'Low', text: 'text-blue-400',
-            bg: 'bg-blue-500/10 border-blue-500/20',
-            border: 'border-l-blue-500',
+            label: 'Low', text: 'text-slate-400',
+            dot: 'bg-slate-300 dark:bg-slate-600',
         };
     }
 };
@@ -102,10 +98,10 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ recentTasks = [] }) => {
         <div className="flex flex-col gap-2">
 
             {/* ── Compact header ──────────────────────────────────────── */}
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between px-1 mb-1">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-gray-300 uppercase tracking-widest">My Tasks</span>
-                    <span className="text-[10px] font-bold bg-white/[0.06] border border-white/[0.08] text-gray-400 rounded-full px-2 py-0.5 tabular-nums">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Ongoing</span>
+                    <span className="text-[10px] font-black text-slate-400 dark:text-gray-500 tabular-nums">
                         {activeTasks.length}
                     </span>
                 </div>
@@ -130,28 +126,27 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ recentTasks = [] }) => {
                         key={task.id}
                         onClick={() => navigate('/tasks')}
                         className={`
-                            flex items-center gap-3 rounded-xl border-l-2 border border-white/[0.07] px-3 py-2.5
+                            flex items-center gap-3 rounded-xl px-2 py-2.5
                             cursor-pointer transition-all duration-200 group
-                            ${priority.border}
-                            ${isOverdue
-                                ? 'bg-red-500/[0.05] hover:bg-red-500/[0.08] border-r-red-500/10 border-t-red-500/10 border-b-red-500/10'
-                                : 'bg-white/[0.02] hover:bg-white/[0.05]'
-                            }
+                            hover:bg-slate-100 dark:hover:bg-white/[0.03]
                         `}
                     >
+                        {/* Priority Dot */}
+                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${priority.dot}`} />
+
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                             {/* Title row */}
                             <div className="flex items-start justify-between gap-2">
-                                <h4 className={`text-sm font-semibold truncate leading-tight transition-colors ${isOverdue ? 'text-red-300' : 'text-gray-200 group-hover:text-white'
+                                <h4 className={`text-[13px] font-bold truncate leading-tight transition-colors ${isOverdue ? 'text-red-500 dark:text-red-400' : 'text-slate-700 dark:text-gray-200 group-hover:text-slate-900 dark:group-hover:text-white'
                                     }`}>
                                     {task.title}
                                 </h4>
 
                                 {/* Due date label */}
                                 {dueLabel && (
-                                    <span className={`text-[10px] font-semibold flex items-center gap-0.5 flex-shrink-0 ${dueLabel.className}`}>
-                                        <Clock size={9} />
+                                    <span className={`text-[10px] font-bold flex items-center gap-1 flex-shrink-0 ${dueLabel.className}`}>
+                                        <Clock size={10} />
                                         {dueLabel.label}
                                     </span>
                                 )}
@@ -159,25 +154,20 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ recentTasks = [] }) => {
 
                             {/* Meta row */}
                             <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-gray-500 truncate">
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-gray-600 truncate uppercase tracking-tight">
                                     {task.clientName || 'Internal'}
                                 </span>
-                                <span className={`text-[10px] font-medium ${status.color} flex-shrink-0`}>
+                                <span className={`text-[10px] font-bold ${status.color} flex-shrink-0 uppercase tracking-tight opacity-70`}>
                                     · {status.label}
                                 </span>
-                                {task.subtasks && task.subtasks.length > 0 && (
-                                    <span className="text-[10px] text-gray-600 flex-shrink-0">
-                                        · {task.subtasks.filter(s => s.isCompleted).length}/{task.subtasks.length} sub
-                                    </span>
-                                )}
                                 {isOverdue && (
-                                    <AlertTriangle size={9} className="text-red-400 flex-shrink-0 animate-pulse ml-auto" />
+                                    <AlertTriangle size={10} className="text-red-500 dark:text-red-400 flex-shrink-0 ml-auto" />
                                 )}
                             </div>
                         </div>
 
-                        {/* Arrow hint */}
-                        <ArrowRight size={12} className="text-gray-700 group-hover:text-gray-400 flex-shrink-0 transition-colors" />
+                        {/* Arrow hint - only visible on hover */}
+                        <ArrowRight size={14} className="text-slate-300 dark:text-gray-700 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
                     </div>
                 );
             })}

@@ -21,10 +21,10 @@ interface ActivityItem {
 
 const getActivityStyle = (type: ActivityItem['type']) => {
     switch (type) {
-        case 'COMPLETED': return { dot: 'bg-emerald-400', icon: <CheckCircle2 size={13} className="text-emerald-400" />, label: 'Completed', color: 'text-emerald-400' };
-        case 'OVERDUE': return { dot: 'bg-red-400 animate-pulse', icon: <Clock size={13} className="text-red-400" />, label: 'Overdue', color: 'text-red-400' };
-        case 'IN_PROGRESS': return { dot: 'bg-brand-400', icon: <Briefcase size={13} className="text-brand-400" />, label: 'In Progress', color: 'text-brand-400' };
-        case 'REVIEW': return { dot: 'bg-purple-400', icon: <Briefcase size={13} className="text-purple-400" />, label: 'Under Review', color: 'text-purple-400' };
+        case 'COMPLETED': return { dot: 'bg-emerald-500', icon: <CheckCircle2 size={12} className="text-emerald-500" />, label: 'Completed', color: 'text-emerald-600 dark:text-emerald-400' };
+        case 'OVERDUE': return { dot: 'bg-red-500 animate-pulse', icon: <Clock size={12} className="text-red-500" />, label: 'Overdue', color: 'text-red-600 dark:text-red-400' };
+        case 'IN_PROGRESS': return { dot: 'bg-blue-500', icon: <Briefcase size={12} className="text-blue-500" />, label: 'In Progress', color: 'text-blue-600 dark:text-blue-400' };
+        case 'REVIEW': return { dot: 'bg-indigo-500', icon: <Briefcase size={12} className="text-indigo-500" />, label: 'Under Review', color: 'text-indigo-600 dark:text-indigo-400' };
     }
 };
 
@@ -83,7 +83,7 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
 
         // Under review
         recentTasks
-            .filter(t => t.status === TaskStatus.PENDING_REVIEW)
+            .filter(t => t.status === TaskStatus.UNDER_REVIEW)
             .slice(0, 2)
             .forEach(t => {
                 items.push({
@@ -136,7 +136,7 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
             {/* Timeline */}
             <div className="relative">
                 {/* Vertical line */}
-                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-white/8" />
+                <div className="absolute left-[5px] top-2 bottom-2 w-[1px] bg-slate-200 dark:bg-white/[0.04]" />
 
                 <div className="space-y-0">
                     {activities.map((item, idx) => {
@@ -147,18 +147,17 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
                                 <div className={`relative z-10 w-3.5 h-3.5 rounded-full mt-1 flex-shrink-0 border-2 border-[#0a0f1e] ${style.dot}`} />
 
                                 {/* Content */}
-                                <div className="flex-1 min-w-0 bg-white/2 hover:bg-white/5 rounded-xl px-3 py-2 transition-colors border border-transparent hover:border-white/8">
+                                <div className="flex-1 min-w-0 hover:bg-slate-100 dark:hover:bg-white/[0.03] rounded-xl px-2.5 py-2 transition-colors border border-transparent">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[12px] font-semibold text-white truncate leading-tight">{item.title}</p>
+                                            <p className="text-[13px] font-bold text-slate-700 dark:text-gray-200 truncate leading-tight transition-colors">{item.title}</p>
                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                {style.icon}
-                                                <span className={`text-[10px] font-medium ${style.color}`}>{style.label}</span>
-                                                <span className="text-[10px] text-gray-600">·</span>
-                                                <span className="text-[10px] text-gray-500 truncate">{item.client}</span>
+                                                <span className={`text-[10px] font-bold uppercase tracking-tight ${style.color}`}>{style.label}</span>
+                                                <span className="text-slate-200 dark:text-gray-800 text-[10px]">·</span>
+                                                <span className="text-[10px] font-bold text-slate-400 dark:text-gray-600 truncate uppercase tracking-tight">{item.client}</span>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] text-gray-600 whitespace-nowrap flex-shrink-0 mt-0.5">
+                                        <span className="text-[9px] font-bold text-slate-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0 mt-1 uppercase tracking-wider">
                                             {formatDistanceToNow(item.timestamp, { addSuffix: true })}
                                         </span>
                                     </div>

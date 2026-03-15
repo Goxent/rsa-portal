@@ -288,29 +288,27 @@ const Dashboard: React.FC = () => {
                         const items = upcomingSchedule.slice(0, 8);
 
                         // Border color: blue = EVENT, red = URGENT deadline, amber = HIGH deadline, slate = rest
-                        const getBorderColor = (item: ScheduleItem) => {
-                            if (item.type === 'EVENT') return 'border-l-blue-500';
-                            if (item.subType === 'URGENT') return 'border-l-red-500';
-                            if (item.subType === 'HIGH') return 'border-l-amber-500';
-                            return 'border-l-slate-600';
+                        const getDotColor = (item: any) => {
+                            if (item.type === 'EVENT') return 'bg-blue-400';
+                            if (item.subType === 'URGENT') return 'bg-red-500';
+                            if (item.subType === 'HIGH') return 'bg-amber-500';
+                            return 'bg-slate-300 dark:bg-slate-600';
                         };
 
-                        // Subtype pill colors
-                        const getSubtypePill = (item: ScheduleItem) => {
-                            if (item.type === 'EVENT') return 'bg-blue-500/10 border-blue-500/20 text-blue-400';
-                            if (item.subType === 'URGENT') return 'bg-red-500/10 border-red-500/20 text-red-400';
-                            if (item.subType === 'HIGH') return 'bg-amber-500/10 border-amber-500/20 text-amber-400';
-                            return 'bg-slate-500/10 border-slate-500/20 text-slate-400';
+                        const getRelativeDateColor = (date: string) => {
+                            const rel = getRelativeDate(date);
+                            if (rel === 'Today') return 'text-amber-500 dark:text-amber-400';
+                            if (rel === 'Tomorrow') return 'text-blue-500 dark:text-blue-400';
+                            return 'text-slate-400 dark:text-gray-500';
                         };
 
                         return (
                             <div className="bg-transparent space-y-3">
                                 {/* Header */}
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between px-1">
                                     <div className="flex items-center gap-2">
-                                        <CalendarDays size={13} className="text-blue-400" />
-                                        <h3 className="text-xs font-black text-gray-300 uppercase tracking-widest">Upcoming</h3>
-                                        <span className="text-[10px] font-bold bg-white/[0.06] border border-white/[0.08] text-gray-500 rounded-full px-1.5 py-0.5 tabular-nums">
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">Upcoming</span>
+                                        <span className="text-[10px] font-black text-slate-400 dark:text-gray-500 tabular-nums">
                                             {upcomingSchedule.length}
                                         </span>
                                     </div>
@@ -324,38 +322,32 @@ const Dashboard: React.FC = () => {
                                         <p className="text-[10px] text-gray-600">No upcoming events or deadlines</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-1">
                                         {items.map(item => (
                                             <div
                                                 key={item.id}
-                                                className={`flex items-stretch gap-0 rounded-lg overflow-hidden border-l-2 bg-white/[0.01] hover:bg-white/[0.03] transition-colors ${getBorderColor(item)}`}
+                                                className="flex items-center gap-3 rounded-xl px-2 py-2 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-white/[0.03] group cursor-pointer"
+                                                onClick={() => navigate('/calendar')}
                                             >
-                                                {/* Icon column */}
-                                                <div className="flex items-center justify-center w-8 flex-shrink-0">
-                                                    {item.type === 'DEADLINE'
-                                                        ? <ClockIcon size={11} className="text-gray-500" />
-                                                        : <CalendarDays size={11} className="text-gray-500" />}
-                                                </div>
+                                                {/* Status Dot */}
+                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getDotColor(item)}`} />
 
                                                 {/* Content */}
-                                                <div className="flex-1 min-w-0 py-2 pr-2">
+                                                <div className="flex-1 min-w-0">
                                                     <div className="flex items-center justify-between gap-1.5">
-                                                        <p className="text-xs font-semibold text-gray-200 truncate leading-tight">
+                                                        <p className="text-[13px] font-bold text-slate-700 dark:text-gray-200 group-hover:text-slate-900 dark:group-hover:text-white truncate leading-tight transition-colors">
                                                             {item.title}
                                                         </p>
-                                                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${getSubtypePill(item)}`}>
+                                                        <span className="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-wider flex-shrink-0">
                                                             {item.type === 'DEADLINE' ? (item.subType ?? 'DUE') : (item.subType ?? 'EVENT')}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                                        <span className={`text-[10px] font-medium ${getRelativeDate(item.date) === 'Today' ? 'text-amber-400' :
-                                                            getRelativeDate(item.date) === 'Tomorrow' ? 'text-blue-400' :
-                                                                'text-gray-500'
-                                                            }`}>{getRelativeDate(item.date)}</span>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <span className={`text-[10px] font-bold uppercase tracking-tight ${getRelativeDateColor(item.date)}`}>{getRelativeDate(item.date)}</span>
                                                         {item.description && (
                                                             <>
-                                                                <span className="text-gray-700 text-[10px]">·</span>
-                                                                <span className="text-[10px] text-gray-600 truncate">{item.description}</span>
+                                                                <span className="text-slate-200 dark:text-gray-800 text-[10px]">·</span>
+                                                                <span className="text-[10px] font-bold text-slate-400 dark:text-gray-600 truncate uppercase tracking-tight">{item.description}</span>
                                                             </>
                                                         )}
                                                     </div>

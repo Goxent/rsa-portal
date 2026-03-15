@@ -6,10 +6,10 @@ interface TaskStatsWidgetProps {
 }
 
 const STATUS_CONFIG = [
-    { key: 'Completed', icon: CheckCircle2, color: 'text-emerald-400', bar: 'from-emerald-500 to-teal-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-    { key: 'In Progress', icon: Loader, color: 'text-brand-400', bar: 'from-brand-500 to-indigo-400', bg: 'bg-brand-500/10', border: 'border-brand-500/20' },
-    { key: 'Review', icon: Eye, color: 'text-purple-400', bar: 'from-purple-500 to-violet-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-    { key: 'Pending', icon: Pause, color: 'text-gray-400', bar: 'from-gray-500 to-slate-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20' },
+    { key: 'Completed', icon: CheckCircle2, color: 'text-emerald-400', bar: 'bg-emerald-500/30', ring: '#10b981', bg: 'bg-emerald-500/10' },
+    { key: 'In Progress', icon: Loader, color: 'text-blue-400', bar: 'bg-blue-500/30', ring: '#3b82f6', bg: 'bg-blue-500/10' },
+    { key: 'Review', icon: Eye, color: 'text-indigo-400', bar: 'bg-indigo-500/30', ring: '#6366f1', bg: 'bg-indigo-500/10' },
+    { key: 'Pending', icon: Pause, color: 'text-slate-500', bar: 'bg-slate-500/20', ring: '#64748b', bg: 'bg-slate-500/10' },
 ];
 
 const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
@@ -24,8 +24,8 @@ const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
 
     const getRingColor = (rate: number) => {
         if (rate >= 75) return '#10b981'; // emerald
-        if (rate >= 50) return '#6366f1'; // brand
-        if (rate >= 25) return '#f59e0b'; // amber
+        if (rate >= 50) return '#3b82f6'; // blue
+        if (rate >= 25) return '#6366f1'; // indigo
         return '#ef4444'; // red
     };
 
@@ -57,8 +57,8 @@ const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-bold text-white">{completionRate}%</span>
-                    <span className="text-[9px] text-gray-500 uppercase tracking-wide">Done</span>
+                    <span className="text-xl font-extrabold text-slate-800 dark:text-white">{completionRate}%</span>
+                    <span className="text-[9px] text-slate-400 dark:text-gray-500 uppercase tracking-widest font-bold">Done</span>
                 </div>
             </div>
 
@@ -82,9 +82,9 @@ const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
                                     <span className="text-[10px] text-gray-600">{pct}%</span>
                                 </div>
                             </div>
-                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-1 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full bg-gradient-to-r ${cfg.bar} rounded-full transition-all duration-700`}
+                                    className={`h-full ${cfg.bar} rounded-full transition-all duration-700`}
                                     style={{ width: `${pct}%` }}
                                 />
                             </div>
@@ -93,9 +93,9 @@ const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
                 })}
 
                 {/* Total */}
-                <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
-                    <span className="text-[11px] text-gray-500">Total tasks</span>
-                    <span className="text-sm font-bold text-white">{total}</span>
+                <div className="flex items-center justify-between pt-2">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Total Workload</span>
+                    <span className="text-xs font-black text-slate-800 dark:text-white tabular-nums">{total}</span>
                 </div>
             </div>
         </div>
