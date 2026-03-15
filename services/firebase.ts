@@ -35,11 +35,11 @@ import {
     arrayUnion,
     writeBatch
 } from 'firebase/firestore';
-import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification } from '../types';
+import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification, RiskAreaDocument } from '../types';
 import { getCurrentDateUTC } from '../utils/dates';
 import { EmailService } from './email';
 import { toast } from 'react-hot-toast';
-import { logClientAction, logUserAction, logTaskAction, logLeaveAction, AuditAction, createAuditLog } from './auditLog';
+import { logClientAction, logUserAction, logTaskAction, logLeaveAction, AuditAction, AuditLog, createAuditLog } from './auditLog';
 
 // Load Config from Environment Variables
 const firebaseConfig = {
@@ -1745,3 +1745,62 @@ export const AuthService = {
 };
 
 export const isDemoMode = false;
+
+// ── New Query Methods (added to AuthService above via object spread workaround) ──
+// These are standalone exports that delegate to AuthService-style patterns
+
+export const getAuditLogsByClientId = async (clientId: string): Promise<AuditLog[]> => {
+    const q = query(
+        collection(db, 'auditLogs'),
+        where('targetId', '==', clientId),
+        orderBy('timestamp', 'desc'),
+        limit(50)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as unknown as AuditLog));
+};
+
+export const getAuditLogsByUserId = async (userId: string): Promise<AuditLog[]> => {
+    const q = query(
+        collection(db, 'auditLogs'),
+        where('userId', '==', userId),
+        orderBy('timestamp', 'desc'),
+        limit(50)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as unknown as AuditLog));
+};
+
+export const getAttendanceByUserId = async (userId: string, limitCount: number = 30): Promise<AttendanceRecord[]> => {
+    const q = query(
+        collection(db, 'attendance'),
+        where('userId', '==', userId),
+        orderBy('date', 'desc'),
+        limit(limitCount)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as AttendanceRecord));
+};
+
+export const getAttendanceByClientId = async (clientId: string): Promise<AttendanceRecord[]> => {
+    const q1 = query(collection(db, 'attendance'), where('clientId', '==', clientId));
+    const q2 = query(collection(db, 'attendance'), where('clientIds', 'array-contains', clientId));
+    const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    const combined = new Map<string, AttendanceRecord>();
+    [...snap1.docs, ...snap2.docs].forEach(d => combined.set(d.id, { id: d.id, ...d.data() } as AttendanceRecord));
+    return Array.from(combined.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+};
+
+export const updateClientRiskAreas = async (clientId: string, riskAreas: RiskAreaDocument[]): Promise<void> => {
+    await updateDoc(doc(db, 'clients', clientId), {
+        riskAreas,
+        updatedAt: new Date().toISOString()
+    });
+};
+
+export const updateClientNotes = async (clientId: string, notes: string, updatedBy: string): Promise<void> => {
+    await updateDoc(doc(db, 'clients', clientId), {
+        clientNotes: notes,
+        updatedAt: new Date().toISOString()
+    });
+};

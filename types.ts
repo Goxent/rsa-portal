@@ -196,6 +196,48 @@ export interface Client {
     uploadedAt: string;
     uploadedBy: string;
   }[];
+
+  // Risk & Audit Focus Areas (NEW)
+  riskAreas?: RiskAreaDocument[];
+
+  // Client Notes — rich text / plain text pasted by staff (NEW)
+  clientNotes?: string;
+
+  // Engagement Details (NEW)
+  engagementLetterUrl?: string;
+  auditPeriod?: string;          // e.g. "FY 2081-82" or "2024-25"
+  auditStartDate?: string;       // ISO date
+  auditEndDate?: string;         // ISO date
+
+  // Billing Notes (NEW)
+  billingNotes?: string;
+}
+
+export interface RiskAreaDocument {
+  id: string;
+  title: string;
+  description?: string;          // Summary or notes about this risk area
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  category: 'Financial' | 'Compliance' | 'Operational' | 'Tax' | 'Regulatory' | 'Other';
+  documentUrl?: string;          // Optional uploaded file URL
+  documentName?: string;         // File name if uploaded
+  status: 'OPEN' | 'MITIGATED' | 'MONITORING' | 'CLOSED';
+  addedBy: string;               // User UID
+  addedByName: string;           // Display name
+  addedAt: string;               // ISO timestamp
+  updatedAt?: string;
+  focusPoints?: string[];        // Bullet-point critical areas to check
+}
+
+export interface StaffDetailStats {
+  totalTasksAssigned: number;
+  tasksCompleted: number;
+  tasksOverdue: number;
+  tasksInProgress: number;
+  attendanceDaysThisMonth: number;
+  lateArrivalsThisMonth: number;
+  currentLeaveBalance: number;
+  clientsAssigned: string[];     // Array of client names
 }
 
 export interface LeaveRequest {

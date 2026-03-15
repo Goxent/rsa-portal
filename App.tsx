@@ -27,6 +27,7 @@ const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage'));
 const StaffPage = lazy(() => import('./pages/StaffPage'));
+const StaffDetailPage = lazy(() => import('./pages/StaffDetailPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const PendingApprovalPage = lazy(() => import('./pages/PendingApprovalPage'));
 const SystemSettingsPage = lazy(() => import('./pages/SystemSettingsPage'));
@@ -196,6 +197,11 @@ const App: React.FC = () => {
                     <Route path="staff" element={
                       <AdminRoute>
                         <LazyPage><StaffPage /></LazyPage>
+                      </AdminRoute>
+                    } />
+                    <Route path="staff/:staffId" element={
+                      <AdminRoute>
+                        <LazyPage><StaffDetailPage /></LazyPage>
                       </AdminRoute>
                     } />
                     <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />

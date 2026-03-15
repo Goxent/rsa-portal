@@ -3,14 +3,14 @@ import {
     Users, Plus, Search, Filter, FileText, MoreVertical,
     Edit, Trash2, Phone, Mail, MapPin, BadgeCheck, Building2,
     Briefcase, Calendar, X, Save, ChevronDown, CheckCircle2, User,
-    Download, FileSpreadsheet
+    Download, FileSpreadsheet, AlertTriangle
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Client, UserRole, UserProfile } from '../types';
+import { Client, UserRole, UserProfile, Task } from '../types';
 import { AuthService } from '../services/firebase';
 import { toast } from 'react-hot-toast';
 import StaffSelect from '../components/StaffSelect';
@@ -26,6 +26,7 @@ const ClientsPage: React.FC = () => {
     // Data State
     const [clients, setClients] = useState<Client[]>([]);
     const [staffList, setStaffList] = useState<UserProfile[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
 
     // UI State
@@ -33,6 +34,7 @@ const ClientsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterService, setFilterService] = useState('ALL');
     const [filterAuditorFirm, setFilterAuditorFirm] = useState('ALL');
+    const [filterCategory, setFilterCategory] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
@@ -44,6 +46,7 @@ const ClientsPage: React.FC = () => {
         serviceType: 'Statutory Audit',
         industry: 'Others',
         status: 'Active',
+        category: 'A', // Default category
         email: '',
         phone: '',
         address: '',
@@ -63,12 +66,14 @@ const ClientsPage: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [fetchedClients, fetchedStaff] = await Promise.all([
+            const [fetchedClients, fetchedStaff, fetchedTasks] = await Promise.all([
                 AuthService.getAllClients(),
-                AuthService.getAllUsers()
+                AuthService.getAllUsers(),
+                AuthService.getAllTasks()
             ]);
             setClients(fetchedClients);
             setStaffList(fetchedStaff);
+            setTasks(fetchedTasks);
         } catch (error) {
             console.error('Failed to load data:', error);
             toast.error('Failed to load clients');
@@ -329,7 +334,8 @@ const ClientsPage: React.FC = () => {
             c.pan?.includes(searchTerm);
         const matchesService = filterService === 'ALL' || c.serviceType === filterService;
         const matchesAuditor = filterAuditorFirm === 'ALL' || c.signingAuthority === filterAuditorFirm;
-        return matchesSearch && matchesService && matchesAuditor;
+        const matchesCategory = filterCategory === 'ALL' || c.category === filterCategory;
+        return matchesSearch && matchesService && matchesAuditor && matchesCategory;
     });
 
     const getAuditorName = (id?: string) => {
@@ -392,7 +398,7 @@ const ClientsPage: React.FC = () => {
 
             {/* Toolbar */}
             <div className="glass-panel p-4 rounded-xl flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="relative w-full md:w-96">
+                <div className="relative w-full md:w-80">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
                         type="text"
@@ -403,6 +409,17 @@ const ClientsPage: React.FC = () => {
                     />
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
+                    <select
+                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        value={filterCategory}
+                        onChange={(e) => setFilterCategory(e.target.value)}
+                    >
+                        <option value="ALL">All Categories</option>
+                        <option value="A">Category A</option>
+                        <option value="B">Category B</option>
+                        <option value="C">Category C</option>
+                    </select>
+
                     <select
                         className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500"
                         value={filterService}
@@ -454,6 +471,21 @@ const ClientsPage: React.FC = () => {
                     const accentColor = bgGradient.split(' ')[0].replace('from-', 'text-').replace('/20', '-400');
                     const borderColor = bgGradient.split(' ')[0].replace('from-', 'border-').replace('/20', '/30');
 
+                    // Compute task counts
+                    const clientTaskCount = tasks.filter(t => t.clientIds?.includes(client.id)).length;
+                    const overdueCount = tasks.filter(t =>
+                        t.clientIds?.includes(client.id) &&
+                        t.status !== 'COMPLETED' &&
+                        t.status !== 'ARCHIVED' &&
+                        t.dueDate && new Date(t.dueDate) < new Date()
+                    ).length;
+
+                    // Compute Risk badge
+                    const risks = client.riskAreas || [];
+                    const hasCritical = risks.some(r => r.severity === 'CRITICAL' || r.severity === 'HIGH');
+                    const hasMedium = risks.some(r => r.severity === 'MEDIUM');
+                    const riskBadgeClass = hasCritical ? 'bg-red-500/20 text-red-400 border-red-500/30' : hasMedium ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : null;
+
                     return (
                         <div
                             key={client.id}
@@ -485,10 +517,29 @@ const ClientsPage: React.FC = () => {
                                                     }`}>
                                                     {client.status}
                                                 </span>
+                                                {client.category && (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white font-bold border border-white/10 backdrop-blur-sm">
+                                                        CAT {client.category}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {/* Quick Stats Badges */}
+                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                <span className={`text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1 border backdrop-blur-sm ${overdueCount > 0 ? 'bg-red-500/20 text-red-300 border-red-500/30' : 'bg-white/10 text-gray-300 border-white/10'}`}>
+                                                    <CheckCircle2 size={10} />
+                                                    {clientTaskCount} tasks {overdueCount > 0 && `· ${overdueCount} overdue`}
+                                                </span>
+                                                {riskBadgeClass && (
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1 border backdrop-blur-sm font-bold uppercase ${riskBadgeClass}`}>
+                                                        <AlertTriangle size={10} />
+                                                        {hasCritical ? 'High Risk' : 'Elevated'}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
                                     {isAdmin && (
+
                                         <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-1 transform translate-x-2 group-hover:translate-x-0">
                                             <button
                                                 onClick={() => handleEdit(client)}
