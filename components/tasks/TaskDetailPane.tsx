@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import {
     X, Edit2, ShieldAlert, Tag, Calendar, UserCircle2,
     Briefcase, Activity, AlertTriangle, Clock, Plus,
-    Trash2, Save, Loader2, CheckCircle2, Check
+    Trash2, Save, Loader2, CheckCircle2, Check, Eye
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment } from '../../types';
 import StaffSelect from '../StaffSelect';
@@ -33,6 +33,7 @@ interface TaskDetailPaneProps {
     onAddSubtask: () => void;
     onRemoveSubtask: (id: string) => void;
     onAddComment: (comment: TaskComment) => void;
+    onOpenClientDetail?: (clientId: string) => void;
 }
 
 const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
@@ -53,7 +54,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     setNewSubtaskTitle,
     onAddSubtask,
     onRemoveSubtask,
-    onAddComment
+    onAddComment,
+    onOpenClientDetail
 }) => {
     const initialTaskRef = useRef<Partial<Task> | null>(null);
     const [showDiscardBanner, setShowDiscardBanner] = useState(false);
@@ -71,6 +73,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 status: task.status || TaskStatus.NOT_STARTED,
                 estimatedHours: task.totalTimeSpent || 0,
                 assignedTo: task.assignedTo || [],
+                teamLeaderId: task.teamLeaderId || '',
                 description: task.description || '',
             });
         }
@@ -86,6 +89,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             status: task.status || TaskStatus.NOT_STARTED,
             estimatedHours: task.totalTimeSpent || 0,
             assignedTo: task.assignedTo || [],
+            teamLeaderId: task.teamLeaderId || '',
             description: task.description || '',
         }
     });
@@ -111,6 +115,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             status: data.status,
             dueDate: data.dueDate,
             assignedTo: data.assignedTo,
+            teamLeaderId: data.teamLeaderId,
             totalTimeSpent: data.estimatedHours,
             clientIds: data.clientId ? [data.clientId] : [],
             clientName: clientsList.find(c => c.id === data.clientId)?.name || undefined,
@@ -224,9 +229,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </div>
 
                                     <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.clientId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                            <Briefcase size={12} className="text-indigo-400" /> Client
-                                        </label>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Briefcase size={12} className="text-indigo-400" /> Client
+                                            </label>
+                                            {watch('clientId') && onOpenClientDetail && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        onOpenClientDetail(watch('clientId')!);
+                                                    }}
+                                                    className="text-[9px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20 transition-all"
+                                                >
+                                                    <Eye size={10} /> View Profile
+                                                </button>
+                                            )}
+                                        </div>
                                         <Controller
                                             name="clientId"
                                             control={control}
@@ -279,21 +297,20 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         {errors.dueDate && <p className="text-red-400 text-xs mt-1">{errors.dueDate.message}</p>}
                                     </div>
 
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.teamLeaderId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                             <ShieldAlert size={12} className="text-amber-400" /> Team Leader
                                         </label>
                                         <select
                                             className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
-                                            value={task.teamLeaderId || ''}
-                                            onChange={(e) => onChange({ teamLeaderId: e.target.value })}
+                                            {...register('teamLeaderId')}
                                         >
                                             <option value="" className="bg-[#1e293b] text-gray-300">- Select Leader -</option>
                                             {usersList.map(u => (
                                                 <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-gray-200">{u.displayName}</option>
                                             ))}
                                         </select>
-                                        {task.teamLeaderId && !watch('assignedTo')?.includes(task.teamLeaderId) && (
+                                        {watch('teamLeaderId') && !watch('assignedTo')?.includes(watch('teamLeaderId')!) && (
                                             <p className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-1">
                                                 <ShieldAlert size={10} /> Team leader must be one of the assignees
                                             </p>

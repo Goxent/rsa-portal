@@ -30,6 +30,9 @@ import TaskMainView from '../components/tasks/TaskMainView';
 import NepaliDatePicker from '../components/NepaliDatePicker';
 import TaskDetailPane from '../components/tasks/TaskDetailPane';
 import TaskTimelineView from '../components/tasks/TaskTimelineView';
+import ClientDetailModal from "../components/tasks/ClientDetailModal";
+import { ComplianceService, complianceKeys } from "../services/advanced";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
@@ -39,6 +42,17 @@ import ExcelJS from 'exceljs';
 import { useMedia } from 'react-use';
 
 const TasksPage: React.FC = () => {
+
+    // Fetch Compliance Events for Modal
+    const { data: complianceEvents = [] } = useQuery({
+        queryKey: complianceKeys.all,
+        queryFn: () => ComplianceService.getEvents()
+    });
+
+    const handleOpenClientDetail = (clientId: string) => {
+        const client = clientsList.find(c => c.id === clientId);
+        if (client) setSelectedClientForDetail(client);
+    };
     const { user } = useAuth();
     const { openModal } = useModal();
     const queryClient = useQueryClient();
@@ -47,20 +61,32 @@ const TasksPage: React.FC = () => {
     // -- DATA FETCHING (React Query) --
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: tasksLoading } = useInfiniteTasks();
     const tasks = data?.pages.flatMap(page => page.tasks) ?? [];
+
+
     const { data: usersList = [], isLoading: usersLoading } = useUsers();
     const { data: clientsList = [], isLoading: clientsLoading } = useClients();
     const { data: templates = [], isLoading: templatesLoading } = useTemplates();
 
     const loading = tasksLoading || usersLoading || clientsLoading || templatesLoading;
 
+
+
     // -- MUTATIONS --
     const createTaskMutation = useCreateTask();
+
+
     const updateTaskMutation = useUpdateTask();
     const updateTaskStatusMutation = useUpdateTaskStatus();
     const deleteTaskMutation = useDeleteTask();
+
+
     const addCommentMutation = useAddTaskComment();
 
+
+
     const isMobile = useMedia('(max-width: 768px)', false);
+
+
 
     const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN' | 'TIMELINE'>(isMobile ? 'LIST' : 'KANBAN');
     const [boardMode, setBoardMode] = useState<'ALL' | 'MY'>('ALL');
@@ -80,12 +106,18 @@ const TasksPage: React.FC = () => {
     const [savedFilterName, setSavedFilterName] = useState('');
     const savedFiltersRef = useRef<HTMLDivElement>(null);
 
+
+
     // Collapsible Filter Panel
     const [showFilterPanel, setShowFilterPanel] = useState(false);
 
     // Dropdown Refs
     const statusMenuRef = useRef<HTMLDivElement>(null);
+
+
     const assignMenuRef = useRef<HTMLDivElement>(null);
+
+
 
     // Click outside handler
     useEffect(() => {
@@ -113,9 +145,12 @@ const TasksPage: React.FC = () => {
         }
     }, [isMobile, viewMode]);
     const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(undefined);
+    const [selectedClientForDetail, setSelectedClientForDetail] = useState<Client | null>(null);
     const [collapsedColumns, setCollapsedColumns] = useState<TaskStatus[]>([]);
 
     const toggleTaskSelection = (taskId: string) => {
+
+
         setSelectedTaskIds(prev =>
             prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
         );
@@ -139,6 +174,8 @@ const TasksPage: React.FC = () => {
             setBoardMode('MY');
         }
         const staffParam = searchParams.get('staff');
+
+
         if (staffParam) {
             setFilterStaff(staffParam);
         }
@@ -146,7 +183,11 @@ const TasksPage: React.FC = () => {
 
     // Permissions check
     const canCreateTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+
+
     const canManageTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+
+
 
     const [filterPriority, setFilterPriority] = useState<string>(() => localStorage.getItem('rsa_filter_priority') || 'ALL');
     const [filterStatus, setFilterStatus] = useState<string>(() => localStorage.getItem('rsa_filter_status') || 'ALL');
@@ -184,6 +225,8 @@ const TasksPage: React.FC = () => {
         // Advanced Filters
         if (filterAuditor !== 'ALL' || filterVat || filterItr) {
             const taskClient = clientsList.find(c => t.clientIds && t.clientIds.includes(c.id));
+
+
             if (!taskClient) return false;
             if (filterVat && !taskClient.vatReturn) return false;
             if (filterItr && !taskClient.itrReturn) return false;
@@ -194,6 +237,8 @@ const TasksPage: React.FC = () => {
     });
 
     const canUpdateTaskStatus = (task: Partial<Task>) => {
+
+
         if (!user || !task) return false;
         if (user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN || user.role === UserRole.MANAGER) return true;
         if (task.teamLeaderId === user.uid) return true;
@@ -233,6 +278,8 @@ const TasksPage: React.FC = () => {
     };
 
     const cleanForFirestore = (obj: any): any => {
+
+
         if (Array.isArray(obj)) return obj.map(cleanForFirestore);
         if (obj !== null && typeof obj === 'object') {
             return Object.entries(obj).reduce((acc, [key, value]) => {
@@ -243,18 +290,20 @@ const TasksPage: React.FC = () => {
         return obj;
     };
 
-    const handleSaveTask = async () => {
-        if (!currentTask.title?.trim()) {
+    const handleSaveTask = async (taskData?: any) => {
+        const dataToSave = taskData || currentTask;
+        if (!dataToSave.title?.trim()) {
             setFormError("Title is required.");
             return;
         }
         setIsSaving(true);
         try {
-            const taskToSave = cleanForFirestore(currentTask);
-            if (isEditMode && currentTask.id) {
+            const taskToSave = cleanForFirestore(dataToSave);
+
+            if (isEditMode && dataToSave.id) {
                 // EXTREMELY IMPORTANT: Unpack comments out so it doesn't revert newer comments added to the DB
                 const { comments, ...updatesWithoutComments } = taskToSave;
-                await updateTaskMutation.mutateAsync({ id: currentTask.id, updates: updatesWithoutComments });
+                await updateTaskMutation.mutateAsync({ id: dataToSave.id, updates: updatesWithoutComments });
             } else {
                 await createTaskMutation.mutateAsync(taskToSave as Task);
             }
@@ -310,6 +359,8 @@ const TasksPage: React.FC = () => {
     const handleBulkDelete = async () => {
         if (!selectedTaskIds.length) return;
         const count = selectedTaskIds.length;
+
+
         setConfirmModal({
             open: true,
             title: `Delete ${count} Tasks`,
@@ -344,13 +395,19 @@ const TasksPage: React.FC = () => {
         try {
             await Promise.all(selectedTaskIds.map(async id => {
                 const task = tasks.find(t => t.id === id);
+
+
                 if (task) {
                     const assignedSet = new Set(task.assignedTo || []);
+
+
                     assignedSet.add(staffId);
                     await updateTaskMutation.mutateAsync({ id, updates: { assignedTo: Array.from(assignedSet) } });
                 }
             }));
             const staffName = usersList.find(u => u.uid === staffId)?.displayName || 'Staff';
+
+
             toast.success(`${selectedTaskIds.length} tasks reassigned to ${staffName}`);
             setSelectedTaskIds([]);
         } catch (error) {
@@ -361,6 +418,8 @@ const TasksPage: React.FC = () => {
     const handleBulkExport = () => {
         if (!selectedTaskIds.length) return;
         const tasksToExport = tasks.filter(t => selectedTaskIds.includes(t.id));
+
+
         handleExportExcel(tasksToExport);
         setSelectedTaskIds([]);
     };
@@ -402,7 +461,11 @@ const TasksPage: React.FC = () => {
 
     const handleExportPDF = () => {
         const dateStr = new Date().toISOString().split('T')[0];
+
+
         const doc = new jsPDF();
+
+
 
         // Header Banner
         doc.setFillColor(15, 23, 42); // Navy-900 like
@@ -451,6 +514,8 @@ const TasksPage: React.FC = () => {
             didParseCell: (data) => {
                 if (data.section === 'body' && data.column.index === 2) {
                     const status = data.cell.raw as string;
+
+
                     data.cell.styles.fillColor = getStatusColor(status);
                     data.cell.styles.textColor = [30, 41, 59];
                     data.cell.styles.fontStyle = 'bold';
@@ -464,7 +529,7 @@ const TasksPage: React.FC = () => {
             doc.setPage(i);
             doc.setFontSize(7);
             doc.setTextColor(150, 160, 175);
-            doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 8);
+            doc.text('R. Sapkota & Associates â€” Confidential', 14, doc.internal.pageSize.height - 8);
             doc.text(`Page ${i} of ${pageCount} `, 196, doc.internal.pageSize.height - 8, { align: 'right' });
         }
 
@@ -474,17 +539,23 @@ const TasksPage: React.FC = () => {
 
     const handleExportExcel = async (tasksToRun: Task[] = filteredTasks) => {
         const dateStr = new Date().toISOString().split('T')[0];
+
+
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'R. Sapkota & Associates';
         workbook.created = new Date();
 
         const sheet = workbook.addWorksheet('Tasks Report', {
+
+
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
         // Company Header Block
         sheet.mergeCells('A1:F1');
         const titleCell = sheet.getCell('A1');
+
+
         titleCell.value = 'R. Sapkota & Associates';
         titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -493,6 +564,8 @@ const TasksPage: React.FC = () => {
 
         sheet.mergeCells('A2:F2');
         const addrCell = sheet.getCell('A2');
+
+
         addrCell.value = 'Chartered Accountants  |  Kathmandu, Nepal';
         addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FFB4C8E6' } };
         addrCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -517,6 +590,8 @@ const TasksPage: React.FC = () => {
         sheet.getRow(5).height = 6;
 
         const COLS = [
+
+
             { header: 'Client', key: 'client', width: 25 },
             { header: 'Task Title', key: 'title', width: 45 },
             { header: 'Status', key: 'status', width: 18 },
@@ -529,6 +604,8 @@ const TasksPage: React.FC = () => {
         const headerRow = sheet.getRow(6);
         COLS.forEach((col, i) => {
             const cell = headerRow.getCell(i + 1);
+
+
             cell.value = col.header;
             cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
@@ -538,6 +615,8 @@ const TasksPage: React.FC = () => {
         headerRow.height = 22;
 
         const statusFill: Record<string, string> = {
+
+
             'COMPLETED': 'FFD1FAE5',
             'IN_PROGRESS': 'FFDBEAFE',
             'NOT_STARTED': 'FFF3F4F6',
@@ -547,6 +626,8 @@ const TasksPage: React.FC = () => {
 
         tasksToRun.forEach((t, idx) => {
             const assignees = t.assignedTo?.map(id => usersList.find(u => u.uid === id)?.displayName).filter(Boolean).join(', ') || 'Unassigned';
+
+
             const row = sheet.addRow({
                 client: t.clientName || 'Internal',
                 title: t.title,
@@ -558,6 +639,8 @@ const TasksPage: React.FC = () => {
 
             const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
             const statusBg = statusFill[t.status] || rowBg;
+
+
 
             row.eachCell({ includeEmpty: true }, (cell, colNum) => {
                 cell.font = { name: 'Calibri', size: 9 };
@@ -572,10 +655,14 @@ const TasksPage: React.FC = () => {
                 };
             });
             const statusCell = row.getCell(3);
+
+
             statusCell.font = { name: 'Calibri', size: 9, bold: true };
             statusCell.alignment = { horizontal: 'center', vertical: 'top' };
 
             const clientCell = row.getCell(1);
+
+
             clientCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF0F4C75' } };
 
             row.height = 22;
@@ -587,6 +674,8 @@ const TasksPage: React.FC = () => {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
+
+
         a.href = url;
         a.download = `RSA_Tasks_${dateStr}.xlsx`;
         a.click();
@@ -596,6 +685,8 @@ const TasksPage: React.FC = () => {
 
     const handleClientChange = (clientId: string) => {
         const client = clientsList.find(c => c.id === clientId);
+
+
         if (client) {
             setCurrentTask(prev => ({ ...prev, clientIds: [clientId], clientName: client.name }));
         }
@@ -606,6 +697,8 @@ const TasksPage: React.FC = () => {
         if (!destination) return;
 
         const task = tasks.find(t => t.id === draggableId);
+
+
         if (!task || !canUpdateTaskStatus(task)) {
             toast.error('You do not have permission to move this task');
             return;
@@ -636,7 +729,11 @@ const TasksPage: React.FC = () => {
     };
 
     const statusStats = useMemo(() => {
+
+
         const stats = {
+
+
             TOTAL: filteredTasks.length,
             HALTED: filteredTasks.filter(t => t.status === TaskStatus.HALTED).length,
             NOT_STARTED: filteredTasks.filter(t => t.status === TaskStatus.NOT_STARTED).length,
@@ -649,6 +746,8 @@ const TasksPage: React.FC = () => {
 
     // Count active (non-default) filters for the filter badge
     const activeFilterCount = useMemo(() => {
+
+
         let count = 0;
         if (filterStatus !== 'ALL') count++;
         if (filterPriority !== 'ALL') count++;
@@ -674,7 +773,7 @@ const TasksPage: React.FC = () => {
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-transparent">
             {/* --- PREMIUM WORKSPACE HEADER --- */}
             <header className="flex-none glass-panel border-b border-white/[0.05] p-6 pb-5 relative z-20">
-                {/* Top Row: Title, Toggles & Actions — wraps on small screens so everything is visible */}
+                {/* Top Row: Title, Toggles & Actions â€” wraps on small screens so everything is visible */}
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     {/* Left: Branding + view toggles */}
                     <div className="flex items-center gap-4 flex-wrap">
@@ -687,8 +786,8 @@ const TasksPage: React.FC = () => {
                                 <Box className="text-white" size={20} />
                             </motion.div>
                             <div className="hidden sm:block">
-                                <h1 className="text-lg font-black text-white tracking-tight">Workflow</h1>
-                                <p className="text-[10px] font-medium text-gray-400">Manage firm tasks &amp; projects</p>
+                                <h1 className="text-xl font-black text-white tracking-tight leading-none">Workflow</h1>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Firm Workspace</p>
                             </div>
                         </div>
 
@@ -719,15 +818,15 @@ const TasksPage: React.FC = () => {
                             <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
                             <button
                                 onClick={() => setBoardMode('ALL')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${boardMode === 'ALL' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'ALL' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
                             >
-                                Firm Wide
+                                FIRM
                             </button>
                             <button
                                 onClick={() => setBoardMode('MY')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${boardMode === 'MY' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'MY' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
                             >
-                                My Tasks
+                                MINE
                             </button>
                         </div>
                     </div>
@@ -847,7 +946,7 @@ const TasksPage: React.FC = () => {
 
                     {/* Search + Filters Row */}
                     <div className="flex items-center bg-white/5 p-3 rounded-2xl border border-white/[0.05] gap-0">
-                        {/* Search — fixed width */}
+                        {/* Search â€” fixed width */}
                         <div className="flex-shrink-0 w-64 relative group">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={15} />
                             <input
@@ -954,6 +1053,8 @@ const TasksPage: React.FC = () => {
                                                     { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
                                                 ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
                                                     const isActive = filterStatus === key;
+
+
                                                     return (
                                                         <button
                                                             key={key}
@@ -1098,6 +1199,7 @@ const TasksPage: React.FC = () => {
                             tasks={filteredTasks}
                             onDragEnd={onDragEnd}
                             handleOpenEdit={handleOpenEdit}
+                            onOpenClientDetail={handleOpenClientDetail}
                             usersList={usersList}
                             clientsList={clientsList}
                             collapsedColumns={collapsedColumns}
@@ -1181,6 +1283,17 @@ const TasksPage: React.FC = () => {
                 onAddSubtask={handleAddSubtask}
                 onRemoveSubtask={handleRemoveSubtask}
                 onAddComment={handleAddComment}
+                onOpenClientDetail={handleOpenClientDetail}
+            />
+
+            <ClientDetailModal
+                client={selectedClientForDetail}
+                isOpen={!!selectedClientForDetail}
+                onClose={() => setSelectedClientForDetail(null)}
+                complianceEvents={complianceEvents}
+                allTasks={tasks}
+                allStaff={usersList}
+                onOpenTask={handleOpenEdit}
             />
 
 

@@ -32,9 +32,10 @@ export interface TaskCardProps {
     selectedTaskIds: string[];
     onToggleSelection: (id: string) => void;
     onClick: (task: Task) => void;
+    onOpenClientDetail?: (clientId: string) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTaskIds, onToggleSelection, onClick }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTaskIds, onToggleSelection, onClick, onOpenClientDetail }) => {
     const isSelected = selectedTaskIds.includes(task.id);
     const done = task.subtasks?.filter(s => s.isCompleted).length ?? 0;
     const total = task.subtasks?.length ?? 0;
@@ -106,9 +107,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
 
                         {/* Client */}
                         {task.clientName && (
-                            <div className="flex items-center gap-1 mb-2.5">
+                            <div 
+                                className="flex items-center gap-1 mb-2.5 hover:text-blue-400 transition-colors"
+                                onClick={(e) => {
+                                    if (onOpenClientDetail && task.clientIds?.[0]) {
+                                        e.stopPropagation();
+                                        onOpenClientDetail(task.clientIds[0]);
+                                    }
+                                }}
+                            >
                                 <Tag size={9} className="text-slate-600 flex-shrink-0" />
-                                <span className="text-[10px] font-medium text-slate-500 truncate">{task.clientName}</span>
+                                <span className="text-[10px] font-bold truncate underline-offset-2 decoration-blue-500/30 group-hover/card:decoration-blue-500/60 transition-all">{task.clientName}</span>
                             </div>
                         )}
 

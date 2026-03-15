@@ -28,6 +28,7 @@ interface TaskMainViewProps {
     onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => void;
     onOpenReassign?: (taskId: string) => void;
     onSelectAll?: () => void;
+    onOpenClientDetail?: (clientId: string) => void;
 }
 
 // ── Status config — deliberate, non-AI colour palette ──────────────────────
@@ -129,7 +130,7 @@ const getPriorityStyle = (p: TaskPriority) => {
 const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode, tasks, onDragEnd, handleOpenEdit, usersList,
     collapsedColumns, toggleColumnCollapse, selectedTaskId,
-    selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll
+    selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll, onOpenClientDetail
 }) => {
     const isMobile = useMedia('(max-width: 768px)', false);
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
@@ -204,8 +205,21 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                         {task.tags?.map(t => <span key={t} className="hidden md:inline text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-500">{t}</span>)}
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] md:text-[10px] text-slate-600">
-                                        {task.clientName && <><Tag size={10} /> <span className="truncate max-w-[160px] md:max-w-[140px]">{task.clientName}</span></>}
-                                        <span className="font-mono text-slate-700 hidden md:inline">#{task.id.substring(0, 5).toUpperCase()}</span>
+                                        {task.clientName && (
+                                            <div 
+                                                className="flex items-center gap-1 hover:text-blue-400 transition-all cursor-pointer"
+                                                onClick={(e) => {
+                                                    if (onOpenClientDetail && task.clientIds?.[0]) {
+                                                        e.stopPropagation();
+                                                        onOpenClientDetail(task.clientIds[0]);
+                                                    }
+                                                }}
+                                            >
+                                                <Tag size={10} className="text-slate-700" /> 
+                                                <span className="truncate max-w-[160px] md:max-w-[140px] underline-offset-2 hover:underline font-bold">{task.clientName}</span>
+                                            </div>
+                                        )}
+                                        <span className="font-mono text-slate-800 hidden md:inline">#{task.id.substring(0, 5).toUpperCase()}</span>
                                     </div>
 
                                     {/* Mobile Only Meta Row */}
@@ -444,6 +458,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             selectedTaskIds={selectedTaskIds}
                                                             onToggleSelection={onToggleSelection}
                                                             onClick={handleOpenEdit}
+                                                            onOpenClientDetail={onOpenClientDetail}
                                                         />
                                                     ))}
                                                     {prov.placeholder}
