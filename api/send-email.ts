@@ -49,15 +49,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        console.log(`Attempting to send email via Gmail to: ${to}`);
-
+        console.log(`Email Service: Attempting to send via Gmail to ${parsedTo}`);
+        
+        // Use more explicit host/port settings which can be more stable in serverless
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // Use SSL
             auth: {
                 user: emailUser,
                 pass: emailPass,
             },
+            // Debugging
+            debug: true,
+            logger: true
         });
+
+        // Verify connection before sending
+        try {
+            await transporter.verify();
+            console.log('Email Service: Connection verified successfully');
+        } catch (verifyError: any) {
+            console.error('Email Service: SMTP Verification Failed:', verifyError);
+            // We continue anyway, but the log will be helpful
+        }
 
         const mailOptions = {
             from: `"${fromName || 'RSA System'}" <${emailUser}>`,
@@ -67,12 +82,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully:', info.messageId);
+        console.log('Email Service: Success!', info.messageId);
 
-        return res.status(200).json({ success: true, data: info });
+        return res.status(200).json({ success: true, messageId: info.messageId });
 
     } catch (error: any) {
-        console.error('Nodemailer Error:', error);
-        return res.status(500).json({ error: error.message || 'Failed to send email via Gmail' });
+        console.error('Email Service Error:', {
+            message: error.message,
+            code: error.code,
+            command: error.command
+        });
+        return res.status(500).json({ 
+            error: 'Failed to send email', 
+            details: error.message,
+            code: error.code 
+        });
     }
 }

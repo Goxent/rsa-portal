@@ -57,16 +57,27 @@ export const useUpdateTask = () => {
 
         // ── Optimistic update: patch local cache immediately ─────────────────
         onMutate: async ({ id, updates }) => {
-            // Cancel any in-flight refetches so they don't overwrite our optimistic data
             await queryClient.cancelQueries({ queryKey: taskKeys.all });
+            const previous = queryClient.getQueryData(taskKeys.all);
 
-            // Snapshot previous value for rollback
-            const previous = queryClient.getQueryData<Task[]>(taskKeys.all);
-
-            // Optimistically patch the task in the cache
-            queryClient.setQueryData<Task[]>(taskKeys.all, (old = []) =>
-                old.map(t => (t.id === id ? { ...t, ...updates } : t))
-            );
+            queryClient.setQueryData(taskKeys.all, (old: any) => {
+                if (!old) return old;
+                // If it's an array (from useTasks)
+                if (Array.isArray(old)) {
+                    return old.map(t => (t.id === id ? { ...t, ...updates } : t));
+                }
+                // If it's an infinite query structure (from useInfiniteTasks)
+                if (old.pages) {
+                    return {
+                        ...old,
+                        pages: old.pages.map((page: any) => ({
+                            ...page,
+                            tasks: page.tasks.map((t: any) => (t.id === id ? { ...t, ...updates } : t))
+                        }))
+                    };
+                }
+                return old;
+            });
 
             return { previous };
         },
@@ -99,10 +110,24 @@ export const useUpdateTaskStatus = () => {
             AuthService.updateTaskStatusOnly(id, status),
         onMutate: async ({ id, status }) => {
             await queryClient.cancelQueries({ queryKey: taskKeys.all });
-            const previous = queryClient.getQueryData<Task[]>(taskKeys.all);
-            queryClient.setQueryData<Task[]>(taskKeys.all, old =>
-                (old || []).map(t => t.id === id ? { ...t, status } : t)
-            );
+            const previous = queryClient.getQueryData(taskKeys.all);
+            
+            queryClient.setQueryData(taskKeys.all, (old: any) => {
+                if (!old) return old;
+                if (Array.isArray(old)) {
+                    return old.map(t => t.id === id ? { ...t, status } : t);
+                }
+                if (old.pages) {
+                    return {
+                        ...old,
+                        pages: old.pages.map((page: any) => ({
+                            ...page,
+                            tasks: page.tasks.map((t: any) => t.id === id ? { ...t, status } : t)
+                        }))
+                    };
+                }
+                return old;
+            });
             return { previous };
         },
         onError: (_err, _vars, context: any) => {
@@ -138,15 +163,28 @@ export const useAddTaskComment = () => {
 
         onMutate: async ({ taskId, comment }) => {
             await queryClient.cancelQueries({ queryKey: taskKeys.all });
-            const previous = queryClient.getQueryData<Task[]>(taskKeys.all);
+            const previous = queryClient.getQueryData(taskKeys.all);
 
-            queryClient.setQueryData<Task[]>(taskKeys.all, (old = []) =>
-                old.map(t =>
-                    t.id === taskId
-                        ? { ...t, comments: [...(t.comments || []), comment] }
-                        : t
-                )
-            );
+            queryClient.setQueryData(taskKeys.all, (old: any) => {
+                const patchTask = (t: any) => t.id === taskId
+                    ? { ...t, comments: [...(t.comments || []), comment] }
+                    : t;
+
+                if (!old) return old;
+                if (Array.isArray(old)) {
+                    return old.map(patchTask);
+                }
+                if (old.pages) {
+                    return {
+                        ...old,
+                        pages: old.pages.map((page: any) => ({
+                            ...page,
+                            tasks: page.tasks.map(patchTask)
+                        }))
+                    };
+                }
+                return old;
+            });
 
             return { previous };
         },
