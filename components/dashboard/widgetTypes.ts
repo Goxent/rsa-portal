@@ -14,7 +14,6 @@ export type WidgetType =
     | 'impact-stats'
     | 'compliance-countdown'
     | 'greetings'
-    | 'attendance'
     | 'compliance-banner'
     | 'focus'
     | 'ai-insight'
@@ -133,7 +132,6 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         adminOnly: true,
     },
     { type: 'greetings', title: 'Greetings', description: 'Welcome banner and overview', icon: 'Sun', defaultSize: 'lg' },
-    { type: 'attendance', title: 'Attendance', description: 'Clock in/out actions', icon: 'Clock', defaultSize: 'md' },
     { type: 'compliance-banner', title: 'Action Needed', description: 'Urgent compliance deadlines alert', icon: 'AlertTriangle', defaultSize: 'full' },
     { type: 'focus', title: 'Focus Timer', description: 'Pomodoro timer for focused work', icon: 'Target', defaultSize: 'md' },
     { type: 'ai-insight', title: 'AI Insights', description: 'AI-generated task insights', icon: 'Sparkles', defaultSize: 'md', adminOnly: true },
@@ -148,9 +146,8 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
         case UserRole.STAFF:
             return [
                 { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
-                { id: 'w_att', type: 'attendance', title: 'Attendance', position: 1, size: 'md', visible: true },
-                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
-                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 3, size: 'full', visible: true },
+                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 1, size: 'full', visible: true },
+                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 2, size: 'full', visible: true },
             ];
         case UserRole.MANAGER:
             return [
@@ -165,12 +162,11 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
             return [
                 { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
                 { id: 'w_focus', type: 'focus', title: 'Focus Timer', position: 1, size: 'md', visible: true },
-                { id: 'w_att', type: 'attendance', title: 'Attendance', position: 2, size: 'md', visible: true },
-                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 3, size: 'full', visible: true },
-                { id: 'w_heat', type: 'workload-heatmap', title: 'Workload Map', position: 4, size: 'lg', visible: true },
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 5, size: 'md', visible: true },
-                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 6, size: 'full', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 7, size: 'md', visible: true },
+                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 2, size: 'full', visible: true },
+                { id: 'w_heat', type: 'workload-heatmap', title: 'Workload Map', position: 3, size: 'lg', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 4, size: 'md', visible: true },
+                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 5, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 6, size: 'md', visible: true },
             ];
     }
 };

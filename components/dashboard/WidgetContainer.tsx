@@ -34,7 +34,6 @@ import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
 import AllTasksWidget from './widgets/AllTasksWidget';
 
 // Newly Migrated from static layout
-import AttendanceWidget from './AttendanceWidget';
 import GreetingsWidget from './widgets/GreetingsWidget';
 import FocusWidget from './widgets/FocusWidget';
 import ComplianceBanner from './widgets/ComplianceBanner';
@@ -156,8 +155,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         switch (widget.type) {
             case 'greetings':
                 return <GreetingsWidget pendingCount={dashboardData.myOpenTasks} completedToday={dashboardData.completedToday} />;
-            case 'attendance':
-                return <AttendanceWidget />;
             case 'compliance-banner':
                 return <ComplianceBanner deadlines={dashboardData.upcomingSchedule.filter((i: any) => i.type === 'DEADLINE' && i.subType === 'URGENT')} />;
             case 'focus':
