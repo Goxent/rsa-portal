@@ -182,13 +182,9 @@ export interface Client {
   updatedAt?: string;
 
   // Nepal Specific Context (Statutory)
-  registrationNumber?: string;
   registrationDate?: string; // BS or AD string
   vatNumber?: string;
-  wardNumber?: string;
   vdcMunicipality?: string;
-  district?: string;
-  taxClearanceUntil?: string; // Fiscal Year e.g., "2080/81"
   fiscalYearEnd?: string;
 
   // Knowledge Base / KYC Documents

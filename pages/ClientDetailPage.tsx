@@ -244,24 +244,6 @@ const ClientDetailPage: React.FC = () => {
                                     {client.vatNumber || 'Not Registered'}
                                 </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Reg No.</p>
-                                <div className="text-sm text-gray-200 font-medium">
-                                    {client.registrationNumber || 'N/A'}
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Tax Clearance</p>
-                                <div className="text-sm text-emerald-400 font-bold">
-                                    {client.taxClearanceUntil || 'Pending'}
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Ward/Dist</p>
-                                <div className="text-sm text-gray-200 font-medium truncate">
-                                    {client.wardNumber ? `W-${client.wardNumber}, ` : ''}{client.district || 'N/A'}
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

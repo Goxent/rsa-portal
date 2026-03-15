@@ -234,14 +234,6 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                                 <p className="text-white font-bold">{client.vatNumber || 'Not registered'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Registration No.</p>
-                                                <p className="text-white font-bold">{client.registrationNumber || 'N/A'}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Tax Clearance Until</p>
-                                                <p className="text-emerald-400 font-bold">{client.taxClearanceUntil || 'Pending FY'}</p>
-                                            </div>
-                                            <div>
                                                 <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Fiscal Year End</p>
                                                 <p className="text-white font-bold">{client.fiscalYearEnd || 'Ashad End'}</p>
                                             </div>
