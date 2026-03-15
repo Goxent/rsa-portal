@@ -176,10 +176,30 @@ export interface Client {
   billingAmount?: number;
   paymentStatus?: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
 
-  // System
+  // Management
   auditorId?: string;
   createdAt?: string;
   updatedAt?: string;
+
+  // Nepal Specific Context (Statutory)
+  registrationNumber?: string;
+  registrationDate?: string; // BS or AD string
+  vatNumber?: string;
+  wardNumber?: string;
+  vdcMunicipality?: string;
+  district?: string;
+  taxClearanceUntil?: string; // Fiscal Year e.g., "2080/81"
+  fiscalYearEnd?: string;
+
+  // Knowledge Base / KYC Documents
+  documents?: {
+    id: string;
+    title: string;
+    url: string;
+    category: 'KYC' | 'Legal' | 'Tax' | 'Audit' | 'Other';
+    uploadedAt: string;
+    uploadedBy: string;
+  }[];
 }
 
 export interface LeaveRequest {

@@ -4,26 +4,34 @@ import { useQuery } from '@tanstack/react-query';
 import {
     ArrowLeft, Building2, Briefcase, BadgeCheck, Phone, Mail, MapPin,
     Calendar as CalIcon, FileText, CheckCircle2, Activity, ShieldCheck,
-    Clock, Tag, User, Plus
+    Clock, Tag, User, Plus, ArrowRight, Trash2
 } from 'lucide-react';
 import { Client, Task, UserProfile } from '../types';
 import { ComplianceEvent } from '../types/advanced';
-import { AuthService } from '../services/firebase';
+import { AuthService, auth } from '../services/firebase';
 import { ComplianceService, complianceKeys } from '../services/advanced';
 import { PageLoader } from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/common/EmptyState';
+import { FileUploader } from '../components/common/FileUploader';
+import { StorageService } from '../services/storage';
+import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTasks } from '../hooks/useTasks';
 import { clientKeys } from '../hooks/useClients';
 import { userKeys } from '../hooks/useStaff';
 import NepaliDate from 'nepali-date-converter';
 
-type Tab = 'TASKS' | 'COMPLIANCE' | 'ACTIVITY';
+type Tab = 'TASKS' | 'DOCUMENTS' | 'COMPLIANCE' | 'ACTIVITY';
 
 const ClientDetailPage: React.FC = () => {
     const { clientId } = useParams<{ clientId: string }>();
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState<Tab>('TASKS');
+    const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
+    const [isUploadMode, setIsUploadMode] = useState(false);
+    const [newDocTitle, setNewDocTitle] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     // Fetch Client Data
     const { data: clients = [], isLoading: clientsLoading } = useQuery({
@@ -87,6 +95,49 @@ const ClientDetailPage: React.FC = () => {
         return [...activities, ...completions, ...complianceActs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [clientTasks, clientCompliance, client]);
 
+    const handleAddDocument = async (docData: { title: string, url: string, category: any, id?: string }) => {
+        if (!client) return;
+        setIsSaving(true);
+        try {
+            const newDoc = {
+                id: docData.id || `doc_${Date.now()}`,
+                title: docData.title,
+                url: docData.url,
+                category: docData.category,
+                uploadedAt: new Date().toISOString(),
+                uploadedBy: auth.currentUser?.uid || 'system'
+            };
+
+            const updatedClient = {
+                ...client,
+                documents: [...(client.documents || []), newDoc]
+            };
+
+            await AuthService.updateClient(updatedClient);
+            setIsAddDocModalOpen(false);
+            setNewDocTitle('');
+            toast.success('Document added successfully');
+        } catch (error) {
+            toast.error('Failed to add document');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteDocument = async (docId: string) => {
+        if (!client) return;
+        try {
+            const updatedClient = {
+                ...client,
+                documents: (client.documents || []).filter(d => d.id !== docId)
+            };
+            await AuthService.updateClient(updatedClient);
+            toast.success('Document removed');
+        } catch (error) {
+            toast.error('Failed to remove document');
+        }
+    };
+
     if (isLoading) return <PageLoader />;
 
     if (!client) {
@@ -108,7 +159,8 @@ const ClientDetailPage: React.FC = () => {
     const focalPerson = staffList.find(s => s.uid === client.auditorId);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-20 max-w-7xl mx-auto">
+        <>
+            <div className="space-y-6 animate-in fade-in duration-500 pb-20 max-w-7xl mx-auto">
             {/* Back Button */}
             <button
                 onClick={() => navigate('/clients')}
@@ -183,6 +235,34 @@ const ClientDetailPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Nepal Statutory Info Row */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/5">
+                            <div>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">VAT Number</p>
+                                <div className="text-sm text-gray-200 font-medium">
+                                    {client.vatNumber || 'Not Registered'}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Reg No.</p>
+                                <div className="text-sm text-gray-200 font-medium">
+                                    {client.registrationNumber || 'N/A'}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Tax Clearance</p>
+                                <div className="text-sm text-emerald-400 font-bold">
+                                    {client.taxClearanceUntil || 'Pending'}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Ward/Dist</p>
+                                <div className="text-sm text-gray-200 font-medium truncate">
+                                    {client.wardNumber ? `W-${client.wardNumber}, ` : ''}{client.district || 'N/A'}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -190,7 +270,7 @@ const ClientDetailPage: React.FC = () => {
             {/* Tabs & Content */}
             <div className="space-y-6">
                 <div className="flex gap-2 overflow-x-auto pb-2 border-b border-white/10 hide-scrollbar">
-                    {(['TASKS', 'COMPLIANCE', 'ACTIVITY'] as Tab[]).map((tab) => (
+                    {(['TASKS', 'DOCUMENTS', 'COMPLIANCE', 'ACTIVITY'] as Tab[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -200,6 +280,7 @@ const ClientDetailPage: React.FC = () => {
                                 }`}
                         >
                             {tab === 'TASKS' && <CheckCircle2 size={16} />}
+                            {tab === 'DOCUMENTS' && <FileText size={16} />}
                             {tab === 'COMPLIANCE' && <ShieldCheck size={16} />}
                             {tab === 'ACTIVITY' && <Activity size={16} />}
                             {tab === 'TASKS' ? `Active Tasks (${clientTasks.length})` : tab}
@@ -208,6 +289,61 @@ const ClientDetailPage: React.FC = () => {
                 </div>
 
                 <div className="min-h-[400px]">
+                    {/* DOCUMENTS TAB */}
+                    {activeTab === 'DOCUMENTS' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                             <div className="flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-white">Knowledge Base & KYC</h3>
+                                <button 
+                                    onClick={() => setIsAddDocModalOpen(true)}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all shadow-lg shadow-brand-900/20"
+                                >
+                                    <Plus size={16} /> Add Document
+                                </button>
+                            </div>
+
+                            {client.documents && client.documents.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {client.documents.map(doc => (
+                                        <div key={doc.id} className="glass-panel p-5 rounded-2xl border border-white/5 hover:border-brand-500/30 transition-all group">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="w-12 h-12 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400">
+                                                    <FileText size={24} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-white text-base truncate">{doc.title}</h4>
+                                                    <p className="text-xs text-brand-400 font-bold uppercase">{doc.category}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                                <span className="text-[10px] text-gray-500 font-bold uppercase">{new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors">
+                                                        View <ArrowRight size={14} />
+                                                    </a>
+                                                    <button 
+                                                        onClick={() => handleDeleteDocument(doc.id)}
+                                                        className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-20 flex flex-col items-center justify-center glass-panel rounded-[32px] border-dashed border-2 border-white/10">
+                                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
+                                        <FileText size={32} className="text-gray-600" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-white mb-2">No documents attached</h4>
+                                    <p className="text-gray-500 text-sm max-w-md text-center">Repository for KYC, registration certificates, and legal documents is empty for this client.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* TASKS TAB */}
                     {activeTab === 'TASKS' && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -315,6 +451,115 @@ const ClientDetailPage: React.FC = () => {
                 </div>
             </div>
         </div>
+
+        {/* Add Document Modal */}
+        <AnimatePresence>
+            {isAddDocModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsAddDocModalOpen(false)}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="relative w-full max-w-md bg-navy-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6"
+                    >
+                        <h3 className="text-xl font-bold text-white mb-4">Attach Document</h3>
+                        
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Document Title</label>
+                                <input 
+                                    type="text"
+                                    value={newDocTitle}
+                                    onChange={(e) => setNewDocTitle(e.target.value)}
+                                    placeholder="e.g., Audit Report 2080"
+                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-brand-500 transition-all font-medium"
+                                />
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">Storage Source</label>
+                                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                                        <button 
+                                            onClick={() => setIsUploadMode(true)}
+                                            className={`px-3 py-1 text-[10px] font-black rounded-md transition-all ${isUploadMode ? 'bg-brand-600 text-white' : 'text-gray-500'}`}
+                                        >
+                                            Upload
+                                        </button>
+                                        <button 
+                                            onClick={() => setIsUploadMode(false)}
+                                            className={`px-3 py-1 text-[10px] font-black rounded-md transition-all ${!isUploadMode ? 'bg-brand-600 text-white' : 'text-gray-500'}`}
+                                        >
+                                            Link
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {isUploadMode ? (
+                                    <FileUploader 
+                                        onUploadComplete={(fileData) => handleAddDocument({
+                                            title: newDocTitle || fileData.name,
+                                            url: fileData.url,
+                                            category: 'KYC',
+                                            id: fileData.id
+                                        })}
+                                    />
+                                ) : (
+                                    <input 
+                                        type="text"
+                                        placeholder="Drive or External Link..."
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleAddDocument({
+                                                    title: newDocTitle || 'Linked Doc',
+                                                    url: (e.target as HTMLInputElement).value,
+                                                    category: 'Other'
+                                                });
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-brand-500 transition-all text-sm"
+                                    />
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex justify-end gap-3">
+                            <button 
+                                onClick={() => setIsAddDocModalOpen(false)}
+                                className="px-4 py-2 text-xs font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            {!isUploadMode && (
+                                <button 
+                                    onClick={() => {
+                                        const input = document.querySelector('input[placeholder="Drive or External Link..."]') as HTMLInputElement;
+                                        if (input?.value) {
+                                            handleAddDocument({
+                                                title: newDocTitle || 'Linked Doc',
+                                                url: input.value,
+                                                category: 'Other'
+                                            });
+                                        }
+                                    }}
+                                    className="px-6 py-2 bg-brand-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-brand-700 transition-all shadow-lg shadow-brand-900/40"
+                                >
+                                    Save Link
+                                </button>
+                            )}
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+        </>
     );
 };
 
