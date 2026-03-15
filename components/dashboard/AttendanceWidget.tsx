@@ -386,7 +386,7 @@ const AttendanceWidget: React.FC = () => {
 
     // Default Full Widget Render
     return (
-        <div className="relative w-full rounded-2xl overflow-hidden bg-slate-50/80 dark:bg-[#0d1526]/60 backdrop-blur-xl border border-slate-200/50 dark:border-white/[0.03] shadow-sm hover:shadow-md dark:shadow-none transition-all duration-300 z-10">
+        <div className="relative w-full rounded-2xl bg-slate-50/80 dark:bg-[#0d1526]/60 backdrop-blur-xl border border-slate-200/50 dark:border-white/[0.03] shadow-sm hover:shadow-md dark:shadow-none transition-all duration-300 z-[20]">
             {/* Subtle top glow line for premium feel */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent"></div>
             

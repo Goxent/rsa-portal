@@ -46,7 +46,7 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
         >
             <div
                 className={`
-          relative w-full h-full rounded-2xl overflow-hidden
+          relative w-full h-full rounded-2xl
           bg-slate-50/80 dark:bg-[#0d1526]/60 backdrop-blur-xl
           border border-slate-200/50 dark:border-white/[0.03]
           shadow-sm hover:shadow-md dark:shadow-none
