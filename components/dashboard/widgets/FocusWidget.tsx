@@ -116,7 +116,7 @@ const FocusWidget: React.FC = () => {
 
             {/* ── Header ──────────────────────────────────────────────── */}
             <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-lg flex-shrink-0 ${allCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                <div className={`p-1.5 rounded-lg flex-shrink-0 ${allCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
                     {allCompleted ? <Trophy size={15} /> : <Target size={15} />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -220,8 +220,8 @@ const FocusWidget: React.FC = () => {
                             </p>
                         ) : (
                             <form onSubmit={handleAddGoal}>
-                                <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${inputFocused ? 'bg-white/[0.04] border border-indigo-500/30' : 'border border-transparent hover:bg-white/[0.03]'}`}>
-                                    <Plus size={13} className={`flex-shrink-0 transition-colors ${inputFocused ? 'text-indigo-400' : 'text-gray-600'}`} />
+                                <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${inputFocused ? 'bg-white/[0.04] border border-amber-500/30' : 'border border-transparent hover:bg-white/[0.03]'}`}>
+                                    <Plus size={13} className={`flex-shrink-0 transition-colors ${inputFocused ? 'text-amber-400' : 'text-gray-600'}`} />
                                     <input
                                         ref={inputRef}
                                         type="text"
@@ -236,7 +236,7 @@ const FocusWidget: React.FC = () => {
                                     {inputValue.trim() && (
                                         <button
                                             type="submit"
-                                            className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex-shrink-0 transition-colors"
+                                            className="text-[10px] font-bold text-amber-400 hover:text-indigo-300 flex-shrink-0 transition-colors"
                                         >
                                             Add
                                         </button>

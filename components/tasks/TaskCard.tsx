@@ -7,7 +7,7 @@ import { Task, TaskStatus, TaskPriority, UserProfile } from '../../types';
 const P: Record<string, { bar: string; badge: string; label: string }> = {
     [TaskPriority.URGENT]: { bar: 'bg-[#dc2626]', badge: 'text-red-400 bg-red-950/60 border-red-800/50', label: 'Urgent' },
     [TaskPriority.HIGH]: { bar: 'bg-[#d97706]', badge: 'text-amber-400 bg-amber-950/60 border-amber-800/50', label: 'High' },
-    [TaskPriority.MEDIUM]: { bar: 'bg-[#2563eb]', badge: 'text-blue-400 bg-blue-950/60 border-blue-800/50', label: 'Medium' },
+    [TaskPriority.MEDIUM]: { bar: 'bg-[#2563eb]', badge: 'text-amber-400 bg-blue-950/60 border-blue-800/50', label: 'Medium' },
     [TaskPriority.LOW]: { bar: 'bg-[#475569]', badge: 'text-slate-400 bg-slate-800/60 border-slate-700/50', label: 'Low' },
 };
 
@@ -56,9 +56,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                         'relative group/card rounded-xl border cursor-pointer select-none',
                         'bg-[#0d1117] transition-all duration-150',
                         snap.isDragging
-                            ? 'shadow-2xl shadow-black/60 scale-[1.03] z-50 border-blue-500/50 rotate-[0.5deg]'
+                            ? 'shadow-2xl shadow-black/60 scale-[1.03] z-50 border-amber-500/50 rotate-[0.5deg]'
                             : 'hover:shadow-lg hover:shadow-black/40 hover:-translate-y-px',
-                        isSelected ? 'border-blue-500/60 ring-2 ring-blue-500/20' :
+                        isSelected ? 'border-amber-500/60 ring-2 ring-amber-500/20' :
                             isOverdue ? 'border-red-700/40 hover:border-red-600/60' :
                                 'border-white/[0.07] hover:border-white/[0.16]',
                     ].join(' ')}
@@ -78,7 +78,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                                     onClick={e => { e.stopPropagation(); onToggleSelection(task.id); }}
                                 >
                                     <div className={`w-full h-full rounded border flex items-center justify-center transition-all
-                                        ${isSelected ? 'bg-blue-600 border-blue-500' : 'border-slate-600 bg-transparent'}`}>
+                                        ${isSelected ? 'bg-amber-600 border-amber-500' : 'border-slate-600 bg-transparent'}`}>
                                         {isSelected && <Check size={9} className="text-white" strokeWidth={3.5} />}
                                     </div>
                                 </div>
@@ -108,7 +108,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                         {/* Client */}
                         {task.clientName && (
                             <div 
-                                className="flex items-center gap-1 mb-2.5 hover:text-blue-400 transition-colors"
+                                className="flex items-center gap-1 mb-2.5 hover:text-amber-400 transition-colors"
                                 onClick={(e) => {
                                     if (onOpenClientDetail && task.clientIds?.[0]) {
                                         e.stopPropagation();
@@ -129,11 +129,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                                         <CheckCircle2 size={8} className={pct === 100 ? 'text-emerald-500' : 'text-slate-600'} />
                                         {done}/{total}
                                     </span>
-                                    <span className={pct === 100 ? 'text-emerald-400' : 'text-blue-400'}>{pct}%</span>
+                                    <span className={pct === 100 ? 'text-emerald-400' : 'text-amber-400'}>{pct}%</span>
                                 </div>
                                 <div className="h-[3px] w-full bg-slate-800 rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                        className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
                                         style={{ width: `${pct}%` }}
                                     />
                                 </div>

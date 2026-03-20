@@ -15,7 +15,7 @@ const PendingActionsWidget: React.FC<PendingActionsWidgetProps> = ({
 }) => {
     const items = [
         { icon: DollarSign, label: 'Invoices', count: pendingActions.invoices, color: 'text-green-400 bg-green-500/20' },
-        { icon: FileText, label: 'Documents', count: pendingActions.documents, color: 'text-blue-400 bg-blue-500/20' },
+        { icon: FileText, label: 'Documents', count: pendingActions.documents, color: 'text-amber-400 bg-amber-500/20' },
         { icon: Mail, label: 'Emails', count: pendingActions.emails, color: 'text-purple-400 bg-purple-500/20' },
     ];
 

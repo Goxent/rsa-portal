@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 // Keys
 export const taskKeys = {
     all: ['tasks'] as const,
+    infinite: () => [...taskKeys.all, 'infinite'] as const,
     lists: () => [...taskKeys.all, 'list'] as const,
     list: (filters: string) => [...taskKeys.lists(), { filters }] as const,
     details: () => [...taskKeys.all, 'detail'] as const,
@@ -24,10 +25,10 @@ export const useTasks = () => {
 
 export const useInfiniteTasks = () => {
     return useInfiniteQuery({
-        queryKey: taskKeys.all,
+        queryKey: taskKeys.infinite(),
         queryFn: ({ pageParam }) => AuthService.getPaginatedTasks(pageParam, 30),
-        getNextPageParam: (lastPage) => lastPage.lastVisible ?? undefined,
-        initialPageParam: undefined as any,
+        getNextPageParam: (lastPage) => lastPage.lastVisible ?? null,
+        initialPageParam: null,
     });
 };
 
@@ -58,28 +59,27 @@ export const useUpdateTask = () => {
         // ── Optimistic update: patch local cache immediately ─────────────────
         onMutate: async ({ id, updates }) => {
             await queryClient.cancelQueries({ queryKey: taskKeys.all });
-            const previous = queryClient.getQueryData(taskKeys.all);
+            
+            const previousAll = queryClient.getQueryData(taskKeys.all);
+            const previousInfinite = queryClient.getQueryData(taskKeys.infinite());
 
             queryClient.setQueryData(taskKeys.all, (old: any) => {
-                if (!old) return old;
-                // If it's an array (from useTasks)
-                if (Array.isArray(old)) {
-                    return old.map(t => (t.id === id ? { ...t, ...updates } : t));
-                }
-                // If it's an infinite query structure (from useInfiniteTasks)
-                if (old.pages) {
-                    return {
-                        ...old,
-                        pages: old.pages.map((page: any) => ({
-                            ...page,
-                            tasks: page.tasks.map((t: any) => (t.id === id ? { ...t, ...updates } : t))
-                        }))
-                    };
-                }
-                return old;
+                if (!old || !Array.isArray(old)) return old;
+                return old.map(t => (t.id === id ? { ...t, ...updates } : t));
+            });
+            
+            queryClient.setQueryData(taskKeys.infinite(), (old: any) => {
+                if (!old || !old.pages) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page: any) => ({
+                        ...page,
+                        tasks: page.tasks.map((t: any) => (t.id === id ? { ...t, ...updates } : t))
+                    }))
+                };
             });
 
-            return { previous };
+            return { previousAll, previousInfinite };
         },
 
         onSuccess: (_data, { updates }) => {
@@ -91,8 +91,11 @@ export const useUpdateTask = () => {
 
         onError: (error: Error, _variables, context: any) => {
             // Roll back to previous state on failure
-            if (context?.previous) {
-                queryClient.setQueryData(taskKeys.all, context.previous);
+            if (context?.previousAll !== undefined) {
+                queryClient.setQueryData(taskKeys.all, context.previousAll);
+            }
+            if (context?.previousInfinite !== undefined) {
+                queryClient.setQueryData(taskKeys.infinite(), context.previousInfinite);
             }
             toast.error(`Failed to update task: ${error.message}`);
         },
@@ -110,28 +113,31 @@ export const useUpdateTaskStatus = () => {
             AuthService.updateTaskStatusOnly(id, status),
         onMutate: async ({ id, status }) => {
             await queryClient.cancelQueries({ queryKey: taskKeys.all });
-            const previous = queryClient.getQueryData(taskKeys.all);
+            
+            const previousAll = queryClient.getQueryData(taskKeys.all);
+            const previousInfinite = queryClient.getQueryData(taskKeys.infinite());
             
             queryClient.setQueryData(taskKeys.all, (old: any) => {
-                if (!old) return old;
-                if (Array.isArray(old)) {
-                    return old.map(t => t.id === id ? { ...t, status } : t);
-                }
-                if (old.pages) {
-                    return {
-                        ...old,
-                        pages: old.pages.map((page: any) => ({
-                            ...page,
-                            tasks: page.tasks.map((t: any) => t.id === id ? { ...t, status } : t)
-                        }))
-                    };
-                }
-                return old;
+                if (!old || !Array.isArray(old)) return old;
+                return old.map(t => t.id === id ? { ...t, status } : t);
             });
-            return { previous };
+            
+            queryClient.setQueryData(taskKeys.infinite(), (old: any) => {
+                if (!old || !old.pages) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page: any) => ({
+                        ...page,
+                        tasks: page.tasks.map((t: any) => t.id === id ? { ...t, status } : t)
+                    }))
+                };
+            });
+
+            return { previousAll, previousInfinite };
         },
         onError: (_err, _vars, context: any) => {
-            if (context?.previous) queryClient.setQueryData(taskKeys.all, context.previous);
+            if (context?.previousAll !== undefined) queryClient.setQueryData(taskKeys.all, context.previousAll);
+            if (context?.previousInfinite !== undefined) queryClient.setQueryData(taskKeys.infinite(), context.previousInfinite);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: taskKeys.all });
@@ -163,35 +169,39 @@ export const useAddTaskComment = () => {
 
         onMutate: async ({ taskId, comment }) => {
             await queryClient.cancelQueries({ queryKey: taskKeys.all });
-            const previous = queryClient.getQueryData(taskKeys.all);
+            
+            const previousAll = queryClient.getQueryData(taskKeys.all);
+            const previousInfinite = queryClient.getQueryData(taskKeys.infinite());
+
+            const patchTask = (t: any) => t.id === taskId
+                ? { ...t, comments: [...(t.comments || []), comment] }
+                : t;
 
             queryClient.setQueryData(taskKeys.all, (old: any) => {
-                const patchTask = (t: any) => t.id === taskId
-                    ? { ...t, comments: [...(t.comments || []), comment] }
-                    : t;
-
-                if (!old) return old;
-                if (Array.isArray(old)) {
-                    return old.map(patchTask);
-                }
-                if (old.pages) {
-                    return {
-                        ...old,
-                        pages: old.pages.map((page: any) => ({
-                            ...page,
-                            tasks: page.tasks.map(patchTask)
-                        }))
-                    };
-                }
-                return old;
+                if (!old || !Array.isArray(old)) return old;
+                return old.map(patchTask);
+            });
+            
+            queryClient.setQueryData(taskKeys.infinite(), (old: any) => {
+                if (!old || !old.pages) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page: any) => ({
+                        ...page,
+                        tasks: page.tasks.map(patchTask)
+                    }))
+                };
             });
 
-            return { previous };
+            return { previousAll, previousInfinite };
         },
 
         onError: (_err, _vars, context: any) => {
-            if (context?.previous) {
-                queryClient.setQueryData(taskKeys.all, context.previous);
+            if (context?.previousAll !== undefined) {
+                queryClient.setQueryData(taskKeys.all, context.previousAll);
+            }
+            if (context?.previousInfinite !== undefined) {
+                queryClient.setQueryData(taskKeys.infinite(), context.previousInfinite);
             }
             toast.error('Failed to add comment');
         },

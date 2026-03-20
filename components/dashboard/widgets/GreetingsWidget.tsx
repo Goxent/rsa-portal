@@ -127,7 +127,7 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
                 >
                     {/* Clock pill */}
                     <div className="flex items-center gap-2 bg-black/30 border border-white/[0.07] rounded-xl px-3 py-2 hover:bg-black/40 transition-colors">
-                        <div className="p-1 bg-blue-500/20 rounded-md text-blue-400">
+                        <div className="p-1 bg-amber-500/20 rounded-md text-amber-400">
                             <Clock size={14} />
                         </div>
                         <div>
@@ -145,7 +145,7 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
                             <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest leading-none mb-0.5">Date</p>
                             <p className="text-xs text-white font-medium leading-none">{adDateStr}</p>
                             {bsDateStr && (
-                                <p className="text-[10px] text-indigo-400 leading-none mt-0.5">{bsDateStr} BS</p>
+                                <p className="text-[10px] text-amber-400 leading-none mt-0.5">{bsDateStr} BS</p>
                             )}
                         </div>
                     </div>

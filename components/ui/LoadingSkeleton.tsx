@@ -41,8 +41,8 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
 export const PageLoader: React.FC = () => (
     <div className="flex h-screen items-center justify-center bg-dark-900">
         <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4 mx-auto" />
-            <p className="text-blue-400 animate-pulse">Loading...</p>
+            <div className="w-12 h-12 border-4 border-amber-500/30 border-t-blue-500 rounded-full animate-spin mb-4 mx-auto" />
+            <p className="text-amber-400 animate-pulse">Loading...</p>
         </div>
     </div>
 );

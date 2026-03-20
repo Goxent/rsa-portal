@@ -54,7 +54,7 @@ export const ThemedToaster: React.FC = () => {
                 className: '',
                 style: {
                     background: theme === 'dark' ? 'rgba(30, 41, 59, 0.95)' : '#ffffff',
-                    color: theme === 'dark' ? '#fff' : '#0f172a',
+                    color: theme === 'dark' ? '#fff' : '#09090b',
                     backdropFilter: 'blur(8px)',
                     border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',

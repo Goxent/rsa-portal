@@ -8,7 +8,7 @@ import { validateEnvironment } from './utils/envValidation';
 const { valid, errors } = validateEnvironment();
 if (!valid) {
   document.body.innerHTML = `
-        <div style="font-family: monospace; padding: 2rem; background: #0f172a; color: #ef4444; min-height: 100vh;">
+        <div style="font-family: monospace; padding: 2rem; background: #09090b; color: #ef4444; min-height: 100vh;">
             <h1 style="color: #f8fafc; font-size: 1.5rem; margin-bottom: 1rem;">⚠️ Configuration Error</h1>
             <p style="color: #94a3b8; margin-bottom: 1rem;">The application cannot start due to missing environment variables:</p>
             ${errors.map((e: string) => `<p style="margin: 0.5rem 0; color: #fca5a5;">• ${e}</p>`).join('')}

@@ -68,7 +68,7 @@ const MyPerformancePage: React.FC = () => {
         switch (tier) {
             case 'Exceptional': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
             case 'Strong': return 'text-brand-400 bg-brand-500/10 border-brand-500/20';
-            case 'Meeting Expectations': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+            case 'Meeting Expectations': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
             default: return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
         }
     };
@@ -142,7 +142,7 @@ const MyPerformancePage: React.FC = () => {
                         </div>
 
                         <div className="glass-panel p-6 rounded-3xl border-l-4 border-l-indigo-500 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 text-indigo-500/10 group-hover:text-indigo-500/20 transition-colors">
+                            <div className="absolute top-0 right-0 p-4 text-amber-500/10 group-hover:text-amber-500/20 transition-colors">
                                 <Flame size={64} />
                             </div>
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Daily Streak</p>
@@ -168,8 +168,8 @@ const MyPerformancePage: React.FC = () => {
                                     { label: 'Task Throughput', value: currentStats.completionRate, color: 'bg-brand-500', weight: '30%' },
                                     { label: 'SLA Compliance', value: currentStats.onTimeRate, color: 'bg-emerald-500', weight: '25%' },
                                     { label: 'Attendance & Punctuality', value: currentStats.punctualityScore, color: 'bg-orange-500', weight: '20%' },
-                                    { label: 'Quality of Submissions', value: currentStats.qualityScore, color: 'bg-blue-500', weight: '15%' },
-                                    { label: 'Difficulty Overhead', value: currentStats.difficultyBonus * 10, color: 'bg-indigo-500', weight: '10%' },
+                                    { label: 'Quality of Submissions', value: currentStats.qualityScore, color: 'bg-amber-500', weight: '15%' },
+                                    { label: 'Difficulty Overhead', value: currentStats.difficultyBonus * 10, color: 'bg-amber-500', weight: '10%' },
                                 ].map((metric, i) => (
                                     <div key={i} className="space-y-2">
                                         <div className="flex justify-between text-sm">

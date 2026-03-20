@@ -103,7 +103,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="glass-modal rounded-xl w-full max-w-lg border border-white/10 shadow-2xl flex flex-col bg-[#0f172a]">
+            <div className="glass-modal rounded-xl w-full max-w-lg border border-white/10 shadow-2xl flex flex-col bg-[#09090b]">
                 <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                     <div>
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">

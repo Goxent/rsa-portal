@@ -203,7 +203,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     <>
                         <button
                             onClick={() => setShowWidgetPicker(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-all"
                         >
                             <Plus size={13} /> Add Widget
                         </button>
@@ -234,7 +234,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     items={widgets.map((w) => w.id)}
                     strategy={rectSortingStrategy}
                 >
-                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-200 ${isEditing ? 'border-2 border-dashed border-blue-500/20 rounded-2xl p-2' : ''}`}>
+                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-200 ${isEditing ? 'border-2 border-dashed border-amber-500/20 rounded-2xl p-2' : ''}`}>
                         {widgets.map((widget) => (
                             <WidgetWrapper
                                 key={widget.id}
@@ -253,7 +253,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
             {/* Widget Picker Modal */}
             {showWidgetPicker && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add Widget</h2>
                             <button

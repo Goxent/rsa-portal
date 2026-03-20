@@ -20,8 +20,8 @@ const getPriorityConfig = (priority: string) => {
             dot: 'bg-amber-500',
         };
         case 'MEDIUM': return {
-            label: 'Medium', text: 'text-blue-500 dark:text-blue-400',
-            dot: 'bg-blue-500',
+            label: 'Medium', text: 'text-amber-500 dark:text-amber-400',
+            dot: 'bg-amber-500',
         };
         default: return {
             label: 'Low', text: 'text-slate-400',
@@ -33,7 +33,7 @@ const getPriorityConfig = (priority: string) => {
 // ── Status config — PENDING_REVIEW → UNDER_REVIEW (bug fix) ───────────────
 const getStatusConfig = (status: string) => {
     switch (status) {
-        case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-indigo-400' };
+        case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-amber-400' };
         case TaskStatus.UNDER_REVIEW: return { label: 'Under Review', color: 'text-purple-400' };
         case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-emerald-400' };
         case TaskStatus.HALTED: return { label: 'Halted', color: 'text-red-400' };
@@ -107,7 +107,7 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ recentTasks = [] }) => {
                 </div>
                 <button
                     onClick={() => navigate('/tasks?boardMode=MY')}
-                    className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold"
+                    className="flex items-center gap-1 text-[11px] text-amber-400 hover:text-indigo-300 transition-colors font-semibold"
                 >
                     View All <ArrowRight size={11} />
                 </button>

@@ -24,7 +24,7 @@ const getDaysUntil = (dateStr: string) => {
 };
 
 const getUrgencyStyle = (daysUntil: number, type: string) => {
-    if (type === 'EVENT') return { dot: 'bg-blue-400', bar: '', text: 'text-blue-500' };
+    if (type === 'EVENT') return { dot: 'bg-blue-400', bar: '', text: 'text-amber-500' };
     if (daysUntil < 0) return { dot: 'bg-red-500 animate-pulse', bar: '', text: 'text-red-500' };
     if (daysUntil <= 2) return { dot: 'bg-red-500', bar: '', text: 'text-red-500' };
     if (daysUntil <= 7) return { dot: 'bg-amber-500', bar: '', text: 'text-amber-500' };

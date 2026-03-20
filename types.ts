@@ -132,6 +132,7 @@ export interface Task {
   riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
   reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   comments?: TaskComment[];
+  nextTemplateId?: string; // NEW: The ID of the template to trigger upon completion
 
   // Advanced Workflow Features (TaxDome-style)
   tags?: string[]; // Custom status/category tags
@@ -341,6 +342,7 @@ export interface Resource {
   fileSize?: number; // File size in bytes
   createdBy?: string; // UID of the uploader
   createdByName?: string; // Display name of the uploader
+  reviewDate?: string; // NEW: Expiry date for SOP verification
 }
 
 export interface TaskTemplate {
@@ -350,7 +352,12 @@ export interface TaskTemplate {
   priority: TaskPriority;
   category: string;
   subtasks: string[]; // Deprecated: Use subtaskDetails instead if available
-  subtaskDetails?: { title: string; minimumRequirement?: string; }[]; // Enhanced subtasks
+  subtaskDetails?: { 
+    title: string; 
+    minimumRequirement?: string; 
+    assigneeRole?: UserRole | string; // NEW: Auto-assign user with this role
+    daysOffset?: number; // NEW: Due date offset from anchor date
+  }[]; // Enhanced subtasks
   expectedDays?: number;
   createdAt: string;
   updatedAt?: string;
@@ -372,6 +379,7 @@ export interface TaskTemplate {
   type?: string;
   content?: string;
   createdBy?: string;
+  nextTemplateId?: string; // NEW: Trigger this template automatically when task completes
 }
 
 export type Template = TaskTemplate;

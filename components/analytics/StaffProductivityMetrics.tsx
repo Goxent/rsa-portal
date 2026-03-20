@@ -325,12 +325,12 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
 
                 <div className="glass-panel rounded-2xl p-5">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-blue-500/20">
-                            <Clock size={20} className="text-blue-400" />
+                        <div className="p-2 rounded-lg bg-amber-500/20">
+                            <Clock size={20} className="text-amber-400" />
                         </div>
                         <span className="text-gray-400 text-sm">On-Time Rate</span>
                     </div>
-                    <p className="text-3xl font-bold text-blue-400">{avgOnTime}%</p>
+                    <p className="text-3xl font-bold text-amber-400">{avgOnTime}%</p>
                 </div>
             </div>
 
@@ -514,7 +514,7 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
                             </div>
                             <div className="bg-white/5 rounded-xl p-4">
                                 <p className="text-xs text-gray-400">Active</p>
-                                <p className="text-2xl font-bold text-blue-400">{selectedStaff.activeTasks}</p>
+                                <p className="text-2xl font-bold text-amber-400">{selectedStaff.activeTasks}</p>
                             </div>
                             <div className="bg-white/5 rounded-xl p-4">
                                 <p className="text-xs text-gray-400">Overdue</p>

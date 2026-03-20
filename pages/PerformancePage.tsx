@@ -169,7 +169,7 @@ const PerformancePage: React.FC = () => {
         switch (tier) {
             case 'Exceptional': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
             case 'Strong': return 'text-brand-400 bg-brand-500/10 border-brand-500/30';
-            case 'Meeting Expectations': return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+            case 'Meeting Expectations': return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
             case 'Needs Improvement': return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
             default: return 'text-red-400 bg-red-500/10 border-red-500/30';
         }
@@ -562,7 +562,7 @@ const PerformancePage: React.FC = () => {
                                                 <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">On-Time Rate</p>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-white">{(stats.dueDateFulfillment || 0).toFixed(0)}%</span>
-                                                    <Clock size={10} className="text-blue-400" />
+                                                    <Clock size={10} className="text-amber-400" />
                                                 </div>
                                             </div>
                                             <div className="bg-white/5 p-2 rounded-lg">

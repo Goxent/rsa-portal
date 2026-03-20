@@ -38,7 +38,7 @@ const getCapacityLevel = (count: number) => {
 const getPriorityStyle = (priority?: string) => {
     if (priority === 'HIGH') return 'bg-red-500/10 text-red-300 border-red-500/20';
     if (priority === 'MEDIUM') return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
-    return 'bg-blue-500/10 text-blue-300 border-blue-500/20';
+    return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
 };
 
 const getStatusStyle = (status: string) => {
@@ -285,11 +285,11 @@ const ResourcePlanningPage: React.FC = () => {
                         leftBorder: 'border-l-brand-500',
                     },
                     {
-                        icon: <Briefcase size={14} className="text-indigo-400" />,
+                        icon: <Briefcase size={14} className="text-amber-400" />,
                         value: activeTasks.length,
                         label: 'Active Tasks',
                         sub: `${workloadData.length > 0 ? (activeTasks.length / workloadData.length).toFixed(1) : 0} avg`,
-                        accent: 'border-indigo-500/20 bg-indigo-500/5',
+                        accent: 'border-amber-500/20 bg-amber-500/5',
                         leftBorder: 'border-l-indigo-500',
                     },
                     {

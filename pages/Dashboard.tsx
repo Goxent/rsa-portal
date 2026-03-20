@@ -215,7 +215,7 @@ const Dashboard: React.FC = () => {
                                 if (h < 17) return 'Good Afternoon, ';
                                 return 'Good Evening, ';
                             })()}
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-400">
                                 {user?.displayName?.split(' ')[0] ?? 'Team'}
                             </span>
                         </h1>
@@ -233,7 +233,7 @@ const Dashboard: React.FC = () => {
                     <button onClick={() => navigate('/tasks')} className="flex flex-col items-end group hover:opacity-80 transition-opacity">
                         <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Tasks</span>
                         <div className="flex items-center gap-1.5 text-white font-bold">
-                            <CheckSquare size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                            <CheckSquare size={14} className="text-amber-400 group-hover:scale-110 transition-transform" />
                             {relevantTasks.length}
                         </div>
                     </button>
@@ -298,7 +298,7 @@ const Dashboard: React.FC = () => {
                         const getRelativeDateColor = (date: string) => {
                             const rel = getRelativeDate(date);
                             if (rel === 'Today') return 'text-amber-500 dark:text-amber-400';
-                            if (rel === 'Tomorrow') return 'text-blue-500 dark:text-blue-400';
+                            if (rel === 'Tomorrow') return 'text-amber-500 dark:text-amber-400';
                             return 'text-slate-400 dark:text-gray-500';
                         };
 
@@ -360,7 +360,7 @@ const Dashboard: React.FC = () => {
                                 {/* View all link */}
                                 <button
                                     onClick={() => navigate('/calendar')}
-                                    className="flex items-center justify-center gap-1.5 w-full pt-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold"
+                                    className="flex items-center justify-center gap-1.5 w-full pt-1 text-[11px] text-amber-400 hover:text-amber-300 transition-colors font-semibold"
                                 >
                                     View all in Calendar <ArrowRight size={11} />
                                 </button>

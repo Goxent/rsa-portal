@@ -165,7 +165,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
     return (
         <div className="h-full flex flex-col bg-[#0a0f1e]/40 overflow-hidden relative">
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0f172a]/50 flex-shrink-0 gap-4">
+            <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-white/5 bg-[#09090b]/50 flex-shrink-0 gap-4">
                 <div className="flex flex-wrap items-center gap-4">
                     <button onClick={handleToday} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-gray-300 transition-colors border border-white/10">
                         Today

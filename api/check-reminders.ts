@@ -131,7 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                     
                                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
                                         <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
+                                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
                                     </div>
                                 </div>
                                 

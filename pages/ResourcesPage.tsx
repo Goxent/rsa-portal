@@ -16,7 +16,7 @@ const ResourceIcon = ({ type, size = 24, className = "" }: { type: string, size?
         case 'folder': return <Folder className={`text-amber-400 ${className}`} size={size} />;
         case 'pdf': return <FileText className={`text-rose-400 ${className}`} size={size} />;
         case 'sheet': return <FileCheck className={`text-emerald-400 ${className}`} size={size} />;
-        case 'doc': return <FileText className={`text-blue-400 ${className}`} size={size} />;
+        case 'doc': return <FileText className={`text-amber-400 ${className}`} size={size} />;
         case 'article': return <BookOpen className={`text-purple-400 ${className}`} size={size} />;
         case 'image': return <Eye className={`text-cyan-400 ${className}`} size={size} />;
         default: return <File className={`text-gray-400 ${className}`} size={size} />;
@@ -27,7 +27,7 @@ const TYPE_BADGE_STYLES: Record<string, string> = {
     folder: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
     pdf: 'bg-rose-500/15 text-rose-300 border-rose-500/25',
     sheet: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
-    doc: 'bg-blue-500/15 text-blue-300 border-blue-500/25',
+    doc: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
     article: 'bg-purple-500/15 text-purple-300 border-purple-500/25',
     image: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/25',
 };
@@ -213,10 +213,10 @@ const ResourcesPage: React.FC = () => {
     const getColorGradient = (id: string, type: string) => {
         if (type === 'folder') return 'from-amber-600/20 to-orange-400/10';
         const colors = [
-            'from-blue-600/20 to-cyan-400/10',
+            'from-blue-600/20 to-yellow-400/10',
             'from-purple-600/20 to-pink-400/10',
             'from-emerald-600/20 to-teal-400/10',
-            'from-indigo-600/20 to-violet-400/10',
+            'from-amber-600/20 to-yellow-400/10',
             'from-rose-600/20 to-red-400/10'
         ];
         return colors[id.charCodeAt(0) % colors.length];
@@ -372,7 +372,7 @@ const ResourcesPage: React.FC = () => {
                                                     <ResourceIcon type={res.type} size={18} />
                                                 </div>
                                                 <div>
-                                                    <span className="font-medium text-white group-hover:text-blue-300 transition-colors">{res.title}</span>
+                                                    <span className="font-medium text-white group-hover:text-amber-300 transition-colors">{res.title}</span>
                                                     {res.createdByName && (
                                                         <div className="text-[10px] text-gray-500">by {res.createdByName}</div>
                                                     )}

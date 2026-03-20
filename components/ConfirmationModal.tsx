@@ -26,7 +26,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             case 'danger': return <AlertTriangle className="text-red-500" size={24} />;
             case 'warning': return <AlertTriangle className="text-amber-500" size={24} />;
             case 'success': return <CheckCircle className="text-green-500" size={24} />;
-            default: return <Info className="text-blue-500" size={24} />;
+            default: return <Info className="text-amber-500" size={24} />;
         }
     };
 
@@ -35,7 +35,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             case 'danger': return 'bg-red-600 hover:bg-red-700 focus:ring-red-500';
             case 'warning': return 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500';
             case 'success': return 'bg-green-600 hover:bg-green-700 focus:ring-green-500';
-            default: return 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500';
+            default: return 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500';
         }
     };
 

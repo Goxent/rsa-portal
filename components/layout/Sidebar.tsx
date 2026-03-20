@@ -100,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                 onContextMenu={(e) => togglePin(e, item.id)}
                 className={({ isActive }) =>
                     `flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-1 group relative overflow-hidden ${isActive
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
+                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-900/40'
                         : 'text-gray-400 hover:bg-white/5 hover:text-white'
                     }`
                 }
@@ -141,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
     };
 
     const sidebarClasses = `
-    fixed inset-y-0 left-0 z-30 bg-[#0B1120] border-r border-white/5 flex flex-col transition-all duration-300 ease-in-out
+    fixed inset-y-0 left-0 z-30 bg-[#0c0c0e] border-r border-white/5 flex flex-col transition-all duration-300 ease-in-out
     ${isCollapsed ? 'w-20' : 'w-64'}
     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
   `;
@@ -160,7 +160,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                 {/* Header / Logo */}
                 <div className={`h-16 flex items-center border-b border-white/5 px-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20">
                             <span className="text-white font-bold text-lg leading-none">R</span>
                         </div>
                         {!isCollapsed && (
@@ -231,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                 {/* Footer / User Profile */}
                 <div className="p-3 border-t border-white/5">
                     <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} p-2 rounded-xl bg-white/5 border border-white/5`}>
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-xs font-bold text-white shrink-0">
                             {user?.displayName?.charAt(0).toUpperCase()}
                         </div>
                         {!isCollapsed && (

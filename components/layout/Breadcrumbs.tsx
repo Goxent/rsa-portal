@@ -61,7 +61,7 @@ const Breadcrumbs: React.FC = () => {
                         {isLast ? (
                             <span className="font-medium text-white pointer-events-none">{displayName}</span>
                         ) : (
-                            <Link to={to} className="hover:text-blue-400 transition-colors">
+                            <Link to={to} className="hover:text-amber-400 transition-colors">
                                 {displayName}
                             </Link>
                         )}

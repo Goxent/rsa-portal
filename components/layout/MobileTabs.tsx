@@ -20,7 +20,7 @@ const MobileTabs: React.FC = () => {
     const visibleTabs = ALL_TABS.filter(tab => !tab.adminOnly || isAdmin);
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-[#0B1120]/95 backdrop-blur-lg border-t border-white/10 z-50 flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-[#0c0c0e]/95 backdrop-blur-lg border-t border-white/10 z-50 flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
             {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 return (

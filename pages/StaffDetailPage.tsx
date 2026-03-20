@@ -81,7 +81,7 @@ const StaffDetailPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center h-full text-white">
                 <AlertTriangle size={48} className="text-rose-500 mb-4" />
                 <h2 className="text-2xl font-bold">Staff member not found</h2>
-                <button onClick={() => navigate('/staff')} className="mt-4 text-blue-400 hover:text-blue-300">
+                <button onClick={() => navigate('/staff')} className="mt-4 text-amber-400 hover:text-amber-300">
                     ← Back to Directory
                 </button>
             </div>
@@ -209,12 +209,12 @@ const StaffDetailPage: React.FC = () => {
                                 {/* Task Health */}
                                 <div className="glass-panel p-6 rounded-2xl border border-white/5">
                                     <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <CheckCircle2 size={14} className="text-blue-400" /> Task Health
+                                        <CheckCircle2 size={14} className="text-amber-400" /> Task Health
                                     </h4>
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-gray-400">In Progress</span>
-                                            <span className="text-blue-400 font-bold">{staffTasks.filter(t => t.status === 'IN_PROGRESS').length}</span>
+                                            <span className="text-amber-400 font-bold">{staffTasks.filter(t => t.status === 'IN_PROGRESS').length}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-gray-400">Not Started</span>
@@ -250,7 +250,7 @@ const StaffDetailPage: React.FC = () => {
                                             <p className="text-[10px] text-gray-500 font-bold uppercase">Late Days</p>
                                         </div>
                                         <div className="text-center p-3 bg-white/5 rounded-xl col-span-2">
-                                            <p className="text-2xl font-black text-blue-400">
+                                            <p className="text-2xl font-black text-amber-400">
                                                 {attendanceThisMonth.reduce((sum, a) => sum + (a.workHours || 0), 0).toFixed(1)}
                                             </p>
                                             <p className="text-[10px] text-gray-500 font-bold uppercase">Total Hours</p>
@@ -296,7 +296,7 @@ const StaffDetailPage: React.FC = () => {
                                                 <div className="flex flex-col items-end gap-1">
                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
                                                         task.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                                                        task.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                                        task.status === 'IN_PROGRESS' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                         task.status === 'UNDER_REVIEW' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                         'bg-gray-500/20 text-gray-400 border-gray-500/30'
                                                     }`}>
@@ -342,7 +342,7 @@ const StaffDetailPage: React.FC = () => {
                                                 <h4 className={`font-bold text-sm line-clamp-2 ${isOverdue ? 'text-rose-100' : 'text-white'}`}>{task.title}</h4>
                                                 <span className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
                                                     task.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                                                    task.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                                    task.status === 'IN_PROGRESS' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                     task.status === 'UNDER_REVIEW' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                     'bg-gray-500/20 text-gray-400 border-gray-500/30'
                                                 }`}>
@@ -380,7 +380,7 @@ const StaffDetailPage: React.FC = () => {
                                 <div className="flex-1"><p className="text-2xl font-black text-white">{attendanceRecords.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Days Logged (60d)</p></div>
                                 <div className="flex-1"><p className="text-2xl font-black text-emerald-400">{attendanceRecords.filter(a => a.status === 'PRESENT').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">On Time</p></div>
                                 <div className="flex-1"><p className="text-2xl font-black text-amber-400">{attendanceRecords.filter(a => a.status === 'LATE').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Late</p></div>
-                                <div className="flex-1"><p className="text-2xl font-black text-blue-400">{attendanceRecords.reduce((sum, a) => sum + (a.workHours || 0), 0).toFixed(1)}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Hours</p></div>
+                                <div className="flex-1"><p className="text-2xl font-black text-amber-400">{attendanceRecords.reduce((sum, a) => sum + (a.workHours || 0), 0).toFixed(1)}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Hours</p></div>
                             </div>
                             
                             {attendanceRecords.length > 0 ? (

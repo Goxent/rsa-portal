@@ -220,7 +220,7 @@ const CompliancePage: React.FC = () => {
 
     const getCategoryColor = (category: string) => {
         const colors = {
-            TAX: 'text-blue-400 bg-blue-500/20',
+            TAX: 'text-amber-400 bg-amber-500/20',
             AUDIT: 'text-purple-400 bg-purple-500/20',
             REGULATORY: 'text-orange-400 bg-orange-500/20',
             INTERNAL: 'text-gray-400 bg-gray-500/20',
@@ -276,7 +276,7 @@ const CompliancePage: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <CalIcon className="text-blue-400" />
+                        <CalIcon className="text-amber-400" />
                         Compliance Calendar
                     </h1>
                     <p className="text-sm text-gray-400">Track statutory deadlines, tax filings, and audit schedules.</p>
@@ -308,7 +308,7 @@ const CompliancePage: React.FC = () => {
                                 });
                                 setIsModalOpen(true);
                             }}
-                            className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
+                            className="bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
                         >
                             <Plus size={16} className="mr-2" /> Add Event
                         </button>
@@ -455,7 +455,7 @@ const CompliancePage: React.FC = () => {
                                     <div key={client.id} className="glass-card p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all group">
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-center gap-3 overflow-hidden">
-                                                <div className="w-10 h-10 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-blue-400 font-bold text-xs">
+                                                <div className="w-10 h-10 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-amber-400 font-bold text-xs">
                                                     {client.code?.substring(0, 3) || 'CL'}
                                                 </div>
                                                 <div className="overflow-hidden">
@@ -465,7 +465,7 @@ const CompliancePage: React.FC = () => {
                                             </div>
                                             <div className="flex flex-col items-end gap-1 shrink-0">
                                                 {client.vatReturn && (
-                                                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">VAT</span>
+                                                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">VAT</span>
                                                 )}
                                                 {client.itrReturn && (
                                                     <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR</span>
@@ -530,7 +530,7 @@ const CompliancePage: React.FC = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Upcoming', count: upcomingCount, icon: CalIcon, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                    { label: 'Upcoming', count: upcomingCount, icon: CalIcon, color: 'text-amber-400', bg: 'bg-amber-500/10' },
                     { label: 'Due Soon', count: dueSoonCount, icon: Bell, color: 'text-amber-400', bg: 'bg-amber-500/10' },
                     { label: 'Overdue', count: overdueCount, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
                     { label: 'Completed', count: events.filter(e => e.status === 'COMPLETED').length, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
@@ -554,7 +554,7 @@ const CompliancePage: React.FC = () => {
                         key={f}
                         onClick={() => setFilter(f)}
                         className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filter === f
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                            ? 'bg-amber-600 text-white shadow-lg shadow-blue-900/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
@@ -645,9 +645,9 @@ const CompliancePage: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
                     <div className="glass-modal rounded-2xl w-full max-w-lg border border-white/10 shadow-2xl relative overflow-hidden">
                         {/* Modal Header */}
-                        <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-blue-900/50 to-indigo-900/50 flex justify-between items-center">
+                        <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-amber-900/50 to-amber-900/50 flex justify-between items-center">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                {editingId ? <Filter size={20} className="text-blue-400" /> : <Plus size={20} className="text-blue-400" />}
+                                {editingId ? <Filter size={20} className="text-amber-400" /> : <Plus size={20} className="text-amber-400" />}
                                 {editingId ? 'Edit Event' : 'New Compliance Event'}
                             </h3>
                             <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-all">
@@ -660,7 +660,7 @@ const CompliancePage: React.FC = () => {
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Title <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
                                     value={newEvent.title}
                                     placeholder="e.g. Q3 VAT Return"
                                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
@@ -672,7 +672,7 @@ const CompliancePage: React.FC = () => {
                                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Category</label>
                                     <div className="relative">
                                         <select
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
                                             value={newEvent.category}
                                             onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value as any })}
                                         >
@@ -690,7 +690,7 @@ const CompliancePage: React.FC = () => {
                                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Priority</label>
                                     <div className="relative">
                                         <select
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
                                             value={newEvent.priority}
                                             onChange={(e) => setNewEvent({ ...newEvent, priority: e.target.value as any })}
                                         >
@@ -726,7 +726,7 @@ const CompliancePage: React.FC = () => {
                                 ) : (
                                     <input
                                         type="date"
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
                                         value={newEvent.dueDate}
                                         onChange={(e) => setNewEvent({ ...newEvent, dueDate: e.target.value })}
                                     />
@@ -736,7 +736,7 @@ const CompliancePage: React.FC = () => {
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</label>
                                 <textarea
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all resize-none"
                                     rows={3}
                                     placeholder="Add notes or required documents..."
                                     value={newEvent.description}
@@ -746,7 +746,7 @@ const CompliancePage: React.FC = () => {
 
                             <button
                                 onClick={handleSaveEvent}
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 mt-4"
+                                className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2 mt-4"
                             >
                                 <CheckCircle size={20} />
                                 {editingId ? 'Save Changes' : 'Create Event'}

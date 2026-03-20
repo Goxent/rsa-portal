@@ -2,9 +2,11 @@ import React, { useRef, useEffect, useState } from 'react';
 import {
     X, Edit2, ShieldAlert, Tag, Calendar, UserCircle2,
     Briefcase, Activity, AlertTriangle, Clock, Plus,
-    Trash2, Save, Loader2, CheckCircle2, Check, Eye
+    Trash2, Save, Loader2, CheckCircle2, Check, Eye,
+    Sparkles, Book
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource } from '../../types';
+import { KnowledgeService } from '../../services/knowledge';
 import StaffSelect from '../StaffSelect';
 import ClientSelect from '../ClientSelect';
 import TaskComments from '../TaskComments';
@@ -59,6 +61,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 }) => {
     const initialTaskRef = useRef<Partial<Task> | null>(null);
     const [showDiscardBanner, setShowDiscardBanner] = useState(false);
+    const [suggestedResources, setSuggestedResources] = useState<Resource[]>([]);
+
+    useEffect(() => {
+        if (isOpen && task.title) {
+            KnowledgeService.getAllResources().then(resources => {
+                const keywords = task.title!.toLowerCase().split(' ').filter(w => w.length > 3);
+                const matches = resources.filter(r => 
+                    keywords.some(kw => r.title.toLowerCase().includes(kw) || r.category?.toLowerCase().includes(kw))
+                ).slice(0, 3);
+                setSuggestedResources(matches);
+            });
+        }
+    }, [isOpen, task.title]);
 
     // Snapshot task state whenever the pane opens
     useEffect(() => {
@@ -157,12 +172,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         <div className="shrink-0 px-8 py-6 border-b border-white/10 flex justify-between items-center bg-white/5 relative overflow-hidden">
                             <div className={`absolute top-0 left-0 w-full h-1 ${task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' :
                                 task.status === TaskStatus.HALTED ? 'bg-rose-500' :
-                                    task.status === TaskStatus.IN_PROGRESS ? 'bg-blue-500' :
+                                    task.status === TaskStatus.IN_PROGRESS ? 'bg-amber-500' :
                                         task.status === TaskStatus.UNDER_REVIEW ? 'bg-amber-500' : 'bg-gray-500'
                                 }`} />
                             <div>
                                 <h3 className="text-xl font-black text-white tracking-wide uppercase flex items-center gap-2">
-                                    {isEditMode ? <Edit2 size={18} className="text-blue-400" /> : <Plus size={18} className="text-blue-400" />}
+                                    {isEditMode ? <Edit2 size={18} className="text-amber-400" /> : <Plus size={18} className="text-amber-400" />}
                                     {isEditMode ? 'EDIT TASK' : 'NEW TASK'}
                                 </h3>
                                 {isEditMode && task.id && (
@@ -191,12 +206,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             placeholder="Task Title..."
                                             {...register('title')}
                                         />
-                                        <div className={`w-full h-[1px] ${errors.title ? 'bg-red-500/50' : 'bg-white/5'} group-focus-within:bg-blue-500/50 transition-colors`} />
+                                        <div className={`w-full h-[1px] ${errors.title ? 'bg-red-500/50' : 'bg-white/5'} group-focus-within:bg-amber-500/50 transition-colors`} />
                                         {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>}
                                     </div>
                                     <div>
                                         <textarea
-                                            className="w-full bg-white/5 border border-white/5 focus:border-blue-500/50 rounded-2xl min-h-[140px] p-5 text-sm resize-none text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all shadow-inner"
+                                            className="w-full bg-white/5 border border-white/5 focus:border-amber-500/50 rounded-2xl min-h-[140px] p-5 text-sm resize-none text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 transition-all shadow-inner"
                                             placeholder="Add a more detailed description... (Type @ to mention staff)"
                                             {...register('description')}
                                         />
@@ -207,7 +222,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/20 p-6 rounded-3xl border border-white/5 shadow-2xl">
                                     <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.status ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                            <Activity size={12} className="text-blue-400" /> Status
+                                            <Activity size={12} className="text-amber-400" /> Status
                                         </label>
                                         <select
                                             className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
@@ -231,7 +246,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.clientId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
                                         <div className="flex items-center justify-between mb-2">
                                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                                <Briefcase size={12} className="text-indigo-400" /> Client
+                                                <Briefcase size={12} className="text-amber-400" /> Client
                                             </label>
                                             {watch('clientId') && onOpenClientDetail && (
                                                 <button
@@ -239,7 +254,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                         e.preventDefault();
                                                         onOpenClientDetail(watch('clientId')!);
                                                     }}
-                                                    className="text-[9px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20 transition-all"
+                                                    className="text-[9px] font-black text-amber-400 hover:text-amber-300 uppercase tracking-widest flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 transition-all"
                                                 >
                                                     <Eye size={10} /> View Profile
                                                 </button>
@@ -336,14 +351,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </div>
 
                                     <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-2 border-t-blue-500/20 border-t-2">
-                                        <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                        <label className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                             <Clock size={12} /> Time Logged (Minutes)
                                         </label>
                                         <div className="flex items-center gap-4">
                                             <input
                                                 type="number"
                                                 min="0"
-                                                className="w-32 bg-black/40 text-lg font-black text-white p-3 rounded-xl border border-white/5 focus:border-blue-500/50 focus:outline-none text-center"
+                                                className="w-32 bg-black/40 text-lg font-black text-white p-3 rounded-xl border border-white/5 focus:border-amber-500/50 focus:outline-none text-center"
                                                 placeholder="0"
                                                 {...register('estimatedHours', { valueAsNumber: true })}
                                             />
@@ -353,6 +368,29 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Suggested SOPs / Resources */}
+                                {suggestedResources.length > 0 && (
+                                    <div className="space-y-4 bg-amber-500/5 p-6 rounded-2xl border border-amber-500/10 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/50" />
+                                        <label className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <Sparkles size={12} /> Suggested Knowledge & SOPs
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {suggestedResources.map(r => (
+                                                <a key={r.id} href={r.link || '#'} target="_blank" rel="noreferrer" className="flex items-start gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/5 group">
+                                                    <div className="p-2 bg-amber-500/10 rounded-lg text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0">
+                                                        <Book size={16} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-sm font-bold text-gray-200 group-hover:text-amber-300 transition-colors truncate">{r.title}</h4>
+                                                        <p className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-wider">{r.category || 'Documentation'}</p>
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Subtasks */}
                                 <div className="space-y-4 bg-white/5 p-6 rounded-2xl border border-white/5">
@@ -370,7 +408,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         />
                                         <button
                                             onClick={onAddSubtask}
-                                            className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500/30 transition-all font-bold text-sm flex items-center gap-2"
+                                            className="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition-all font-bold text-sm flex items-center gap-2"
                                         >
                                             <Plus size={16} /> Add
                                         </button>
@@ -387,7 +425,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             onChange({ subtasks: updated });
                                                         }}
                                                         className={`w-5 h-5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all flex-shrink-0 mt-0.5
-                                                            ${st.isCompleted ? 'bg-blue-500 border-blue-500' : 'border-slate-600 bg-transparent hover:border-blue-400'}`}
+                                                            ${st.isCompleted ? 'bg-amber-500 border-amber-500' : 'border-slate-600 bg-transparent hover:border-blue-400'}`}
                                                     >
                                                         {st.isCompleted && <Check size={12} className="text-white" strokeWidth={3} />}
                                                     </div>
@@ -459,7 +497,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 <button
                                     onClick={handleSubmit(handleSave)}
                                     disabled={isSaving}
-                                    className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 group"
+                                    className="px-8 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 group"
                                 >
                                     {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} className="group-hover:scale-110 transition-transform" />}
                                     {isEditMode ? 'Update Task' : 'Create Task'}

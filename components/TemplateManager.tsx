@@ -18,7 +18,9 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         priority: TaskPriority.MEDIUM,
         category: 'Audit',
         subtasks: [],
-        documentLink: ''
+        subtaskDetails: [],
+        documentLink: '',
+        nextTemplateId: ''
     });
     const [newSubtask, setNewSubtask] = useState('');
 
@@ -75,10 +77,17 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const [newSubtaskRequirement, setNewSubtaskRequirement] = useState('');
+    const [newSubtaskRole, setNewSubtaskRole] = useState<UserRole | ''>('');
+    const [newSubtaskOffset, setNewSubtaskOffset] = useState('');
 
     const addSubtask = () => {
         if (!newSubtask.trim()) return;
-        const newDetail = { title: newSubtask.trim(), minimumRequirement: newSubtaskRequirement.trim() || undefined };
+        const newDetail = { 
+            title: newSubtask.trim(), 
+            minimumRequirement: newSubtaskRequirement.trim() || undefined,
+            assigneeRole: newSubtaskRole || undefined,
+            daysOffset: newSubtaskOffset ? parseInt(newSubtaskOffset) : undefined
+        };
         setCurrentTemplate(prev => ({
             ...prev,
             subtasks: [...(prev.subtasks || []), newSubtask.trim()],
@@ -86,6 +95,8 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }));
         setNewSubtask('');
         setNewSubtaskRequirement('');
+        setNewSubtaskRole('');
+        setNewSubtaskOffset('');
     };
 
     const removeSubtask = (index: number) => {
@@ -117,7 +128,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <button
                                 onClick={() => {
                                     setIsEditing(true);
-                                    setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'Audit', subtasks: [], subtaskDetails: [], autoApplyRules: {}, documentLink: '' });
+                                    setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'Audit', subtasks: [], subtaskDetails: [], autoApplyRules: {}, documentLink: '', nextTemplateId: '' });
                                 }}
                                 className="w-full mb-4 py-3 border-2 border-dashed border-brand-500/30 rounded-xl text-brand-400 hover:border-brand-500/60 hover:bg-brand-500/5 transition-all flex items-center justify-center font-bold text-sm"
                             >
@@ -208,6 +219,13 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Trigger Next Workflow</label>
+                                        <select className="w-full glass-input" value={currentTemplate.nextTemplateId || ''} onChange={e => setCurrentTemplate({ ...currentTemplate, nextTemplateId: e.target.value })} disabled={!isAdmin}>
+                                            <option value="">- None -</option>
+                                            {templates.filter(t => t.id !== currentTemplate.id).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -216,13 +234,15 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         <span className="ml-2 px-2 py-0.5 rounded-full bg-navy-800 text-gray-400 text-[10px]">{currentTemplate.subtaskDetails?.length || 0} TOTAL</span>
                                     </label>
                                     <div className="space-y-2 mb-4">
-                                        {(currentTemplate.subtaskDetails || currentTemplate.subtasks?.map(t => ({ title: t, minimumRequirement: undefined })) || []).map((s, idx) => (
+                                        {(currentTemplate.subtaskDetails || currentTemplate.subtasks?.map(t => ({ title: t, assigneeRole: undefined, daysOffset: undefined, minimumRequirement: undefined })) || []).map((s, idx) => (
                                             <div key={idx} className="flex flex-col group bg-white/5 border border-white/5 rounded-lg p-2 hover:border-white/10 transition-colors">
                                                 <div className="flex items-center">
                                                     <div className="w-6 h-6 rounded bg-navy-800 flex items-center justify-center text-[10px] text-gray-400 font-mono mr-3 border border-white/5">
                                                         {idx + 1}
                                                     </div>
                                                     <span className="flex-1 text-sm">{s.title}</span>
+                                                    {s.assigneeRole && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{s.assigneeRole}</span>}
+                                                    {s.daysOffset !== undefined && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">+{s.daysOffset} d</span>}
                                                     {isAdmin && (
                                                         <button type="button" onClick={() => removeSubtask(idx)} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1"><X size={14} /></button>
                                                     )}
@@ -238,19 +258,36 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     </div>
                                     {isAdmin && (
                                         <div className="flex flex-col gap-2">
-                                            <div className="flex space-x-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <input
-                                                    className="flex-1 glass-input py-2 text-sm"
+                                                    className="flex-1 min-w-[200px] glass-input py-2 text-sm"
                                                     value={newSubtask}
                                                     onChange={e => setNewSubtask(e.target.value)}
                                                     placeholder="Add a step (e.g. Verify Fixed Assets)"
                                                     onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
                                                 />
                                                 <input
-                                                    className="w-1/3 glass-input py-2 text-sm"
+                                                    className="w-1/4 min-w-[120px] glass-input py-2 text-sm"
                                                     value={newSubtaskRequirement}
                                                     onChange={e => setNewSubtaskRequirement(e.target.value)}
-                                                    placeholder="Min Req (Optional)"
+                                                    placeholder="Min Req (Opt)"
+                                                    onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
+                                                />
+                                                <select
+                                                    className="w-1/5 min-w-[100px] glass-input py-2 text-sm"
+                                                    value={newSubtaskRole}
+                                                    onChange={e => setNewSubtaskRole(e.target.value as UserRole | '')}
+                                                >
+                                                    <option value="">Role Setup</option>
+                                                    {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
+                                                </select>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 glass-input py-2 text-sm"
+                                                    value={newSubtaskOffset}
+                                                    onChange={e => setNewSubtaskOffset(e.target.value)}
+                                                    placeholder="+Days"
                                                     onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
                                                 />
                                                 <button

@@ -7,8 +7,8 @@ interface TaskStatsWidgetProps {
 
 const STATUS_CONFIG = [
     { key: 'Completed', icon: CheckCircle2, color: 'text-emerald-400', bar: 'bg-emerald-500/30', ring: '#10b981', bg: 'bg-emerald-500/10' },
-    { key: 'In Progress', icon: Loader, color: 'text-blue-400', bar: 'bg-blue-500/30', ring: '#3b82f6', bg: 'bg-blue-500/10' },
-    { key: 'Review', icon: Eye, color: 'text-indigo-400', bar: 'bg-indigo-500/30', ring: '#6366f1', bg: 'bg-indigo-500/10' },
+    { key: 'In Progress', icon: Loader, color: 'text-amber-400', bar: 'bg-amber-500/30', ring: '#3b82f6', bg: 'bg-amber-500/10' },
+    { key: 'Review', icon: Eye, color: 'text-amber-400', bar: 'bg-amber-500/30', ring: '#6366f1', bg: 'bg-amber-500/10' },
     { key: 'Pending', icon: Pause, color: 'text-slate-500', bar: 'bg-slate-500/20', ring: '#64748b', bg: 'bg-slate-500/10' },
 ];
 

@@ -21,8 +21,8 @@ const ImpactStatsWidget: React.FC<ImpactStatsWidgetProps> = ({ clientStats, task
             value: clientStats.total,
             subValue: `${clientStats.active} Active`,
             icon: Users,
-            color: 'text-blue-400',
-            bg: 'bg-blue-500/10',
+            color: 'text-amber-400',
+            bg: 'bg-amber-500/10',
             trend: '+12%', // Mock trend for now
             trendUp: true
         },

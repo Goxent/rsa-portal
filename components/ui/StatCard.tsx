@@ -19,14 +19,14 @@ const StatCard: React.FC<StatCardProps> = ({
     value,
     subtext,
     icon: Icon,
-    gradient = 'from-blue-600 to-indigo-600',
+    gradient = 'from-amber-500 to-yellow-600',
     onClick,
     delay = 0
 }) => {
     return (
         <div
             onClick={onClick}
-            className="glass-card p-6 hover:border-blue-500/20 cursor-pointer group animate-fade-in-up transition-all duration-300 hover:-translate-y-1"
+            className="glass-card p-6 hover:border-amber-500/20 cursor-pointer group animate-fade-in-up transition-all duration-300 hover:-translate-y-1"
             style={{ animationDelay: `${delay}ms` }}
         >
             <div className="flex items-start justify-between">
@@ -34,7 +34,7 @@ const StatCard: React.FC<StatCardProps> = ({
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                         {title}
                     </p>
-                    <p className="text-3xl font-bold text-white font-heading mb-1 group-hover:text-blue-300 transition-colors">
+                    <p className="text-3xl font-bold text-white font-heading mb-1 group-hover:text-amber-300 transition-colors">
                         {value}
                     </p>
                     {subtext && (

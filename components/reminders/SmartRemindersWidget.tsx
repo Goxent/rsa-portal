@@ -20,7 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const PRIORITY_COLORS: Record<ReminderPriority, string> = {
     low: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-    medium: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    medium: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
     high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
     urgent: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
@@ -232,7 +232,7 @@ const SmartRemindersWidget: React.FC<SmartRemindersWidgetProps> = ({
                 </div>
                 <div className="glass-panel rounded-2xl p-4">
                     <p className="text-xs text-gray-400">Task Related</p>
-                    <p className="text-2xl font-bold text-blue-400">
+                    <p className="text-2xl font-bold text-amber-400">
                         {reminders.filter(r => r.type.includes('task')).length}
                     </p>
                 </div>

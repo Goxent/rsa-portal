@@ -3,7 +3,7 @@ import {
     FileText, Search, Plus, Star, Copy, Trash2,
     File, FileSpreadsheet, FileCode, CheckSquare, Sparkles,
     ExternalLink, X, Library, BookOpen, Download,
-    FolderOpen, FileJson, FileType, Loader2, Palette, Check
+    FolderOpen, FileJson, FileType, Loader2, Palette, Check, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Template, UserRole, Resource, Category } from '../types';
@@ -53,7 +53,7 @@ const TemplatesPage: React.FC = () => {
     const [viewDoc, setViewDoc] = useState<{ url: string; type: string; title: string; downloadUrl?: string } | null>(null);
     const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-    const [currentResource, setCurrentResource] = useState<Partial<Resource>>({ type: 'pdf', category: '', link: '', title: '' });
+    const [currentResource, setCurrentResource] = useState<Partial<Resource>>({ type: 'pdf', category: '', link: '', title: '', reviewDate: '' });
     const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({ label: '', icon: 'FolderOpen', color: '#3B82F6' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploadMode, setIsUploadMode] = useState(false);
@@ -167,7 +167,7 @@ const TemplatesPage: React.FC = () => {
                 toast.success('Resource added');
             }
             setIsResourceModalOpen(false);
-            setCurrentResource({ type: 'pdf', category: '', link: '', title: '' });
+            setCurrentResource({ type: 'pdf', category: '', link: '', title: '', reviewDate: '' });
         } catch { toast.error('Failed to save resource'); }
         finally { setIsSubmitting(false); }
     };
@@ -220,14 +220,14 @@ const TemplatesPage: React.FC = () => {
     const getTemplateIcon = (type: string) => {
         if (type.includes('spreadsheet') || type.includes('excel')) return <FileSpreadsheet size={20} className="text-emerald-400" />;
         if (type.includes('pdf')) return <FileText size={20} className="text-red-400" />;
-        return <File size={20} className="text-blue-400" />;
+        return <File size={20} className="text-amber-400" />;
     };
 
     const getResourceIcon = (type: string) => {
         switch (type) {
             case 'pdf': return <FileText size={24} className="text-red-400" />;
             case 'sheet': return <FileJson size={24} className="text-green-400" />;
-            case 'doc': return <FileType size={24} className="text-blue-400" />;
+            case 'doc': return <FileType size={24} className="text-amber-400" />;
             case 'image': return <FileType size={24} className="text-purple-400" />;
             default: return <FileText size={24} className="text-gray-400" />;
         }
@@ -241,7 +241,7 @@ const TemplatesPage: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <Library className="text-blue-400" />
+                        <Library className="text-amber-400" />
                         Resources
                     </h1>
                     <p className="text-sm text-gray-400">Templates, SOPs, and firm knowledge – all in one place</p>
@@ -253,7 +253,7 @@ const TemplatesPage: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('templates')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'templates'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                        ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/30'
                         : 'text-gray-400 hover:text-white'
                         }`}
                 >
@@ -262,7 +262,7 @@ const TemplatesPage: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('knowledge')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'knowledge'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                        ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/30'
                         : 'text-gray-400 hover:text-white'
                         }`}
                 >
@@ -289,7 +289,7 @@ const TemplatesPage: React.FC = () => {
                             <div className="flex gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 px-1 no-scrollbar">
                                 {['ALL', 'TASK', 'CHECKLIST', 'DOCUMENT', 'WORKFLOW'].map(cat => (
                                     <button key={cat} onClick={() => setCategoryFilter(cat)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${categoryFilter === cat ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${categoryFilter === cat ? 'bg-amber-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
                                         {cat}
                                     </button>
                                 ))}
@@ -302,7 +302,7 @@ const TemplatesPage: React.FC = () => {
                                     <Sparkles size={14} className="mr-2" /> AI Research
                                 </button>
                                 <button onClick={() => setIsModalOpen(true)}
-                                    className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 flex items-center transition-all">
+                                    className="bg-amber-600 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-amber-700 flex items-center transition-all">
                                     <Plus size={14} className="mr-2" /> New Template
                                 </button>
                             </div>
@@ -313,11 +313,11 @@ const TemplatesPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {filteredTemplates.map((template, index) => (
                             <div key={template.id}
-                                className="glass-panel p-5 rounded-2xl hover:border-blue-500/30 transition-all group relative overflow-hidden flex flex-col h-full"
+                                className="glass-panel p-5 rounded-2xl hover:border-amber-500/30 transition-all group relative overflow-hidden flex flex-col h-full"
                                 style={{ animationDelay: `${index * 50}ms` }}>
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-xl border border-blue-500/20 group-hover:scale-110 transition-transform">
-                                        {template.category === 'CHECKLIST' ? <CheckSquare className="text-blue-400" size={22} /> : <FileText className="text-cyan-400" size={22} />}
+                                    <div className="p-3 bg-gradient-to-br from-blue-500/20 to-yellow-500/10 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
+                                        {template.category === 'CHECKLIST' ? <CheckSquare className="text-amber-400" size={22} /> : <FileText className="text-cyan-400" size={22} />}
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${template.category === 'TASK' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
@@ -355,7 +355,7 @@ const TemplatesPage: React.FC = () => {
                                         <span>{template.usageCount || 0} Uses</span>
                                     </div>
                                     <button onClick={() => setPreviewTemplate(template)}
-                                        className="text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center transition-colors">
+                                        className="text-sm font-bold text-amber-400 hover:text-amber-300 flex items-center transition-colors">
                                         <ExternalLink size={13} className="mr-1.5" /> View & Use
                                     </button>
                                 </div>
@@ -392,7 +392,7 @@ const TemplatesPage: React.FC = () => {
                                     <Plus size={14} className="mr-2" /> Folder
                                 </button>
                                 <button onClick={() => {
-                                    setCurrentResource({ type: 'pdf', category: activeKbCategory === 'ALL' && kbCategories.length > 0 ? kbCategories[0].id : activeKbCategory, link: '', title: '' });
+                                    setCurrentResource({ type: 'pdf', category: activeKbCategory === 'ALL' && kbCategories.length > 0 ? kbCategories[0].id : activeKbCategory, link: '', title: '', reviewDate: '' });
                                     setIsUploadMode(false); setIsResourceModalOpen(true);
                                 }} className="bg-brand-600 hover:bg-brand-500 text-white px-3 py-2 rounded-xl text-sm font-bold flex items-center transition-all">
                                     <Plus size={14} className="mr-2" /> Resource
@@ -455,12 +455,19 @@ const TemplatesPage: React.FC = () => {
                                                 <div className="p-2.5 bg-white/5 rounded-lg group-hover:bg-brand-500/10 transition-colors">
                                                     {getResourceIcon(resource.type)}
                                                 </div>
-                                                {isAdmin && (
-                                                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={e => handleEditResource(resource, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><FileText size={13} /></button>
-                                                        <button onClick={e => handleDeleteResource(resource.id, e)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
-                                                    </div>
-                                                )}
+                                                <div className="flex space-x-2 items-center">
+                                                    {resource.reviewDate && new Date(resource.reviewDate) < new Date() && (
+                                                        <div className="flex items-center text-xs font-bold text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                                                            <AlertTriangle size={12} className="mr-1" /> Expired
+                                                        </div>
+                                                    )}
+                                                    {isAdmin && (
+                                                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={e => handleEditResource(resource, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><FileText size={13} /></button>
+                                                            <button onClick={e => handleDeleteResource(resource.id, e)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             <h3 className="text-white font-bold mb-1 line-clamp-2 min-h-[2.5rem] text-sm group-hover:text-brand-300 transition-colors">{resource.title}</h3>
                                             <div className="mt-auto pt-2.5 border-t border-white/5 flex items-center justify-between">
@@ -481,7 +488,7 @@ const TemplatesPage: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
                     <div className="glass-modal rounded-2xl w-full max-w-2xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-white flex items-center"><Plus size={16} className="mr-2 text-blue-400" /> Create New Template</h3>
+                            <h3 className="text-lg font-bold text-white flex items-center"><Plus size={16} className="mr-2 text-amber-400" /> Create New Template</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={18} /></button>
                         </div>
                         <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
@@ -553,7 +560,7 @@ const TemplatesPage: React.FC = () => {
                         </div>
                         <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end space-x-3">
                             <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
-                            <button onClick={handleCreateTemplate} className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-500 shadow-lg transition-all">
+                            <button onClick={handleCreateTemplate} className="bg-amber-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-amber-500 shadow-lg transition-all">
                                 Create Template
                             </button>
                         </div>
@@ -566,12 +573,12 @@ const TemplatesPage: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
                     <div className="glass-modal rounded-2xl w-full max-w-3xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white flex items-center"><FileText className="mr-2 text-blue-400" /> {previewTemplate.name}</h3>
+                            <h3 className="text-xl font-bold text-white flex items-center"><FileText className="mr-2 text-amber-400" /> {previewTemplate.name}</h3>
                             <button onClick={() => setPreviewTemplate(null)} className="text-gray-400 hover:text-white transition-colors"><X size={22} /></button>
                         </div>
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-5">
                             <div className="flex gap-2">
-                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">{previewTemplate.category}</span>
+                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">{previewTemplate.category}</span>
                                 {previewTemplate.type && <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">{previewTemplate.type}</span>}
                             </div>
                             <div className="bg-white/5 p-4 rounded-xl border border-white/10">
@@ -591,9 +598,9 @@ const TemplatesPage: React.FC = () => {
                                         {previewTemplate.attachments.map((att: any, i: number) => (
                                             <a key={i} href={att.url} target="_blank" rel="noreferrer"
                                                 className="flex items-center p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group">
-                                                <div className="mr-3 p-2 bg-white/5 rounded-lg text-blue-400">{getTemplateIcon(att.name)}</div>
+                                                <div className="mr-3 p-2 bg-white/5 rounded-lg text-amber-400">{getTemplateIcon(att.name)}</div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-200 truncate group-hover:text-blue-300 transition-colors">{att.name}</p>
+                                                    <p className="text-sm font-medium text-gray-200 truncate group-hover:text-amber-300 transition-colors">{att.name}</p>
                                                     <p className="text-xs text-gray-500">Click to view</p>
                                                 </div>
                                                 <ExternalLink size={13} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -606,7 +613,7 @@ const TemplatesPage: React.FC = () => {
                         <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end gap-3">
                             <button onClick={() => setPreviewTemplate(null)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-colors">Close</button>
                             <button onClick={() => { handleUseTemplate(previewTemplate); setPreviewTemplate(null); }}
-                                className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 shadow-lg flex items-center transition-all hover:-translate-y-0.5">
+                                className="bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-500 shadow-lg flex items-center transition-all hover:-translate-y-0.5">
                                 <Copy size={14} className="mr-2" /> Use Template
                             </button>
                         </div>
@@ -628,6 +635,13 @@ const TemplatesPage: React.FC = () => {
                                 <input required className="w-full glass-input rounded-lg px-3 py-2 text-sm"
                                     value={currentResource.title || ''} onChange={e => setCurrentResource({ ...currentResource, title: e.target.value })}
                                     placeholder="e.g. Audit Standard 2024" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Review / Expiry Date</label>
+                                <input type="date" className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                    value={currentResource.reviewDate || ''} onChange={e => setCurrentResource({ ...currentResource, reviewDate: e.target.value })}
+                                />
+                                <p className="text-[10px] text-gray-500 mt-1">Leave empty if document does not expire.</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

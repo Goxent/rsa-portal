@@ -49,7 +49,7 @@ const Header: React.FC<HeaderProps> = ({
     };
 
     return (
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-[#0c0c0e]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
 
             {/* Left: Mobile Toggle & Breadcrumbs */}
             <div className="flex items-center gap-4">
@@ -58,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
                 {/* Mobile Logo substitute */}
                 <div className="md:hidden flex items-center">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg">
                         <span className="text-white font-bold text-lg leading-none">R</span>
                     </div>
                 </div>
@@ -73,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Real-time Clock (Desktop Only) */}
                 <div className="hidden xl:flex flex-col items-end mr-2 text-right font-mono">
                     <div className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                        <Clock size={12} className="text-blue-400" />
+                        <Clock size={12} className="text-amber-400" />
                         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                     <div className="text-[10px] text-gray-400 group relative flex items-center justify-end cursor-help w-full mt-0.5">
@@ -94,12 +94,12 @@ const Header: React.FC<HeaderProps> = ({
                 >
                     <Bell size={18} className="group-hover:animate-swing" />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[#0B1120] animate-pulse" />
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[#0c0c0e] animate-pulse" />
                     )}
                 </button>
 
                 {/* Mobile Profile Trigger (or simple avatar) */}
-                <div className="md:hidden w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-xs font-bold text-white shadow-lg">
+                <div className="md:hidden w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-xs font-bold text-white shadow-lg">
                     {user?.displayName ? getInitials(user.displayName) : 'U'}
                 </div>
 

@@ -36,7 +36,7 @@ const AiInsightWidget: React.FC = () => {
     };
 
     return (
-        <div className="glass-panel p-6 rounded-xl border border-purple-500/20 bg-gradient-to-r from-purple-900/20 to-indigo-900/20 relative overflow-hidden">
+        <div className="glass-panel p-6 rounded-xl border border-purple-500/20 bg-gradient-to-r from-purple-900/20 to-amber-900/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
                 <Sparkles size={64} className="text-purple-400" />
             </div>

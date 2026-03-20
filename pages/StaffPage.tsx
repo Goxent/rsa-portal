@@ -198,11 +198,11 @@ const StaffPage: React.FC = () => {
                     {filteredUsers.map((staff, index) => {
                         // Deterministic color generation
                         const colors = [
-                            'from-blue-600/20 to-cyan-400/10',
+                            'from-blue-600/20 to-yellow-400/10',
                             'from-purple-600/20 to-pink-400/10',
                             'from-emerald-600/20 to-teal-400/10',
                             'from-orange-600/20 to-amber-400/10',
-                            'from-indigo-600/20 to-violet-400/10',
+                            'from-amber-600/20 to-yellow-400/10',
                             'from-rose-600/20 to-red-400/10'
                         ];
                         const colorIndex = staff.uid.charCodeAt(0) % colors.length;
@@ -333,7 +333,7 @@ const StaffPage: React.FC = () => {
                                     <td className="px-6 py-4">
                                         <button
                                             onClick={() => handleOpenEdit(staff)}
-                                            className={`text-blue-400 hover:text-white transition-colors ${staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={`text-amber-400 hover:text-white transition-colors ${staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             disabled={staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN}
                                         >
                                             <Edit size={16} />

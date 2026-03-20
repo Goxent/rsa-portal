@@ -136,7 +136,7 @@ const ClientEngagementDashboard: React.FC = () => {
     const getTierBadgeClass = (tier: EngagementTier) => {
         const baseClass = 'px-2 py-0.5 text-xs rounded-full font-medium';
         switch (tier) {
-            case 'champion': return `${baseClass} bg-blue-500/20 text-blue-400`;
+            case 'champion': return `${baseClass} bg-amber-500/20 text-amber-400`;
             case 'high': return `${baseClass} bg-green-500/20 text-green-400`;
             case 'medium': return `${baseClass} bg-yellow-500/20 text-yellow-400`;
             case 'low': return `${baseClass} bg-red-500/20 text-red-400`;
@@ -301,12 +301,12 @@ const ClientEngagementDashboard: React.FC = () => {
 
                     <div className="glass-panel rounded-2xl p-5">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 rounded-lg bg-blue-500/20">
-                                <Star size={20} className="text-blue-400" />
+                            <div className="p-2 rounded-lg bg-amber-500/20">
+                                <Star size={20} className="text-amber-400" />
                             </div>
                             <span className="text-gray-400 text-sm">Champions</span>
                         </div>
-                        <p className="text-3xl font-bold text-blue-400">{summary.championsCount}</p>
+                        <p className="text-3xl font-bold text-amber-400">{summary.championsCount}</p>
                     </div>
                 </div>
             )}

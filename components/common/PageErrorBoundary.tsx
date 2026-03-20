@@ -42,7 +42,7 @@ class PageErrorBoundary extends Component<Props, State> {
                     {/* Background Effects */}
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
-                        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-600/10 rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
                     </div>
 
                     <div className="glass-panel p-8 md:p-12 rounded-2xl max-w-lg w-full border border-white/10 shadow-2xl text-center space-y-8 relative z-10 animate-fade-in-up">

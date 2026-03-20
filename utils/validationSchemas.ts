@@ -39,7 +39,15 @@ export const leaveSchema = z.object({
     reason: z.string().min(1, 'Reason is required'),
 });
 
+export const signupSchema = loginSchema.extend({
+    confirmPassword: z.string().min(6, 'Please confirm your password'),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords must match",
+    path: ["confirmPassword"],
+});
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
+export type SignupFormValues = z.infer<typeof signupSchema>;
 export type TaskFormValues = z.infer<typeof taskSchema>;
 export type ClientFormValues = z.infer<typeof clientSchema>;
 export type LeaveFormValues = z.infer<typeof leaveSchema>;

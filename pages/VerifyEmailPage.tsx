@@ -46,15 +46,15 @@ const VerifyEmailPage: React.FC = () => {
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
             <GlassCard className="max-w-md w-full p-8 text-center space-y-6">
                 <div className="flex justify-center">
-                    <div className="p-4 bg-blue-500/10 rounded-full">
-                        <Mail className="w-12 h-12 text-blue-400" />
+                    <div className="p-4 bg-amber-500/10 rounded-full">
+                        <Mail className="w-12 h-12 text-amber-400" />
                     </div>
                 </div>
 
                 <h1 className="text-2xl font-bold text-white">Verify your email</h1>
 
                 <p className="text-slate-400">
-                    We've sent a verification email to <span className="text-blue-400 font-medium">{user.email}</span>.
+                    We've sent a verification email to <span className="text-amber-400 font-medium">{user.email}</span>.
                     Please click the link in the email to continue.
                 </p>
 

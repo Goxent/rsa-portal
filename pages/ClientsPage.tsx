@@ -358,7 +358,7 @@ const ClientsPage: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center">
-                        <Building2 className="mr-3 text-blue-400" /> Client Directory
+                        <Building2 className="mr-3 text-amber-400" /> Client Directory
                     </h1>
                     <p className="text-gray-400 text-sm mt-1">Manage audit clients, tax filings, and contact details</p>
                 </div>
@@ -388,7 +388,7 @@ const ClientsPage: React.FC = () => {
                                 setFormData(initialFormState);
                                 setIsModalOpen(true);
                             }}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105"
+                            className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105"
                         >
                             <Plus size={18} className="mr-2" /> Add Client
                         </button>
@@ -403,14 +403,14 @@ const ClientsPage: React.FC = () => {
                     <input
                         type="text"
                         placeholder="Search clients by name, code, or PAN..."
-                        className="w-full pl-10 pr-4 py-2 bg-black/20 border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-black/20 border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-amber-500 outline-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <select
-                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-amber-500"
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
                     >
@@ -421,7 +421,7 @@ const ClientsPage: React.FC = () => {
                     </select>
 
                     <select
-                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-amber-500"
                         value={filterService}
                         onChange={(e) => setFilterService(e.target.value)}
                     >
@@ -435,7 +435,7 @@ const ClientsPage: React.FC = () => {
                     </select>
 
                     <select
-                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500"
+                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-amber-500"
                         value={filterAuditorFirm}
                         onChange={(e) => setFilterAuditorFirm(e.target.value)}
                     >
@@ -455,7 +455,7 @@ const ClientsPage: React.FC = () => {
                     // Safe color generation
                     const seedString = client.code || client.name || 'default';
                     const colors = [
-                        'from-blue-500/20 to-cyan-500/5',
+                        'from-blue-500/20 to-yellow-500/5',
                         'from-purple-500/20 to-pink-500/5',
                         'from-emerald-500/20 to-teal-500/5',
                         'from-orange-500/20 to-red-500/5',
@@ -588,7 +588,7 @@ const ClientsPage: React.FC = () => {
                                         </span>
                                     )}
                                     {client.itrReturn && (
-                                        <span className="text-[10px] bg-blue-500/5 text-blue-400 px-2.5 py-1 rounded-md border border-blue-500/20 font-bold flex items-center gap-1">
+                                        <span className="text-[10px] bg-amber-500/5 text-amber-400 px-2.5 py-1 rounded-md border border-amber-500/20 font-bold flex items-center gap-1">
                                             <FileText size={10} /> ITR Filing
                                         </span>
                                     )}
@@ -663,7 +663,7 @@ const ClientsPage: React.FC = () => {
                     <div className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar border border-white/10 shadow-2xl flex flex-col">
                         <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-white/5 sticky top-0 backdrop-blur-md z-10">
                             <h2 className="text-xl font-bold text-white flex items-center">
-                                {editingId ? <Edit className="mr-2 text-blue-400" /> : <Plus className="mr-2 text-blue-400" />}
+                                {editingId ? <Edit className="mr-2 text-amber-400" /> : <Plus className="mr-2 text-amber-400" />}
                                 {editingId ? 'Edit Client' : 'New Client Profile'}
                             </h2>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
@@ -674,7 +674,7 @@ const ClientsPage: React.FC = () => {
                         <form onSubmit={handleSave} className="p-6 space-y-6">
                             {/* Basic Info */}
                             <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Basic Information</h3>
+                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Basic Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
                                         <label className="block text-xs font-medium text-gray-400 mb-1">
@@ -770,7 +770,7 @@ const ClientsPage: React.FC = () => {
 
                             {/* Contact & Tax Info */}
                             <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
+                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-medium text-gray-400 mb-1">PAN Number</label>
@@ -802,7 +802,7 @@ const ClientsPage: React.FC = () => {
 
                             {/* Assignment */}
                             <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Internal Focal Person</h3>
+                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Internal Focal Person</h3>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Focal Person</label>
                                     <StaffSelect
@@ -829,14 +829,14 @@ const ClientsPage: React.FC = () => {
 
                             {/* Compliance Settings */}
                             <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-2">Compliance Services</h3>
+                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Compliance Services</h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
                                         <input
                                             type="checkbox"
                                             checked={formData.vatReturn || false}
                                             onChange={(e) => setFormData({ ...formData, vatReturn: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                            className="w-5 h-5 rounded border-gray-500 text-amber-500 focus:ring-amber-500 bg-gray-700"
                                         />
                                         <div>
                                             <span className="block text-sm font-bold text-gray-200">VAT Returns</span>
@@ -849,7 +849,7 @@ const ClientsPage: React.FC = () => {
                                             type="checkbox"
                                             checked={formData.itrReturn || false}
                                             onChange={(e) => setFormData({ ...formData, itrReturn: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-gray-700"
+                                            className="w-5 h-5 rounded border-gray-500 text-amber-500 focus:ring-amber-500 bg-gray-700"
                                         />
                                         <div>
                                             <span className="block text-sm font-bold text-gray-200">Income Tax (ITR)</span>
@@ -861,7 +861,7 @@ const ClientsPage: React.FC = () => {
 
                             <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>
-                                <button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center">
+                                <button type="submit" disabled={isSaving} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center">
                                     {isSaving ? <span className="animate-spin mr-2">⏳</span> : <Save size={18} className="mr-2" />}
                                     {editingId ? 'Update Client' : 'Create Client'}
                                 </button>

@@ -16,7 +16,7 @@ const PendingApprovalPage: React.FC = () => {
         <div className="min-h-screen bg-navy-900 flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background decorations */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-600/20 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-600/20 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="glass-panel max-w-md w-full p-8 rounded-2xl flex flex-col items-center text-center relative z-10 border border-white/10 shadow-2xl">
                 <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mb-6 border border-amber-500/20">

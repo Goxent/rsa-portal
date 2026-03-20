@@ -23,8 +23,8 @@ const getActivityStyle = (type: ActivityItem['type']) => {
     switch (type) {
         case 'COMPLETED': return { dot: 'bg-emerald-500', icon: <CheckCircle2 size={12} className="text-emerald-500" />, label: 'Completed', color: 'text-emerald-600 dark:text-emerald-400' };
         case 'OVERDUE': return { dot: 'bg-red-500 animate-pulse', icon: <Clock size={12} className="text-red-500" />, label: 'Overdue', color: 'text-red-600 dark:text-red-400' };
-        case 'IN_PROGRESS': return { dot: 'bg-blue-500', icon: <Briefcase size={12} className="text-blue-500" />, label: 'In Progress', color: 'text-blue-600 dark:text-blue-400' };
-        case 'REVIEW': return { dot: 'bg-indigo-500', icon: <Briefcase size={12} className="text-indigo-500" />, label: 'Under Review', color: 'text-indigo-600 dark:text-indigo-400' };
+        case 'IN_PROGRESS': return { dot: 'bg-amber-500', icon: <Briefcase size={12} className="text-amber-500" />, label: 'In Progress', color: 'text-amber-600 dark:text-amber-400' };
+        case 'REVIEW': return { dot: 'bg-amber-500', icon: <Briefcase size={12} className="text-amber-500" />, label: 'Under Review', color: 'text-indigo-600 dark:text-amber-400' };
     }
 };
 

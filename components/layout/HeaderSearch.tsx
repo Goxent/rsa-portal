@@ -84,7 +84,7 @@ const HeaderSearch: React.FC = () => {
     return (
         <div className="relative flex-1 max-w-xl hidden sm:block mx-4">
             <CommandPrimitive className="relative w-full" shouldFilter={false}>
-                <div className="relative flex items-center w-full h-10 rounded-xl bg-navy-900/50 border border-white/10 group focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 focus-within:bg-[#0B1120] transition-all shadow-inner">
+                <div className="relative flex items-center w-full h-10 rounded-xl bg-navy-900/50 border border-white/10 group focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 focus-within:bg-[#0c0c0e] transition-all shadow-inner">
                     <Search size={16} className="absolute left-3 text-gray-500 group-focus-within:text-brand-400 transition-colors" />
 
                     <CommandPrimitive.Input

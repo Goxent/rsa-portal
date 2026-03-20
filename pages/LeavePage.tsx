@@ -170,7 +170,7 @@ const LeavePage: React.FC = () => {
                     )}
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 shadow-lg shadow-blue-900/40 flex items-center border border-blue-500/30 transition-all hover:-translate-y-0.5"
+                        className="bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-700 shadow-lg shadow-amber-900/40 flex items-center border border-amber-500/30 transition-all hover:-translate-y-0.5"
                     >
                         <Plus size={18} className="mr-2" /> Request Leave
                     </button>
@@ -208,7 +208,7 @@ const LeavePage: React.FC = () => {
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${leave.type === 'Sick' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                                                         leave.type === 'Exam' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                            'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                            'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                         }`}>
                                                         {leave.type}
                                                     </span>
@@ -284,7 +284,7 @@ const LeavePage: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs">{staffMember.position || 'Staff'}</td>
-                                                <td className="px-6 py-4 font-mono font-bold text-blue-400">{taken}d</td>
+                                                <td className="px-6 py-4 font-mono font-bold text-amber-400">{taken}d</td>
                                                 <td className="px-6 py-4 font-mono">
                                                     <span className={adj > 0 ? 'text-orange-400' : adj < 0 ? 'text-emerald-400' : 'text-gray-500'}>
                                                         {adj > 0 ? `+${adj}` : adj}d
@@ -333,7 +333,7 @@ const LeavePage: React.FC = () => {
                                         <p className="text-sm font-medium text-gray-400">Total Leaves Taken</p>
                                         <h2 className="text-4xl font-bold text-white mt-1">{totalDaysTaken} <span className="text-lg text-gray-500 font-medium">/ {ARTICLESHIP_LEAVE_LIMIT} Days</span></h2>
                                     </div>
-                                    <div className="p-2 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/20"><CalendarDays size={20} /></div>
+                                    <div className="p-2 bg-amber-500/20 text-amber-300 rounded-lg border border-amber-500/20"><CalendarDays size={20} /></div>
                                 </div>
 
                                 <div className="mt-6">
@@ -344,7 +344,7 @@ const LeavePage: React.FC = () => {
                                     <div className="w-full bg-white/10 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full shadow-[0_0_10px_currentColor] transition-all duration-1000 ${totalDaysTaken > 100 ? 'bg-red-500 text-red-500' :
-                                                totalDaysTaken > 60 ? 'bg-amber-500 text-amber-500' : 'bg-blue-500 text-blue-500'
+                                                totalDaysTaken > 60 ? 'bg-amber-500 text-amber-500' : 'bg-amber-500 text-amber-500'
                                                 }`}
                                             style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
                                         ></div>
@@ -370,7 +370,7 @@ const LeavePage: React.FC = () => {
                                     <span className="font-bold text-white">{breakdown.Home}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-300 flex items-center"><div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div> Casual</span>
+                                    <span className="text-sm text-gray-300 flex items-center"><div className="w-2 h-2 rounded-full bg-amber-500 mr-2"></div> Casual</span>
                                     <span className="font-bold text-white">{breakdown.Casual}</span>
                                 </div>
                             </div>
@@ -405,7 +405,7 @@ const LeavePage: React.FC = () => {
                                             <td className="px-6 py-4 font-medium text-white">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${leave.type === 'Sick' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                                                     leave.type === 'Exam' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                        'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                        'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                     }`}>
                                                     {leave.type}
                                                 </span>
@@ -474,7 +474,7 @@ const LeavePage: React.FC = () => {
                                         <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Leave Type</label>
                                         <div className="relative">
                                             <select
-                                                className={`w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer border ${errors.type ? 'border-red-500' : 'border-gray-600'} bg-gray-800 text-white focus:ring-2 focus:ring-blue-500`}
+                                                className={`w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer border ${errors.type ? 'border-red-500' : 'border-gray-600'} bg-gray-800 text-white focus:ring-2 focus:ring-amber-500`}
                                                 {...register('type')}
                                             >
                                                 <option value="SICK">Sick Leave</option>
@@ -523,7 +523,7 @@ const LeavePage: React.FC = () => {
                                         <button
                                             type="submit"
                                             disabled={isSaving}
-                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-900/30 flex justify-center items-center transition-all transform active:scale-[0.98] disabled:opacity-50"
+                                            className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-amber-900/30 flex justify-center items-center transition-all transform active:scale-[0.98] disabled:opacity-50"
                                         >
                                             {isSaving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Mail size={16} className="mr-2" />}
                                             {isSaving ? 'Submitting...' : 'Submit Request'}

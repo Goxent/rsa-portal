@@ -43,10 +43,10 @@ const ClientStatsWidget: React.FC<ClientStatsWidgetProps> = ({ clientStats }) =>
                         {clientStats.active} Active
                     </div>
                 </div>
-                <div className="bg-white/5 p-3 rounded-lg flex flex-col justify-center items-center text-center border border-indigo-500/20 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-indigo-500/5"></div>
-                    <BadgeCheck size={16} className="text-indigo-400 mb-1" />
-                    <p className="text-xs text-indigo-400 uppercase font-bold">My Signing</p>
+                <div className="bg-white/5 p-3 rounded-lg flex flex-col justify-center items-center text-center border border-amber-500/20 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-amber-500/5"></div>
+                    <BadgeCheck size={16} className="text-amber-400 mb-1" />
+                    <p className="text-xs text-amber-400 uppercase font-bold">My Signing</p>
                     <p className="text-2xl font-bold text-white mt-1 relative z-10">{clientStats.mySigned}</p>
                 </div>
             </div>

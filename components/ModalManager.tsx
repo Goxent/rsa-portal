@@ -21,7 +21,7 @@ export const ModalManager: React.FC = () => {
                         <div className="mt-6 flex justify-end">
                             <button
                                 onClick={closeModal}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                             >
                                 Close
                             </button>

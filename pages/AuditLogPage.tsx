@@ -170,7 +170,7 @@ const AuditLogPage: React.FC = () => {
     const getActionColor = (action: string) => {
         if (action.includes('CREATE')) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
         if (action.includes('DELETE')) return 'text-red-400 bg-red-500/10 border-red-500/20';
-        if (action.includes('UPDATE')) return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+        if (action.includes('UPDATE')) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
         return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
     };
 
@@ -180,7 +180,7 @@ const AuditLogPage: React.FC = () => {
             <header className="flex-none glass-panel border-b border-white/[0.05] p-6 pb-5 relative z-20">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4 border-r border-white/10 pr-4">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 to-purple-600 flex items-center justify-center shadow-lg shadow-amber-500/20 flex-shrink-0">
                             <Activity className="text-white" size={20} />
                         </div>
                         <div>
@@ -208,7 +208,7 @@ const AuditLogPage: React.FC = () => {
                             placeholder="Search by details, user, or entity ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:border-indigo-500 focus:bg-white/10 transition-all outline-none placeholder:text-gray-500"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:border-amber-500 focus:bg-white/10 transition-all outline-none placeholder:text-gray-500"
                         />
                     </div>
 
@@ -217,7 +217,7 @@ const AuditLogPage: React.FC = () => {
                         <select
                             value={actionFilter}
                             onChange={(e) => setActionFilter(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-indigo-500 transition-all outline-none"
+                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-500 transition-all outline-none"
                         >
                             <option value="ALL">All Actions</option>
                             <option value="CREATE">Creates</option>
@@ -254,7 +254,7 @@ const AuditLogPage: React.FC = () => {
                 <div className="glass-panel flex-1 rounded-2xl border border-white/5 overflow-hidden flex flex-col shadow-2xl">
                     <div className="overflow-x-auto flex-1 custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[1000px]">
-                            <thead className="sticky top-0 z-10 bg-[#0f172a] shadow-xl">
+                            <thead className="sticky top-0 z-10 bg-[#09090b] shadow-xl">
                                 <tr className="border-b border-white/10 text-[10px] text-gray-400 uppercase font-bold tracking-widest bg-white/5 backdrop-blur-md">
                                     <th className="p-4">Timestamp</th>
                                     <th className="p-4">User</th>
@@ -267,7 +267,7 @@ const AuditLogPage: React.FC = () => {
                                 {loading ? (
                                     <tr>
                                         <td colSpan={5} className="p-8 text-center">
-                                            <div className="flex items-center justify-center space-x-2 text-indigo-400">
+                                            <div className="flex items-center justify-center space-x-2 text-amber-400">
                                                 <div className="w-2 h-2 rounded-full bg-current animate-bounce" />
                                                 <div className="w-2 h-2 rounded-full bg-current animate-bounce" style={{ animationDelay: '0.2s' }} />
                                                 <div className="w-2 h-2 rounded-full bg-current animate-bounce" style={{ animationDelay: '0.4s' }} />
@@ -317,7 +317,7 @@ const AuditLogPage: React.FC = () => {
                                                                 if (oldV !== newV && key !== 'updatedAt') {
                                                                     return (
                                                                         <div key={key} className="flex flex-wrap items-center gap-2 text-[10px] font-mono mb-1 last:mb-0">
-                                                                            <span className="text-indigo-400 font-bold">{key}:</span>
+                                                                            <span className="text-amber-400 font-bold">{key}:</span>
                                                                             <span className="text-rose-400 line-through bg-rose-500/10 px-1 rounded">{oldV || 'null'}</span>
                                                                             <ArrowRight size={10} className="text-gray-500" />
                                                                             <span className="text-emerald-400 bg-emerald-500/10 px-1 rounded">{newV || 'null'}</span>

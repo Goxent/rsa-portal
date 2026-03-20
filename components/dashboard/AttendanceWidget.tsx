@@ -345,7 +345,7 @@ const AttendanceWidget: React.FC = () => {
                 <div className="bg-navy-800/90 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
                     {/* Drag Handle / Status Icon */}
                     <div className={`p-2 rounded-xl ${status === 'CLOCKED_IN' ? 'bg-green-500/20 text-green-400 animate-pulse' :
-                        status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'
+                        status === 'COMPLETED' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
                         }`}>
                         <Clock size={20} />
                     </div>
@@ -403,7 +403,7 @@ const AttendanceWidget: React.FC = () => {
                             Attendance Center
                         </h2>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full border ${status === 'CLOCKED_IN' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                            status === 'COMPLETED' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                            status === 'COMPLETED' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
                                 'bg-gray-500/10 border-gray-500/20 text-gray-400'
                             }`}>
                             {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}

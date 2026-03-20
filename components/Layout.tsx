@@ -12,6 +12,7 @@ import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import NotificationPanel from './layout/NotificationPanel';
 import MobileTabs from './layout/MobileTabs';
+import { GlobalSearchModal } from './common/GlobalSearchModal';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,6 +33,9 @@ const Layout: React.FC = () => {
   // Connectivity State
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
+  // Search State
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   useAutoLogout();
 
   // Persist Sidebar State
@@ -49,6 +53,19 @@ const Layout: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
+  }, []);
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl + /
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Fetch Notifications & Late Warning
@@ -94,6 +111,7 @@ const Layout: React.FC = () => {
 
   return (
     <>
+      <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <div className="flex h-screen bg-transparent text-gray-100 font-sans overflow-hidden">
 
         {/* Sidebar */}

@@ -48,8 +48,8 @@ const S = {
         dot: 'bg-[#3b82f6]',
         headerBg: 'bg-[#1e3a5f]/60',
         bodyBg: 'bg-[#0f1f3d]/30',
-        countBg: 'bg-blue-900/60 text-blue-300',
-        ring: 'ring-blue-500/20',
+        countBg: 'bg-blue-900/60 text-amber-300',
+        ring: 'ring-amber-500/20',
     },
     [TaskStatus.UNDER_REVIEW]: {
         label: 'Under Review',
@@ -93,16 +93,16 @@ const S = {
 }>;
 
 const FALLBACK_COL = {
-    label: '', topBar: 'bg-blue-600', dot: 'bg-blue-400',
+    label: '', topBar: 'bg-amber-600', dot: 'bg-blue-400',
     headerBg: 'bg-blue-900/40', bodyBg: 'bg-blue-950/20',
-    countBg: 'bg-blue-800/50 text-blue-300', ring: 'ring-blue-500/20',
+    countBg: 'bg-blue-800/50 text-amber-300', ring: 'ring-amber-500/20',
 };
 
 // ── Helpers used by the LIST view ────────────────────────────────────────────
 const P: Record<string, { bar: string; badge: string; label: string }> = {
     [TaskPriority.URGENT]: { bar: 'bg-[#dc2626]', badge: 'text-red-400 bg-red-950/60 border-red-800/50', label: 'Urgent' },
     [TaskPriority.HIGH]: { bar: 'bg-[#d97706]', badge: 'text-amber-400 bg-amber-950/60 border-amber-800/50', label: 'High' },
-    [TaskPriority.MEDIUM]: { bar: 'bg-[#2563eb]', badge: 'text-blue-400 bg-blue-950/60 border-blue-800/50', label: 'Medium' },
+    [TaskPriority.MEDIUM]: { bar: 'bg-[#2563eb]', badge: 'text-amber-400 bg-blue-950/60 border-blue-800/50', label: 'Medium' },
     [TaskPriority.LOW]: { bar: 'bg-[#475569]', badge: 'text-slate-400 bg-slate-800/60 border-slate-700/50', label: 'Low' },
 };
 const AV = ['#3b5bdb', '#7048e8', '#0ca678', '#f59f00', '#e64980', '#1098ad', '#74c0fc', '#a9e34b'];
@@ -121,7 +121,7 @@ const getPriorityStyle = (p: TaskPriority) => {
     const map: Record<string, string> = {
         [TaskPriority.URGENT]: 'text-red-400 bg-red-950/60 border-red-800/50',
         [TaskPriority.HIGH]: 'text-amber-400 bg-amber-950/60 border-amber-800/50',
-        [TaskPriority.MEDIUM]: 'text-blue-400 bg-blue-950/60 border-blue-800/50',
+        [TaskPriority.MEDIUM]: 'text-amber-400 bg-blue-950/60 border-blue-800/50',
         [TaskPriority.LOW]: 'text-slate-400 bg-slate-800/60 border-slate-700/50',
     };
     return map[p] ?? map[TaskPriority.LOW];
@@ -165,7 +165,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                 <button
                                     onClick={onSelectAll}
                                     title="Select All Visible Tasks"
-                                    className={`relative w-4 h-4 rounded border flex items-center justify-center transition-all ${allSelected ? 'bg-blue-600 border-blue-500' : 'border-slate-600 hover:border-slate-400 bg-transparent'}`}
+                                    className={`relative w-4 h-4 rounded border flex items-center justify-center transition-all ${allSelected ? 'bg-amber-600 border-amber-500' : 'border-slate-600 hover:border-slate-400 bg-transparent'}`}
                                 >
                                     {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                                 </button>
@@ -187,13 +187,13 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                 onClick={() => handleOpenEdit(task)}
                                 className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-[24px_1fr_160px_130px_110px_130px]'} gap-x-4 px-5 py-4 md:py-3.5 items-center cursor-pointer group rounded-lg transition-all mb-0.5
                                     hover:bg-white/[0.03] border border-transparent ${!isMobile && 'hover:border-white/[0.06]'}
-                                    ${selectedTaskId === task.id ? 'bg-blue-500/[0.06] border-blue-500/20' : 'bg-[#0a0f1e]'}`}
+                                    ${selectedTaskId === task.id ? 'bg-amber-500/[0.06] border-amber-500/20' : 'bg-[#0a0f1e]'}`}
                             >
                                 {/* Selected Checkbox (Hidden on true mobile view for space, or keeping if needed) */}
                                 {!isMobile && (
                                     <div onClick={e => e.stopPropagation()} className="flex items-center justify-center">
                                         <div className={`relative w-4 h-4 rounded border cursor-pointer flex items-center justify-center transition-all
-                                            ${selectedTaskIds.includes(task.id) ? 'bg-blue-600 border-blue-500' : 'border-slate-700 bg-transparent opacity-0 group-hover:opacity-100'}`}
+                                            ${selectedTaskIds.includes(task.id) ? 'bg-amber-600 border-amber-500' : 'border-slate-700 bg-transparent opacity-0 group-hover:opacity-100'}`}
                                             onClick={() => onToggleSelection(task.id)}>
                                             {selectedTaskIds.includes(task.id) && <Check size={9} className="text-white" strokeWidth={3.5} />}
                                         </div>
@@ -207,7 +207,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     <div className="flex items-center gap-2 text-[11px] md:text-[10px] text-slate-600">
                                         {task.clientName && (
                                             <div 
-                                                className="flex items-center gap-1 hover:text-blue-400 transition-all cursor-pointer"
+                                                className="flex items-center gap-1 hover:text-amber-400 transition-all cursor-pointer"
                                                 onClick={(e) => {
                                                     if (onOpenClientDetail && task.clientIds?.[0]) {
                                                         e.stopPropagation();
@@ -280,7 +280,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onOpenReassign?.(task.id); }}
-                                            className="flex-1 bg-blue-600/90 hover:bg-blue-500 flex flex-col items-center justify-center text-blue-50 transition-colors"
+                                            className="flex-1 bg-amber-600/90 hover:bg-amber-500 flex flex-col items-center justify-center text-blue-50 transition-colors"
                                         >
                                             <UserCircle2 size={18} className="mb-1" />
                                             <span className="text-[10px] font-bold">Assign</span>
@@ -503,7 +503,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                                 <X size={12} />
                                                                             </button>
                                                                             <button onClick={() => submitQuickAdd(status)}
-                                                                                className="px-2.5 h-6 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1">
+                                                                                className="px-2.5 h-6 bg-amber-600 hover:bg-amber-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1">
                                                                                 <Plus size={11} /> Add
                                                                             </button>
                                                                         </div>

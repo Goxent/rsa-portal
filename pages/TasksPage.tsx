@@ -290,6 +290,69 @@ const TasksPage: React.FC = () => {
         return obj;
     };
 
+    const triggerNextTemplateIfNeeded = async (taskId: string, newStatus: TaskStatus) => {
+        if (newStatus !== TaskStatus.COMPLETED) return;
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || !task.nextTemplateId) return;
+
+        const nextTemplate = templates.find(t => t.id === task.nextTemplateId);
+        if (!nextTemplate) return;
+
+        const generatedSubtasks: SubTask[] = [];
+        const templateSubtasks = nextTemplate.subtaskDetails || nextTemplate.subtasks?.map((t: string) => ({ title: t })) || [];
+        const assignedSet = new Set<string>();
+
+        templateSubtasks.forEach((s: any) => {
+            let assignedUserId = undefined;
+            if (s.assigneeRole) {
+                const matchedUser = usersList.find(u => u.role === s.assigneeRole);
+                if (matchedUser) {
+                    assignedUserId = matchedUser.uid;
+                    assignedSet.add(matchedUser.uid);
+                }
+            }
+            generatedSubtasks.push({
+                id: Math.random().toString(36).substr(2, 9),
+                title: s.title,
+                isCompleted: false,
+                createdAt: new Date().toISOString(),
+                createdBy: user?.uid || 'unknown',
+                assignedTo: assignedUserId
+            });
+        });
+
+        let dueDate = getCurrentDateUTC();
+        if (nextTemplate.expectedDays) {
+           const d = new Date();
+           d.setDate(d.getDate() + nextTemplate.expectedDays);
+           dueDate = d.toISOString().split('T')[0];
+        }
+
+        const newTaskObj = {
+            title: nextTemplate.name + ' for ' + (task.clientName || 'Internal'),
+            description: nextTemplate.description || '',
+            priority: nextTemplate.priority || TaskPriority.MEDIUM,
+            status: TaskStatus.NOT_STARTED,
+            subtasks: generatedSubtasks,
+            dueDate: dueDate,
+            totalTimeSpent: 0,
+            nextTemplateId: nextTemplate.nextTemplateId || '',
+            clientIds: task.clientIds || [],
+            clientName: task.clientName || '',
+            assignedTo: Array.from(assignedSet),
+            teamLeaderId: task.teamLeaderId || user?.uid || '',
+            createdBy: user?.uid || 'system',
+            createdAt: new Date().toISOString()
+        };
+
+        try {
+            await createTaskMutation.mutateAsync(newTaskObj as Task);
+            toast.success(`Workflow Auto-triggered: ${nextTemplate.name}`);
+        } catch (e) {
+            console.error("Auto trigger failed", e);
+        }
+    };
+
     const handleSaveTask = async (taskData?: any) => {
         const dataToSave = taskData || currentTask;
         if (!dataToSave.title?.trim()) {
@@ -303,7 +366,13 @@ const TasksPage: React.FC = () => {
             if (isEditMode && dataToSave.id) {
                 // EXTREMELY IMPORTANT: Unpack comments out so it doesn't revert newer comments added to the DB
                 const { comments, ...updatesWithoutComments } = taskToSave;
+                
+                const oldTask = tasks.find(t => t.id === dataToSave.id);
                 await updateTaskMutation.mutateAsync({ id: dataToSave.id, updates: updatesWithoutComments });
+                
+                if (oldTask && oldTask.status !== TaskStatus.COMPLETED && dataToSave.status === TaskStatus.COMPLETED) {
+                    triggerNextTemplateIfNeeded(dataToSave.id, TaskStatus.COMPLETED);
+                }
             } else {
                 await createTaskMutation.mutateAsync(taskToSave as Task);
             }
@@ -383,6 +452,7 @@ const TasksPage: React.FC = () => {
         try {
             await Promise.all(selectedTaskIds.map(id => updateTaskMutation.mutateAsync({ id, updates: { status: newStatus } })));
             toast.success(`${selectedTaskIds.length} tasks moved to ${newStatus.replace('_', ' ')}`);
+            selectedTaskIds.forEach(id => triggerNextTemplateIfNeeded(id, newStatus));
             setSelectedTaskIds([]);
         } catch (error) {
             toast.error('Failed to update status');
@@ -706,23 +776,50 @@ const TasksPage: React.FC = () => {
 
         const newStatus = destination.droppableId as TaskStatus;
         updateTaskStatusMutation.mutate({ id: draggableId, status: newStatus });
+        triggerNextTemplateIfNeeded(draggableId, newStatus);
     };
 
     const handleTemplateSelect = (template: any) => {
+        const generatedSubtasks: SubTask[] = [];
+        const templateSubtasks = template.subtaskDetails || template.subtasks?.map((t: string) => ({ title: t })) || [];
+        const assignedSet = new Set<string>();
+
+        templateSubtasks.forEach((s: any) => {
+            let assignedUserId = undefined;
+            if (s.assigneeRole) {
+                const matchedUser = usersList.find(u => u.role === s.assigneeRole);
+                if (matchedUser) {
+                    assignedUserId = matchedUser.uid;
+                    assignedSet.add(matchedUser.uid);
+                }
+            }
+            generatedSubtasks.push({
+                id: Math.random().toString(36).substr(2, 9),
+                title: s.title,
+                isCompleted: false,
+                createdAt: new Date().toISOString(),
+                createdBy: user?.uid || 'unknown',
+                assignedTo: assignedUserId
+            });
+        });
+
+        let dueDate = getCurrentDateUTC();
+        if (template.expectedDays) {
+           const d = new Date();
+           d.setDate(d.getDate() + template.expectedDays);
+           dueDate = d.toISOString().split('T')[0];
+        }
+
         setCurrentTask({
             title: template.name,
             description: template.description,
             priority: template.priority,
             status: TaskStatus.NOT_STARTED,
-            subtasks: (template.subtasks || []).map((s: string) => ({
-                id: Math.random().toString(36).substr(2, 9),
-                title: s,
-                isCompleted: false,
-                createdAt: new Date().toISOString(),
-                createdBy: user?.uid || 'unknown'
-            })),
-            dueDate: getCurrentDateUTC(),
-            totalTimeSpent: 0, // Added totalTimeSpent
+            subtasks: generatedSubtasks,
+            dueDate: dueDate,
+            totalTimeSpent: 0,
+            nextTemplateId: template.nextTemplateId || '',
+            assignedTo: Array.from(assignedSet)
         });
         setIsTemplateModalOpen(false);
         setIsModalOpen(true);
@@ -781,7 +878,7 @@ const TasksPage: React.FC = () => {
                             <motion.div
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0"
+                                className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/20 flex-shrink-0"
                             >
                                 <Box className="text-white" size={20} />
                             </motion.div>
@@ -818,13 +915,13 @@ const TasksPage: React.FC = () => {
                             <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
                             <button
                                 onClick={() => setBoardMode('ALL')}
-                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'ALL' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'ALL' ? 'bg-amber-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 FIRM
                             </button>
                             <button
                                 onClick={() => setBoardMode('MY')}
-                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'MY' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'MY' ? 'bg-amber-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 MINE
                             </button>
@@ -841,7 +938,7 @@ const TasksPage: React.FC = () => {
                                         onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
                                         className="px-4 py-2 bg-slate-500/10 hover:bg-slate-500/20 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-white/5"
                                     >
-                                        <Activity size={14} className="text-blue-400" /> Status ({selectedTaskIds.length})
+                                        <Activity size={14} className="text-amber-400" /> Status ({selectedTaskIds.length})
                                         <ChevronDown size={14} className={`transition-transform ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
                                     </button>
 
@@ -851,7 +948,7 @@ const TasksPage: React.FC = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 10 }}
-                                                className="absolute top-full left-0 mt-2 w-48 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+                                                className="absolute top-full left-0 mt-2 w-48 bg-[#09090b] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
                                             >
                                                 {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
                                                     <button
@@ -863,7 +960,7 @@ const TasksPage: React.FC = () => {
                                                         className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between group"
                                                     >
                                                         {status.replace(/_/g, ' ')}
-                                                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+                                                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-400" />
                                                     </button>
                                                 ))}
                                             </motion.div>
@@ -887,7 +984,7 @@ const TasksPage: React.FC = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 10 }}
-                                                className="absolute top-full left-0 mt-2 w-56 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-64 overflow-y-auto custom-scrollbar"
+                                                className="absolute top-full left-0 mt-2 w-56 bg-[#09090b] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-64 overflow-y-auto custom-scrollbar"
                                             >
                                                 <div className="p-2 border-b border-white/5 bg-white/5">
                                                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Select Staff</p>
@@ -901,7 +998,7 @@ const TasksPage: React.FC = () => {
                                                         }}
                                                         className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3"
                                                     >
-                                                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px] text-blue-400">
+                                                        <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] text-amber-400">
                                                             {getInitials(st.displayName)}
                                                         </div>
                                                         <span className="truncate">{st.displayName}</span>
@@ -934,7 +1031,7 @@ const TasksPage: React.FC = () => {
                         <button
                             onClick={handleOpenCreate}
                             disabled={!canCreateTask}
-                            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-black flex justify-center items-center gap-2 transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 border border-white/10 flex-shrink-0"
+                            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white rounded-xl text-sm font-black flex justify-center items-center gap-2 transition-all shadow-xl shadow-amber-500/20 disabled:opacity-50 border border-white/10 flex-shrink-0"
                         >
                             <Plus size={18} strokeWidth={3} /> Create New Task
                         </button>
@@ -948,7 +1045,7 @@ const TasksPage: React.FC = () => {
                     <div className="flex items-center bg-white/5 p-3 rounded-2xl border border-white/[0.05] gap-0">
                         {/* Search â€” fixed width */}
                         <div className="flex-shrink-0 w-64 relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={15} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={15} />
                             <input
                                 type="text"
                                 placeholder="Search tasks or clients..."
@@ -966,9 +1063,9 @@ const TasksPage: React.FC = () => {
                                     onChange={(e) => setGroupBy(e.target.value as any)}
                                     className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
                                 >
-                                    <option value="NONE" className="bg-[#0f172a]">Group: None</option>
-                                    <option value="AUDITOR" className="bg-[#0f172a]">Group: Auditor</option>
-                                    <option value="ASSIGNEE" className="bg-[#0f172a]">Group: Staff</option>
+                                    <option value="NONE" className="bg-[#09090b]">Group: None</option>
+                                    <option value="AUDITOR" className="bg-[#09090b]">Group: Auditor</option>
+                                    <option value="ASSIGNEE" className="bg-[#09090b]">Group: Staff</option>
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
                             </div>
@@ -979,8 +1076,8 @@ const TasksPage: React.FC = () => {
                                     onChange={(e) => setFilterStaff(e.target.value)}
                                     className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors max-w-[130px] truncate"
                                 >
-                                    <option value="ALL" className="bg-[#0f172a]">Staff: All</option>
-                                    {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#0f172a]">{u.displayName}</option>)}
+                                    <option value="ALL" className="bg-[#09090b]">Staff: All</option>
+                                    {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#09090b]">{u.displayName}</option>)}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
                             </div>
@@ -991,8 +1088,8 @@ const TasksPage: React.FC = () => {
                                     onChange={(e) => setFilterPriority(e.target.value)}
                                     className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
                                 >
-                                    <option value="ALL" className="bg-[#0f172a]">Priority: All</option>
-                                    {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#0f172a]">{p}</option>)}
+                                    <option value="ALL" className="bg-[#09090b]">Priority: All</option>
+                                    {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#09090b]">{p}</option>)}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
                             </div>
@@ -1003,8 +1100,8 @@ const TasksPage: React.FC = () => {
                                     onChange={(e) => setFilterAuditor(e.target.value)}
                                     className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
                                 >
-                                    <option value="ALL" className="bg-[#0f172a]">Auditor: All</option>
-                                    {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#0f172a]">{s}</option>)}
+                                    <option value="ALL" className="bg-[#09090b]">Auditor: All</option>
+                                    {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#09090b]">{s}</option>)}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
                             </div>
@@ -1014,14 +1111,14 @@ const TasksPage: React.FC = () => {
                                 onClick={() => setShowFilterPanel(!showFilterPanel)}
                                 className={`flex items-center gap-1.5 flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
                                     showFilterPanel
-                                        ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                                        ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
                                         : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-300'
                                 }`}
                             >
                                 <SlidersHorizontal size={13} />
                                 More
                                 {activeFilterCount > 0 && (
-                                    <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-black flex items-center justify-center">{activeFilterCount}</span>
+                                    <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center">{activeFilterCount}</span>
                                 )}
                                 <ChevronDown size={12} className={`transition-transform ${showFilterPanel ? 'rotate-180' : ''}`} />
                             </button>
@@ -1047,7 +1144,7 @@ const TasksPage: React.FC = () => {
                                                 {([
                                                     { key: 'ALL', label: 'Total', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
                                                     { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                                                    { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-600 border-blue-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-blue-400', dot: 'bg-blue-400' },
+                                                    { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-amber-400', dot: 'bg-blue-400' },
                                                     { key: 'UNDER_REVIEW', label: 'Under Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
                                                     { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
                                                     { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
@@ -1081,18 +1178,18 @@ const TasksPage: React.FC = () => {
                                                     type="checkbox"
                                                     checked={filterVat}
                                                     onChange={(e) => setFilterVat(e.target.checked)}
-                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-amber-500 focus:ring-0"
                                                 />
-                                                <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-blue-400' : 'text-gray-300'}`}>VAT</span>
+                                                <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-amber-400' : 'text-gray-300'}`}>VAT</span>
                                             </label>
                                             <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
                                                 <input
                                                     type="checkbox"
                                                     checked={filterItr}
                                                     onChange={(e) => setFilterItr(e.target.checked)}
-                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-blue-500 focus:ring-0"
+                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-amber-500 focus:ring-0"
                                                 />
-                                                <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-blue-400' : 'text-gray-300'}`}>ITR</span>
+                                                <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-amber-400' : 'text-gray-300'}`}>ITR</span>
                                             </label>
                                         </div>
                                     </div>
@@ -1106,7 +1203,7 @@ const TasksPage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-2 px-1">
                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mr-2">Active Filters:</span>
                             {searchTerm && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[11px] font-bold text-blue-400">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
                                     Search: {searchTerm}
                                     <button onClick={() => setSearchTerm('')} className="hover:text-white transition-colors"><X size={12} /></button>
                                 </div>
@@ -1130,7 +1227,7 @@ const TasksPage: React.FC = () => {
                                 </div>
                             )}
                             {filterClient !== 'ALL' && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[11px] font-bold text-indigo-400">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
                                     Client: {clientsList.find(c => c.id === filterClient)?.name || filterClient}
                                     <button onClick={() => setFilterClient('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
                                 </div>
@@ -1154,7 +1251,7 @@ const TasksPage: React.FC = () => {
                                 </div>
                             )}
                             {(dateRange.start || dateRange.end) && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[11px] font-bold text-blue-400">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
                                     Date: {dateRange.start || '...'} to {dateRange.end || '...'}
                                     <button onClick={() => setDateRange({ start: '', end: '' })} className="hover:text-white transition-colors"><X size={12} /></button>
                                 </div>
@@ -1323,7 +1420,7 @@ const TasksPage: React.FC = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4"
+                            className="bg-[#09090b] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4"
                             onClick={e => e.stopPropagation()}
                         >
                             <ConfirmationModal

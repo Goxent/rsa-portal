@@ -5,14 +5,16 @@ import { Lock, Mail, ArrowRight, Loader2, ShieldCheck, User, Check, AlertCircle 
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { loginSchema, LoginFormValues } from '../utils/validationSchemas';
+import { loginSchema, signupSchema, LoginFormValues, SignupFormValues } from '../utils/validationSchemas';
+
+type FormValues = LoginFormValues & { confirmPassword?: string };
 
 const LoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
 
-  // Form setup
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues & { confirmPassword?: string }>({
-    resolver: zodResolver(loginSchema),
+  // Form setup — switch schema based on login/signup mode
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormValues>({
+    resolver: zodResolver(isLogin ? loginSchema : signupSchema),
   });
 
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
@@ -84,10 +86,7 @@ const LoginPage: React.FC = () => {
           throw error;
         }
       } else {
-        // SIGNUP LOGIC
-        if (data.password !== data.confirmPassword) {
-          throw new Error("Passwords must match");
-        }
+        // SIGNUP LOGIC — password matching is validated by signupSchema
         await signup(data.email, data.password);
         navigate('/dashboard');
         toast.success('Account created successfully!');
@@ -110,21 +109,21 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0f172a]">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#09090b]">
       {/* Animated Background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500/20 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
-        <div className="absolute top-[40%] left-[40%] w-[20%] h-[20%] bg-cyan-500/10 rounded-full blur-[80px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-500/15 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-yellow-600/15 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+        <div className="absolute top-[40%] left-[40%] w-[20%] h-[20%] bg-orange-500/10 rounded-full blur-[80px]"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-500">
         {/* Header Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-2xl shadow-blue-500/30 mb-6 rotate-3 hover:rotate-6 transition-transform duration-500 group">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-2xl shadow-amber-500/30 mb-6 rotate-3 hover:rotate-6 transition-transform duration-500 group">
             <ShieldCheck size={40} className="text-white group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200 tracking-tight mb-2">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-amber-200 tracking-tight mb-2">
             RSA Portal
           </h1>
           <p className="text-gray-400 font-medium">Secure Access for Staff</p>
@@ -140,13 +139,13 @@ const LoginPage: React.FC = () => {
               style={{ left: isLogin ? '4px' : 'calc(50%)' }}
             ></div>
             <button
-              onClick={() => setIsLogin(true)}
+              onClick={() => { setIsLogin(true); reset(); }}
               className={`flex-1 py-2.5 text-sm font-bold text-center z-10 transition-colors ${isLogin ? 'text-white' : 'text-gray-400 hover:text-gray-300'}`}
             >
               Sign In
             </button>
             <button
-              onClick={() => setIsLogin(false)}
+              onClick={() => { setIsLogin(false); reset(); }}
               className={`flex-1 py-2.5 text-sm font-bold text-center z-10 transition-colors ${!isLogin ? 'text-white' : 'text-gray-400 hover:text-gray-300'}`}
             >
               Sign Up
@@ -164,10 +163,10 @@ const LoginPage: React.FC = () => {
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-400 transition-colors" size={18} />
                 <input
                   type="email"
-                  className={`w-full bg-white/5 border ${errors.email ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/50'} rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all`}
+                  className={`w-full bg-white/5 border ${errors.email ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-amber-500/50 focus:ring-amber-500/50'} rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all`}
                   placeholder="your email address"
                   {...register('email')}
                 />
@@ -179,16 +178,16 @@ const LoginPage: React.FC = () => {
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Password</label>
                 {isLogin && (
-                  <Link to="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                  <Link to="/forgot-password" className="text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium">
                     Forgot?
                   </Link>
                 )}
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-400 transition-colors" size={18} />
                 <input
                   type="password"
-                  className={`w-full bg-white/5 border ${errors.password ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/50'} rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all`}
+                  className={`w-full bg-white/5 border ${errors.password ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-amber-500/50 focus:ring-amber-500/50'} rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all`}
                   placeholder="••••••••"
                   {...register('password')}
                 />
@@ -200,21 +199,22 @@ const LoginPage: React.FC = () => {
               <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Confirm Password</label>
                 <div className="relative group">
-                  <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors" size={18} />
+                  <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-400 transition-colors" size={18} />
                   <input
                     type="password"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                    className={`w-full bg-white/5 border ${errors.confirmPassword ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/10 focus:border-amber-500/50 focus:ring-amber-500/50'} rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all`}
                     placeholder="Confirm password"
                     {...register('confirmPassword')}
                   />
                 </div>
+                {errors.confirmPassword && <p className="text-red-400 text-xs ml-1 mt-1">{errors.confirmPassword.message}</p>}
               </div>
             )}
 
             {!isLogin && (
-              <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl flex items-start gap-2">
-                <AlertCircle size={16} className="text-blue-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-blue-200">
+              <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl flex items-start gap-2">
+                <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-200">
                   Only emails added to the Staff Directory by an Administrator can register.<br />
                   If you need access, contact your manager or admin.
                 </p>
@@ -224,7 +224,7 @@ const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading || !!rateLimitError}
-              className={`w-full font-bold py-4 rounded-xl shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center group ${!!rateLimitError ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-500/20 text-white'}`}
+              className={`w-full font-bold py-4 rounded-xl shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center group ${!!rateLimitError ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-500/20 text-white'}`}
             >
               {loading ? (
                 <Loader2 size={20} className="animate-spin" />
@@ -257,8 +257,8 @@ const LoginPage: React.FC = () => {
           <p className="text-gray-400">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-400 font-bold hover:text-blue-300 transition-colors"
+              onClick={() => { setIsLogin(!isLogin); reset(); }}
+              className="text-amber-400 font-bold hover:text-amber-300 transition-colors"
             >
               {isLogin ? 'Apply for Access' : 'Sign In'}
             </button>

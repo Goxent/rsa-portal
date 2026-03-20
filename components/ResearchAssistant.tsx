@@ -109,7 +109,7 @@ const ResearchAssistant: React.FC<ResearchAssistantProps> = ({ isOpen, onClose, 
     if (!isOpen) return null;
 
     return (
-        <div className={`fixed inset-y-0 right-0 w-full md:w-[450px] bg-[#0f172a] shadow-2xl border-l border-white/10 z-50 transform transition-transform duration-300 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className={`fixed inset-y-0 right-0 w-full md:w-[450px] bg-[#09090b] shadow-2xl border-l border-white/10 z-50 transform transition-transform duration-300 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             {/* Header */}
             <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center backdrop-blur-md">
                 <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ const ResearchAssistant: React.FC<ResearchAssistantProps> = ({ isOpen, onClose, 
                                 </button>
                                 <button
                                     onClick={() => setProvider('gemini')}
-                                    className={`flex-1 py-2 rounded text-xs font-bold border ${provider === 'gemini' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'bg-white/5 text-gray-400 border-white/10'}`}
+                                    className={`flex-1 py-2 rounded text-xs font-bold border ${provider === 'gemini' ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' : 'bg-white/5 text-gray-400 border-white/10'}`}
                                 >
                                     Google (Gemini)
                                 </button>

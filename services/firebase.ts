@@ -744,7 +744,7 @@ export const AuthService = {
         return snapshot.docs.map(d => docConverter<Task>(d));
     },
 
-    getPaginatedTasks: async (lastDoc?: QueryDocumentSnapshot, pageSize: number = 20): Promise<{ tasks: Task[], lastVisible: QueryDocumentSnapshot | null }> => {
+    getPaginatedTasks: async (lastDoc?: QueryDocumentSnapshot | null, pageSize: number = 20): Promise<{ tasks: Task[], lastVisible: QueryDocumentSnapshot | null }> => {
         let q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(pageSize));
 
         if (lastDoc) {

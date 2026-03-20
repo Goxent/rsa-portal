@@ -127,11 +127,11 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 >
                     {/* Header Banner */}
                     <div className="shrink-0 p-8 pb-6 bg-gradient-to-br from-blue-600/10 to-transparent border-b border-white/5 relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                         
                         <div className="flex justify-between items-start relative z-10">
                             <div className="flex gap-6 items-start">
-                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center text-2xl font-black text-blue-400 shadow-xl shadow-blue-900/20 shrink-0">
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-amber-500/30 flex items-center justify-center text-2xl font-black text-amber-400 shadow-xl shadow-blue-900/20 shrink-0">
                                     {client.code?.substring(0, 2).toUpperCase() || 'CL'}
                                 </div>
                                 <div>
@@ -142,8 +142,8 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                         </span>
                                     </div>
                                     <div className="flex gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                        <span className="flex items-center gap-1.5"><Briefcase size={14} className="text-blue-500" /> {client.serviceType}</span>
-                                        <span className="flex items-center gap-1.5"><Tag size={14} className="text-indigo-500" /> {client.industry}</span>
+                                        <span className="flex items-center gap-1.5"><Briefcase size={14} className="text-amber-500" /> {client.serviceType}</span>
+                                        <span className="flex items-center gap-1.5"><Tag size={14} className="text-amber-500" /> {client.industry}</span>
                                         <span className={`flex items-center gap-1.5 ${client.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'Active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                             {client.status}
@@ -172,7 +172,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         {/* Quick Stats */}
                         <div className="flex gap-8 mt-8 border-t border-white/5 pt-6 relative z-10">
                             {[
-                                { label: 'Active Tasks', value: stats.active, color: 'text-blue-400' },
+                                { label: 'Active Tasks', value: stats.active, color: 'text-amber-400' },
                                 { label: 'Completed', value: stats.completed, color: 'text-emerald-400' },
                                 { label: 'Compliance items', value: stats.compliance, color: 'text-amber-400' },
                             ].map(s => (
@@ -190,7 +190,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                                className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
                             >
                                 {tab}
                             </button>
@@ -204,7 +204,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                 <div className="space-y-6">
                                     <section className="bg-white/5 rounded-2xl p-6 border border-white/5">
                                         <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                            <Building2 size={16} className="text-blue-500" /> Organization Info
+                                            <Building2 size={16} className="text-amber-500" /> Organization Info
                                         </h3>
                                         <div className="grid grid-cols-2 gap-y-6">
                                             <div>
@@ -246,7 +246,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                         </h3>
                                         {focalPerson ? (
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-sm font-black text-blue-400 uppercase">
+                                                <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-sm font-black text-amber-400 uppercase">
                                                     {focalPerson.displayName?.substring(0, 2)}
                                                 </div>
                                                 <div>
@@ -275,7 +275,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                             </div>
                                         </div>
                                         <div className="p-4 bg-black/20 rounded-xl border border-white/5 flex items-center gap-4">
-                                            <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400">
+                                            <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
                                                 <Mail size={18} />
                                             </div>
                                             <div>
@@ -294,7 +294,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                     <h3 className="text-xl font-bold text-white">Client Knowledge Base</h3>
                                     <button 
                                         onClick={() => setIsAddDocModalOpen(true)}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/20"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/20"
                                     >
                                         <Plus size={16} /> Add Document
                                     </button>
@@ -303,9 +303,9 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                 {client.documents && client.documents.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {client.documents.map(doc => (
-                                            <div key={doc.id} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all flex items-center justify-between group">
+                                            <div key={doc.id} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
                                                         <FileText size={20} />
                                                     </div>
                                                     <div>
@@ -341,15 +341,15 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                             <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {clientTasks.length > 0 ? (
                                     clientTasks.map(task => (
-                                        <div key={task.id} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all flex items-center justify-between group">
+                                        <div key={task.id} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
                                             <div>
-                                                <h4 className="font-bold text-white text-base mb-1 group-hover:text-blue-400 transition-colors">{task.title}</h4>
+                                                <h4 className="font-bold text-white text-base mb-1 group-hover:text-amber-400 transition-colors">{task.title}</h4>
                                                 <div className="flex gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                                                     <span className="flex items-center gap-1.5"><CalIcon size={12} /> Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                                                     <span className="flex items-center gap-1.5"><User size={12} /> {task.assignedToNames?.[0] || 'Unassigned'}</span>
                                                 </div>
                                             </div>
-                                            <div className={`px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest ${task.status === 'COMPLETED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                                            <div className={`px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest ${task.status === 'COMPLETED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
                                                 {task.status.replace('_', ' ')}
                                             </div>
                                         </div>
@@ -431,7 +431,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                         value={newDocTitle}
                                         onChange={(e) => setNewDocTitle(e.target.value)}
                                         placeholder="e.g., PAN Certificate"
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-blue-500 transition-all"
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 transition-all"
                                     />
                                 </div>
 
@@ -441,13 +441,13 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                         <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                                             <button 
                                                 onClick={() => setIsUploadMode(true)}
-                                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isUploadMode ? 'bg-blue-600 text-white' : 'text-gray-500'}`}
+                                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isUploadMode ? 'bg-amber-600 text-white' : 'text-gray-500'}`}
                                             >
                                                 Upload
                                             </button>
                                             <button 
                                                 onClick={() => setIsUploadMode(false)}
-                                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${!isUploadMode ? 'bg-blue-600 text-white' : 'text-gray-500'}`}
+                                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${!isUploadMode ? 'bg-amber-600 text-white' : 'text-gray-500'}`}
                                             >
                                                 Link
                                             </button>
@@ -476,7 +476,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                                     });
                                                 }
                                             }}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-blue-500 transition-all"
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 transition-all"
                                         />
                                     )}
                                 </div>

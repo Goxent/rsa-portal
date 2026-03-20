@@ -63,7 +63,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
     const getIcon = (type: string) => {
         switch (type) {
             case 'WARNING': return <AlertTriangle size={16} className="text-red-400" />;
-            case 'TASK': return <CheckCheck size={16} className="text-blue-400" />;
+            case 'TASK': return <CheckCheck size={16} className="text-amber-400" />;
             case 'MESSAGE': return <MessageSquare size={16} className="text-purple-400" />;
             default: return <Info size={16} className="text-gray-400" />;
         }
@@ -95,13 +95,13 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
         <div
             key={notification.id}
             onClick={() => handleNotificationClick(notification)}
-            className={`p-4 hover:bg-white/5 transition-colors cursor-pointer group relative ${!notification.read ? 'bg-blue-500/5' : ''}`}
+            className={`p-4 hover:bg-white/5 transition-colors cursor-pointer group relative ${!notification.read ? 'bg-amber-500/5' : ''}`}
         >
             {!notification.read && (
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
             )}
             <div className="flex gap-3">
-                <div className={`mt-1 p-2 rounded-lg bg-white/5 shrink-0 h-fit border border-white/5 ${!notification.read ? 'bg-blue-500/10 border-blue-500/20' : ''}`}>
+                <div className={`mt-1 p-2 rounded-lg bg-white/5 shrink-0 h-fit border border-white/5 ${!notification.read ? 'bg-amber-500/10 border-amber-500/20' : ''}`}>
                     {getIcon(notification.type)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -125,7 +125,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
         if (items.length === 0) return null;
         return (
             <div className="mb-2">
-                <div className="px-6 py-2 sticky top-0 bg-[#0F172A]/90 backdrop-blur-sm z-10 border-y border-white/5">
+                <div className="px-6 py-2 sticky top-0 bg-[#09090b]/90 backdrop-blur-sm z-10 border-y border-white/5">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{title}</span>
                 </div>
                 <div className="divide-y divide-white/5">
@@ -146,14 +146,14 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
             />
 
             {/* Panel - Fixed positioning to avoid viewport clipping issues */}
-            <div className="fixed inset-y-0 right-0 w-80 md:w-96 bg-[#0F172A] border-l border-white/10 shadow-2xl z-50 transform transition-transform duration-300 ease-out flex flex-col animate-in slide-in-from-right">
+            <div className="fixed inset-y-0 right-0 w-80 md:w-96 bg-[#09090b] border-l border-white/10 shadow-2xl z-50 transform transition-transform duration-300 ease-out flex flex-col animate-in slide-in-from-right">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
                     <div className="flex items-center space-x-2">
-                        <Bell size={18} className="text-blue-400" />
+                        <Bell size={18} className="text-amber-400" />
                         <h2 className="text-lg font-bold text-white">Notifications</h2>
                         {notifications.filter(n => !n.read).length > 0 && (
-                            <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            <span className="bg-amber-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
                                 {notifications.filter(n => !n.read).length} New
                             </span>
                         )}
@@ -175,7 +175,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                         </button>
                         <button
                             onClick={handleMarkAllRead}
-                            className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center transition-colors"
+                            className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center transition-colors"
                         >
                             <CheckCheck size={14} className="mr-1" /> Mark all as read
                         </button>

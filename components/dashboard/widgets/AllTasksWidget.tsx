@@ -19,7 +19,7 @@ const getPriorityConfig = (priority: string) => {
         case 'URGENT': return { dot: 'bg-red-400 animate-pulse', text: 'text-red-400', label: 'Urgent', icon: Zap };
         case 'HIGH': return { dot: 'bg-orange-400', text: 'text-orange-400', label: 'High', icon: AlertTriangle };
         case 'MEDIUM': return { dot: 'bg-yellow-400', text: 'text-yellow-400', label: 'Medium', icon: Clock };
-        default: return { dot: 'bg-blue-400', text: 'text-blue-400', label: 'Low', icon: Flag };
+        default: return { dot: 'bg-blue-400', text: 'text-amber-400', label: 'Low', icon: Flag };
     }
 };
 

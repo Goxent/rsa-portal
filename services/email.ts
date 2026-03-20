@@ -54,16 +54,16 @@ export const EmailService = {
 
                     <!-- Task Card -->
                     <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 24px; margin-bottom: 40px;">
-                        <h2 style="margin: 0 0 20px 0; color: #0f172a; font-size: 20px; font-weight: 700;">${taskTitle}</h2>
+                        <h2 style="margin: 0 0 20px 0; color: #09090b; font-size: 20px; font-weight: 700;">${taskTitle}</h2>
                         
                         <table style="width: 100%; border-collapse: collapse;">
                             <tr>
                                 <td style="padding: 8px 0; color: #64748b; font-size: 15px; width: 100px;">Client:</td>
-                                <td style="padding: 8px 0; color: #0f172a; font-size: 15px; font-weight: 600;">${clientName}</td>
+                                <td style="padding: 8px 0; color: #09090b; font-size: 15px; font-weight: 600;">${clientName}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Due Date:</td>
-                                <td style="padding: 8px 0; color: #0f172a; font-size: 15px; font-weight: 600;">${dueDate}</td>
+                                <td style="padding: 8px 0; color: #09090b; font-size: 15px; font-weight: 600;">${dueDate}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Priority:</td>
@@ -82,7 +82,7 @@ export const EmailService = {
                     <!-- Sign-off -->
                     <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
                         <p style="color: #64748b; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 8px 0 0 0;">R. Sapkota & Associates</p>
+                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 8px 0 0 0;">R. Sapkota & Associates</p>
                     </div>
                 </div>
 
@@ -116,7 +116,7 @@ export const EmailService = {
                     <p style="color: #475569; line-height: 1.6;">You are invited to an upcoming event. Please mark your calendar accordingly.</p>
 
                     <div style="background-color: #f8fafc; border-left: 4px solid #0d9488; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                        <h2 style="margin: 0 0 8px 0; color: #0f172a; font-size: 20px;">${eventTitle}</h2>
+                        <h2 style="margin: 0 0 8px 0; color: #09090b; font-size: 20px;">${eventTitle}</h2>
                         <p style="margin: 0; color: #0d9488; font-weight: 600; font-size: 16px;">📅 ${eventDate}</p>
                     </div>
 
@@ -126,7 +126,7 @@ export const EmailService = {
 
                     <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
                         <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
+                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
                     </div>
                 </div>
 
@@ -169,7 +169,7 @@ export const EmailService = {
 
                     <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
                         <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
+                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
                     </div>
                 </div>
 
@@ -211,7 +211,7 @@ export const EmailService = {
 
                     <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
                         <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
+                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
                     </div>
                 </div>
 
@@ -264,7 +264,7 @@ export const EmailService = {
 
                     <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
                         <p style="color: #64748b; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #0f172a; font-weight: 700; font-size: 16px; margin: 8px 0 0 0;">R. Sapkota & Associates</p>
+                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 8px 0 0 0;">R. Sapkota & Associates</p>
                     </div>
                 </div>
 

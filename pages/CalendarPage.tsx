@@ -49,10 +49,10 @@ const DraggableTask = ({ task, canDrag }: { task: Task, canDrag: boolean }) => {
             style={style}
             {...listeners}
             {...attributes}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
             onClick={(e) => { e.stopPropagation(); }}
         >
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></div>
             <div className="text-[10px] text-blue-200 truncate font-medium leading-none">
                 {task.title}
             </div>
@@ -72,9 +72,9 @@ const DroppableDay = ({ dateStr, isToday, isSelected, onClick, children }: any) 
             className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
                 ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                 : isSelected
-                    ? 'border-blue-500/50 bg-gradient-to-br from-blue-600/20 to-indigo-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
+                    ? 'border-amber-500/50 bg-gradient-to-br from-blue-600/20 to-amber-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
                     : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
-                } ${isOver ? 'ring-2 ring-blue-500 bg-blue-500/10 border-blue-500/50' : ''}`}
+                } ${isOver ? 'ring-2 ring-amber-500 bg-amber-500/10 border-amber-500/50' : ''}`}
         >
             {/* Hover Effect Light */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
@@ -345,7 +345,7 @@ const CalendarPage: React.FC = () => {
             >
                 <div className="grid grid-cols-7 gap-3 lg:gap-4 mb-2">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                        <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-rose-400' : 'text-blue-300/70'}`}>
+                        <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-rose-400' : 'text-amber-300/70'}`}>
                             {d}
                         </div>
                     ))}
@@ -374,7 +374,7 @@ const CalendarPage: React.FC = () => {
                                     <span className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday
                                         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
                                         : isSelected
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/30'
                                             : 'text-gray-300 group-hover:bg-white/10'}`}>
                                         {day}
                                     </span>
@@ -407,7 +407,7 @@ const CalendarPage: React.FC = () => {
                 </div>
                 <DragOverlay>
                     {activeDragTask ? (
-                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500 border border-blue-400 shadow-xl shadow-black/50 opacity-90 scale-105 rotate-2 cursor-grabbing pointer-events-none">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500 border border-blue-400 shadow-xl shadow-black/50 opacity-90 scale-105 rotate-2 cursor-grabbing pointer-events-none">
                             <div className="w-1.5 h-1.5 rounded-full bg-white shrink-0"></div>
                             <div className="text-[10px] text-white truncate font-medium leading-none">
                                 {activeDragTask.title}
@@ -490,7 +490,7 @@ const CalendarPage: React.FC = () => {
                                     <div className="h-4 w-px bg-brand-500/20"></div>
                                     <button
                                         onClick={() => handleBulkVisibility('PUBLIC')}
-                                        className="px-3 py-1 hover:bg-brand-500/20 rounded-lg text-[10px] text-blue-300 font-bold uppercase transition-all"
+                                        className="px-3 py-1 hover:bg-brand-500/20 rounded-lg text-[10px] text-amber-300 font-bold uppercase transition-all"
                                     >
                                         Make Public
                                     </button>
@@ -517,7 +517,7 @@ const CalendarPage: React.FC = () => {
 
                 <div className="overflow-x-auto flex-1 h-[60vh] custom-scrollbar bg-black/10">
                     <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 z-10 bg-[#0f172a] shadow-xl">
+                        <thead className="sticky top-0 z-10 bg-[#09090b] shadow-xl">
                             <tr className="border-b border-white/10 text-[10px] text-brand-200 uppercase font-black tracking-widest">
                                 <th className="p-4 w-12 bg-white/5 backdrop-blur-md"></th>
                                 <th className="p-4 bg-white/5 backdrop-blur-md">Date</th>
@@ -583,7 +583,7 @@ const CalendarPage: React.FC = () => {
                                                 {canEdit && (
                                                     <button
                                                         onClick={(e) => handleEditEvent(event, e)}
-                                                        className="p-1.5 hover:bg-blue-500/20 rounded-lg text-gray-400 hover:text-blue-300 transition-all border border-transparent hover:border-blue-500/20"
+                                                        className="p-1.5 hover:bg-amber-500/20 rounded-lg text-gray-400 hover:text-amber-300 transition-all border border-transparent hover:border-amber-500/20"
                                                         title="Edit"
                                                     >
                                                         <Edit size={14} />
@@ -614,7 +614,7 @@ const CalendarPage: React.FC = () => {
             <div className="flex flex-col xl:flex-row justify-between items-center gap-6 shrink-0">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <CalendarIcon className="text-blue-400" />
+                        <CalendarIcon className="text-amber-400" />
                         Firm Calendar
                     </h1>
                     <p className="text-sm text-gray-400">Track task deadlines, meetings, and important firm events.</p>
@@ -739,7 +739,7 @@ const CalendarPage: React.FC = () => {
                                                                 {canEdit && (
                                                                     <button
                                                                         onClick={(e) => handleEditEvent(eventWithDefaults, e)}
-                                                                        className="p-1.5 hover:bg-blue-500/20 rounded text-blue-400 transition-colors"
+                                                                        className="p-1.5 hover:bg-amber-500/20 rounded text-amber-400 transition-colors"
                                                                     >
                                                                         <Edit size={12} />
                                                                     </button>
@@ -785,22 +785,22 @@ const CalendarPage: React.FC = () => {
                                         })}
 
                                         {selectedDayTasks.map((task, i) => (
-                                            <div key={i} className="group flex flex-col p-4 rounded-xl bg-gradient-to-br from-blue-900/10 to-blue-900/5 hover:bg-blue-900/20 border border-blue-500/10 hover:border-blue-500/30 transition-all">
+                                            <div key={i} className="group flex flex-col p-4 rounded-xl bg-gradient-to-br from-amber-900/10 to-blue-900/5 hover:bg-blue-900/20 border border-amber-500/10 hover:border-amber-500/30 transition-all">
                                                 <div className="flex items-start space-x-3 mb-3">
-                                                    <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                                                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
                                                         <CheckCircle2 size={16} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">{task.title}</h4>
+                                                        <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">{task.title}</h4>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <span className="text-[10px] bg-blue-500/10 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/20 font-medium">TASK</span>
+                                                            <span className="text-[10px] bg-amber-500/10 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/20 font-medium">TASK</span>
                                                             <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.clientName}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => addToGoogleCalendar(task.title, task.dueDate, `Client: ${task.clientName}`)}
-                                                    className="mt-1 text-xs flex items-center justify-center w-full py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-300 rounded-lg border border-blue-500/20 transition-all font-bold hover:shadow-lg hover:shadow-blue-500/10"
+                                                    className="mt-1 text-xs flex items-center justify-center w-full py-2 bg-amber-600/10 hover:bg-amber-600/20 text-amber-300 rounded-lg border border-amber-500/20 transition-all font-bold hover:shadow-lg hover:shadow-blue-500/10"
                                                 >
                                                     <ExternalLink size={12} className="mr-2" /> Add to G-Cal
                                                 </button>
