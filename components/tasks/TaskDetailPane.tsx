@@ -484,8 +484,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 }}
                                                             >
                                                                 <option value="" className="bg-transparent text-gray-900">- Unassigned -</option>
-                                                                {usersList.map((u) => (
-                                                                    <option key={u.uid} value={u.uid} className="bg-transparent text-gray-900">{u.displayName}</option>
+                                                                {usersList
+                                                                    .filter(u => watch('assignedTo')?.includes(u.uid))
+                                                                    .map((u) => (
+                                                                        <option key={u.uid} value={u.uid} className="bg-transparent text-gray-900">{u.displayName}</option>
                                                                 ))}
                                                             </select>
                                                         </div>
