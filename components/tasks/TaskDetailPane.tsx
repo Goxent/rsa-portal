@@ -291,15 +291,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             {...register('teamLeaderId')}
                                         >
                                             <option value="" className="bg-[#1e293b] text-gray-400">- Select Leader -</option>
-                                            {usersList.map(u => (
-                                                <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>
-                                            ))}
+                                            {usersList
+                                                .filter(u => watch('assignedTo')?.includes(u.uid))
+                                                .map(u => (
+                                                    <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>
+                                                ))}
                                         </select>
-                                        {watch('teamLeaderId') && !watch('assignedTo')?.includes(watch('teamLeaderId')!) && (
-                                            <p className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-1">
-                                                <ShieldAlert size={10} /> Must be one of the assignees
-                                            </p>
-                                        )}
                                     </div>
 
                                     {/* Start Date */}
