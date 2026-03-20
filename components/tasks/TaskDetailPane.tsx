@@ -83,6 +83,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             reset({
                 title: task.title || '',
                 clientId: task.clientIds?.[0] || '',
+                startDate: task.startDate || '',
                 dueDate: task.dueDate || '',
                 priority: task.priority || TaskPriority.MEDIUM,
                 status: task.status || TaskStatus.NOT_STARTED,
@@ -99,6 +100,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         defaultValues: {
             title: task.title || '',
             clientId: task.clientIds?.[0] || '',
+            startDate: task.startDate || '',
             dueDate: task.dueDate || '',
             priority: task.priority || TaskPriority.MEDIUM,
             status: task.status || TaskStatus.NOT_STARTED,
@@ -128,6 +130,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             description: data.description,
             priority: data.priority,
             status: data.status,
+            startDate: data.startDate,
             dueDate: data.dueDate,
             assignedTo: data.assignedTo,
             teamLeaderId: data.teamLeaderId,
@@ -219,34 +222,38 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 </div>
 
                                 {/* Details Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/20 p-6 rounded-3xl border border-white/5 shadow-2xl">
-                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.status ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                            <Activity size={12} className="text-amber-400" /> Status
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-white/[0.01] p-6 rounded-3xl border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+                                    {/* Status */}
+                                    <div className={`flex flex-col gap-2 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border ${errors.status ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Activity size={14} className="text-amber-400" /> Status
                                         </label>
                                         <select
-                                            className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
+                                            className="w-full bg-transparent text-[15px] font-bold text-gray-200 focus:text-white focus:outline-none py-1 cursor-pointer"
                                             {...register('status')}
                                         >
                                             {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
                                         </select>
                                     </div>
-                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.priority ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                            <AlertTriangle size={12} className={watch('priority') === 'URGENT' ? 'text-rose-400' : 'text-orange-400'} /> Priority
+
+                                    {/* Priority */}
+                                    <div className={`flex flex-col gap-2 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border ${errors.priority ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <AlertTriangle size={14} className={watch('priority') === 'URGENT' ? 'text-rose-400' : 'text-orange-400'} /> Priority
                                         </label>
                                         <select
-                                            className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
+                                            className="w-full bg-transparent text-[15px] font-bold text-gray-200 focus:text-white focus:outline-none py-1 cursor-pointer"
                                             {...register('priority')}
                                         >
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
                                         </select>
                                     </div>
 
-                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.clientId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                                <Briefcase size={12} className="text-amber-400" /> Client
+                                    {/* Client */}
+                                    <div className={`flex flex-col gap-2 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border ${errors.clientId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
+                                        <div className="flex items-center justify-between pb-1">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Briefcase size={14} className="text-amber-400" /> Client
                                             </label>
                                             {watch('clientId') && onOpenClientDetail && (
                                                 <button
@@ -254,9 +261,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                         e.preventDefault();
                                                         onOpenClientDetail(watch('clientId')!);
                                                     }}
-                                                    className="text-[9px] font-black text-amber-400 hover:text-amber-300 uppercase tracking-widest flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 transition-all"
+                                                    className="text-[9px] font-black text-amber-400 hover:text-amber-300 uppercase tracking-widest flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20 transition-all"
                                                 >
-                                                    <Eye size={10} /> View Profile
+                                                    <Eye size={12} /> View
                                                 </button>
                                             )}
                                         </div>
@@ -271,20 +278,70 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 />
                                             )}
                                         />
-                                        {errors.clientId && <p className="text-red-400 text-xs mt-1">{errors.clientId.message}</p>}
+                                        {errors.clientId && <p className="text-red-400 text-xs">{errors.clientId.message}</p>}
                                     </div>
 
-                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.dueDate ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                                <Calendar size={12} className="text-emerald-400" /> Due Date
+                                    {/* Team Leader */}
+                                    <div className={`flex flex-col gap-2 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border ${errors.teamLeaderId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 pb-1">
+                                            <ShieldAlert size={14} className="text-amber-400" /> Team Leader
+                                        </label>
+                                        <select
+                                            className="w-full bg-transparent text-[15px] font-bold text-gray-200 focus:text-white focus:outline-none py-1 cursor-pointer"
+                                            {...register('teamLeaderId')}
+                                        >
+                                            <option value="" className="bg-[#1e293b] text-gray-400">- Select Leader -</option>
+                                            {usersList.map(u => (
+                                                <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>
+                                            ))}
+                                        </select>
+                                        {watch('teamLeaderId') && !watch('assignedTo')?.includes(watch('teamLeaderId')!) && (
+                                            <p className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-1">
+                                                <ShieldAlert size={10} /> Must be one of the assignees
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Start Date */}
+                                    <div className={`flex flex-col gap-2 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border ${errors.startDate ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
+                                        <div className="flex items-center justify-between pb-1">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Calendar size={14} className="text-gray-400" /> Start Date
                                             </label>
-                                            <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
+                                        </div>
+                                        <Controller
+                                            name="startDate"
+                                            control={control}
+                                            render={({ field }) => dateMode === 'AD' ? (
+                                                <input
+                                                    type="date"
+                                                    value={field.value || ''}
+                                                    onChange={field.onChange}
+                                                    className="w-full bg-transparent text-[15px] font-bold text-gray-200 focus:text-white focus:outline-none cursor-pointer"
+                                                />
+                                            ) : (
+                                                <NepaliDatePicker
+                                                    value={field.value || ''}
+                                                    onChange={field.onChange}
+                                                    placeholder="Select Start Date"
+                                                />
+                                            )}
+                                        />
+                                        {errors.startDate && <p className="text-red-400 text-xs">{errors.startDate.message}</p>}
+                                    </div>
+
+                                    {/* Due Date */}
+                                    <div className={`flex flex-col gap-2 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border ${errors.dueDate ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
+                                        <div className="flex items-center justify-between pb-1">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Calendar size={14} className="text-emerald-400" /> Due Date
+                                            </label>
+                                            <div className="flex items-center gap-1 bg-black/60 p-1 rounded-lg border border-white/5">
                                                 {(['AD', 'BS'] as const).map(mode => (
                                                     <button
                                                         key={mode}
-                                                        onClick={() => setDateMode(mode)}
-                                                        className={`px-2 py-0.5 rounded font-bold text-[9px] transition-all ${dateMode === mode ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-white'}`}
+                                                        onClick={(e) => { e.preventDefault(); setDateMode(mode); }}
+                                                        className={`px-2 py-0.5 rounded-md font-bold text-[10px] transition-all ${dateMode === mode ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:text-gray-300'}`}
                                                     >
                                                         {mode}
                                                     </button>
@@ -299,42 +356,23 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     type="date"
                                                     value={field.value}
                                                     onChange={field.onChange}
-                                                    className="w-full bg-transparent text-sm font-bold text-white focus:outline-none cursor-pointer"
+                                                    className="w-full bg-transparent text-[15px] font-bold text-gray-200 focus:text-white focus:outline-none cursor-pointer"
                                                 />
                                             ) : (
                                                 <NepaliDatePicker
                                                     value={field.value}
                                                     onChange={field.onChange}
-                                                    placeholder="Select Date"
+                                                    placeholder="Select Due Date"
                                                 />
                                             )}
                                         />
-                                        {errors.dueDate && <p className="text-red-400 text-xs mt-1">{errors.dueDate.message}</p>}
+                                        {errors.dueDate && <p className="text-red-400 text-xs">{errors.dueDate.message}</p>}
                                     </div>
 
-                                    <div className={`space-y-2 bg-white/[0.02] p-4 rounded-2xl border ${errors.teamLeaderId ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
-                                            <ShieldAlert size={12} className="text-amber-400" /> Team Leader
-                                        </label>
-                                        <select
-                                            className="w-full bg-transparent text-sm font-bold text-white focus:outline-none p-1 cursor-pointer"
-                                            {...register('teamLeaderId')}
-                                        >
-                                            <option value="" className="bg-[#1e293b] text-gray-300">- Select Leader -</option>
-                                            {usersList.map(u => (
-                                                <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-gray-200">{u.displayName}</option>
-                                            ))}
-                                        </select>
-                                        {watch('teamLeaderId') && !watch('assignedTo')?.includes(watch('teamLeaderId')!) && (
-                                            <p className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-1">
-                                                <ShieldAlert size={10} /> Team leader must be one of the assignees
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
-                                            <UserCircle2 size={12} className="text-cyan-400" /> Assignees
+                                    {/* Assignees (Span 2) */}
+                                    <div className="flex flex-col gap-3 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border border-white/[0.05] md:col-span-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 pb-1">
+                                            <UserCircle2 size={14} className="text-cyan-400" /> Assignees
                                         </label>
                                         <Controller
                                             name="assignedTo"
@@ -350,15 +388,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         />
                                     </div>
 
-                                    <div className="space-y-2 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05] md:col-span-2 border-t-blue-500/20 border-t-2">
-                                        <label className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2 mb-2">
-                                            <Clock size={12} /> Time Logged (Minutes)
+                                    {/* Time Logged (Span 2) */}
+                                    <div className="flex flex-col gap-3 bg-gradient-to-r from-amber-500/5 to-transparent hover:from-amber-500/10 transition-colors p-5 rounded-[20px] border border-white/[0.05] md:col-span-2 border-l-amber-500/30 border-l-2">
+                                        <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2 pb-1">
+                                            <Clock size={14} /> Time Logged (Minutes)
                                         </label>
                                         <div className="flex items-center gap-4">
                                             <input
                                                 type="number"
                                                 min="0"
-                                                className="w-32 bg-black/40 text-lg font-black text-white p-3 rounded-xl border border-white/5 focus:border-amber-500/50 focus:outline-none text-center"
+                                                className="w-32 bg-black/60 text-lg font-black text-white p-3 rounded-xl border border-white/5 focus:border-amber-500/50 focus:outline-none text-center shadow-inner"
                                                 placeholder="0"
                                                 {...register('estimatedHours', { valueAsNumber: true })}
                                             />

@@ -89,7 +89,7 @@ const TasksPage: React.FC = () => {
 
 
     const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN' | 'TIMELINE'>(isMobile ? 'LIST' : 'KANBAN');
-    const [boardMode, setBoardMode] = useState<'ALL' | 'MY'>('ALL');
+
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
     // Bulk Actions State
@@ -170,9 +170,6 @@ const TasksPage: React.FC = () => {
 
     // Initial query param check
     useEffect(() => {
-        if (searchParams.get('board') === 'MY') {
-            setBoardMode('MY');
-        }
         const staffParam = searchParams.get('staff');
 
 
@@ -196,8 +193,6 @@ const TasksPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStaff, setFilterStaff] = useState<string>(() => localStorage.getItem('rsa_filter_staff') || 'ALL');
     const [filterAuditor, setFilterAuditor] = useState<string>(() => localStorage.getItem('rsa_filter_auditor') || 'ALL');
-    const [filterVat, setFilterVat] = useState<boolean>(() => localStorage.getItem('rsa_filter_vat') === 'true');
-    const [filterItr, setFilterItr] = useState<boolean>(() => localStorage.getItem('rsa_filter_itr') === 'true');
     const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
     // Auto-persistence Effects
@@ -208,14 +203,9 @@ const TasksPage: React.FC = () => {
         localStorage.setItem('rsa_filter_groupby', groupBy);
         localStorage.setItem('rsa_filter_staff', filterStaff);
         localStorage.setItem('rsa_filter_auditor', filterAuditor);
-        localStorage.setItem('rsa_filter_vat', String(filterVat));
-        localStorage.setItem('rsa_filter_itr', String(filterItr));
-    }, [filterPriority, filterStatus, filterClient, groupBy, filterStaff, filterAuditor, filterVat, filterItr]);
+    }, [filterPriority, filterStatus, filterClient, groupBy, filterStaff, filterAuditor]);
 
     const filteredTasks = tasks.filter(t => {
-        if (boardMode === 'MY' && user) {
-            if (!t.assignedTo.includes(user.uid)) return false;
-        }
         if (filterStatus !== 'ALL' && t.status !== filterStatus) return false;
         if (filterPriority !== 'ALL' && t.priority !== filterPriority) return false;
         if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase()) && !t.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -223,13 +213,10 @@ const TasksPage: React.FC = () => {
         if (filterClient !== 'ALL' && !t.clientIds?.includes(filterClient)) return false;
 
         // Advanced Filters
-        if (filterAuditor !== 'ALL' || filterVat || filterItr) {
+        if (filterAuditor !== 'ALL') {
             const taskClient = clientsList.find(c => t.clientIds && t.clientIds.includes(c.id));
 
-
             if (!taskClient) return false;
-            if (filterVat && !taskClient.vatReturn) return false;
-            if (filterItr && !taskClient.itrReturn) return false;
             if (filterAuditor !== 'ALL' && taskClient.signingAuthority !== filterAuditor) return false;
         }
 
@@ -259,6 +246,7 @@ const TasksPage: React.FC = () => {
             status: TaskStatus.NOT_STARTED,
             priority: TaskPriority.MEDIUM,
             subtasks: [],
+            startDate: getCurrentDateUTC(),
             dueDate: getCurrentDateUTC(),
             clientIds: [],
             teamLeaderId: '',
@@ -843,21 +831,17 @@ const TasksPage: React.FC = () => {
 
     // Count active (non-default) filters for the filter badge
     const activeFilterCount = useMemo(() => {
-
-
         let count = 0;
         if (filterStatus !== 'ALL') count++;
         if (filterPriority !== 'ALL') count++;
         if (filterStaff !== 'ALL') count++;
         if (filterClient !== 'ALL') count++;
         if (filterAuditor !== 'ALL') count++;
-        if (filterVat) count++;
-        if (filterItr) count++;
         if (dateRange.start) count++;
         if (dateRange.end) count++;
         if (searchTerm) count++;
         return count;
-    }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, filterVat, filterItr, dateRange, searchTerm]);
+    }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, dateRange, searchTerm]);
 
     if (loading) return (
         <div className="flex flex-col h-full bg-transparent p-8 space-y-8 animate-pulse">
@@ -913,18 +897,6 @@ const TasksPage: React.FC = () => {
                                 </button>
                             )}
                             <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
-                            <button
-                                onClick={() => setBoardMode('ALL')}
-                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'ALL' ? 'bg-amber-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                FIRM
-                            </button>
-                            <button
-                                onClick={() => setBoardMode('MY')}
-                                className={`px-4 py-2 rounded-lg text-xs font-black tracking-wide transition-all ${boardMode === 'MY' ? 'bg-amber-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                MINE
-                            </button>
                         </div>
                     </div>
 
@@ -1169,37 +1141,14 @@ const TasksPage: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {/* Toggles Row: VAT, ITR */}
-                                    <div>
-                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tax Type</p>
-                                        <div className="flex items-center gap-3">
-                                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={filterVat}
-                                                    onChange={(e) => setFilterVat(e.target.checked)}
-                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-amber-500 focus:ring-0"
-                                                />
-                                                <span className={`text-xs font-bold transition-colors ${filterVat ? 'text-amber-400' : 'text-gray-300'}`}>VAT</span>
-                                            </label>
-                                            <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5 transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={filterItr}
-                                                    onChange={(e) => setFilterItr(e.target.checked)}
-                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-amber-500 focus:ring-0"
-                                                />
-                                                <span className={`text-xs font-bold transition-colors ${filterItr ? 'text-amber-400' : 'text-gray-300'}`}>ITR</span>
-                                            </label>
-                                        </div>
-                                    </div>
+                                    {/* Toggles Row removed */}
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
                     {/* Active Filter Pills */}
-                    {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || filterVat || filterItr || (dateRange.start || dateRange.end)) && (
+                    {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || (dateRange.start || dateRange.end)) && (
                         <div className="flex flex-wrap items-center gap-2 px-1">
                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mr-2">Active Filters:</span>
                             {searchTerm && (
@@ -1238,18 +1187,7 @@ const TasksPage: React.FC = () => {
                                     <button onClick={() => setFilterAuditor('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
                                 </div>
                             )}
-                            {filterVat && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[11px] font-bold text-emerald-400">
-                                    VAT Only
-                                    <button onClick={() => setFilterVat(false)} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-                            {filterItr && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-[11px] font-bold text-orange-400">
-                                    ITR Only
-                                    <button onClick={() => setFilterItr(false)} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
+
                             {(dateRange.start || dateRange.end) && (
                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
                                     Date: {dateRange.start || '...'} to {dateRange.end || '...'}
@@ -1262,10 +1200,7 @@ const TasksPage: React.FC = () => {
                                     setFilterStatus('ALL');
                                     setFilterPriority('ALL');
                                     setFilterStaff('ALL');
-                                    setFilterClient('ALL');
                                     setFilterAuditor('ALL');
-                                    setFilterVat(false);
-                                    setFilterItr(false);
                                     setDateRange({ start: '', end: '' });
                                 }}
                                 className="text-[10px] font-bold text-gray-500 hover:text-white transition-colors ml-2 underline underline-offset-4"

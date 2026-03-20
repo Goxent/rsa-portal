@@ -8,6 +8,7 @@ export const loginSchema = z.object({
 export const taskSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     clientId: z.string().optional(),
+    startDate: z.string().optional(),
     dueDate: z.string().min(1, 'Due date is required'),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
     status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'UNDER_REVIEW', 'HALTED', 'COMPLETED', 'ARCHIVED']),

@@ -120,6 +120,7 @@ export interface Task {
   clientName?: string;
   status: TaskStatus;
   priority: TaskPriority;
+  startDate?: string;
   dueDate: string;
   estimatedDays?: number; // For Resource Planning
   driveFolderLink?: string;
