@@ -319,7 +319,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     // ── KANBAN VIEW ────────────────────────────────────────────────────────
     const columns = groupBy === 'NONE'
-        ? [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED, TaskStatus.ARCHIVED]
+        ? [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED]
         : groupBy === 'AUDITOR'
             ? SIGNING_AUTHORITIES
             : usersList.filter(u => u.role !== UserRole.ADMIN).map(u => u.uid);
