@@ -317,50 +317,59 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
         );
     }
 
-    // ── PHASE-SECTIONED KANBAN VIEW ─────────────────────────────────────────
+    // ── SIDE-BY-SIDE PHASE KANBAN VIEW ────────────────────────────────────
     const PHASE_ORDER = [AuditPhase.ONBOARDING, AuditPhase.PLANNING_AND_EXECUTION, AuditPhase.REVIEW_AND_CONCLUSION];
     const STATUS_COLS = [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.COMPLETED];
 
-    const PHASE_META: Record<string, { label: string; color: string; dot: string; bg: string; border: string }> = {
-        [AuditPhase.ONBOARDING]: { label: 'Onboarding', color: 'text-cyan-400', dot: 'bg-cyan-400', bg: 'bg-cyan-500/5', border: 'border-cyan-500/20' },
-        [AuditPhase.PLANNING_AND_EXECUTION]: { label: 'Planning & Execution', color: 'text-amber-400', dot: 'bg-amber-400', bg: 'bg-amber-500/5', border: 'border-amber-500/20' },
-        [AuditPhase.REVIEW_AND_CONCLUSION]: { label: 'Review & Conclusion', color: 'text-emerald-400', dot: 'bg-emerald-400', bg: 'bg-emerald-500/5', border: 'border-emerald-500/20' },
-    };
-
-    const [collapsedPhases, setCollapsedPhases] = React.useState<AuditPhase[]>([]);
-    const togglePhaseCollapse = (phase: AuditPhase) => {
-        setCollapsedPhases(prev => prev.includes(phase) ? prev.filter(p => p !== phase) : [...prev, phase]);
+    const PHASE_META: Record<string, { label: string; color: string; dot: string; bg: string; border: string; headerBg: string; topBar: string }> = {
+        [AuditPhase.ONBOARDING]: { label: 'Onboarding', color: 'text-cyan-400', dot: 'bg-cyan-400', bg: 'bg-[#0c1a24]', border: 'border-cyan-500/20', headerBg: 'bg-cyan-950/40', topBar: 'bg-cyan-500' },
+        [AuditPhase.PLANNING_AND_EXECUTION]: { label: 'Planning & Execution', color: 'text-amber-400', dot: 'bg-amber-400', bg: 'bg-[#1a1508]', border: 'border-amber-500/20', headerBg: 'bg-amber-950/40', topBar: 'bg-amber-500' },
+        [AuditPhase.REVIEW_AND_CONCLUSION]: { label: 'Review & Conclusion', color: 'text-emerald-400', dot: 'bg-emerald-400', bg: 'bg-[#0a1f15]', border: 'border-emerald-500/20', headerBg: 'bg-emerald-950/40', topBar: 'bg-emerald-500' },
     };
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="h-full flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
-                <div className="flex flex-col gap-4 px-4 md:px-6 py-4">
-                    {PHASE_ORDER.map(phase => {
-                        const pm = PHASE_META[phase];
-                        const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
-                        const isPhaseCollapsed = collapsedPhases.includes(phase);
+            <div className="h-full flex flex-col min-h-0">
+                <div className="relative flex-1 min-h-0">
+                    {/* Left scroll arrow */}
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-[40] pointer-events-none">
+                        <button type="button" onClick={() => scroll('left')}
+                            className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm">
+                            <ChevronLeft size={16} />
+                        </button>
+                    </div>
+                    {/* Right scroll arrow */}
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 z-[40] pointer-events-none">
+                        <button type="button" onClick={() => scroll('right')}
+                            className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm">
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
 
-                        return (
-                            <div key={phase} className={`rounded-2xl border ${pm.border} ${pm.bg} overflow-hidden transition-all`}>
-                                {/* Phase header */}
-                                <div
-                                    className="flex items-center justify-between px-5 py-3 cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
-                                    onClick={() => togglePhaseCollapse(phase)}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${pm.dot}`} />
-                                        <h3 className={`text-sm font-black uppercase tracking-[0.15em] ${pm.color}`}>{pm.label}</h3>
-                                        <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
-                                            {phaseTasks.length} {phaseTasks.length === 1 ? 'task' : 'tasks'}
-                                        </span>
+                    {/* Horizontal scroll container — 3 phase columns side by side */}
+                    <div ref={boardRef} className="h-full flex items-stretch gap-3 overflow-x-auto overflow-y-hidden px-10 py-4 kanban-scroll">
+                        {PHASE_ORDER.map(phase => {
+                            const pm = PHASE_META[phase];
+                            const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
+
+                            return (
+                                <div key={phase} className={`flex flex-col flex-shrink-0 w-[320px] rounded-2xl overflow-hidden border ${pm.border} h-full`}>
+                                    {/* Phase header */}
+                                    <div className={`relative flex-shrink-0 ${pm.headerBg} border-b ${pm.border} px-4 py-3`}>
+                                        <div className={`absolute top-0 left-0 right-0 h-[3px] ${pm.topBar}`} />
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className={`w-2.5 h-2.5 rounded-full ${pm.dot}`} />
+                                                <span className={`text-[11px] font-black uppercase tracking-[0.12em] ${pm.color}`}>{pm.label}</span>
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-500 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                                                {phaseTasks.length}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <ChevronDown size={16} className={`text-slate-500 transition-transform duration-200 ${isPhaseCollapsed ? '-rotate-90' : ''}`} />
-                                </div>
 
-                                {/* Phase body — status columns */}
-                                {!isPhaseCollapsed && (
-                                    <div className="flex items-stretch gap-2 px-3 pb-3 overflow-x-auto kanban-scroll">
+                                    {/* Phase body — scrollable, contains status sections */}
+                                    <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar ${pm.bg}`}>
                                         {STATUS_COLS.map(status => {
                                             const droppableId = `${phase}::${status}`;
                                             const cfg = S[status] ?? FALLBACK_COL;
@@ -373,27 +382,19 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             ref={prov.innerRef}
                                                             {...prov.droppableProps}
                                                             className={[
-                                                                'flex flex-col flex-shrink-0 rounded-xl overflow-hidden',
-                                                                'border transition-colors duration-200 w-[260px]',
-                                                                snap.isDraggingOver
-                                                                    ? `border-white/20 ring-2 ${cfg.ring} shadow-xl`
-                                                                    : 'border-white/[0.05]',
+                                                                'px-2.5 pb-1 transition-colors duration-150',
+                                                                snap.isDraggingOver ? 'bg-white/[0.03]' : '',
                                                             ].join(' ')}
                                                         >
-                                                            {/* Status column header */}
-                                                            <div className={`relative flex-shrink-0 ${cfg.headerBg} border-b border-white/[0.05] flex items-center justify-between px-3 py-2`}>
-                                                                <div className={`absolute top-0 left-0 right-0 h-[2px] ${cfg.topBar}`} />
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">{cfg.label}</span>
-                                                                </div>
-                                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${cfg.countBg}`}>
-                                                                    {colTasks.length}
-                                                                </span>
+                                                            {/* Status section header */}
+                                                            <div className="flex items-center gap-2 px-1 py-2 sticky top-0 z-[5]" style={{ backdropFilter: 'blur(8px)' }}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                                                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.12em] flex-1">{cfg.label}</span>
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${cfg.countBg}`}>{colTasks.length}</span>
                                                             </div>
 
-                                                            {/* Tasks */}
-                                                            <div className={`flex-1 min-h-[80px] max-h-[400px] overflow-y-auto flex flex-col gap-2 p-2 custom-scrollbar ${cfg.bodyBg}`}>
+                                                            {/* Task cards */}
+                                                            <div className="flex flex-col gap-1.5 min-h-[40px]">
                                                                 {colTasks.map((task, i) => (
                                                                     <TaskCard
                                                                         key={task.id}
@@ -409,63 +410,10 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                 {prov.placeholder}
 
                                                                 {colTasks.length === 0 && (
-                                                                    <div className="flex-1 flex flex-col items-center justify-center gap-1 min-h-[60px] rounded-lg border border-dashed border-white/[0.04] text-[9px] text-slate-700 font-bold uppercase tracking-widest">
-                                                                        <div className={`w-3 h-3 rounded-full ${cfg.dot} opacity-15`} />
+                                                                    <div className="flex items-center justify-center gap-1.5 min-h-[32px] rounded-lg border border-dashed border-white/[0.04] text-[8px] text-slate-700 font-bold uppercase tracking-widest mb-1">
+                                                                        <div className={`w-2 h-2 rounded-full ${cfg.dot} opacity-15`} />
                                                                         Drop here
                                                                     </div>
-                                                                )}
-
-                                                                {/* Quick add for NOT_STARTED only */}
-                                                                {status === TaskStatus.NOT_STARTED && (
-                                                                    <AnimatePresence mode="wait">
-                                                                        {quickAddStatus === droppableId ? (
-                                                                            <motion.div
-                                                                                key="input"
-                                                                                initial={{ opacity: 0, y: 6 }}
-                                                                                animate={{ opacity: 1, y: 0 }}
-                                                                                exit={{ opacity: 0, y: 6 }}
-                                                                                transition={{ duration: 0.12 }}
-                                                                                className="bg-[#161d2d] border border-slate-700 rounded-xl p-3 shadow-2xl"
-                                                                            >
-                                                                                <input
-                                                                                    autoFocus
-                                                                                    type="text"
-                                                                                    placeholder="Task title..."
-                                                                                    value={quickAddTitle}
-                                                                                    onChange={e => setQuickAddTitle(e.target.value)}
-                                                                                    onKeyDown={e => {
-                                                                                        if (e.key === 'Enter') submitQuickAdd(TaskStatus.NOT_STARTED);
-                                                                                        if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
-                                                                                    }}
-                                                                                    className="w-full bg-transparent text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none mb-2 font-medium"
-                                                                                />
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="text-[9px] text-slate-600 font-medium uppercase tracking-wider">↵ save · Esc cancel</span>
-                                                                                    <div className="flex gap-1.5">
-                                                                                        <button onClick={() => { setQuickAddStatus(null); setQuickAddTitle(''); }}
-                                                                                            className="w-6 h-6 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors">
-                                                                                            <X size={12} />
-                                                                                        </button>
-                                                                                        <button onClick={() => submitQuickAdd(TaskStatus.NOT_STARTED)}
-                                                                                            className="px-2.5 h-6 bg-amber-600 hover:bg-amber-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1">
-                                                                                            <Plus size={11} /> Add
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </motion.div>
-                                                                        ) : (
-                                                                            <motion.button
-                                                                                key="btn"
-                                                                                initial={{ opacity: 0 }}
-                                                                                animate={{ opacity: 1 }}
-                                                                                exit={{ opacity: 0 }}
-                                                                                onClick={() => setQuickAddStatus(droppableId)}
-                                                                                className="w-full py-1.5 rounded-lg border border-dashed border-slate-800 text-slate-700 hover:text-slate-400 hover:border-slate-600 hover:bg-white/[0.02] transition-all text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 group"
-                                                                            >
-                                                                                <Plus size={11} className="group-hover:scale-110 transition-transform" /> Add task
-                                                                            </motion.button>
-                                                                        )}
-                                                                    </AnimatePresence>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -473,22 +421,75 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                 </Droppable>
                                             );
                                         })}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
 
-                    {tasks.length === 0 && (
-                        <div className="py-32 flex flex-col items-center justify-center text-center">
-                            <div className="w-14 h-14 rounded-2xl bg-slate-800/50 border border-white/[0.06] flex items-center justify-center mb-4">
-                                <ListIcon size={22} className="text-slate-600" />
-                            </div>
-                            <p className="text-slate-400 font-semibold mb-1">No tasks found</p>
-                            <p className="text-sm text-slate-600">Adjust your filters or create a new task.</p>
-                        </div>
-                    )}
+                                        {/* Quick add at bottom of column */}
+                                        <div className="px-2.5 pb-2.5 pt-1">
+                                            <AnimatePresence mode="wait">
+                                                {quickAddStatus === `${phase}::ADD` ? (
+                                                    <motion.div
+                                                        key="input"
+                                                        initial={{ opacity: 0, y: 6 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 6 }}
+                                                        transition={{ duration: 0.12 }}
+                                                        className="bg-[#161d2d] border border-slate-700 rounded-xl p-3 shadow-2xl"
+                                                    >
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            placeholder="Task title..."
+                                                            value={quickAddTitle}
+                                                            onChange={e => setQuickAddTitle(e.target.value)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') submitQuickAdd(TaskStatus.NOT_STARTED);
+                                                                if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
+                                                            }}
+                                                            className="w-full bg-transparent text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none mb-2 font-medium"
+                                                        />
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[9px] text-slate-600 font-medium uppercase tracking-wider">↵ save · Esc cancel</span>
+                                                            <div className="flex gap-1.5">
+                                                                <button onClick={() => { setQuickAddStatus(null); setQuickAddTitle(''); }}
+                                                                    className="w-6 h-6 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors">
+                                                                    <X size={12} />
+                                                                </button>
+                                                                <button onClick={() => submitQuickAdd(TaskStatus.NOT_STARTED)}
+                                                                    className="px-2.5 h-6 bg-amber-600 hover:bg-amber-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1">
+                                                                    <Plus size={11} /> Add
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                ) : (
+                                                    <motion.button
+                                                        key="btn"
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        onClick={() => setQuickAddStatus(`${phase}::ADD`)}
+                                                        className="w-full py-2 rounded-xl border border-dashed border-slate-800 text-slate-700 hover:text-slate-400 hover:border-slate-600 hover:bg-white/[0.02] transition-all text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 group"
+                                                    >
+                                                        <Plus size={12} className="group-hover:scale-110 transition-transform" /> Add task
+                                                    </motion.button>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
+
+                {tasks.length === 0 && (
+                    <div className="py-32 flex flex-col items-center justify-center text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-800/50 border border-white/[0.06] flex items-center justify-center mb-4">
+                            <ListIcon size={22} className="text-slate-600" />
+                        </div>
+                        <p className="text-slate-400 font-semibold mb-1">No tasks found</p>
+                        <p className="text-sm text-slate-600">Adjust your filters or create a new task.</p>
+                    </div>
+                )}
             </div>
         </DragDropContext>
     );
