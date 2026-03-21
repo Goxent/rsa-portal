@@ -860,7 +860,7 @@ const TasksPage: React.FC = () => {
     );
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-transparent">
+        <div className="flex flex-col absolute top-4 left-4 right-4 bottom-24 md:top-6 md:left-6 md:right-6 md:bottom-6 overflow-hidden bg-transparent rounded-2xl">
             {/* --- COMPACT UNIFIED TOOLBAR --- */}
             <header className="flex-none bg-[#09090b]/95 backdrop-blur-md border-b border-white/[0.05] relative z-20">
                 {/* Single row toolbar */}
