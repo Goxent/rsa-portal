@@ -157,114 +157,135 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     // ── LIST VIEW ──────────────────────────────────────────────────────────
     if (viewMode === 'LIST') {
         return (
-            <div className="h-full overflow-y-auto p-4 md:p-6 custom-scrollbar">
-                <div className="min-w-full md:min-w-[900px] max-w-7xl mx-auto overflow-x-hidden md:overflow-x-visible">
+            <div className="h-full overflow-y-auto custom-scrollbar bg-transparent">
+                <div className="min-w-full md:min-w-[900px] max-w-7xl mx-auto overflow-x-hidden md:overflow-x-visible pb-24">
                     {!isMobile && (
-                        <div className="grid grid-cols-[24px_1fr_160px_130px_110px_130px] gap-x-4 px-5 py-3 border-b border-white/[0.06] text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 sticky top-0 bg-[#0a0f1e]/95 backdrop-blur-md z-10">
+                        <div className="grid grid-cols-[32px_1fr_180px_140px_100px_120px] gap-x-4 px-6 py-2 border-b border-white/10 text-[10px] font-bold text-slate-500 uppercase tracking-widest sticky top-0 bg-[#09090b]/95 backdrop-blur-md z-20">
                             <div className="flex items-center justify-center">
                                 <button
                                     onClick={onSelectAll}
                                     title="Select All Visible Tasks"
-                                    className={`relative w-4 h-4 rounded border flex items-center justify-center transition-all ${allSelected ? 'bg-amber-600 border-amber-500' : 'border-slate-600 hover:border-slate-400 bg-transparent'}`}
+                                    className={`relative w-4 h-4 rounded-md border flex items-center justify-center transition-all ${allSelected ? 'bg-amber-600 border-amber-500' : 'border-slate-600 hover:border-slate-400 bg-transparent'}`}
                                 >
-                                    {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
+                                    {allSelected && <Check size={11} className="text-white" strokeWidth={3.5} />}
                                 </button>
                             </div>
-                            <div>Task / Client</div>
-                            <div>Assigned</div>
-                            <div>Status</div>
-                            <div>Priority</div>
-                            <div className="text-right">Due</div>
+                            <div className="flex items-center">Task Title</div>
+                            <div className="flex items-center">Assignees</div>
+                            <div className="flex items-center">Status</div>
+                            <div className="flex items-center">Priority</div>
+                            <div className="flex items-center justify-end">Due Date</div>
                         </div>
                     )}
-                    {tasks.map(task => {
-                        const sc = S[task.status];
-                        const pc = P[task.priority] ?? P[TaskPriority.LOW];
-                        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date()
-                            && task.status !== TaskStatus.COMPLETED && task.status !== TaskStatus.ARCHIVED;
-                        const content = (
-                            <div
-                                onClick={() => handleOpenEdit(task)}
-                                className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-[24px_1fr_160px_130px_110px_130px]'} gap-x-4 px-5 py-4 md:py-3.5 items-center cursor-pointer group rounded-lg transition-all mb-0.5
-                                    hover:bg-white/[0.03] border border-transparent ${!isMobile && 'hover:border-white/[0.06]'}
-                                    ${selectedTaskId === task.id ? 'bg-amber-500/[0.06] border-amber-500/20' : 'bg-[#0a0f1e]'}`}
-                            >
-                                {/* Selected Checkbox (Hidden on true mobile view for space, or keeping if needed) */}
-                                {!isMobile && (
-                                    <div onClick={e => e.stopPropagation()} className="flex items-center justify-center">
-                                        <div className={`relative w-4 h-4 rounded border cursor-pointer flex items-center justify-center transition-all
-                                            ${selectedTaskIds.includes(task.id) ? 'bg-amber-600 border-amber-500' : 'border-slate-700 bg-transparent opacity-0 group-hover:opacity-100'}`}
-                                            onClick={() => onToggleSelection(task.id)}>
-                                            {selectedTaskIds.includes(task.id) && <Check size={9} className="text-white" strokeWidth={3.5} />}
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2 mb-1 md:mb-0.5">
-                                        <span className="text-sm md:text-[13px] font-semibold text-slate-200 truncate group-hover:text-white transition-colors">{task.title}</span>
-                                        {task.tags?.map(t => <span key={t} className="hidden md:inline text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-500">{t}</span>)}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[11px] md:text-[10px] text-slate-600">
-                                        {task.clientName && (
-                                            <div 
-                                                className="flex items-center gap-1 hover:text-amber-400 transition-all cursor-pointer"
-                                                onClick={(e) => {
-                                                    if (onOpenClientDetail && task.clientIds?.[0]) {
-                                                        e.stopPropagation();
-                                                        onOpenClientDetail(task.clientIds[0]);
-                                                    }
-                                                }}
-                                            >
-                                                <Tag size={10} className="text-slate-700" /> 
-                                                <span className="truncate max-w-[160px] md:max-w-[140px] underline-offset-2 hover:underline font-bold">{task.clientName}</span>
-                                            </div>
-                                        )}
-                                        <span className="font-mono text-slate-800 hidden md:inline">#{task.id.substring(0, 5).toUpperCase()}</span>
-                                    </div>
-
-                                    {/* Mobile Only Meta Row */}
-                                    {isMobile && (
-                                        <div className="flex flex-wrap items-center gap-3 mt-3">
-                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wide ${pc.badge}`}>{pc.label}</span>
-                                            <div className="flex items-center gap-1.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${sc?.dot ?? 'bg-slate-500'}`} />
-                                                <span className="text-[10px] text-slate-400 font-medium">{sc?.label ?? task.status.replace('_', ' ')}</span>
-                                            </div>
-                                            <div className={`text-[10px] font-medium flex items-center gap-1 ml-auto ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
-                                                {isOverdue ? <AlertTriangle size={10} className="animate-pulse" /> : <Calendar size={10} />}
-                                                {formatDate(task.dueDate)}
+                    <div className="flex flex-col">
+                        {tasks.map(task => {
+                            const sc = S[task.status];
+                            const pc = P[task.priority] ?? P[TaskPriority.LOW];
+                            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date()
+                                && task.status !== TaskStatus.COMPLETED && task.status !== TaskStatus.ARCHIVED;
+                            
+                            const content = (
+                                <div
+                                    onClick={() => handleOpenEdit(task)}
+                                    className={`grid ${isMobile ? 'grid-cols-1 gap-y-3' : 'grid-cols-[32px_1fr_180px_140px_100px_120px] gap-x-4'} px-6 py-2.5 items-center cursor-pointer group transition-colors border-b border-white/[0.04]
+                                        hover:bg-white/[0.02] ${selectedTaskIds.includes(task.id) ? 'bg-amber-500/[0.04]' : 'bg-transparent'}`}
+                                >
+                                    {/* Selected Checkbox */}
+                                    {!isMobile && (
+                                        <div onClick={e => e.stopPropagation()} className="flex items-center justify-center">
+                                            <div className={`relative w-4 h-4 rounded-md border cursor-pointer flex items-center justify-center transition-all duration-200
+                                                ${selectedTaskIds.includes(task.id) ? 'bg-amber-600 border-amber-500 opacity-100' : 'border-slate-700 bg-transparent opacity-0 group-hover:opacity-100'}`}
+                                                onClick={() => onToggleSelection(task.id)}>
+                                                {selectedTaskIds.includes(task.id) && <Check size={11} className="text-white" strokeWidth={3.5} />}
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Title Column */}
+                                    <div className="min-w-0 flex flex-col justify-center">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className={`text-[13px] font-medium truncate transition-colors ${task.status === TaskStatus.COMPLETED ? 'text-slate-500 line-through' : 'text-slate-200 group-hover:text-white'}`}>{task.title}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                            <span className="font-mono text-slate-700 uppercase">#{task.id.substring(0, 5)}</span>
+                                            {task.clientName && (
+                                                <div 
+                                                    className="flex items-center gap-1 hover:text-amber-400 transition-colors cursor-pointer text-slate-400 font-medium"
+                                                    onClick={(e) => {
+                                                        if (onOpenClientDetail && task.clientIds?.[0]) {
+                                                            e.stopPropagation();
+                                                            onOpenClientDetail(task.clientIds[0]);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Tag size={10} className="opacity-70" /> 
+                                                    <span className="truncate max-w-[150px]">{task.clientName}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Mobile Details Row */}
+                                        {isMobile && (
+                                            <div className="flex flex-wrap items-center gap-3 mt-2.5 pt-2.5 border-t border-white/[0.04]">
+                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide flex-shrink-0 ${pc.badge}`}>{pc.label}</span>
+                                                <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/5 rounded-full px-2 py-0.5">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${sc?.dot ?? 'bg-slate-500'}`} />
+                                                    <span className="text-[10px] text-slate-300 font-medium">{sc?.label ?? task.status.replace('_', ' ')}</span>
+                                                </div>
+                                                <div className={`text-[10px] font-medium flex items-center gap-1 flex-shrink-0 ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
+                                                    {isOverdue ? <AlertTriangle size={10} className="animate-pulse" /> : <Calendar size={10} className="opacity-70" />}
+                                                    {formatDate(task.dueDate)}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Desktop Columns */}
+                                    {!isMobile && (
+                                        <>
+                                            {/* Assignees */}
+                                            <div className="flex -space-x-1.5 items-center">
+                                                {task.assignedTo.length === 0 ? (
+                                                    <span className="text-[11px] text-slate-600 border border-dashed border-slate-700 rounded-full px-2 py-0.5">Unassigned</span>
+                                                ) : (
+                                                    <>
+                                                        {task.assignedTo.slice(0, 4).map((uid, i) => {
+                                                            const u = usersList.find(x => x.uid === uid);
+                                                            return (
+                                                                <div key={uid} title={u?.displayName}
+                                                                    style={{ backgroundColor: avatarColor(i) }}
+                                                                    className="w-6 h-6 rounded-full border-[1.5px] border-[#09090b] flex items-center justify-center text-[9px] font-bold text-white shadow-sm ring-1 ring-black/20">
+                                                                    {u?.displayName?.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase() ?? '?'}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        {task.assignedTo.length > 4 && <div className="w-6 h-6 rounded-full bg-slate-800 border-[1.5px] border-[#09090b] flex items-center justify-center text-[9px] text-slate-400 font-medium z-10 shadow-sm ring-1 ring-black/20">+{task.assignedTo.length - 4}</div>}
+                                                    </>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Status Pill */}
+                                            <div className="flex items-center">
+                                                <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/5 rounded-full px-2 py-1 shadow-sm transition-colors group-hover:bg-white/[0.05]">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${sc?.dot ?? 'bg-slate-500'}`} />
+                                                    <span className="text-[10px] text-slate-300 font-medium">{sc?.label ?? task.status.replace('_', ' ')}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Priority */}
+                                            <div className="flex items-center">
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md border uppercase tracking-wider ${pc.badge}`}>{pc.label}</span>
+                                            </div>
+                                            
+                                            {/* Due Date */}
+                                            <div className={`text-right text-[11px] font-medium flex items-center justify-end gap-1.5 ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
+                                                {isOverdue ? <AlertTriangle size={11} className="animate-pulse" /> : <Calendar size={11} className="opacity-70" />}
+                                                {formatDate(task.dueDate)}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                                {!isMobile && (
-                                    <>
-                                        <div className="flex -space-x-1.5">
-                                            {task.assignedTo.slice(0, 4).map((uid, i) => {
-                                                const u = usersList.find(x => x.uid === uid);
-                                                return (
-                                                    <div key={uid} title={u?.displayName}
-                                                        style={{ backgroundColor: avatarColor(i) }}
-                                                        className="w-6 h-6 rounded-full border-2 border-[#0a0f1e] flex items-center justify-center text-[9px] font-black text-white">
-                                                        {u?.displayName?.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase() ?? '?'}
-                                                    </div>
-                                                );
-                                            })}
-                                            {task.assignedTo.length > 4 && <div className="w-6 h-6 rounded-full bg-slate-700 border-2 border-[#0a0f1e] flex items-center justify-center text-[9px] text-slate-400">+{task.assignedTo.length - 4}</div>}
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${sc?.dot ?? 'bg-slate-500'}`} />
-                                            <span className="text-[11px] text-slate-400 font-medium">{sc?.label ?? task.status.replace('_', ' ')}</span>
-                                        </div>
-                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wide ${pc.badge}`}>{pc.label}</span>
-                                        <div className={`text-right text-[11px] font-medium flex items-center justify-end gap-1 ${isOverdue ? 'text-red-400' : 'text-slate-500'}`}>
-                                            {isOverdue ? <AlertTriangle size={10} className="animate-pulse" /> : <Calendar size={10} />}
-                                            {formatDate(task.dueDate)}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        );
+                            );
 
                         if (isMobile) {
                             return (
@@ -303,6 +324,8 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
                         return <React.Fragment key={task.id}>{content}</React.Fragment>;
                     })}
+                    </div>
+
                     {tasks.length === 0 && (
                         <div className="py-32 flex flex-col items-center justify-center text-center">
                             <div className="w-14 h-14 rounded-2xl bg-slate-800/50 border border-white/[0.06] flex items-center justify-center mb-4">

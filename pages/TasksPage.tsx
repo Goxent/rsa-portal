@@ -354,13 +354,13 @@ const TasksPage: React.FC = () => {
                 const { comments, ...updatesWithoutComments } = taskToSave;
                 
                 const oldTask = tasks.find(t => t.id === dataToSave.id);
-                await updateTaskMutation.mutateAsync({ id: dataToSave.id, updates: updatesWithoutComments });
+                updateTaskMutation.mutate({ id: dataToSave.id, updates: updatesWithoutComments });
                 
                 if (oldTask && oldTask.status !== TaskStatus.COMPLETED && dataToSave.status === TaskStatus.COMPLETED) {
                     triggerNextTemplateIfNeeded(dataToSave.id, TaskStatus.COMPLETED);
                 }
             } else {
-                await createTaskMutation.mutateAsync(taskToSave as Task);
+                createTaskMutation.mutate(taskToSave as Task);
             }
 
             // Mentions Notification Logic
@@ -382,7 +382,7 @@ const TasksPage: React.FC = () => {
 
             setIsModalOpen(false);
             setSelectedTaskId(undefined);
-            toast.success(isEditMode ? 'Task updated' : 'Task created');
+            // Toast will be handled by the mutation hooks
         } catch (error) {
             console.error('Error saving task:', error);
             toast.error('Failed to save task');
@@ -396,16 +396,11 @@ const TasksPage: React.FC = () => {
             open: true,
             title: 'Delete Task',
             message: 'Are you sure you want to delete this task? This action cannot be undone.',
-            onConfirm: async () => {
-                try {
-                    await deleteTaskMutation.mutateAsync(taskId);
-                    setIsModalOpen(false);
-                    setSelectedTaskId(undefined);
-                    setSelectedTaskIds(prev => prev.filter(id => id !== taskId));
-                    toast.success('Task deleted');
-                } catch (error) {
-                    toast.error('Failed to delete task');
-                }
+            onConfirm: () => {
+                deleteTaskMutation.mutate(taskId);
+                setIsModalOpen(false);
+                setSelectedTaskId(undefined);
+                setSelectedTaskIds(prev => prev.filter(id => id !== taskId));
             }
         });
     };
@@ -420,14 +415,10 @@ const TasksPage: React.FC = () => {
             open: true,
             title: `Delete ${count} Tasks`,
             message: `Are you sure you want to delete ${count} task${count > 1 ? 's' : ''}? This action cannot be undone.`,
-            onConfirm: async () => {
-                try {
-                    await Promise.all(selectedTaskIds.map(id => deleteTaskMutation.mutateAsync(id)));
-                    toast.success(`${count} tasks deleted`);
-                    setSelectedTaskIds([]);
-                } catch (error) {
-                    toast.error('Failed to delete some tasks');
-                }
+            onConfirm: () => {
+                selectedTaskIds.forEach(id => deleteTaskMutation.mutate(id));
+                toast.success(`Deleting ${count} tasks`);
+                setSelectedTaskIds([]);
             }
         });
     };

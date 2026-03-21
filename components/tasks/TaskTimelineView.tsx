@@ -1,17 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Task, UserProfile, Client, TaskStatus } from '../../types';
-import { format, subDays, addDays, startOfDay, endOfDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell
-} from 'recharts';
+import { Task, UserProfile, Client, TaskStatus, TaskPriority } from '../../types';
+import { format, subDays, addDays, startOfDay, endOfDay, eachDayOfInterval, isToday, isSameDay, differenceInDays } from 'date-fns';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Check } from 'lucide-react';
 
 interface TaskTimelineViewProps {
     tasks: Task[];
@@ -37,41 +27,49 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
     handleOpenEdit,
     groupBy
 }) => {
-    // Defaults: show past 7 days to next 21 days
     const [startDateStr, setStartDateStr] = useState(() => format(subDays(new Date(), 7), 'yyyy-MM-dd'));
-    const [endDateStr, setEndDateStr] = useState(() => format(addDays(new Date(), 21), 'yyyy-MM-dd'));
+    const [endDateStr, setEndDateStr] = useState(() => format(addDays(new Date(), 28), 'yyyy-MM-dd'));
 
     const handlePrev = () => {
-        setStartDateStr(prev => format(subDays(new Date(prev), 7), 'yyyy-MM-dd'));
-        setEndDateStr(prev => format(subDays(new Date(prev), 7), 'yyyy-MM-dd'));
+        setStartDateStr(prev => format(subDays(new Date(prev), 14), 'yyyy-MM-dd'));
+        setEndDateStr(prev => format(subDays(new Date(prev), 14), 'yyyy-MM-dd'));
     };
 
     const handleNext = () => {
-        setStartDateStr(prev => format(addDays(new Date(prev), 7), 'yyyy-MM-dd'));
-        setEndDateStr(prev => format(addDays(new Date(prev), 7), 'yyyy-MM-dd'));
+        setStartDateStr(prev => format(addDays(new Date(prev), 14), 'yyyy-MM-dd'));
+        setEndDateStr(prev => format(addDays(new Date(prev), 14), 'yyyy-MM-dd'));
     };
 
     const handleToday = () => {
         setStartDateStr(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
-        setEndDateStr(format(addDays(new Date(), 21), 'yyyy-MM-dd'));
+        setEndDateStr(format(addDays(new Date(), 28), 'yyyy-MM-dd'));
     };
 
-    const startMs = startOfDay(new Date(startDateStr)).getTime();
-    const endMs = endOfDay(new Date(endDateStr)).getTime();
+    const startDate = startOfDay(new Date(startDateStr));
+    const endDate = endOfDay(new Date(endDateStr));
+    const daysInterval = useMemo(() => eachDayOfInterval({ start: startDate, end: endDate }), [startDateStr, endDateStr]);
+    const DAY_WIDTH = 48; // px
+    const SIDEBAR_WIDTH = 260; // px
 
-    const chartData = useMemo(() => {
-        const rawData = tasks.map((task, index) => {
-            const tStart = startOfDay(new Date(task.createdAt)).getTime();
-            // If due date is missing, treat as due in +2 days from start to give it some visual presence
-            const tEnd = task.dueDate ? endOfDay(new Date(task.dueDate)).getTime() : startOfDay(addDays(new Date(task.createdAt), 2)).getTime();
+    const groupedTasks = useMemo(() => {
+        const groups: Record<string, any[]> = {};
+
+        tasks.forEach((task) => {
+            const tStart = startOfDay(new Date(task.createdAt));
+            // Default 2 days length if no due date explicitly set to look good
+            const tEnd = task.dueDate ? endOfDay(new Date(task.dueDate)) : endOfDay(addDays(new Date(task.createdAt), 2));
+            
+            // Skip tasks completely out of bounds
+            if (tEnd.getTime() < startDate.getTime() || tStart.getTime() > endDate.getTime()) {
+                return;
+            }
 
             let groupLabel = 'All Tasks';
             if (groupBy === 'PHASE') {
                 groupLabel = task.auditPhase ? task.auditPhase.replace(/_/g, ' ') : 'No Phase';
             } else if (groupBy === 'ASSIGNEE') {
-                if (!task.assignedTo || task.assignedTo.length === 0) {
-                    groupLabel = 'Unassigned';
-                } else {
+                if (!task.assignedTo || task.assignedTo.length === 0) groupLabel = 'Unassigned';
+                else {
                     const u = usersList.find(u => u.uid === task.assignedTo[0]);
                     groupLabel = u?.displayName || 'Unknown Staff';
                 }
@@ -79,197 +77,209 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                 const tc = clientsList.find(c => task.clientIds?.includes(c.id));
                 groupLabel = tc?.signingAuthority || 'Unassigned Auditor';
             } else {
-                groupLabel = task.clientName || 'Internal / No Client';
+                groupLabel = task.clientName || 'Internal';
             }
 
-            // Ensure min length visual representation for Gantt bar (prevent 0 width lines)
-            const resolvedStart = Math.min(tStart, tEnd);
-            let resolvedEnd = Math.max(tStart, tEnd);
-            if (resolvedEnd - resolvedStart < 86400000) resolvedEnd = resolvedStart + 86400000;
-
-            return {
-                id: task.id + '-' + index, // Ensure unique keys
-                name: task.title,
-                group: groupLabel,
-                dateRange: [Math.max(resolvedStart, startMs), Math.min(resolvedEnd, endMs)],
-                color: statusColors[task.status] || '#64748B',
-                originalStart: resolvedStart,
-                originalEnd: resolvedEnd,
-                status: task.status,
-                taskRef: task
-            };
+            if (!groups[groupLabel]) groups[groupLabel] = [];
+            
+            // Calc exact placement
+            // Cap start/end to visible bounds for calculating width smoothly
+            const visualStart = tStart < startDate ? startDate : tStart;
+            const visualEnd = tEnd > endDate ? endDate : tEnd;
+            
+            const offsetDays = differenceInDays(visualStart, startDate);
+            const durationDays = Math.max(1, differenceInDays(visualEnd, visualStart) + 1);
+            
+            groups[groupLabel].push({
+                task,
+                visualStart,
+                visualEnd,
+                offsetDays: tStart < startDate ? 0 : differenceInDays(tStart, startDate),
+                durationDays: Math.max(1, differenceInDays(tEnd, tStart) + 1),
+                isCutStart: tStart < startDate,
+                isCutEnd: tEnd > endDate
+            });
         });
 
-        // Filter tasks entirely outside window
-        const filteredData = rawData.filter(d => !(d.originalEnd < startMs || d.originalStart > endMs));
+        // Sort groups alphabetically, then tasks by start date
+        const sortedGroups = Object.keys(groups).sort().map(k => ({
+            label: k,
+            items: groups[k].sort((a, b) => new Date(a.task.createdAt).getTime() - new Date(b.task.createdAt).getTime())
+        }));
 
-        // Sort by group and then start date
-        filteredData.sort((a, b) => {
-            if (a.group !== b.group) return a.group.localeCompare(b.group);
-            return a.originalStart - b.originalStart;
-        });
-
-        return filteredData;
-    }, [tasks, groupBy, usersList, clientsList, startMs, endMs]);
-
-    // Custom tick component
-    const renderCustomAxisTick = (props: any) => {
-        const { x, y, payload, index } = props;
-        const currentData = chartData[index];
-        const prevData = index > 0 ? chartData[index - 1] : null;
-
-        const showGroup = prevData ? currentData.group !== prevData.group : true;
-
-        return (
-            <g transform={`translate(${x},${y})`}>
-                {showGroup && (
-                    <text x={-10} y={-24} textAnchor="end" fill="#94A3B8" fontSize={11} fontWeight="bold" className="uppercase tracking-wider">
-                        {currentData.group.length > 25 ? currentData.group.substring(0, 25) + '...' : currentData.group}
-                    </text>
-                )}
-                <text x={-10} y={4} textAnchor="end" fill="#E2E8F0" fontSize={12}>
-                    <title>{currentData.name}</title>
-                    {currentData.name.length > 25 ? currentData.name.substring(0, 25) + '...' : currentData.name}
-                </text>
-            </g>
-        );
-    };
-
-    const CustomTooltip = ({ active, payload }: any) => {
-        if (active && payload && payload.length) {
-            const data = payload[0].payload;
-            return (
-                <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl text-sm z-50 min-w-[200px]">
-                    <p className="font-bold text-white mb-1">{data.name}</p>
-                    <p className="text-slate-400 text-xs mb-3 font-semibold pb-2 border-b border-slate-700">{data.group}</p>
-                    <div className="flex flex-col gap-1 text-xs">
-                        <div>
-                            <span className="text-slate-500 inline-block w-12">Start:</span>
-                            <span className="text-slate-300 font-medium">{format(new Date(data.originalStart), 'MMM d, yyyy')}</span>
-                        </div>
-                        <div>
-                            <span className="text-slate-500 inline-block w-12">Due:</span>
-                            <span className="text-slate-300 font-medium">{format(new Date(data.originalEnd), 'MMM d, yyyy')}</span>
-                        </div>
-                    </div>
-                    <div className="mt-3 text-xs pt-2 border-t border-slate-700 flex items-center gap-2">
-                        <span className="text-slate-500">Status:</span>
-                        <span className="font-bold px-2 py-0.5 rounded-full" style={{ color: data.color, backgroundColor: `${data.color}20` }}>
-                            {data.status.replace('_', ' ')}
-                        </span>
-                    </div>
-                </div>
-            );
-        }
-        return null;
-    };
+        return sortedGroups;
+    }, [tasks, groupBy, usersList, clientsList, startDate, endDate]);
 
     return (
-        <div className="h-full flex flex-col bg-[#0a0f1e]/40 overflow-hidden relative">
+        <div className="h-full flex flex-col bg-transparent overflow-hidden">
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-white/5 bg-[#09090b]/50 flex-shrink-0 gap-4">
-                <div className="flex flex-wrap items-center gap-4">
-                    <button onClick={handleToday} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-gray-300 transition-colors border border-white/10">
+            <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-[#09090b]/50 z-20">
+                <div className="flex items-center gap-3">
+                    <button onClick={handleToday} className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.08] rounded-md text-[11px] font-bold tracking-widest uppercase text-slate-300 transition-colors border border-white/[0.08]">
                         Today
                     </button>
-                    <div className="flex items-center gap-1 bg-black/20 rounded-lg p-0.5 border border-white/5 shadow-inner">
-                        <button onClick={handlePrev} className="p-1 hover:bg-white/10 rounded-md transition-colors"><ChevronLeft size={16} className="text-gray-400 hover:text-white" /></button>
-                        <span className="text-sm font-bold text-gray-300 px-2 uppercase tracking-wide text-[10px]">Window</span>
-                        <button onClick={handleNext} className="p-1 hover:bg-white/10 rounded-md transition-colors"><ChevronRight size={16} className="text-gray-400 hover:text-white" /></button>
+                    <div className="flex items-center gap-1 bg-black/20 rounded-md p-0.5 border border-white/[0.05]">
+                        <button onClick={handlePrev} className="p-1 hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-white"><ChevronLeft size={14} strokeWidth={2.5} /></button>
+                        <span className="text-[10px] font-bold text-slate-500 px-2 uppercase tracking-widest hidden sm:inline">Timeline</span>
+                        <button onClick={handleNext} className="p-1 hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-white"><ChevronRight size={14} strokeWidth={2.5} /></button>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-black/20 p-1 rounded-lg border border-white/5 pointer-events-auto">
+                    <div className="flex items-center gap-2 bg-black/20 px-2 py-1.5 rounded-md border border-white/[0.05]">
                         <input
                             type="date"
                             value={startDateStr}
                             onChange={e => setStartDateStr(e.target.value)}
-                            className="bg-transparent text-xs text-brand-400 font-semibold focus:outline-none cursor-pointer"
+                            className="bg-transparent text-[11px] text-amber-500 font-bold focus:outline-none cursor-pointer uppercase tracking-wider"
                         />
-                        <span className="text-gray-600 text-xs font-bold leading-none">-</span>
+                        <span className="text-slate-600 text-[10px] font-bold">—</span>
                         <input
                             type="date"
                             value={endDateStr}
                             onChange={e => setEndDateStr(e.target.value)}
-                            className="bg-transparent text-xs text-brand-400 font-semibold focus:outline-none cursor-pointer"
+                            className="bg-transparent text-[11px] text-amber-500 font-bold focus:outline-none cursor-pointer uppercase tracking-wider"
                         />
                     </div>
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: statusColors[TaskStatus.NOT_STARTED] }} /> Not Started</div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: statusColors[TaskStatus.IN_PROGRESS] }} /> In Progress</div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: statusColors[TaskStatus.UNDER_REVIEW] }} /> Review</div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: statusColors[TaskStatus.COMPLETED] }} /> Completed</div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: statusColors[TaskStatus.HALTED] }} /> Halted</div>
-                </div>
             </div>
 
-            {/* Chart Area */}
-            <div className="flex-1 p-2 md:p-6 overflow-y-auto custom-scrollbar relative z-10">
-                {chartData.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 bg-white/[0.02] rounded-2xl border border-white/5">
-                        <CalendarIcon size={48} className="mb-4 text-gray-600 opacity-50" />
-                        <p className="font-bold text-gray-400">No tasks visible in this timeframe.</p>
-                        <p className="text-xs mt-1 text-gray-500">Try zooming out or adjusting filters.</p>
+            {/* Timeline Area */}
+            <div className="flex-1 overflow-auto custom-scrollbar relative bg-[#09090b]">
+                <div className="min-w-max pb-24" style={{ width: SIDEBAR_WIDTH + daysInterval.length * DAY_WIDTH }}>
+                    
+                    {/* Header Row (Dates) */}
+                    <div className="sticky top-0 z-30 flex bg-[#0a0f1e]/95 backdrop-blur-xl border-b border-white/[0.06] shadow-sm">
+                        <div 
+                            className="flex-shrink-0 border-r border-white/[0.06] px-5 py-3 flex items-end sticky left-0 z-40 bg-[#0a0f1e]/95 backdrop-blur-xl" 
+                            style={{ width: SIDEBAR_WIDTH }}
+                        >
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Task Details</span>
+                        </div>
+                        <div className="flex">
+                            {daysInterval.map((day, i) => {
+                                const today = isToday(day);
+                                return (
+                                    <div 
+                                        key={day.toISOString()} 
+                                        className={`flex-shrink-0 flex flex-col items-center justify-end py-2 border-r border-white/[0.04] transition-colors ${today ? 'bg-amber-500/[0.05]' : ''}`}
+                                        style={{ width: DAY_WIDTH }}
+                                    >
+                                        <span className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${today ? 'text-amber-500' : 'text-slate-500'}`}>{format(day, 'EEE')}</span>
+                                        <span className={`text-[11px] font-black ${today ? 'text-amber-400' : 'text-slate-300'}`}>{format(day, 'd')}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                ) : (
-                    <div style={{ height: Math.max(100 + chartData.length * 60, 400) }} className="w-full bg-white/[0.01] rounded-2xl border border-white/[0.05] p-4 pr-8 pt-8 shadow-inner">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={chartData}
-                                layout="vertical"
-                                margin={{ top: 10, right: 30, left: 180, bottom: 20 }}
-                                barSize={24}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} vertical={true} />
-                                <XAxis
-                                    type="number"
-                                    domain={[startMs, endMs]}
-                                    tickFormatter={(tick) => format(new Date(tick), 'MMM d')}
-                                    stroke="#334155"
-                                    tick={{ fill: '#94A3B8', fontSize: 11, fontWeight: 'bold' }}
-                                    scale="time"
-                                    orientation="top"
-                                    axisLine={{ stroke: '#334155' }}
-                                    tickLine={{ stroke: '#334155' }}
-                                    allowDataOverflow
-                                />
-                                <YAxis
-                                    type="category"
-                                    dataKey="id"
-                                    stroke="#334155"
-                                    tick={renderCustomAxisTick}
-                                    interval={0}
-                                    axisLine={{ stroke: '#334155' }}
-                                    tickLine={false}
-                                />
-                                <Tooltip
-                                    content={<CustomTooltip />}
-                                    cursor={{ fill: '#ffffff05' }}
-                                    isAnimationActive={false}
-                                />
-                                <Bar
-                                    dataKey="dateRange"
-                                    radius={[4, 4, 4, 4]}
-                                    onClick={(data) => {
-                                        if (data && data.payload && data.payload.taskRef) {
-                                            handleOpenEdit(data.payload.taskRef);
-                                        }
-                                    }}
-                                    style={{ cursor: 'pointer', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }}
-                                    isAnimationActive={true}
-                                >
-                                    {chartData.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.color}
-                                            className="hover:brightness-125 transition-all duration-300"
-                                        />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+
+                    {/* Timeline Data */}
+                    <div className="relative">
+                        {/* Background Grid Lines (Absolute overlay just for the grid) */}
+                        <div className="absolute inset-0 flex pointer-events-none z-0">
+                            <div className="flex-shrink-0 border-r border-white/[0.04]" style={{ width: SIDEBAR_WIDTH }} />
+                            {daysInterval.map(day => (
+                                <div key={day.toISOString()} className={`flex-shrink-0 border-r border-white/[0.02] ${isToday(day) ? 'bg-amber-500/[0.02]' : ''}`} style={{ width: DAY_WIDTH }} />
+                            ))}
+                        </div>
+
+                        {/* Content Rows */}
+                        <div className="relative z-10 flex flex-col">
+                            {groupedTasks.length === 0 ? (
+                                <div className="h-64 flex flex-col items-center justify-center text-center mt-8 sticky left-0 w-full">
+                                    <CalendarIcon size={40} className="mb-4 text-slate-700 opacity-50" />
+                                    <p className="font-bold text-slate-400">No tasks visible in this timeframe.</p>
+                                    <p className="text-[11px] mt-1 text-slate-500">Try zooming out the dates or adjusting filters.</p>
+                                </div>
+                            ) : (
+                                groupedTasks.map((group, groupIdx) => (
+                                    <div key={groupIdx} className="flex flex-col border-b border-white/[0.02]">
+                                        
+                                        {/* Group Header Row */}
+                                        <div className="flex w-full group hover:bg-white/[0.01]">
+                                            <div 
+                                                className="flex-shrink-0 px-5 py-3 border-r border-white/[0.04] sticky left-0 z-20 bg-[#09090b] group-hover:bg-[#0a0f1e] transition-colors"
+                                                style={{ width: SIDEBAR_WIDTH }}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                                                    <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider truncate">{group.label}</span>
+                                                    <span className="ml-auto text-[10px] font-bold text-slate-600 bg-slate-800 px-1.5 rounded">{group.items.length}</span>
+                                                </div>
+                                            </div>
+                                            {/* Empty span for the rest of the row */}
+                                            <div className="flex-1" />
+                                        </div>
+
+                                        {/* Task Rows */}
+                                        {group.items.map((item: any, itemIdx: number) => {
+                                            const { task, offsetDays, durationDays, isCutStart, isCutEnd } = item;
+                                            const color = statusColors[task.status as TaskStatus] || '#64748B';
+                                            const isDone = task.status === TaskStatus.COMPLETED;
+                                            
+                                            // Ensure width fits within the visible window
+                                            const visibleOffset = Math.max(0, offsetDays);
+                                            // Max available slots from offset to end of interval
+                                            const maxAvailableDuration = daysInterval.length - visibleOffset;
+                                            // Ensure duration visually doesn't burst out of the right side completely
+                                            const visibleDuration = Math.min(durationDays, maxAvailableDuration);
+
+                                            return (
+                                                <div key={task.id} className="flex w-full relative group/row hover:bg-white/[0.01]">
+                                                    {/* Sidebar Context */}
+                                                    <div 
+                                                        className="flex-shrink-0 px-5 py-2.5 border-r border-white/[0.04] sticky left-0 z-20 bg-[#09090b] group-hover/row:bg-[#0a1120] transition-colors flex items-center gap-3 overflow-hidden cursor-pointer"
+                                                        style={{ width: SIDEBAR_WIDTH }}
+                                                        onClick={() => handleOpenEdit(task)}
+                                                    >
+                                                        {isDone ? <Check size={14} className="text-emerald-500" strokeWidth={3} /> : <div className="w-3.5 h-3.5 rounded-sm border-[1.5px] border-slate-600" />}
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className={`text-[12px] font-semibold truncate transition-colors ${isDone ? 'text-slate-500 line-through' : 'text-slate-200 group-hover/row:text-white'}`}>{task.title}</div>
+                                                            <div className="text-[10px] text-slate-500 truncate">{task.clientName || 'Internal'}</div>
+                                                        </div>
+                                                        {/* Avatar summary */}
+                                                        {task.assignedTo?.length > 0 && (
+                                                            <div className="flex -space-x-1.5 flex-shrink-0">
+                                                                <div className="w-5 h-5 rounded-full bg-slate-800 border-[1.5px] border-[#09090b] flex items-center justify-center text-[8px] font-black text-amber-500 shadow-sm">
+                                                                    {usersList.find(u => u.uid === task.assignedTo[0])?.displayName?.substring(0,2).toUpperCase() || '?'}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Timeline placement */}
+                                                    <div className="relative py-2" style={{ width: daysInterval.length * DAY_WIDTH }}>
+                                                        <div 
+                                                            onClick={(e) => { e.stopPropagation(); handleOpenEdit(task); }}
+                                                            className="absolute top-1.5 bottom-1.5 rounded-md flex items-center px-3 cursor-pointer group-hover/row:brightness-110 transition-all shadow-sm overflow-hidden"
+                                                            style={{ 
+                                                                left: visibleOffset * DAY_WIDTH + 4, // 4px padding so it doesn't touch the lines
+                                                                width: (visibleDuration * DAY_WIDTH) - 8,
+                                                                backgroundColor: `${color}25`,
+                                                                borderLeft: isCutStart ? 'none' : `3px solid ${color}`,
+                                                                borderRight: isCutEnd ? 'none' : `1px solid ${color}40`,
+                                                                borderTop: `1px solid ${color}40`,
+                                                                borderBottom: `1px solid ${color}40`,
+                                                                borderTopLeftRadius: isCutStart ? 0 : 6,
+                                                                borderBottomLeftRadius: isCutStart ? 0 : 6,
+                                                                borderTopRightRadius: isCutEnd ? 0 : 6,
+                                                                borderBottomRightRadius: isCutEnd ? 0 : 6,
+                                                                opacity: isDone ? 0.6 : 1
+                                                            }}
+                                                        >
+                                                            {/* Pill inner text */}
+                                                            <span className="text-[10px] font-bold truncate tracking-wide" style={{ color: color }}>
+                                                                {task.title}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

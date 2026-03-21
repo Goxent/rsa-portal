@@ -39,11 +39,42 @@ export const useCreateTask = () => {
 
     return useMutation({
         mutationFn: (newTask: Task) => AuthService.saveTask(newTask, true),
+        onMutate: async (newTask) => {
+            await queryClient.cancelQueries({ queryKey: taskKeys.all });
+            
+            const previousAll = queryClient.getQueryData(taskKeys.all);
+            const previousInfinite = queryClient.getQueryData(taskKeys.infinite());
+            
+            // Generate a pessimistic temporary ID so it displays immediately
+            const temporaryTask = { ...newTask, id: `temp-${Date.now()}` };
+
+            queryClient.setQueryData(taskKeys.all, (old: any) => {
+                if (!old || !Array.isArray(old)) return old;
+                return [temporaryTask, ...old];
+            });
+            
+            queryClient.setQueryData(taskKeys.infinite(), (old: any) => {
+                if (!old || !old.pages || old.pages.length === 0) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page: any, index: number) => {
+                        if (index === 0) {
+                            return { ...page, tasks: [temporaryTask, ...page.tasks] };
+                        }
+                        return page;
+                    })
+                };
+            });
+
+            return { previousAll, previousInfinite };
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: taskKeys.all });
             toast.success('Task created successfully');
         },
-        onError: (error: Error) => {
+        onError: (error: Error, _variables, context: any) => {
+            if (context?.previousAll !== undefined) queryClient.setQueryData(taskKeys.all, context.previousAll);
+            if (context?.previousInfinite !== undefined) queryClient.setQueryData(taskKeys.infinite(), context.previousInfinite);
             toast.error(`Failed to create task: ${error.message}`);
         }
     });
