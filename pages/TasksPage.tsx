@@ -480,6 +480,34 @@ const TasksPage: React.FC = () => {
                 ...prev,
                 comments: [...(prev.comments || []), comment]
             }));
+
+            // Notify mentioned users via email
+            if (comment.mentions && comment.mentions.length > 0) {
+                const mentionedUsers = usersList.filter(u => comment.mentions!.includes(u.uid) && u.email);
+                if (mentionedUsers.length > 0) {
+                    const emails = mentionedUsers.map(u => u.email);
+                    const taskTitle = currentTask.title || 'a task';
+                    const htmlContent = `
+                        <div style="font-family: system-ui, -apple-system, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <h2 style="color: #0f172a; margin-top: 0;">You were mentioned in a task</h2>
+                            <p style="font-size: 15px; line-height: 1.5;"><strong>${user?.displayName || 'Someone'}</strong> mentioned you in a comment on task: <strong>${taskTitle}</strong>.</p>
+                            <div style="padding: 16px; border-left: 4px solid #f59e0b; background-color: #f8fafc; border-radius: 0 8px 8px 0; margin: 24px 0; font-size: 15px; color: #334155; white-space: pre-wrap;">${comment.text}</div>
+                            <p style="font-size: 14px; color: #64748b;">Please log in to the RSA System to view the task details and reply.</p>
+                        </div>
+                    `;
+
+                    fetch('/api/send-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            to: emails,
+                            subject: `Mentioned in ${taskTitle}`,
+                            html: htmlContent,
+                            fromName: 'RSA System Notifications'
+                        })
+                    }).catch(err => console.error('Failed to send mention email:', err));
+                }
+            }
         }
     };
 

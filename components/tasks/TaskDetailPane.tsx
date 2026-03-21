@@ -350,8 +350,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </Field>
                                 </div>
 
-                                {/* ── Team Leader + Time Logged ── */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {/* ── Team Leader ── */}
+                                <div className="grid grid-cols-1 gap-2">
                                     <Field label="Team Leader" icon={<ShieldAlert size={11} className="text-amber-400" />} error={!!errors.teamLeaderId}>
                                         <select className={selectClass} {...register('teamLeaderId')}>
                                             <option value="" className="bg-[#1e293b] text-gray-400">— Select Leader —</option>
@@ -361,16 +361,6 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>
                                                 ))}
                                         </select>
-                                    </Field>
-
-                                    <Field label="Time Logged (min)" icon={<Clock size={11} className="text-amber-400" />}>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className="w-full bg-transparent text-[13px] font-semibold text-white focus:outline-none"
-                                            placeholder="0"
-                                            {...register('estimatedHours', { valueAsNumber: true })}
-                                        />
                                     </Field>
                                 </div>
 

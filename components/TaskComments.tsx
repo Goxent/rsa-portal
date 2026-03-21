@@ -90,38 +90,53 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
     };
 
     return (
-        <div className="flex flex-col h-full max-h-[400px]">
-            <div className="flex items-center gap-2 mb-4 text-gray-300">
-                <MessageSquare size={16} className="text-brand-400" />
-                <h3 className="font-bold text-sm">Comments & Activity</h3>
-                <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-gray-400">{comments.length}</span>
+        <div className="flex flex-col h-full max-h-[500px]">
+            <div className="flex items-center gap-2 mb-3 text-slate-300 px-1">
+                <MessageSquare size={14} className="text-amber-500" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Comments & Activity</h3>
+                {comments.length > 0 && (
+                    <span className="text-[10px] font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded-full text-slate-300">
+                        {comments.length}
+                    </span>
+                )}
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 mb-4 pr-2 bg-black/20 rounded-xl p-4 border border-white/5">
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 mb-4 pr-1 px-1">
                 {comments.length === 0 ? (
-                    <div className="text-center text-gray-500 text-xs py-8 italic">
-                        No comments yet. Start the conversation!
+                    <div className="flex flex-col items-center justify-center py-10 opacity-60">
+                        <MessageSquare size={24} className="text-slate-600 mb-3" />
+                        <span className="text-[12px] font-medium text-slate-500 italic">
+                            No comments yet. Start the conversation!
+                        </span>
                     </div>
                 ) : (
                     comments.map(comment => {
                         const isMe = comment.userId === user?.uid;
                         return (
-                            <div key={comment.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                                <div className="shrink-0">
-                                    <div className="w-8 h-8 rounded-full bg-navy-700 border border-white/10 flex items-center justify-center text-[10px] font-bold text-gray-300">
+                            <div key={comment.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} group/comment`}>
+                                <div className="shrink-0 mt-1">
+                                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black shadow-sm
+                                        ${isMe ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-300'}`}>
                                         {getInitials(comment.userName)}
                                     </div>
                                 </div>
-                                <div className={`flex flex-col max-w-[80%] ${isMe ? 'items-end' : 'items-start'}`}>
-                                    <div className="flex items-baseline gap-2 mb-1">
-                                        <span className="text-xs font-bold text-gray-300">{comment.userName}</span>
-                                        <span className="text-[10px] text-gray-500">{format(new Date(comment.createdAt), 'MMM d, h:mm a')}</span>
+                                <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                    <div className="flex items-baseline gap-2 mb-1 px-1">
+                                        <span className="text-[11px] font-bold text-slate-300">{comment.userName}</span>
+                                        <span className="text-[9px] font-medium text-slate-500">{format(new Date(comment.createdAt), 'MMM d, h:mm a')}</span>
                                     </div>
-                                    <div className={`px-3 py-2 rounded-xl text-sm leading-relaxed ${isMe
-                                            ? 'bg-brand-600/20 text-brand-100 border border-brand-500/30 rounded-tr-none'
-                                            : 'bg-white/5 text-gray-200 border border-white/10 rounded-tl-none'
-                                        }`}>
-                                        {comment.text}
+                                    <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm
+                                        ${isMe
+                                            ? 'bg-amber-500/10 text-amber-50 border border-amber-500/20 rounded-tr-sm'
+                                            : 'bg-white/[0.03] text-slate-200 border border-white/[0.05] rounded-tl-sm'
+                                        }`}
+                                    >
+                                        {comment.text.split(/(@[\w\s]+)/g).map((part, i) => {
+                                            if (part.startsWith('@')) {
+                                                return <span key={i} className="text-amber-400 font-semibold bg-amber-500/10 px-1 py-0.5 rounded">{part}</span>;
+                                            }
+                                            return <span key={i}>{part}</span>;
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -132,49 +147,53 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
             </div>
 
             {!readOnly && (
-                <div className="relative">
+                <div className="relative mt-auto">
                     {showMentions && filteredUsers.length > 0 && (
-                        <div className="absolute bottom-full left-0 mb-2 w-64 bg-navy-900 border border-white/10 rounded-xl shadow-xl overflow-hidden z-20">
-                            <div className="px-3 py-2 bg-white/5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-30 transform origin-bottom-left transition-all">
+                            <div className="px-3 py-2 bg-black/40 text-[9px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
                                 Mention Staff
                             </div>
-                            {filteredUsers.map(u => (
-                                <button
-                                    key={u.uid}
-                                    className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-brand-600/20 hover:text-white flex items-center gap-2 transition-colors"
-                                    onClick={() => addMention(u.displayName, u.uid)}
-                                >
-                                    <div className="w-5 h-5 rounded-full bg-navy-700 flex items-center justify-center text-[8px]">
-                                        {getInitials(u.displayName)}
-                                    </div>
-                                    {u.displayName}
-                                </button>
-                            ))}
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                {filteredUsers.map(u => (
+                                    <button
+                                        key={u.uid}
+                                        className="w-full text-left px-3 py-2 text-[12px] font-medium text-slate-300 hover:bg-amber-500/10 hover:text-amber-300 flex items-center gap-2.5 transition-colors border-b border-white/[0.02] last:border-0"
+                                        onClick={() => addMention(u.displayName, u.uid)}
+                                    >
+                                        <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] font-black">
+                                            {getInitials(u.displayName)}
+                                        </div>
+                                        {u.displayName}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
 
-                    <div className="flex gap-2 items-end bg-white/5 p-2 rounded-xl border border-white/10 focus-within:border-brand-500/50 focus-within:ring-1 focus-within:ring-brand-500/20 transition-all">
+                    <div className="flex flex-col gap-2 bg-black/20 p-2.5 rounded-xl border border-white/10 focus-within:border-amber-500/40 focus-within:ring-1 focus-within:ring-amber-500/10 transition-all shadow-inner relative group/input">
                         <textarea
                             ref={textareaRef}
                             value={newComment}
                             onChange={handleInput}
                             onKeyDown={handleKeyDown}
                             placeholder="Write a comment... use @ to mention"
-                            className="flex-1 bg-transparent border-none outline-none text-sm text-white resize-none max-h-24 custom-scrollbar placeholder-gray-500 py-1"
-                            rows={1}
+                            className="w-full bg-transparent border-none outline-none text-[13px] text-slate-200 resize-none max-h-32 custom-scrollbar placeholder-slate-600 px-1 leading-relaxed"
+                            rows={newComment.split('\n').length > 1 ? Math.min(newComment.split('\n').length, 5) : 1}
                         />
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!newComment.trim()}
-                            className="p-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-lg"
-                        >
-                            <Send size={14} />
-                        </button>
-                    </div>
-                    <div className="text-[10px] text-gray-500 mt-1 pl-2 flex items-center gap-2">
-                        <span className="flex items-center"><AtSign size={10} className="mr-0.5" /> Mention staff</span>
-                        <span>•</span>
-                        <span>Enter to send</span>
+                        <div className="flex items-center justify-between px-1">
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                                <span className="flex items-center gap-1"><AtSign size={10} className="text-slate-400" /> Mention</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                <span>Enter to send</span>
+                            </div>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={!newComment.trim()}
+                                className="p-1.5 px-3 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg transition-all shadow-md font-bold text-[11px] flex items-center gap-1.5 cursor-pointer"
+                            >
+                                Send <Send size={12} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
