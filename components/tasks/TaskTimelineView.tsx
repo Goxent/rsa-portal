@@ -160,11 +160,11 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                 return (
                                     <div 
                                         key={day.toISOString()} 
-                                        className={`flex-shrink-0 flex flex-col items-center justify-end py-2 border-r border-white/[0.04] transition-colors ${today ? 'bg-amber-500/[0.05]' : ''}`}
+                                        className={`flex-shrink-0 flex flex-col items-center justify-end py-2.5 border-r border-white/[0.04] transition-colors ${today ? 'bg-amber-500/[0.05] shadow-[inset_0_-2px_0_theme(colors.amber.500)]' : ''}`}
                                         style={{ width: DAY_WIDTH }}
                                     >
                                         <span className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${today ? 'text-amber-500' : 'text-slate-500'}`}>{format(day, 'EEE')}</span>
-                                        <span className={`text-[11px] font-black ${today ? 'text-amber-400' : 'text-slate-300'}`}>{format(day, 'd')}</span>
+                                        <span className={`text-[12px] font-black ${today ? 'text-amber-400' : 'text-slate-300'}`}>{format(day, 'd')}</span>
                                     </div>
                                 );
                             })}
@@ -223,22 +223,22 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                             const visibleDuration = Math.min(durationDays, maxAvailableDuration);
 
                                             return (
-                                                <div key={task.id} className="flex w-full relative group/row hover:bg-white/[0.01]">
+                                                <div key={task.id} className="flex w-full relative group/row hover:bg-white/[0.02]">
                                                     {/* Sidebar Context */}
                                                     <div 
-                                                        className="flex-shrink-0 px-5 py-2.5 border-r border-white/[0.04] sticky left-0 z-20 bg-[#09090b] group-hover/row:bg-[#0a1120] transition-colors flex items-center gap-3 overflow-hidden cursor-pointer"
+                                                        className="flex-shrink-0 px-5 py-3 border-r border-white/[0.04] sticky left-0 z-20 bg-[#09090b] group-hover/row:bg-[#0c1322] transition-colors flex items-center gap-3 overflow-hidden cursor-pointer"
                                                         style={{ width: SIDEBAR_WIDTH }}
                                                         onClick={() => handleOpenEdit(task)}
                                                     >
-                                                        {isDone ? <Check size={14} className="text-emerald-500" strokeWidth={3} /> : <div className="w-3.5 h-3.5 rounded-sm border-[1.5px] border-slate-600" />}
+                                                        {isDone ? <Check size={14} className="text-emerald-500" strokeWidth={3} /> : <div className="w-3.5 h-3.5 rounded-[4px] border-[1.5px] border-slate-600 transition-colors group-hover/row:border-slate-400" />}
                                                         <div className="min-w-0 flex-1">
-                                                            <div className={`text-[12px] font-semibold truncate transition-colors ${isDone ? 'text-slate-500 line-through' : 'text-slate-200 group-hover/row:text-white'}`}>{task.title}</div>
-                                                            <div className="text-[10px] text-slate-500 truncate">{task.clientName || 'Internal'}</div>
+                                                            <div className={`text-[12px] font-medium truncate transition-colors ${isDone ? 'text-slate-500 line-through' : 'text-slate-200 group-hover/row:text-white'}`}>{task.title}</div>
+                                                            <div className="text-[10px] text-slate-500 font-medium truncate mt-0.5">{task.clientName || 'Internal'}</div>
                                                         </div>
                                                         {/* Avatar summary */}
                                                         {task.assignedTo?.length > 0 && (
-                                                            <div className="flex -space-x-1.5 flex-shrink-0">
-                                                                <div className="w-5 h-5 rounded-full bg-slate-800 border-[1.5px] border-[#09090b] flex items-center justify-center text-[8px] font-black text-amber-500 shadow-sm">
+                                                            <div className="flex -space-x-1 flex-shrink-0 group-hover/row:space-x-0 transition-all duration-300">
+                                                                <div className="w-[22px] h-[22px] rounded-full bg-slate-800 ring-2 ring-[#09090b] group-hover/row:ring-[#0c1322] flex items-center justify-center text-[8px] font-black text-amber-500 shadow-sm transition-all duration-300">
                                                                     {usersList.find(u => u.uid === task.assignedTo[0])?.displayName?.substring(0,2).toUpperCase() || '?'}
                                                                 </div>
                                                             </div>
@@ -246,14 +246,14 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                                     </div>
 
                                                     {/* Timeline placement */}
-                                                    <div className="relative py-2" style={{ width: daysInterval.length * DAY_WIDTH }}>
+                                                    <div className="relative py-2.5" style={{ width: daysInterval.length * DAY_WIDTH }}>
                                                         <div 
                                                             onClick={(e) => { e.stopPropagation(); handleOpenEdit(task); }}
-                                                            className="absolute top-1.5 bottom-1.5 rounded-md flex items-center px-3 cursor-pointer group-hover/row:brightness-110 transition-all shadow-sm overflow-hidden"
+                                                            className={`absolute top-2 bottom-2 rounded-md flex items-center px-3 cursor-pointer transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-px z-10 hover:z-20 ${isDone ? 'opacity-60 saturate-50' : 'group-hover/row:brightness-125'}`}
                                                             style={{ 
-                                                                left: visibleOffset * DAY_WIDTH + 4, // 4px padding so it doesn't touch the lines
+                                                                left: visibleOffset * DAY_WIDTH + 4,
                                                                 width: (visibleDuration * DAY_WIDTH) - 8,
-                                                                backgroundColor: `${color}25`,
+                                                                background: `linear-gradient(90deg, ${color}35 0%, ${color}15 100%)`,
                                                                 borderLeft: isCutStart ? 'none' : `3px solid ${color}`,
                                                                 borderRight: isCutEnd ? 'none' : `1px solid ${color}40`,
                                                                 borderTop: `1px solid ${color}40`,
@@ -262,11 +262,11 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                                                 borderBottomLeftRadius: isCutStart ? 0 : 6,
                                                                 borderTopRightRadius: isCutEnd ? 0 : 6,
                                                                 borderBottomRightRadius: isCutEnd ? 0 : 6,
-                                                                opacity: isDone ? 0.6 : 1
+                                                                boxShadow: `inset 0 1px 0 ${color}20` /* Subtle inner top highlight */
                                                             }}
                                                         >
                                                             {/* Pill inner text */}
-                                                            <span className="text-[10px] font-bold truncate tracking-wide" style={{ color: color }}>
+                                                            <span className="text-[10px] font-bold truncate tracking-wide mix-blend-plus-lighter" style={{ color: color }}>
                                                                 {task.title}
                                                             </span>
                                                         </div>

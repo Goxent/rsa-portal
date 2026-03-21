@@ -53,65 +53,59 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                     style={prov.draggableProps.style}
                     onClick={() => onClick(task)}
                     className={[
-                        'relative group/card rounded-xl border cursor-pointer select-none',
-                        'bg-[#0d1117] transition-all duration-150',
+                        'relative group/card rounded-xl border border-white/[0.04] cursor-pointer select-none',
+                        'bg-[#0c0f16] hover:bg-[#111621] transition-all duration-300',
                         snap.isDragging
-                            ? 'shadow-2xl shadow-black/60 scale-[1.03] z-50 border-amber-500/50 rotate-[0.5deg]'
-                            : 'hover:shadow-lg hover:shadow-black/40 hover:-translate-y-px',
-                        isSelected ? 'border-amber-500/60 ring-2 ring-amber-500/20' :
-                            isOverdue ? 'border-red-700/40 hover:border-red-600/60' :
-                                'border-white/[0.07] hover:border-white/[0.16]',
-                    ].join(' ')}
+                            ? 'shadow-2xl shadow-black/80 scale-[1.02] z-50 ring-1 ring-amber-500/50 rotate-[1deg]'
+                            : 'hover:shadow-xl hover:shadow-black/50 hover:border-white/[0.08] hover:-translate-y-0.5',
+                        isSelected ? 'border-amber-500/50 bg-[#161208] ring-1 ring-amber-500/20' : '',
+                        isOverdue ? 'border-red-900/40 bg-red-950/10 hover:border-red-700/50' : ''
+                    ].filter(Boolean).join(' ')}
                 >
-                    {/* Priority left stripe */}
-                    <div className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${pc.bar} opacity-90`} />
+                    {/* Priority Top Accents */}
+                    <div className={`absolute left-0 right-0 top-0 h-[3px] rounded-t-xl opacity-30 ${pc.bar}`} />
+                    <div className={`absolute left-0 top-0 right-0 h-10 bg-gradient-to-b from-${pc.bar.replace('bg-', '')}/10 to-transparent rounded-t-xl pointer-events-none opacity-50`} />
 
-                    {isOverdue && <div className="absolute inset-0 bg-red-500/[0.04] rounded-xl pointer-events-none" />}
-
-                    <div className="pl-4 pr-3 pt-3 pb-3">
-                        {/* Top row */}
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
+                    <div className="p-3">
+                        {/* Top row: Tags & Selection */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
                                 {/* Checkbox */}
                                 <div
-                                    className={`relative w-4 h-4 flex-shrink-0 transition-opacity cursor-pointer ${isSelected ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100'}`}
+                                    className={`relative w-4 h-4 flex-shrink-0 transition-all duration-200 cursor-pointer ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75 group-hover/card:opacity-100 group-hover/card:scale-100'}`}
                                     onClick={e => { e.stopPropagation(); onToggleSelection(task.id); }}
                                 >
-                                    <div className={`w-full h-full rounded border flex items-center justify-center transition-all
-                                        ${isSelected ? 'bg-amber-600 border-amber-500' : 'border-slate-600 bg-transparent'}`}>
-                                        {isSelected && <Check size={9} className="text-white" strokeWidth={3.5} />}
+                                    <div className={`w-full h-full rounded-[4px] border flex items-center justify-center transition-all ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-500/50 bg-black/20 hover:border-slate-400'}`}>
+                                        {isSelected && <Check size={10} className="text-black" strokeWidth={4} />}
                                     </div>
                                 </div>
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${pc.badge}`}>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] border uppercase tracking-wider ${pc.badge}`}>
                                     {pc.label}
                                 </span>
-                                <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700">
+                                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px] bg-white/[0.04] text-slate-300 border border-white/[0.05]">
                                     {task.status.replace(/_/g, ' ')}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-[9px] font-mono text-slate-600 group-hover/card:text-slate-400 transition-colors select-none">
-                                    #{task.id.substring(0, 5).toUpperCase()}
+                            
+                            <div className="flex items-center gap-1">
+                                <span className="text-[10px] font-bold text-slate-600 group-hover/card:text-slate-400 transition-colors uppercase tracking-wider">
+                                    #{task.id.substring(0, 4)}
                                 </span>
-                                <div
-                                    {...prov.dragHandleProps}
-                                    onClick={e => e.stopPropagation()}
-                                    className="p-0.5 text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors"
-                                >
-                                    <GripVertical size={13} />
+                                <div {...prov.dragHandleProps} onClick={e => e.stopPropagation()} className="px-0.5 text-slate-700 hover:text-slate-300 cursor-grab active:cursor-grabbing transition-colors">
+                                    <GripVertical size={14} />
                                 </div>
                             </div>
                         </div>
 
                         {/* Title */}
-                        <h4 className="text-[13px] font-semibold text-slate-200 leading-snug line-clamp-2 mb-2.5 group-hover/card:text-white transition-colors">
+                        <h4 className={`text-[13px] font-medium leading-relaxed line-clamp-2 mb-2 transition-colors ${isSelected ? 'text-amber-100' : 'text-slate-200 group-hover/card:text-white'}`}>
                             {task.title}
                         </h4>
 
-                        {/* Client */}
+                        {/* Client context */}
                         {task.clientName && (
                             <div 
-                                className="flex items-center gap-1 mb-2.5 hover:text-amber-400 transition-colors"
+                                className="inline-flex items-center gap-1.5 mb-3 px-1.5 py-0.5 rounded-md bg-white/[0.02] border border-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all cursor-pointer group/client"
                                 onClick={(e) => {
                                     if (onOpenClientDetail && task.clientIds?.[0]) {
                                         e.stopPropagation();
@@ -119,40 +113,42 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                                     }
                                 }}
                             >
-                                <Tag size={9} className="text-slate-600 flex-shrink-0" />
-                                <span className="text-[10px] font-bold truncate underline-offset-2 decoration-blue-500/30 group-hover/card:decoration-blue-500/60 transition-all">{task.clientName}</span>
+                                <Tag size={10} className="text-blue-400/70 group-hover/client:text-blue-400 transition-colors" />
+                                <span className="text-[10px] font-medium text-slate-400 group-hover/client:text-slate-200 transition-colors truncate max-w-[140px]">
+                                    {task.clientName}
+                                </span>
                             </div>
                         )}
 
                         {/* Subtask progress */}
                         {pct >= 0 && (
-                            <div className="mb-3">
-                                <div className="flex justify-between text-[9px] font-bold mb-1">
-                                    <span className="text-slate-600 uppercase tracking-widest flex items-center gap-1">
-                                        <CheckCircle2 size={8} className={pct === 100 ? 'text-emerald-500' : 'text-slate-600'} />
-                                        {done}/{total}
+                            <div className="mb-3 px-1">
+                                <div className="flex justify-between items-center text-[9px] font-bold mb-1.5">
+                                    <span className="text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                                        <CheckCircle2 size={10} className={pct === 100 ? 'text-emerald-500' : 'text-slate-600'} />
+                                        {done}/{total} Tasks
                                     </span>
-                                    <span className={pct === 100 ? 'text-emerald-400' : 'text-amber-400'}>{pct}%</span>
+                                    <span className={pct === 100 ? 'text-emerald-500' : pct > 0 ? 'text-blue-400' : 'text-slate-500'}>{pct}%</span>
                                 </div>
-                                <div className="h-[3px] w-full bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-[4px] w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
                                     <div
-                                        className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                        className={`h-full rounded-full transition-all duration-700 ease-out ${pct === 100 ? 'bg-emerald-500 shadow-[0_0_8px_#10b98180]' : 'bg-blue-500 shadow-[0_0_8px_#3b82f680]'}`}
                                         style={{ width: `${pct}%` }}
                                     />
                                 </div>
                             </div>
                         )}
 
-                        {/* Footer */}
-                        <div className="flex items-center justify-between pt-2 border-t border-white/[0.05]">
-                            <span className={`flex items-center gap-1 text-[10px] font-medium rounded-md px-1.5 py-0.5
-                                ${isOverdue ? 'text-red-400 bg-red-950/50' : 'text-slate-500'}`}>
+                        {/* Footer details */}
+                        <div className="flex flex-wrap items-center justify-between pt-2.5 mt-1 border-t border-white/[0.03] gap-2">
+                            <div className={`flex items-center gap-1.5 text-[10px] font-semibold rounded-md px-1.5 py-1 ${isOverdue ? 'text-red-400 bg-red-500/10 border border-red-500/20' : 'text-slate-500 bg-black/20 border border-white/[0.02]'}`}>
                                 {isOverdue
-                                    ? <><AlertTriangle size={9} className="animate-pulse" /> Overdue</>
-                                    : <><Calendar size={9} /> {formatDate(task.dueDate)}</>
+                                    ? <><AlertTriangle size={11} className="animate-pulse" /> Overdue</>
+                                    : <><Calendar size={11} /> {formatDate(task.dueDate)}</>
                                 }
-                            </span>
-                            <div className="flex -space-x-1.5">
+                            </div>
+                            
+                            <div className="flex -space-x-1.5 hover:space-x-0.5 transition-all duration-300">
                                 {task.assignedTo.slice(0, 4).map((uid, i) => {
                                     const u = usersList.find(x => x.uid === uid);
                                     const initials = u?.displayName
@@ -163,14 +159,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                                             key={uid}
                                             title={u?.displayName}
                                             style={{ backgroundColor: avatarColor(i) }}
-                                            className="w-5 h-5 rounded-full border border-[#0d1117] flex items-center justify-center text-[8px] font-black text-white flex-shrink-0"
+                                            className="w-[22px] h-[22px] rounded-full ring-2 ring-[#0c0f16] flex items-center justify-center text-[9px] font-black text-white flex-shrink-0 shadow-sm transition-transform hover:scale-110 hover:z-10"
                                         >
                                             {initials}
                                         </div>
                                     );
                                 })}
                                 {task.assignedTo.length > 4 && (
-                                    <div className="w-5 h-5 rounded-full bg-slate-700 border border-[#0d1117] flex items-center justify-center text-[8px] font-black text-slate-400">
+                                    <div className="w-[22px] h-[22px] rounded-full bg-slate-800 ring-2 ring-[#0c0f16] flex items-center justify-center text-[9px] font-bold text-slate-300 shadow-sm">
                                         +{task.assignedTo.length - 4}
                                     </div>
                                 )}
