@@ -1236,16 +1236,17 @@ const TasksPage: React.FC = () => {
                             }}
                         />
                         {hasNextPage && filteredTasks.length > 0 && (
-                            <div className="flex flex-col items-center gap-2 p-4 bg-[#0a0f1e] z-10 border-t border-white/[0.06]">
-                                <span className="text-[10px] font-bold text-gray-500 tabular-nums">
-                                    Showing {filteredTasks.length} of {tasks.length} tasks
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 py-2.5 px-6 bg-[#0a0f1e]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
+                                <span className="text-[10px] font-bold text-slate-400 tabular-nums uppercase tracking-widest">
+                                    {filteredTasks.length} / {tasks.length}
                                 </span>
+                                <div className="w-[1px] h-3.5 bg-white/10" />
                                 <button
                                     onClick={() => fetchNextPage()}
                                     disabled={isFetchingNextPage}
-                                    className="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] uppercase tracking-widest transition-colors disabled:opacity-50"
+                                    className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                                 >
-                                    {isFetchingNextPage ? 'Loading...' : 'Load More Tasks'}
+                                    {isFetchingNextPage ? 'Loading...' : 'Load More'}
                                 </button>
                             </div>
                         )}
