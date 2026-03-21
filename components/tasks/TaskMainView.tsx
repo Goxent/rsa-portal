@@ -37,46 +37,46 @@ const S = {
         label: 'Not Started',
         topBar: 'bg-[#475569]',
         dot: 'bg-[#94a3b8]',
-        headerBg: 'bg-[#1e293b]/60',
-        bodyBg: 'bg-[#111827]/40',
-        countBg: 'bg-slate-700/80 text-slate-300',
+        headerBg: 'bg-slate-900/60 border-y border-slate-700/50',
+        bodyBg: 'bg-slate-900/30',
+        countBg: 'bg-slate-800 text-slate-300 border border-slate-700',
         ring: 'ring-slate-500/20',
     },
     [TaskStatus.IN_PROGRESS]: {
         label: 'In Progress',
-        topBar: 'bg-[#2563eb]',
-        dot: 'bg-[#3b82f6]',
-        headerBg: 'bg-[#1e3a5f]/60',
-        bodyBg: 'bg-[#0f1f3d]/30',
-        countBg: 'bg-blue-900/60 text-amber-300',
-        ring: 'ring-amber-500/20',
+        topBar: 'bg-[#3b82f6]',
+        dot: 'bg-[#60a5fa]',
+        headerBg: 'bg-blue-950/60 border-y border-blue-900/50',
+        bodyBg: 'bg-blue-950/30',
+        countBg: 'bg-blue-900 text-blue-300 border border-blue-800',
+        ring: 'ring-blue-500/30',
     },
     [TaskStatus.UNDER_REVIEW]: {
         label: 'Under Review',
-        topBar: 'bg-[#d97706]',
-        dot: 'bg-[#f59e0b]',
-        headerBg: 'bg-[#3d2c0a]/60',
-        bodyBg: 'bg-[#1c1308]/30',
-        countBg: 'bg-amber-900/50 text-amber-300',
-        ring: 'ring-amber-500/20',
+        topBar: 'bg-[#f59e0b]',
+        dot: 'bg-[#fbbf24]',
+        headerBg: 'bg-amber-950/50 border-y border-amber-900/50',
+        bodyBg: 'bg-amber-950/20',
+        countBg: 'bg-amber-900/80 text-amber-300 border border-amber-800',
+        ring: 'ring-amber-500/30',
     },
     [TaskStatus.HALTED]: {
         label: 'Halted',
-        topBar: 'bg-[#dc2626]',
-        dot: 'bg-[#ef4444]',
-        headerBg: 'bg-[#3b0f0f]/60',
-        bodyBg: 'bg-[#1a0808]/30',
-        countBg: 'bg-red-900/50 text-red-300',
-        ring: 'ring-red-500/20',
+        topBar: 'bg-[#ef4444]',
+        dot: 'bg-[#f87171]',
+        headerBg: 'bg-red-950/50 border-y border-red-900/50',
+        bodyBg: 'bg-red-950/20',
+        countBg: 'bg-red-900/80 text-red-300 border border-red-800',
+        ring: 'ring-red-500/30',
     },
     [TaskStatus.COMPLETED]: {
         label: 'Completed',
-        topBar: 'bg-[#059669]',
-        dot: 'bg-[#10b981]',
-        headerBg: 'bg-[#0a2e1f]/60',
-        bodyBg: 'bg-[#051510]/30',
-        countBg: 'bg-emerald-900/50 text-emerald-300',
-        ring: 'ring-emerald-500/20',
+        topBar: 'bg-[#10b981]',
+        dot: 'bg-[#34d399]',
+        headerBg: 'bg-emerald-950/50 border-y border-emerald-900/50',
+        bodyBg: 'bg-emerald-950/20',
+        countBg: 'bg-emerald-900/80 text-emerald-300 border border-emerald-800',
+        ring: 'ring-emerald-500/30',
     },
     [TaskStatus.ARCHIVED]: {
         label: 'Archived',
@@ -405,36 +405,37 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             ref={prov.innerRef}
                                                             {...prov.droppableProps}
                                                             className={[
-                                                                'px-2.5 pb-1 transition-colors duration-150',
-                                                                snap.isDraggingOver ? 'bg-white/[0.03]' : '',
+                                                                `pb-3 transition-colors duration-150 flex flex-col`,
+                                                                cfg.bodyBg,
+                                                                snap.isDraggingOver ? 'brightness-125' : '',
                                                             ].join(' ')}
                                                         >
                                                             {/* Status section header */}
-                                                            <div className="flex items-center gap-2 px-1 py-2 sticky top-0 z-[5]" style={{ backdropFilter: 'blur(8px)' }}>
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                                                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.12em] flex-1">{cfg.label}</span>
-                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${cfg.countBg}`}>{colTasks.length}</span>
+                                                            <div className={`flex items-center gap-2 px-3 py-2.5 sticky top-0 z-[5] ${cfg.headerBg}`} style={{ backdropFilter: 'blur(12px)' }}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shadow-[0_0_8px_currentColor]`} style={{ color: cfg.topBar.replace('bg-', '') }} />
+                                                                <span className={`text-[10px] font-black uppercase tracking-[0.15em] flex-1 ${cfg.topBar.replace('bg-', 'text-')}`}>{cfg.label}</span>
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm ${cfg.countBg}`}>{colTasks.length}</span>
                                                             </div>
 
                                                             {/* Task cards */}
-                                                            <div className="flex flex-col gap-1.5 min-h-[40px]">
+                                                            <div className="flex flex-col gap-2 min-h-[40px] px-2.5 pt-2">
                                                                 {colTasks.map((task, i) => (
-                                                                    <TaskCard
-                                                                        key={task.id}
-                                                                        task={task}
-                                                                        index={i}
-                                                                        usersList={usersList}
-                                                                        selectedTaskIds={selectedTaskIds}
-                                                                        onToggleSelection={onToggleSelection}
-                                                                        onClick={handleOpenEdit}
-                                                                        onOpenClientDetail={onOpenClientDetail}
-                                                                    />
+                                                                    <div key={task.id} className={`rounded-xl transition-all duration-300 hover:ring-2 ${cfg.ring}`}>
+                                                                        <TaskCard
+                                                                            task={task}
+                                                                            index={i}
+                                                                            usersList={usersList}
+                                                                            selectedTaskIds={selectedTaskIds}
+                                                                            onToggleSelection={onToggleSelection}
+                                                                            onClick={handleOpenEdit}
+                                                                            onOpenClientDetail={onOpenClientDetail}
+                                                                        />
+                                                                    </div>
                                                                 ))}
                                                                 {prov.placeholder}
 
                                                                 {colTasks.length === 0 && (
-                                                                    <div className="flex items-center justify-center gap-1.5 min-h-[32px] rounded-lg border border-dashed border-white/[0.04] text-[8px] text-slate-700 font-bold uppercase tracking-widest mb-1">
-                                                                        <div className={`w-2 h-2 rounded-full ${cfg.dot} opacity-15`} />
+                                                                    <div className={`flex items-center justify-center gap-2 min-h-[40px] rounded-xl border border-dashed text-[9px] font-bold uppercase tracking-widest mb-1 ${cfg.topBar.replace('bg-', 'text-')} opacity-30 ${cfg.topBar.replace('bg-', 'border-')} border-opacity-30`}>
                                                                         Drop here
                                                                     </div>
                                                                 )}
