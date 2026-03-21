@@ -329,7 +329,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="h-full flex flex-col min-h-0">
+            <div className="h-full flex flex-col min-h-0 overflow-hidden">
                 <div className="relative flex-1 min-h-0">
                     {/* Left scroll arrow */}
                     <div className="absolute left-2 top-1/2 -translate-y-1/2 z-[40] pointer-events-none">
@@ -347,13 +347,13 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                     </div>
 
                     {/* Horizontal scroll container — 3 phase columns side by side */}
-                    <div ref={boardRef} className="h-full flex items-stretch gap-3 overflow-x-auto overflow-y-hidden px-4 md:px-8 py-4 kanban-scroll">
+                    <div ref={boardRef} className="h-full flex items-start gap-3 overflow-x-auto overflow-y-auto px-4 md:px-8 py-4 kanban-scroll custom-scrollbar">
                         {PHASE_ORDER.map(phase => {
                             const pm = PHASE_META[phase];
                             const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
 
                             return (
-                                <div key={phase} className={`flex flex-col flex-shrink-0 w-[280px] sm:w-[320px] rounded-2xl overflow-hidden border ${pm.border} h-full`}>
+                                <div key={phase} className={`flex flex-col flex-shrink-0 w-[280px] sm:w-[320px] rounded-2xl overflow-hidden border ${pm.border}`}>
                                     {/* Phase header */}
                                     <div className={`relative flex-shrink-0 ${pm.headerBg} border-b ${pm.border} px-4 py-3`}>
                                         <div className={`absolute top-0 left-0 right-0 h-[3px] ${pm.topBar}`} />
@@ -369,7 +369,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     </div>
 
                                     {/* Phase body — scrollable, contains status sections */}
-                                    <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar ${pm.bg}`}>
+                                    <div className={`${pm.bg}`}>
                                         {STATUS_COLS.map(status => {
                                             const droppableId = `${phase}::${status}`;
                                             const cfg = S[status] ?? FALLBACK_COL;
