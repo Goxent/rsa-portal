@@ -2,11 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
-    LayoutGrid, List as ListIcon, CheckSquare, UserCircle2, Briefcase, CheckCircle2,
-    AlertCircle, ChevronDown, Check, Loader2, Save, Sparkles, Plus, Filter, Search,
-    Calendar, Trash2, X, AlertTriangle, ShieldAlert, Download, FileSpreadsheet,
-    FileText, User, Edit2, MoreVertical, Box, ChevronRight, Eye, Clock, Circle, Activity,
-    ArrowRight, Tag, GanttChartSquare, Bookmark, SlidersHorizontal
+    LayoutGrid, List as ListIcon, UserCircle2, ChevronDown, Check, Sparkles, Plus, Filter, Search,
+    Trash2, X, FileSpreadsheet, FileText, Activity, ArrowRight, GanttChartSquare
 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment, AuditPhase } from '../types';
@@ -864,355 +861,320 @@ const TasksPage: React.FC = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-transparent">
-            {/* --- PREMIUM WORKSPACE HEADER --- */}
-            <header className="flex-none glass-panel border-b border-white/[0.05] p-6 pb-5 relative z-20">
-                {/* Top Row: Title, Toggles & Actions â€” wraps on small screens so everything is visible */}
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    {/* Left: Branding + view toggles */}
-                    <div className="flex items-center gap-4 flex-wrap">
-                        <div className="flex items-center gap-4 border-r border-white/10 pr-4">
-                            <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/20 flex-shrink-0"
-                            >
-                                <Box className="text-white" size={20} />
-                            </motion.div>
-                            <div className="hidden sm:block">
-                                <h1 className="text-xl font-black text-white tracking-tight leading-none">Workflow</h1>
-                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Firm Workspace</p>
-                            </div>
-                        </div>
-
-                        {/* View Modes */}
-                        <div className="flex flex-wrap items-center bg-white/[0.03] rounded-xl p-1 border border-white/[0.05]">
+            {/* --- COMPACT UNIFIED TOOLBAR --- */}
+            <header className="flex-none bg-[#09090b]/95 backdrop-blur-md border-b border-white/[0.05] relative z-20">
+                {/* Single row toolbar */}
+                <div className="flex items-center gap-2 px-4 py-2">
+                    {/* LEFT: View Mode Toggle */}
+                    <div className="flex bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06] h-[30px] flex-shrink-0">
+                        <button
+                            onClick={() => setViewMode('LIST')}
+                            className={`px-2.5 flex items-center gap-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                            <ListIcon size={11} /> List
+                        </button>
+                        {!isMobile && (
                             <button
-                                onClick={() => setViewMode('LIST')}
-                                className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                                onClick={() => setViewMode('KANBAN')}
+                                className={`px-2.5 flex items-center gap-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                             >
-                                <ListIcon size={14} /> List
+                                <LayoutGrid size={11} /> Board
                             </button>
-                            {!isMobile && (
-                                <button
-                                    onClick={() => setViewMode('KANBAN')}
-                                    className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                >
-                                    <LayoutGrid size={14} /> Board
-                                </button>
-                            )}
-                            {!isMobile && (
-                                <button
-                                    onClick={() => setViewMode('TIMELINE')}
-                                    className={`px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'TIMELINE' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                >
-                                    <GanttChartSquare size={14} /> Timeline
-                                </button>
-                            )}
-                            <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
-                        </div>
+                        )}
+                        {!isMobile && (
+                            <button
+                                onClick={() => setViewMode('TIMELINE')}
+                                className={`px-2.5 flex items-center gap-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'TIMELINE' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                <GanttChartSquare size={11} /> Timeline
+                            </button>
+                        )}
                     </div>
 
-                    {/* Right: Actions */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {selectedTaskIds.length > 0 && (
-                            <div className="flex items-center gap-2">
-                                {/* Bulk Status Dropdown */}
-                                <div className="relative" ref={statusMenuRef}>
-                                    <button
-                                        onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
-                                        className="px-4 py-2 bg-slate-500/10 hover:bg-slate-500/20 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-white/5"
-                                    >
-                                        <Activity size={14} className="text-amber-400" /> Status ({selectedTaskIds.length})
-                                        <ChevronDown size={14} className={`transition-transform ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
-                                    </button>
+                    {/* CENTER: Search */}
+                    <div className="relative flex-1 max-w-xs group">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-amber-500 transition-colors" size={12} />
+                        <input
+                            type="text"
+                            placeholder="Search tasks..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full h-[30px] bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] rounded-lg pl-7 pr-3 text-[11px] text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-500/40 transition-all"
+                        />
+                    </div>
 
-                                    <AnimatePresence>
-                                        {showBulkStatusMenu && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 10 }}
-                                                className="absolute top-full left-0 mt-2 w-48 bg-[#09090b] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
-                                            >
-                                                {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
-                                                    <button
-                                                        key={status}
-                                                        onClick={() => {
-                                                            handleBulkStatusChange(status as TaskStatus);
-                                                            setShowBulkStatusMenu(false);
-                                                        }}
-                                                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between group"
-                                                    >
-                                                        {status.replace(/_/g, ' ')}
-                                                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-400" />
-                                                    </button>
-                                                ))}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-
-                                {/* Bulk Reassign Dropdown */}
-                                <div className="relative" ref={assignMenuRef}>
-                                    <button
-                                        onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
-                                        className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-cyan-500/10"
-                                    >
-                                        <UserCircle2 size={14} /> Reassign ({selectedTaskIds.length})
-                                        <ChevronDown size={14} className={`transition-transform ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {showBulkAssignMenu && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 10 }}
-                                                className="absolute top-full left-0 mt-2 w-56 bg-[#09090b] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-64 overflow-y-auto custom-scrollbar"
-                                            >
-                                                <div className="p-2 border-b border-white/5 bg-white/5">
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Select Staff</p>
-                                                </div>
-                                                {usersList.map((st) => (
-                                                    <button
-                                                        key={st.uid}
-                                                        onClick={() => {
-                                                            handleBulkReassign(st.uid);
-                                                            setShowBulkAssignMenu(false);
-                                                        }}
-                                                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3"
-                                                    >
-                                                        <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] text-amber-400">
-                                                            {getInitials(st.displayName)}
-                                                        </div>
-                                                        <span className="truncate">{st.displayName}</span>
-                                                    </button>
-                                                ))}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-
+                    {/* Bulk Actions (contextual — only when tasks selected) */}
+                    {selectedTaskIds.length > 0 && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            <div className="relative" ref={statusMenuRef}>
                                 <button
-                                    onClick={handleBulkDelete}
-                                    className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-rose-500/10"
+                                    onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
+                                    className="h-[30px] px-2.5 bg-slate-500/10 hover:bg-slate-500/20 text-slate-300 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all border border-white/5"
                                 >
-                                    <Trash2 size={15} /> Delete ({selectedTaskIds.length})
+                                    <Activity size={11} className="text-amber-400" /> Status
+                                    <ChevronDown size={10} className={`transition-transform ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
                                 </button>
+                                <AnimatePresence>
+                                    {showBulkStatusMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 6 }}
+                                            className="absolute top-full right-0 mt-1 w-40 bg-[#121216] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                                        >
+                                            {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
+                                                <button
+                                                    key={status}
+                                                    onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
+                                                    className="w-full px-3 py-2 text-left text-[11px] font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between group"
+                                                >
+                                                    {status.replace(/_/g, ' ')}
+                                                    <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-400" />
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
-                        )}
-                        <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
-                            <button onClick={handleExportPDF} title="Export PDF" className="p-2 hover:bg-white/10 text-rose-400 rounded-lg transition-all"><FileText size={16} /></button>
-                            <button onClick={() => handleExportExcel()} title="Export Excel" className="p-2 hover:bg-white/10 text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={16} /></button>
+                            <div className="relative" ref={assignMenuRef}>
+                                <button
+                                    onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
+                                    className="h-[30px] px-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all border border-cyan-500/10"
+                                >
+                                    <UserCircle2 size={11} /> Assign
+                                    <ChevronDown size={10} className={`transition-transform ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
+                                </button>
+                                <AnimatePresence>
+                                    {showBulkAssignMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 6 }}
+                                            className="absolute top-full right-0 mt-1 w-48 bg-[#121216] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto custom-scrollbar"
+                                        >
+                                            <div className="p-1.5 border-b border-white/5 bg-white/5">
+                                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Select Staff</p>
+                                            </div>
+                                            {usersList.map((st) => (
+                                                <button
+                                                    key={st.uid}
+                                                    onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
+                                                    className="w-full px-3 py-2 text-left text-[11px] font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
+                                                >
+                                                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-[9px] text-amber-400 flex-shrink-0">
+                                                        {getInitials(st.displayName)}
+                                                    </div>
+                                                    <span className="truncate">{st.displayName}</span>
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <button
+                                onClick={handleBulkDelete}
+                                className="h-[30px] px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all border border-rose-500/10"
+                            >
+                                <Trash2 size={11} />
+                            </button>
+                            <span className="text-[9px] font-black text-amber-400 tabular-nums ml-0.5">{selectedTaskIds.length}</span>
                         </div>
+                    )}
+
+                    {/* RIGHT: Filter + Export + Templates + New Task */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+                        {/* Unified Filters Button */}
+                        <button
+                            onClick={() => setShowFilterPanel(!showFilterPanel)}
+                            className={`h-[30px] flex items-center gap-1.5 px-2.5 rounded-lg border text-[10px] font-bold transition-all ${
+                                showFilterPanel || activeFilterCount > 0
+                                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
+                                    : 'bg-white/[0.03] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:border-white/[0.12]'
+                            }`}
+                        >
+                            <Filter size={11} />
+                            Filters
+                            {activeFilterCount > 0 && (
+                                <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
+
+                        <div className="w-px h-4 bg-white/[0.06]" />
+
+                        <div className="flex items-center gap-0.5 bg-white/[0.02] p-0.5 rounded-lg border border-white/[0.05] h-[30px]">
+                            <button onClick={handleExportPDF} title="Export PDF" className="w-6 h-full flex items-center justify-center hover:bg-white/10 text-rose-400 rounded-md transition-all"><FileText size={12} /></button>
+                            <button onClick={() => handleExportExcel()} title="Export Excel" className="w-6 h-full flex items-center justify-center hover:bg-white/10 text-emerald-400 rounded-md transition-all"><FileSpreadsheet size={12} /></button>
+                        </div>
+
                         <button
                             onClick={() => setIsTemplateModalOpen(true)}
-                            className="px-4 py-2 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all"
+                            className="h-[30px] px-2.5 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-lg border border-white/[0.05] flex items-center gap-1.5 text-[10px] font-bold transition-all"
                         >
-                            <Sparkles size={14} className="text-amber-400" /> Templates
+                            <Sparkles size={11} className="text-amber-400" /> Templates
                         </button>
-                        
+
                         <button
                             onClick={handleOpenCreate}
                             disabled={!canCreateTask}
-                            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white rounded-xl text-sm font-black flex justify-center items-center gap-2 transition-all shadow-xl shadow-amber-500/20 disabled:opacity-50 border border-white/10 flex-shrink-0"
+                            className="h-[30px] px-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white rounded-lg text-[10px] font-black flex items-center gap-1.5 transition-all shadow-md flex-shrink-0 disabled:opacity-50"
                         >
-                            <Plus size={18} strokeWidth={3} /> Create New Task
+                            <Plus size={12} strokeWidth={3} /> New Task
                         </button>
                     </div>
                 </div>
 
-                {/* Bottom: Search/Filter Row + Collapsible Panel */}
-                <div className="space-y-3">
+                {/* Filter Popover Panel — slides down when Filters button is clicked */}
+                <AnimatePresence>
+                    {showFilterPanel && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="overflow-hidden border-t border-white/[0.04]"
+                        >
+                            <div className="px-4 py-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-3xl">
+                                    <div className="relative">
+                                        <select
+                                            value={filterStaff}
+                                            onChange={(e) => setFilterStaff(e.target.value)}
+                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                        >
+                                            <option value="ALL">Staff: All</option>
+                                            {usersList.map(u => <option key={u.uid} value={u.uid}>{u.displayName}</option>)}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                    </div>
+                                    <div className="relative">
+                                        <select
+                                            value={filterPriority}
+                                            onChange={(e) => setFilterPriority(e.target.value)}
+                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                        >
+                                            <option value="ALL">Priority: All</option>
+                                            {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                    </div>
+                                    <div className="relative">
+                                        <select
+                                            value={filterAuditor}
+                                            onChange={(e) => setFilterAuditor(e.target.value)}
+                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                        >
+                                            <option value="ALL">Auditor: All</option>
+                                            {SIGNING_AUTHORITIES.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                    </div>
+                                    <div className="relative">
+                                        <select
+                                            value={filterStatus}
+                                            onChange={(e) => setFilterStatus(e.target.value)}
+                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                        >
+                                            <option value="ALL">Status: All</option>
+                                            {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                    </div>
+                                </div>
 
-                    {/* Search + Filters Row */}
-                    <div className="flex items-center bg-white/5 p-3 rounded-2xl border border-white/[0.05] gap-0">
-                        {/* Search â€” fixed width */}
-                        <div className="flex-shrink-0 w-64 relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={15} />
-                            <input
-                                type="text"
-                                placeholder="Search tasks or clients..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-9 bg-transparent border-r border-white/10 pl-9 pr-3 text-sm text-white placeholder:text-gray-500 focus:outline-none transition-all"
-                            />
-                        </div>
-
-                        {/* Inline filter selects */}
-                        <div className="flex items-center gap-2 overflow-x-auto pl-3 scrollbar-none flex-1 min-w-0">
-
-                            <div className="relative flex-shrink-0">
-                                <select
-                                    value={filterStaff}
-                                    onChange={(e) => setFilterStaff(e.target.value)}
-                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors max-w-[130px] truncate"
-                                >
-                                    <option value="ALL" className="bg-[#09090b]">Staff: All</option>
-                                    {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#09090b]">{u.displayName}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
-                            </div>
-
-                            <div className="relative flex-shrink-0">
-                                <select
-                                    value={filterPriority}
-                                    onChange={(e) => setFilterPriority(e.target.value)}
-                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
-                                >
-                                    <option value="ALL" className="bg-[#09090b]">Priority: All</option>
-                                    {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#09090b]">{p}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
-                            </div>
-
-                            <div className="relative flex-shrink-0">
-                                <select
-                                    value={filterAuditor}
-                                    onChange={(e) => setFilterAuditor(e.target.value)}
-                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
-                                >
-                                    <option value="ALL" className="bg-[#09090b]">Auditor: All</option>
-                                    {SIGNING_AUTHORITIES.map(s => <option key={s} value={s} className="bg-[#09090b]">{s}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
-                            </div>
-
-                            {/* Filter panel toggle button */}
-                            <button
-                                onClick={() => setShowFilterPanel(!showFilterPanel)}
-                                className={`flex items-center gap-1.5 flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                                    showFilterPanel
-                                        ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
-                                        : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-300'
-                                }`}
-                            >
-                                <SlidersHorizontal size={13} />
-                                More
-                                {activeFilterCount > 0 && (
-                                    <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center">{activeFilterCount}</span>
+                                {/* Status Stats Strip (for LIST view only) */}
+                                {viewMode === 'LIST' && (
+                                    <div className="flex items-center gap-1.5 flex-wrap mt-3 pt-3 border-t border-white/[0.04]">
+                                        {([
+                                            { key: 'ALL', label: 'All', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                                            { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
+                                            { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-amber-400', dot: 'bg-blue-400' },
+                                            { key: 'UNDER_REVIEW', label: 'Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
+                                            { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
+                                            { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
+                                        ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
+                                            const isActive = filterStatus === key;
+                                            return (
+                                                <button
+                                                    key={key}
+                                                    onClick={() => setFilterStatus(key)}
+                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'}`}
+                                                >
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
+                                                    {label}
+                                                    <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 )}
-                                <ChevronDown size={12} className={`transition-transform ${showFilterPanel ? 'rotate-180' : ''}`} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Collapsible Filter Panel */}
-                    <AnimatePresence>
-                        {showFilterPanel && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                            >
-                                <div className="bg-white/[0.03] rounded-2xl border border-white/[0.05] p-4 space-y-4">
-                                    {/* Status Stats Strip */}
-                                    {viewMode === 'LIST' && (
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Status</p>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                {([
-                                                    { key: 'ALL', label: 'Total', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                                                    { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                                                    { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-amber-400', dot: 'bg-blue-400' },
-                                                    { key: 'UNDER_REVIEW', label: 'Under Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
-                                                    { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
-                                                    { key: 'COMPLETED', label: 'Completed', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
-                                                ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
-                                                    const isActive = filterStatus === key;
-
-
-                                                    return (
-                                                        <button
-                                                            key={key}
-                                                            onClick={() => setFilterStatus(key)}
-                                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'
-                                                                }`}
-                                                        >
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
-                                                            {label}
-                                                            <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Toggles Row removed */}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Active Filter Pills */}
-                    {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || (dateRange.start || dateRange.end)) && (
-                        <div className="flex flex-wrap items-center gap-2 px-1">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mr-2">Active Filters:</span>
-                            {searchTerm && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
-                                    Search: {searchTerm}
-                                    <button onClick={() => setSearchTerm('')} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-                            {filterStatus !== 'ALL' && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
-                                    Status: {filterStatus}
-                                    <button onClick={() => setFilterStatus('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-                            {filterPriority !== 'ALL' && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 rounded-full text-[11px] font-bold text-rose-400">
-                                    Priority: {filterPriority}
-                                    <button onClick={() => setFilterPriority('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-                            {filterStaff !== 'ALL' && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[11px] font-bold text-cyan-400">
-                                    Staff: {usersList.find(u => u.uid === filterStaff)?.displayName || filterStaff}
-                                    <button onClick={() => setFilterStaff('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-                            {filterClient !== 'ALL' && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
-                                    Client: {clientsList.find(c => c.id === filterClient)?.name || filterClient}
-                                    <button onClick={() => setFilterClient('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-                            {filterAuditor !== 'ALL' && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/10 border border-violet-500/20 rounded-full text-[11px] font-bold text-violet-400">
-                                    Auditor: {filterAuditor}
-                                    <button onClick={() => setFilterAuditor('ALL')} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-
-                            {(dateRange.start || dateRange.end) && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[11px] font-bold text-amber-400">
-                                    Date: {dateRange.start || '...'} to {dateRange.end || '...'}
-                                    <button onClick={() => setDateRange({ start: '', end: '' })} className="hover:text-white transition-colors"><X size={12} /></button>
-                                </div>
-                            )}
-                            <button
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setFilterStatus('ALL');
-                                    setFilterPriority('ALL');
-                                    setFilterStaff('ALL');
-                                    setFilterAuditor('ALL');
-                                    setDateRange({ start: '', end: '' });
-                                }}
-                                className="text-[10px] font-bold text-gray-500 hover:text-white transition-colors ml-2 underline underline-offset-4"
-                            >
-                                Clear All
-                            </button>
-                        </div>
+                            </div>
+                        </motion.div>
                     )}
-                </div>
+                </AnimatePresence>
 
-
-            </header >
+                {/* Active Filter Pills — slim conditional row */}
+                {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || (dateRange.start || dateRange.end)) && (
+                    <div className="flex items-center gap-1.5 px-4 py-1.5 border-t border-white/[0.03] overflow-x-auto scrollbar-none">
+                        {searchTerm && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                                🔍 {searchTerm}
+                                <button onClick={() => setSearchTerm('')} className="hover:text-white transition-colors"><X size={10} /></button>
+                            </div>
+                        )}
+                        {filterStatus !== 'ALL' && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                                {filterStatus.replace(/_/g, ' ')}
+                                <button onClick={() => setFilterStatus('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                            </div>
+                        )}
+                        {filterPriority !== 'ALL' && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded-full text-[9px] font-bold text-rose-400 flex-shrink-0">
+                                {filterPriority}
+                                <button onClick={() => setFilterPriority('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                            </div>
+                        )}
+                        {filterStaff !== 'ALL' && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[9px] font-bold text-cyan-400 flex-shrink-0">
+                                {usersList.find(u => u.uid === filterStaff)?.displayName || filterStaff}
+                                <button onClick={() => setFilterStaff('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                            </div>
+                        )}
+                        {filterClient !== 'ALL' && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                                {clientsList.find(c => c.id === filterClient)?.name || filterClient}
+                                <button onClick={() => setFilterClient('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                            </div>
+                        )}
+                        {filterAuditor !== 'ALL' && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 rounded-full text-[9px] font-bold text-violet-400 flex-shrink-0">
+                                {filterAuditor}
+                                <button onClick={() => setFilterAuditor('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                            </div>
+                        )}
+                        {(dateRange.start || dateRange.end) && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                                {dateRange.start || '…'} – {dateRange.end || '…'}
+                                <button onClick={() => setDateRange({ start: '', end: '' })} className="hover:text-white transition-colors"><X size={10} /></button>
+                            </div>
+                        )}
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setFilterStatus('ALL');
+                                setFilterPriority('ALL');
+                                setFilterStaff('ALL');
+                                setFilterAuditor('ALL');
+                                setDateRange({ start: '', end: '' });
+                            }}
+                            className="text-[9px] font-bold text-gray-600 hover:text-white transition-colors ml-1 underline underline-offset-2 flex-shrink-0"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                )}
+            </header>
 
             {/* --- WORKSPACE AREA --- */}
             <main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative">

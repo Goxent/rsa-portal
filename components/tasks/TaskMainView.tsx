@@ -347,13 +347,13 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                     </div>
 
                     {/* Horizontal scroll container — 3 phase columns side by side */}
-                    <div ref={boardRef} className="h-full flex items-stretch gap-3 overflow-x-auto overflow-y-hidden px-10 py-4 kanban-scroll">
+                    <div ref={boardRef} className="h-full flex items-stretch gap-3 overflow-x-auto overflow-y-hidden px-4 md:px-8 py-4 kanban-scroll">
                         {PHASE_ORDER.map(phase => {
                             const pm = PHASE_META[phase];
                             const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
 
                             return (
-                                <div key={phase} className={`flex flex-col flex-shrink-0 w-[320px] rounded-2xl overflow-hidden border ${pm.border} h-full`}>
+                                <div key={phase} className={`flex flex-col flex-shrink-0 w-[280px] sm:w-[320px] rounded-2xl overflow-hidden border ${pm.border} h-full`}>
                                     {/* Phase header */}
                                     <div className={`relative flex-shrink-0 ${pm.headerBg} border-b ${pm.border} px-4 py-3`}>
                                         <div className={`absolute top-0 left-0 right-0 h-[3px] ${pm.topBar}`} />
