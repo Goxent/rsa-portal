@@ -9,7 +9,7 @@ import {
     ArrowRight, Tag, GanttChartSquare, Bookmark, SlidersHorizontal
 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment } from '../types';
+import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment, AuditPhase } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext'; // Import ModalContext
 import { AuthService } from '../services/firebase'; // Keep for static helpers if any, or verify removal
@@ -189,7 +189,7 @@ const TasksPage: React.FC = () => {
     const [filterPriority, setFilterPriority] = useState<string>(() => localStorage.getItem('rsa_filter_priority') || 'ALL');
     const [filterStatus, setFilterStatus] = useState<string>(() => localStorage.getItem('rsa_filter_status') || 'ALL');
     const [filterClient, setFilterClient] = useState<string>(() => localStorage.getItem('rsa_filter_client') || 'ALL');
-    const [groupBy, setGroupBy] = useState<'NONE' | 'AUDITOR' | 'ASSIGNEE'>(() => (localStorage.getItem('rsa_filter_groupby') as any) || 'NONE');
+    const [groupBy, setGroupBy] = useState<'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE'>(() => (localStorage.getItem('rsa_filter_groupby') as any) || 'NONE');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStaff, setFilterStaff] = useState<string>(() => localStorage.getItem('rsa_filter_staff') || 'ALL');
     const [filterAuditor, setFilterAuditor] = useState<string>(() => localStorage.getItem('rsa_filter_auditor') || 'ALL');
@@ -250,7 +250,8 @@ const TasksPage: React.FC = () => {
             dueDate: getCurrentDateUTC(),
             clientIds: [],
             teamLeaderId: '',
-            comments: []
+            comments: [],
+            auditPhase: AuditPhase.NONE
         });
         setIsModalOpen(true);
         setDateMode('AD');
@@ -762,9 +763,14 @@ const TasksPage: React.FC = () => {
             return;
         }
 
-        const newStatus = destination.droppableId as TaskStatus;
-        updateTaskStatusMutation.mutate({ id: draggableId, status: newStatus });
-        triggerNextTemplateIfNeeded(draggableId, newStatus);
+        if (groupBy === 'PHASE') {
+            const newPhase = destination.droppableId as AuditPhase;
+            updateTaskMutation.mutate({ id: draggableId, updates: { auditPhase: newPhase } });
+        } else if (groupBy === 'NONE') {
+            const newStatus = destination.droppableId as TaskStatus;
+            updateTaskStatusMutation.mutate({ id: draggableId, status: newStatus });
+            triggerNextTemplateIfNeeded(draggableId, newStatus);
+        }
     };
 
     const handleTemplateSelect = (template: any) => {
@@ -1038,6 +1044,7 @@ const TasksPage: React.FC = () => {
                                     <option value="NONE" className="bg-[#09090b]">Group: None</option>
                                     <option value="AUDITOR" className="bg-[#09090b]">Group: Auditor</option>
                                     <option value="ASSIGNEE" className="bg-[#09090b]">Group: Staff</option>
+                                    <option value="PHASE" className="bg-[#09090b]">Group: Phase</option>
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
                             </div>

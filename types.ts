@@ -75,6 +75,13 @@ export enum TaskStatus {
   ARCHIVED = 'ARCHIVED'
 }
 
+export enum AuditPhase {
+  ONBOARDING = 'ONBOARDING',
+  PLANNING_AND_EXECUTION = 'PLANNING_AND_EXECUTION',
+  REVIEW_AND_CONCLUSION = 'REVIEW_AND_CONCLUSION',
+  NONE = 'NONE'
+}
+
 export interface TaskStatusConfig {
   status: TaskStatus;
   label: string;
@@ -138,6 +145,7 @@ export interface Task {
   // Advanced Workflow Features (TaxDome-style)
   tags?: string[]; // Custom status/category tags
   totalTimeSpent?: number; // Total minutes logged on this task
+  auditPhase?: AuditPhase; // The specific audit phase this task is currently under
 }
 
 export interface TaskComment {

@@ -5,7 +5,7 @@ import {
     Calendar, Clock, CheckCircle2, AlertTriangle, UserCircle2,
     GripVertical, ChevronLeft, ChevronRight, ChevronDown
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, UserRole, Client } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserProfile, UserRole, Client, AuditPhase } from '../../types';
 import { SIGNING_AUTHORITIES } from '../../constants/firmData';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMedia } from 'react-use';
@@ -22,7 +22,7 @@ interface TaskMainViewProps {
     selectedTaskId?: string;
     selectedTaskIds: string[];
     onToggleSelection: (taskId: string) => void;
-    groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE';
+    groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE';
     onQuickAdd: (status: TaskStatus, title: string) => Promise<void>;
     clientsList: Client[];
     onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => void;
@@ -320,9 +320,11 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     // ── KANBAN VIEW ────────────────────────────────────────────────────────
     const columns = groupBy === 'NONE'
         ? [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED]
-        : groupBy === 'AUDITOR'
-            ? SIGNING_AUTHORITIES
-            : usersList.filter(u => u.role !== UserRole.ADMIN).map(u => u.uid);
+        : groupBy === 'PHASE'
+            ? [AuditPhase.ONBOARDING, AuditPhase.PLANNING_AND_EXECUTION, AuditPhase.REVIEW_AND_CONCLUSION]
+            : groupBy === 'AUDITOR'
+                ? SIGNING_AUTHORITIES
+                : usersList.filter(u => u.role !== UserRole.ADMIN).map(u => u.uid);
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
@@ -361,12 +363,14 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                     >
                         {columns.map(col => {
                             const status = groupBy === 'NONE' ? col as TaskStatus : null;
+                            const phase = groupBy === 'PHASE' ? col as AuditPhase : null;
                             const userId = groupBy === 'ASSIGNEE' ? col as string : null;
                             const auditorName = groupBy === 'AUDITOR' ? col as string : null;
                             const colUser = userId ? usersList.find(u => u.uid === userId) : null;
 
                             const title = status
                                 ? (S[status]?.label ?? status.replace('_', ' '))
+                                : phase ? phase.replace(/_/g, ' ')
                                 : userId ? (colUser?.displayName ?? 'Unknown')
                                     : auditorName ?? '';
 
@@ -375,6 +379,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
                             const colTasks = tasks.filter(t => {
                                 if (status) return t.status === status;
+                                if (phase) return t.auditPhase === phase;
                                 if (userId) return t.assignedTo.includes(userId);
                                 if (auditorName) {
                                     const tc = clientsList.find(c => t.clientIds?.includes(c.id));

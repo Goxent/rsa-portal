@@ -85,6 +85,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                                 <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${pc.badge}`}>
                                     {pc.label}
                                 </span>
+                                <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700">
+                                    {task.status.replace(/_/g, ' ')}
+                                </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <span className="text-[9px] font-mono text-slate-600 group-hover/card:text-slate-400 transition-colors select-none">

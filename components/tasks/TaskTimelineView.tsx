@@ -18,7 +18,7 @@ interface TaskTimelineViewProps {
     usersList: UserProfile[];
     clientsList: Client[];
     handleOpenEdit: (task: Task) => void;
-    groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE';
+    groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE';
 }
 
 const statusColors: Record<TaskStatus, string> = {
@@ -66,7 +66,9 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
             const tEnd = task.dueDate ? endOfDay(new Date(task.dueDate)).getTime() : startOfDay(addDays(new Date(task.createdAt), 2)).getTime();
 
             let groupLabel = 'All Tasks';
-            if (groupBy === 'ASSIGNEE') {
+            if (groupBy === 'PHASE') {
+                groupLabel = task.auditPhase ? task.auditPhase.replace(/_/g, ' ') : 'No Phase';
+            } else if (groupBy === 'ASSIGNEE') {
                 if (!task.assignedTo || task.assignedTo.length === 0) {
                     groupLabel = 'Unassigned';
                 } else {

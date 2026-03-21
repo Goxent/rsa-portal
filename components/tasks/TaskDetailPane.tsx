@@ -5,7 +5,7 @@ import {
     Trash2, Save, Loader2, CheckCircle2, Check, Eye,
     Sparkles, Book
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase } from '../../types';
 import { KnowledgeService } from '../../services/knowledge';
 import StaffSelect from '../StaffSelect';
 import ClientSelect from '../ClientSelect';
@@ -91,6 +91,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 assignedTo: task.assignedTo || [],
                 teamLeaderId: task.teamLeaderId || '',
                 description: task.description || '',
+                auditPhase: task.auditPhase || AuditPhase.NONE,
             });
         }
     }, [isOpen, task.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -108,6 +109,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             assignedTo: task.assignedTo || [],
             teamLeaderId: task.teamLeaderId || '',
             description: task.description || '',
+            auditPhase: task.auditPhase || AuditPhase.NONE,
         }
     });
 
@@ -137,6 +139,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             totalTimeSpent: data.estimatedHours,
             clientIds: data.clientId ? [data.clientId] : [],
             clientName: clientsList.find(c => c.id === data.clientId)?.name || undefined,
+            auditPhase: data.auditPhase,
         };
         onSave(fullSaveData);
         // Reset snapshot so banner doesn't re-trigger after save
@@ -246,6 +249,23 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             {...register('priority')}
                                         >
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* Audit Phase */}
+                                    <div className={`flex flex-col gap-2 bg-black/40 hover:bg-black/60 transition-colors p-5 rounded-[20px] border ${errors.auditPhase ? 'border-red-500/50' : 'border-white/[0.05]'}`}>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Sparkles size={14} className="text-amber-400" /> Audit Phase
+                                        </label>
+                                        <select
+                                            className="w-full bg-transparent text-[15px] font-bold text-gray-200 focus:text-white focus:outline-none py-1 cursor-pointer"
+                                            {...register('auditPhase')}
+                                        >
+                                            {Object.values(AuditPhase).map(ph => (
+                                                <option key={ph} value={ph} className="bg-[#1e293b]">
+                                                    {ph === 'NONE' ? 'No Phase' : ph.replace(/_/g, ' ')}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
 
