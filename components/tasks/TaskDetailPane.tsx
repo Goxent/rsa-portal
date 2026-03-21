@@ -91,7 +91,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 assignedTo: task.assignedTo || [],
                 teamLeaderId: task.teamLeaderId || '',
                 description: task.description || '',
-                auditPhase: task.auditPhase || AuditPhase.NONE,
+                auditPhase: task.auditPhase || AuditPhase.ONBOARDING,
             });
         }
     }, [isOpen, task.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -109,7 +109,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             assignedTo: task.assignedTo || [],
             teamLeaderId: task.teamLeaderId || '',
             description: task.description || '',
-            auditPhase: task.auditPhase || AuditPhase.NONE,
+            auditPhase: task.auditPhase || AuditPhase.ONBOARDING,
         }
     });
 
@@ -263,7 +263,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         >
                                             {Object.values(AuditPhase).map(ph => (
                                                 <option key={ph} value={ph} className="bg-[#1e293b]">
-                                                    {ph === 'NONE' ? 'No Phase' : ph.replace(/_/g, ' ')}
+                                                    {ph.replace(/_/g, ' ')}
                                                 </option>
                                             ))}
                                         </select>

@@ -17,7 +17,7 @@ export const taskSchema = z.object({
     assignedTo: z.array(z.string()).optional(),
     teamLeaderId: z.string().optional(),
     description: z.string().optional(),
-    auditPhase: z.enum(['ONBOARDING', 'PLANNING_AND_EXECUTION', 'REVIEW_AND_CONCLUSION', 'NONE']).optional(),
+    auditPhase: z.enum(['ONBOARDING', 'PLANNING_AND_EXECUTION', 'REVIEW_AND_CONCLUSION']).optional(),
 });
 
 export const clientSchema = z.object({

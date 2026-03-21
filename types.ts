@@ -78,8 +78,7 @@ export enum TaskStatus {
 export enum AuditPhase {
   ONBOARDING = 'ONBOARDING',
   PLANNING_AND_EXECUTION = 'PLANNING_AND_EXECUTION',
-  REVIEW_AND_CONCLUSION = 'REVIEW_AND_CONCLUSION',
-  NONE = 'NONE'
+  REVIEW_AND_CONCLUSION = 'REVIEW_AND_CONCLUSION'
 }
 
 export interface TaskStatusConfig {

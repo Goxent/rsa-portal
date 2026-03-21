@@ -251,7 +251,7 @@ const TasksPage: React.FC = () => {
             clientIds: [],
             teamLeaderId: '',
             comments: [],
-            auditPhase: AuditPhase.NONE
+            auditPhase: AuditPhase.ONBOARDING
         });
         setIsModalOpen(true);
         setDateMode('AD');
@@ -763,13 +763,19 @@ const TasksPage: React.FC = () => {
             return;
         }
 
-        if (groupBy === 'PHASE') {
-            const newPhase = destination.droppableId as AuditPhase;
-            updateTaskMutation.mutate({ id: draggableId, updates: { auditPhase: newPhase } });
-        } else if (groupBy === 'NONE') {
-            const newStatus = destination.droppableId as TaskStatus;
-            updateTaskStatusMutation.mutate({ id: draggableId, status: newStatus });
-            triggerNextTemplateIfNeeded(draggableId, newStatus);
+        // Composite droppable IDs: "PHASE::STATUS"
+        const parts = destination.droppableId.split('::');
+        if (parts.length === 2) {
+            const [newPhase, newStatus] = parts;
+            const updates: any = {};
+            if (task.auditPhase !== newPhase) updates.auditPhase = newPhase;
+            if (task.status !== newStatus) updates.status = newStatus;
+            if (Object.keys(updates).length > 0) {
+                updateTaskMutation.mutate({ id: draggableId, updates });
+                if (newStatus === TaskStatus.COMPLETED && task.status !== TaskStatus.COMPLETED) {
+                    triggerNextTemplateIfNeeded(draggableId, TaskStatus.COMPLETED);
+                }
+            }
         }
     };
 
@@ -1035,19 +1041,6 @@ const TasksPage: React.FC = () => {
 
                         {/* Inline filter selects */}
                         <div className="flex items-center gap-2 overflow-x-auto pl-3 scrollbar-none flex-1 min-w-0">
-                            <div className="relative flex-shrink-0">
-                                <select
-                                    value={groupBy}
-                                    onChange={(e) => setGroupBy(e.target.value as any)}
-                                    className="appearance-none bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-300 pl-3 pr-8 py-1.5 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors"
-                                >
-                                    <option value="NONE" className="bg-[#09090b]">Group: None</option>
-                                    <option value="AUDITOR" className="bg-[#09090b]">Group: Auditor</option>
-                                    <option value="ASSIGNEE" className="bg-[#09090b]">Group: Staff</option>
-                                    <option value="PHASE" className="bg-[#09090b]">Group: Phase</option>
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
-                            </div>
 
                             <div className="relative flex-shrink-0">
                                 <select
