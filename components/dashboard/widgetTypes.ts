@@ -86,14 +86,6 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         adminOnly: true,
     },
     {
-        type: 'team-workload',
-        title: 'Team Workload',
-        description: 'Staff capacity and assignment overview',
-        icon: 'Users',
-        defaultSize: 'md',
-        adminOnly: true,
-    },
-    {
         type: 'calendar',
         title: 'Upcoming Schedule',
         description: 'Events and deadlines calendar view',
@@ -131,8 +123,6 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         defaultSize: 'sm',
         adminOnly: true,
     },
-    { type: 'greetings', title: 'Greetings', description: 'Welcome banner and overview', icon: 'Sun', defaultSize: 'lg' },
-    { type: 'compliance-banner', title: 'Action Needed', description: 'Urgent compliance deadlines alert', icon: 'AlertTriangle', defaultSize: 'full' },
     { type: 'focus', title: 'Focus Timer', description: 'Pomodoro timer for focused work', icon: 'Target', defaultSize: 'md' },
     { type: 'ai-insight', title: 'AI Insights', description: 'AI-generated task insights', icon: 'Sparkles', defaultSize: 'md', adminOnly: true },
     { type: 'workload-heatmap', title: 'Workload Map', description: 'Heatmap of staff task distribution', icon: 'LayoutGrid', defaultSize: 'lg', adminOnly: true },
@@ -145,28 +135,22 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
     switch (role) {
         case UserRole.STAFF:
             return [
-                { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
-                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 1, size: 'full', visible: true },
-                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 2, size: 'full', visible: true },
+                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 0, size: 'full', visible: true },
             ];
         case UserRole.MANAGER:
             return [
-                { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
-                { id: 'w_wl', type: 'team-workload', title: 'Team Workload', position: 1, size: 'md', visible: true },
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 2, size: 'md', visible: true },
-                { id: 'w_sstat', type: 'staff-stats', title: 'Department Overview', position: 3, size: 'sm', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
+                { id: 'w_sstat', type: 'staff-stats', title: 'Department Overview', position: 1, size: 'sm', visible: true },
             ];
         case UserRole.ADMIN:
         case UserRole.MASTER_ADMIN:
         default:
             return [
-                { id: 'w_greet', type: 'greetings', title: 'Greetings', position: 0, size: 'lg', visible: true },
-                { id: 'w_focus', type: 'focus', title: 'Focus Timer', position: 1, size: 'md', visible: true },
-                { id: 'w_comp_ban', type: 'compliance-banner', title: 'Action Needed', position: 2, size: 'full', visible: true },
-                { id: 'w_heat', type: 'workload-heatmap', title: 'Workload Map', position: 3, size: 'lg', visible: true },
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 4, size: 'md', visible: true },
-                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 5, size: 'full', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 6, size: 'md', visible: true },
+                { id: 'w_focus', type: 'focus', title: 'Focus Timer', position: 0, size: 'md', visible: true },
+                { id: 'w_heat', type: 'workload-heatmap', title: 'Workload Map', position: 1, size: 'lg', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 2, size: 'md', visible: true },
+                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 3, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 4, size: 'md', visible: true },
             ];
     }
 };

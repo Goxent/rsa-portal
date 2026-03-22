@@ -24,7 +24,6 @@ import TaskStatsWidget from './widgets/TaskStatsWidget';
 import MyTasksWidget from './widgets/MyTasksWidget';
 import CalendarWidget from './widgets/CalendarWidget';
 import QuickActionsWidget from './widgets/QuickActionsWidget';
-import TeamWorkloadWidget from './widgets/TeamWorkloadWidget';
 import PendingActionsWidget from './widgets/PendingActionsWidget';
 import RecentActivityWidget from './widgets/RecentActivityWidget';
 import ClientStatsWidget from './widgets/ClientStatsWidget';
@@ -34,9 +33,7 @@ import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
 import AllTasksWidget from './widgets/AllTasksWidget';
 
 // Newly Migrated from static layout
-import GreetingsWidget from './widgets/GreetingsWidget';
 import FocusWidget from './widgets/FocusWidget';
-import ComplianceBanner from './widgets/ComplianceBanner';
 import WorkloadHeatmap from './widgets/WorkloadHeatmap';
 import AiInsightWidget from './widgets/AiInsightWidget';
 import { UserRole } from '../../types';
@@ -153,10 +150,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         const props = { ...dashboardData, widget };
 
         switch (widget.type) {
-            case 'greetings':
-                return <GreetingsWidget pendingCount={dashboardData.myOpenTasks} completedToday={dashboardData.completedToday} />;
-            case 'compliance-banner':
-                return <ComplianceBanner deadlines={dashboardData.upcomingSchedule.filter((i: any) => i.type === 'DEADLINE' && i.subType === 'URGENT')} />;
             case 'focus':
                 return <FocusWidget />;
             case 'workload-heatmap':
@@ -177,8 +170,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <CalendarWidget {...props} />;
             case 'quick-actions':
                 return <QuickActionsWidget {...props} />;
-            case 'team-workload':
-                return <TeamWorkloadWidget {...props} />;
 
             case 'recent-activity':
                 return <RecentActivityWidget {...props} />;

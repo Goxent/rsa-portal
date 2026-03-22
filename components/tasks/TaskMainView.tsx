@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import {
     List as ListIcon, Plus, X, Check, Tag,
     Calendar, Clock, CheckCircle2, AlertTriangle, UserCircle2,
-    GripVertical, ChevronLeft, ChevronRight, ChevronDown
+    GripVertical, ChevronDown
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile, UserRole, Client, AuditPhase } from '../../types';
 import { SIGNING_AUTHORITIES } from '../../constants/firmData';
@@ -135,7 +135,6 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     const isMobile = useMedia('(max-width: 768px)', false);
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
     const [quickAddTitle, setQuickAddTitle] = React.useState('');
-    const boardRef = useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
         if (groupBy === 'NONE') localStorage.setItem('kanban_collapsed_columns', JSON.stringify(collapsedColumns));
@@ -148,9 +147,6 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
         setQuickAddStatus(null);
     };
 
-    const scroll = (dir: 'left' | 'right') => {
-        boardRef.current?.scrollBy({ left: dir === 'right' ? 360 : -360, behavior: 'smooth' });
-    };
 
     const allSelected = tasks.length > 0 && selectedTaskIds.length === tasks.length;
 
@@ -354,23 +350,8 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
         <DragDropContext onDragEnd={onDragEnd}>
             <div className="h-full flex flex-col min-h-0 overflow-hidden">
                 <div className="relative flex-1 min-h-0">
-                    {/* Left scroll arrow */}
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-[40] pointer-events-none">
-                        <button type="button" onClick={() => scroll('left')}
-                            className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm">
-                            <ChevronLeft size={16} />
-                        </button>
-                    </div>
-                    {/* Right scroll arrow */}
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 z-[40] pointer-events-none">
-                        <button type="button" onClick={() => scroll('right')}
-                            className="pointer-events-auto w-8 h-8 rounded-full bg-[#1e293b]/90 border border-white/[0.08] shadow-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#334155]/90 transition-all backdrop-blur-sm">
-                            <ChevronRight size={16} />
-                        </button>
-                    </div>
-
                     {/* Horizontal scroll container — 3 phase columns side by side */}
-                    <div ref={boardRef} className="h-full flex items-start gap-3 overflow-x-auto overflow-y-auto px-4 md:px-8 py-4 kanban-scroll custom-scrollbar">
+                    <div className="h-full flex items-start gap-3 overflow-x-auto overflow-y-auto px-4 md:px-8 py-4 kanban-scroll custom-scrollbar">
                         {PHASE_ORDER.map(phase => {
                             const pm = PHASE_META[phase];
                             const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
@@ -393,7 +374,9 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
                                     {/* Phase body — scrollable, contains status sections */}
                                     <div className={`${pm.bg}`}>
-                                        {STATUS_COLS.map(status => {
+                                        {STATUS_COLS
+                                            .filter(status => !(phase === AuditPhase.ONBOARDING && status === TaskStatus.UNDER_REVIEW))
+                                            .map(status => {
                                             const droppableId = `${phase}::${status}`;
                                             const cfg = S[status] ?? FALLBACK_COL;
                                             const colTasks = phaseTasks.filter(t => t.status === status);

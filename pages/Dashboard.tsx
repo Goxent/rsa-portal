@@ -14,6 +14,7 @@ import { useEvents } from '../hooks/useEvents';
 import { useAttendanceHistory } from '../hooks/useAttendance';
 import { useQuery } from '@tanstack/react-query';
 import NepaliDate from 'nepali-date-converter';
+import GreetingsWidget from '../components/dashboard/widgets/GreetingsWidget';
 
 // Helper interface for the unified schedule list
 interface ScheduleItem {
@@ -204,56 +205,12 @@ const Dashboard: React.FC = () => {
     return (
         <div className="flex flex-col gap-5 h-full overflow-y-auto overflow-x-hidden pb-6 custom-scrollbar">
 
-            {/* ── 1. UNIFIED HEADER (Replaces Command Strip & Greetings Widget) ── */}
-            <div className="flex-none flex flex-col md:flex-row items-start md:items-end justify-between gap-4 px-2 py-2">
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-2xl font-black text-white tracking-tight">
-                            {(() => {
-                                const h = new Date().getHours();
-                                if (h < 12) return 'Good Morning, ';
-                                if (h < 17) return 'Good Afternoon, ';
-                                return 'Good Evening, ';
-                            })()}
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-yellow-400">
-                                {user?.displayName?.split(' ')[0] ?? 'Team'}
-                            </span>
-                        </h1>
-                    </div>
-                    <p className="text-gray-400 text-sm">
-                        {completedToday > 0
-                            ? `${completedToday} task${completedToday !== 1 ? 's' : ''} completed today. ${myOpenTasks > 0 ? `${myOpenTasks} still open.` : 'All clear!'}`
-                            : `${myOpenTasks > 0 ? `${myOpenTasks} task${myOpenTasks !== 1 ? 's' : ''} pending.` : 'Your workspace is ready. No pending tasks.'}`
-                        }
-                    </p>
-                </div>
-
-                {/* Right: Clean Global Stats */}
-                <div className="flex items-center gap-6 text-sm">
-                    <button onClick={() => navigate('/tasks')} className="flex flex-col items-end group hover:opacity-80 transition-opacity">
-                        <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Tasks</span>
-                        <div className="flex items-center gap-1.5 text-white font-bold">
-                            <CheckSquare size={14} className="text-amber-400 group-hover:scale-110 transition-transform" />
-                            {relevantTasks.length}
-                        </div>
-                    </button>
-                    <button onClick={() => navigate('/clients')} className="flex flex-col items-end group hover:opacity-80 transition-opacity">
-                        <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Clients</span>
-                        <div className="flex items-center gap-1.5 text-white font-bold">
-                            <Building2 size={14} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-                            {allClients.length}
-                        </div>
-                    </button>
-                    {isAdmin && (
-                        <button onClick={() => navigate('/staff')} className="flex flex-col items-end group hover:opacity-80 transition-opacity">
-                            <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Staff</span>
-                            <div className="flex items-center gap-1.5 text-white font-bold">
-                                <Users size={14} className="text-violet-400 group-hover:scale-110 transition-transform" />
-                                {usersForMap.length}
-                            </div>
-                        </button>
-                    )}
-                </div>
+            {/* ── 1. UNIFIED HEADER (Greetings Widget) ── */}
+            <div className="flex-none px-2 py-2">
+                <GreetingsWidget 
+                    pendingCount={myOpenTasks} 
+                    completedToday={completedToday} 
+                />
             </div>
 
             {/* ── 2. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
