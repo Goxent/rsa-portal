@@ -31,7 +31,7 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-gray-900 border border-white/10 p-3 rounded-xl shadow-xl">
+                <div className="glass-panel p-3 rounded-xl shadow-2xl backdrop-blur-md bg-gray-900/80 border-white/10">
                     <p className="font-bold text-white mb-1">{label}</p>
                     <p className="text-xs text-gray-400 mb-2">{payload[0].payload.role}</p>
                     <p className="text-sm text-brand-400">
@@ -44,7 +44,7 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
     };
 
     return (
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 h-full flex flex-col">
+        <div className="glass-panel hover-lift p-6 rounded-2xl border border-white/5 h-full flex flex-col">
             <div className="flex justify-between items-start mb-6">
                 <div>
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">

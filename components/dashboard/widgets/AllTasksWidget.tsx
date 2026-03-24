@@ -26,7 +26,7 @@ const getPriorityConfig = (priority: string) => {
 const getStatusConfig = (status: string) => {
     switch (status) {
         case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' };
-        case TaskStatus.PENDING_REVIEW: return { label: 'Under Review', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
+        case TaskStatus.UNDER_REVIEW: return { label: 'Under Review', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
         case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
         case TaskStatus.HALTED: return { label: 'Halted', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' };
         default: return { label: 'Not Started', color: 'text-gray-400', bg: 'bg-gray-500/10 border-gray-500/20' };
@@ -46,7 +46,7 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
         .filter(t => {
             if (filterStatus === 'active') return t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED;
             if (filterStatus === 'overdue') return t.dueDate && new Date(t.dueDate) < now && t.status !== TaskStatus.COMPLETED;
-            if (filterStatus === 'review') return t.status === TaskStatus.PENDING_REVIEW;
+            if (filterStatus === 'review') return t.status === TaskStatus.UNDER_REVIEW;
             return true; // 'all'
         })
         .filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()) || (t.clientName || '').toLowerCase().includes(search.toLowerCase()))
@@ -58,7 +58,7 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
         });
 
     const overdueCount = recentTasks.filter(t => t.dueDate && new Date(t.dueDate) < now && t.status !== TaskStatus.COMPLETED).length;
-    const reviewCount = recentTasks.filter(t => t.status === TaskStatus.PENDING_REVIEW).length;
+    const reviewCount = recentTasks.filter(t => t.status === TaskStatus.UNDER_REVIEW).length;
     const activeCount = recentTasks.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED).length;
 
     if (isLoading) {
@@ -146,9 +146,9 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
                         return (
                             <div
                                 key={task.id}
-                                className={`rounded-xl border transition-all duration-150 overflow-hidden ${isOverdue
-                                        ? 'border-red-500/20 bg-red-500/5'
-                                        : 'border-white/7 bg-white/3 hover:bg-white/6 hover:border-white/14'
+                                className={`rounded-xl border transition-all duration-300 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg ${isOverdue
+                                        ? 'border-red-500/30 bg-red-500/5 hover:border-red-500/50 hover:bg-red-500/10'
+                                        : 'border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1]'
                                     }`}
                             >
                                 <div

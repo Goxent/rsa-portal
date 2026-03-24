@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Clock as ClockIcon, Users, CheckSquare, Building2, CalendarDays, ArrowRight, BarChart2 } from 'lucide-react';
+import { Clock as ClockIcon, CheckSquare, CalendarDays, ArrowRight } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -9,7 +9,6 @@ import WidgetContainer from '../components/dashboard/WidgetContainer';
 import AttendanceWidget from '../components/dashboard/AttendanceWidget';
 import { useTasks } from '../hooks/useTasks';
 import { useUsers } from '../hooks/useStaff';
-import { useClients } from '../hooks/useClients';
 import { useEvents } from '../hooks/useEvents';
 import { useAttendanceHistory } from '../hooks/useAttendance';
 import { useQuery } from '@tanstack/react-query';
@@ -34,7 +33,6 @@ const Dashboard: React.FC = () => {
     // ── Data Hooks ─────────────────────────────────────────────────────────
     const { data: allTasks = [], isLoading: tasksLoading } = useTasks();
     const { data: usersForMap = [], isLoading: usersLoading } = useUsers();
-    const { data: allClients = [], isLoading: clientsLoading } = useClients();
     const { data: allEvents = [], isLoading: eventsLoading } = useEvents();
     const { data: attendanceHistory = [] } = useAttendanceHistory(user?.uid);
 
@@ -45,7 +43,7 @@ const Dashboard: React.FC = () => {
         staleTime: 1000 * 60 * 60,
     });
 
-    const isLoading = tasksLoading || usersLoading || eventsLoading || clientsLoading;
+    const isLoading = tasksLoading || usersLoading || eventsLoading;
 
     // ── Derived Attendance State (for command strip) ───────────────────────
 
@@ -59,15 +57,11 @@ const Dashboard: React.FC = () => {
         upcomingSchedule,
         relevantTasks,
         staffStats,
-        clientStats,
-        staffPerformance,
     } = useMemo(() => {
         if (!user) return {
             userMap: {}, activeStaffCount: 0, taskData: [], recentTasks: [],
             recentCompletedTasks: [], upcomingSchedule: [], relevantTasks: [],
             staffStats: { busy: [], free: [], byDepartment: {} },
-            clientStats: { total: 0, active: 0, mySigned: 0, byService: {} },
-            staffPerformance: { completed: 0, pending: 0, lateCount: 0 },
         };
 
         const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN;
@@ -148,26 +142,13 @@ const Dashboard: React.FC = () => {
             sStats.free = freeList;
         }
 
-        const myTasks = allTasks.filter(t => t.assignedTo.includes(user.uid));
-        const sPerf = {
-            completed: myTasks.filter(t => t.status === 'COMPLETED').length,
-            pending: myTasks.filter(t => t.status !== 'COMPLETED').length,
-            lateCount,
-        };
-
-        const activeClients = allClients.filter(c => c.status === 'Active');
-        const mySignedClients = allClients.filter(c => c.signingAuthorityId === user.uid || c.signingAuthority === user.displayName);
-        const serviceDist: Record<string, number> = {};
-        activeClients.forEach(c => { serviceDist[c.serviceType] = (serviceDist[c.serviceType] || 0) + 1; });
-        const cStats = { total: allClients.length, active: activeClients.length, mySigned: mySignedClients.length, byService: serviceDist };
-
         return {
             userMap: uMap, activeStaffCount: activeStaffCount, taskData: tData,
             recentTasks: recTasks, recentCompletedTasks: recCompleted,
             upcomingSchedule: mergedSchedule, relevantTasks: relTasks,
-            staffStats: sStats, clientStats: cStats, staffPerformance: sPerf,
+            staffStats: sStats,
         };
-    }, [user, allTasks, usersForMap, allEvents, allClients, lateCount]);
+    }, [user, allTasks, usersForMap, allEvents, lateCount]);
 
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
@@ -197,16 +178,19 @@ const Dashboard: React.FC = () => {
 
     const dashboardData = {
         activeStaffCount, taskData, recentTasks, upcomingSchedule,
-        staffStats, userMap, staffPerformance, clientStats,
-        recentCompletedTasks, isLoading, myOpenTasks, completedToday
+        staffStats, userMap,
+        recentCompletedTasks, isLoading, myOpenTasks, completedToday,
+        relevantTasks,
     };
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
-        <div className="flex flex-col gap-5 h-full overflow-y-auto overflow-x-hidden pb-6 custom-scrollbar">
+        <div className="flex flex-col gap-6 h-full overflow-y-auto overflow-x-hidden p-2 md:p-4 lg:p-6 custom-scrollbar relative">
+            {/* Top ambient glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-brand-500/10 blur-[100px] pointer-events-none" />
 
             {/* ── 1. UNIFIED HEADER (Greetings Widget) ── */}
-            <div className="flex-none px-2 py-2">
+            <div className="flex-none">
                 <GreetingsWidget 
                     pendingCount={myOpenTasks} 
                     completedToday={completedToday} 
@@ -214,10 +198,10 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* ── 2. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
-            <div className="flex flex-col xl:flex-row gap-5 flex-none">
+            <div className="flex flex-col xl:flex-row gap-6 flex-none relative z-10">
 
                 {/* Left: Widget Grid */}
-                <div className="flex-1 min-w-0 flex flex-col gap-5">
+                <div className="flex-1 min-w-0 flex flex-col gap-6">
                     <AttendanceWidget />
                     {user && (
                         <WidgetContainer

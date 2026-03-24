@@ -46,13 +46,10 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
         >
             <div
                 className={`
-          relative w-full h-full rounded-2xl
-          bg-slate-50/80 dark:bg-[#0d1526]/60 backdrop-blur-xl
-          border border-slate-200/50 dark:border-white/[0.03]
-          shadow-sm hover:shadow-md dark:shadow-none
-          transition-all duration-300
-          ${isDragging ? 'shadow-2xl ring-2 ring-brand-500/50 scale-105' : ''}
-          ${isEditing ? 'ring-1 ring-dashed ring-slate-400 dark:ring-white/20' : ''}
+          relative w-full h-full rounded-2xl overflow-hidden
+          glass-panel ${!isDragging ? 'hover-lift' : ''}
+          ${isDragging ? 'shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-2 ring-brand-500/50 scale-105 z-50 !bg-white/5 dark:!bg-black/40' : ''}
+          ${isEditing ? 'ring-2 ring-dashed ring-amber-500/30 !border-transparent' : ''}
         `}
             >
                 {/* Subtle top glow line for premium feel */}

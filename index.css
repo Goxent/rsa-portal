@@ -122,14 +122,25 @@
         @apply backdrop-blur-xl border transition-all duration-300;
         background: var(--glass-bg);
         border-color: var(--glass-border);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .glass-panel:hover {
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.12);
     }
 
     .light .glass-panel {
         background: rgba(255, 255, 255, 0.95);
         border-color: #e7e5e4;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.08), 0 2px 8px -1px rgba(0, 0, 0, 0.04);
     }
+
+    .light .glass-panel:hover {
+        box-shadow: 0 8px 30px -1px rgba(0, 0, 0, 0.12), 0 4px 12px -1px rgba(0, 0, 0, 0.06);
+        border-color: #d6d3d1;
+    }
+
 
     .glass-modal {
         @apply backdrop-blur-2xl border transition-all duration-300;
@@ -265,7 +276,20 @@
     .light .hover\:text-white:hover {
         color: #1c1917 !important;
     }
+
+    /* Custom UI Utilities for Dashboard */
+    .hover-lift {
+        @apply transition-all duration-300;
+    }
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+    }
+    .light .hover-lift:hover {
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15);
+    }
 }
+
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

@@ -872,16 +872,16 @@ const TasksPage: React.FC = () => {
     }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, dateRange, searchTerm]);
 
     if (loading) return (
-        <div className="flex flex-col h-full bg-transparent p-8 space-y-8 animate-pulse">
-            <div className="h-40 bg-white/5 rounded-3xl" />
-            <div className="flex-1 bg-white/5 rounded-3xl" />
+        <div className="flex flex-col h-full bg-transparent p-8 space-y-6 animate-pulse">
+            <div className="h-12 bg-white/[0.03] rounded-xl border border-white/[0.04]" />
+            <div className="flex-1 bg-white/[0.03] rounded-xl border border-white/[0.04]" />
         </div>
     );
 
     return (
         <div className="flex flex-col absolute top-4 left-4 right-4 bottom-24 md:top-6 md:left-6 md:right-6 md:bottom-6 overflow-hidden bg-transparent rounded-2xl">
             {/* --- COMPACT UNIFIED TOOLBAR --- */}
-            <header className="flex-none bg-[#09090b]/95 backdrop-blur-md border-b border-white/[0.05] relative z-20">
+            <header className="flex-none bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04] relative z-20">
                 {/* Single row toolbar */}
                 <div className="flex items-center gap-2 px-4 py-2">
                     {/* LEFT: View Mode Toggle */}
@@ -922,30 +922,33 @@ const TasksPage: React.FC = () => {
                         />
                     </div>
 
-                    {/* Bulk Actions (contextual — only when tasks selected) */}
+                    {/* Bulk Actions — floating contextual bar */}
                     {selectedTaskIds.length > 0 && (
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 flex-shrink-0 bg-white/[0.04] border border-white/[0.08] rounded-lg px-1.5 py-0.5">
+                            <span className="text-[9px] font-bold text-amber-400 tabular-nums px-1.5 bg-amber-500/10 rounded-md py-0.5">{selectedTaskIds.length} selected</span>
+                            <div className="w-px h-4 bg-white/[0.06]" />
                             <div className="relative" ref={statusMenuRef}>
                                 <button
                                     onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
-                                    className="h-[30px] px-2.5 bg-slate-500/10 hover:bg-slate-500/20 text-slate-300 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all border border-white/5"
+                                    className="h-[26px] px-2 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all"
                                 >
-                                    <Activity size={11} className="text-amber-400" /> Status
-                                    <ChevronDown size={10} className={`transition-transform ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
+                                    <Activity size={10} className="text-amber-400" /> Status
+                                    <ChevronDown size={9} className={`transition-transform ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
                                 </button>
                                 <AnimatePresence>
                                     {showBulkStatusMenu && (
                                         <motion.div
-                                            initial={{ opacity: 0, y: 6 }}
+                                            initial={{ opacity: 0, y: 4 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 6 }}
-                                            className="absolute top-full right-0 mt-1 w-40 bg-[#121216] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                                            exit={{ opacity: 0, y: 4 }}
+                                            transition={{ duration: 0.1 }}
+                                            className="absolute top-full right-0 mt-1 w-40 bg-[#0d1117] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden py-1"
                                         >
                                             {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
                                                 <button
                                                     key={status}
                                                     onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
-                                                    className="w-full px-3 py-2 text-left text-[11px] font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between group"
+                                                    className="w-full px-3 py-1.5 text-left text-[11px] font-medium text-gray-300 hover:bg-white/[0.05] hover:text-white transition-colors flex items-center justify-between group"
                                                 >
                                                     {status.replace(/_/g, ' ')}
                                                     <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-400" />
@@ -958,29 +961,30 @@ const TasksPage: React.FC = () => {
                             <div className="relative" ref={assignMenuRef}>
                                 <button
                                     onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
-                                    className="h-[30px] px-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all border border-cyan-500/10"
+                                    className="h-[26px] px-2 bg-white/[0.04] hover:bg-white/[0.08] text-cyan-400 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all"
                                 >
-                                    <UserCircle2 size={11} /> Assign
-                                    <ChevronDown size={10} className={`transition-transform ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
+                                    <UserCircle2 size={10} /> Assign
+                                    <ChevronDown size={9} className={`transition-transform ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
                                 </button>
                                 <AnimatePresence>
                                     {showBulkAssignMenu && (
                                         <motion.div
-                                            initial={{ opacity: 0, y: 6 }}
+                                            initial={{ opacity: 0, y: 4 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 6 }}
-                                            className="absolute top-full right-0 mt-1 w-48 bg-[#121216] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto custom-scrollbar"
+                                            exit={{ opacity: 0, y: 4 }}
+                                            transition={{ duration: 0.1 }}
+                                            className="absolute top-full right-0 mt-1 w-48 bg-[#0d1117] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto custom-scrollbar py-1"
                                         >
-                                            <div className="p-1.5 border-b border-white/5 bg-white/5">
-                                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Select Staff</p>
+                                            <div className="px-3 py-1.5 border-b border-white/[0.04]">
+                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Select Staff</p>
                                             </div>
                                             {usersList.map((st) => (
                                                 <button
                                                     key={st.uid}
                                                     onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
-                                                    className="w-full px-3 py-2 text-left text-[11px] font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
+                                                    className="w-full px-3 py-1.5 text-left text-[11px] font-medium text-gray-300 hover:bg-white/[0.05] hover:text-white transition-colors flex items-center gap-2"
                                                 >
-                                                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-[9px] text-amber-400 flex-shrink-0">
+                                                    <div className="w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center text-[9px] font-semibold text-amber-400 flex-shrink-0">
                                                         {getInitials(st.displayName)}
                                                     </div>
                                                     <span className="truncate">{st.displayName}</span>
@@ -992,11 +996,16 @@ const TasksPage: React.FC = () => {
                             </div>
                             <button
                                 onClick={handleBulkDelete}
-                                className="h-[30px] px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all border border-rose-500/10"
+                                className="h-[26px] px-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all"
                             >
-                                <Trash2 size={11} />
+                                <Trash2 size={10} />
                             </button>
-                            <span className="text-[9px] font-black text-amber-400 tabular-nums ml-0.5">{selectedTaskIds.length}</span>
+                            <button
+                                onClick={() => setSelectedTaskIds([])}
+                                className="h-[26px] w-[26px] flex items-center justify-center text-slate-500 hover:text-slate-300 rounded-md hover:bg-white/[0.05] transition-colors"
+                            >
+                                <X size={11} />
+                            </button>
                         </div>
                     )}
 
@@ -1037,7 +1046,7 @@ const TasksPage: React.FC = () => {
                         <button
                             onClick={handleOpenCreate}
                             disabled={!canCreateTask}
-                            className="h-[30px] px-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white rounded-lg text-[10px] font-black flex items-center gap-1.5 transition-all shadow-md flex-shrink-0 disabled:opacity-50"
+                            className="h-[30px] px-3 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm shadow-amber-500/20 flex-shrink-0 disabled:opacity-50 hover:shadow-amber-500/30"
                         >
                             <Plus size={12} strokeWidth={3} /> New Task
                         </button>
@@ -1106,23 +1115,23 @@ const TasksPage: React.FC = () => {
                                 {viewMode === 'LIST' && (
                                     <div className="flex items-center gap-1.5 flex-wrap mt-3 pt-3 border-t border-white/[0.04]">
                                         {([
-                                            { key: 'ALL', label: 'All', count: statusStats.TOTAL, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                                            { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-600 border-slate-500 text-white', inactiveColor: 'bg-slate-800/60 border-slate-700/50 text-slate-400', dot: 'bg-slate-400' },
-                                            { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-blue-900/40 border-blue-800/50 text-amber-400', dot: 'bg-blue-400' },
-                                            { key: 'UNDER_REVIEW', label: 'Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-600 border-amber-500 text-white', inactiveColor: 'bg-amber-900/40 border-amber-800/50 text-amber-400', dot: 'bg-amber-400' },
-                                            { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-600 border-rose-500 text-white', inactiveColor: 'bg-rose-900/40 border-rose-800/50 text-rose-400', dot: 'bg-rose-400' },
-                                            { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-emerald-600 border-emerald-500 text-white', inactiveColor: 'bg-emerald-900/40 border-emerald-800/50 text-emerald-400', dot: 'bg-emerald-400' },
-                                        ] as const).map(({ key, label, count, activeColor, inactiveColor, dot }) => {
+                                            { key: 'ALL', label: 'All', count: statusStats.TOTAL, activeColor: 'bg-slate-500/20 border-slate-400/30 text-white', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-slate-400', dotGlow: '' },
+                                            { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-500/20 border-slate-400/30 text-white', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-slate-400', dotGlow: '' },
+                                            { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-500/15 border-blue-400/30 text-blue-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-blue-400', dotGlow: 'shadow-[0_0_6px_rgba(96,165,250,0.4)]' },
+                                            { key: 'UNDER_REVIEW', label: 'Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-500/15 border-amber-400/30 text-amber-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-amber-400', dotGlow: 'shadow-[0_0_6px_rgba(251,191,36,0.4)]' },
+                                            { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-500/15 border-rose-400/30 text-rose-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-rose-400', dotGlow: 'shadow-[0_0_6px_rgba(251,113,133,0.4)]' },
+                                            { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-emerald-400', dotGlow: 'shadow-[0_0_6px_rgba(52,211,153,0.4)]' },
+                                        ] as const).map(({ key, label, count, activeColor, inactiveColor, dot, dotGlow }) => {
                                             const isActive = filterStatus === key;
                                             return (
                                                 <button
                                                     key={key}
                                                     onClick={() => setFilterStatus(key)}
-                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all ${isActive ? activeColor : inactiveColor + ' hover:brightness-125'}`}
+                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-semibold transition-all ${isActive ? activeColor : inactiveColor + ' hover:bg-white/[0.04] hover:border-white/[0.1]'}`}
                                                 >
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? dot + ' ' + dotGlow : 'bg-slate-600'}`} />
                                                     {label}
-                                                    <span className={`font-black tabular-nums ${isActive ? 'text-white' : ''}`}>{count}</span>
+                                                    <span className={`font-bold tabular-nums ${isActive ? '' : 'text-slate-600'}`}>{count}</span>
                                                 </button>
                                             );
                                         })}
@@ -1255,15 +1264,15 @@ const TasksPage: React.FC = () => {
                             }}
                         />
                         {hasNextPage && filteredTasks.length > 0 && (
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 py-2.5 px-6 bg-[#0a0f1e]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
-                                <span className="text-[10px] font-bold text-slate-400 tabular-nums uppercase tracking-widest">
-                                    {filteredTasks.length} / {tasks.length}
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 py-2 px-5 bg-[#0d1117]/90 backdrop-blur-xl border border-white/[0.08] rounded-full shadow-2xl" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)' }}>
+                                <span className="text-[10px] font-semibold text-slate-400 tabular-nums">
+                                    {filteredTasks.length} of {tasks.length}
                                 </span>
-                                <div className="w-[1px] h-3.5 bg-white/10" />
+                                <div className="w-px h-3 bg-white/[0.08]" />
                                 <button
                                     onClick={() => fetchNextPage()}
                                     disabled={isFetchingNextPage}
-                                    className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                                 >
                                     {isFetchingNextPage ? 'Loading...' : 'Load More'}
                                 </button>

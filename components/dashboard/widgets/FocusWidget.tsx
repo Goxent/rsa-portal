@@ -112,7 +112,7 @@ const FocusWidget: React.FC = () => {
     const atLimit = goals.length >= MAX_GOALS;
 
     return (
-        <div className="relative glass-panel rounded-2xl border border-white/[0.07] p-5 flex flex-col gap-3 h-full min-h-[140px] hover:border-white/[0.12] transition-colors">
+        <div className="relative glass-panel hover-lift rounded-2xl border border-white/[0.07] p-5 flex flex-col gap-3 h-full min-h-[140px]">
 
             {/* ── Header ──────────────────────────────────────────────── */}
             <div className="flex items-center gap-2.5">

@@ -240,33 +240,33 @@ const TemplatesPage: React.FC = () => {
             {/* ── Page Header ── */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <Library className="text-amber-400" />
+                    <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Library className="text-amber-400" size={20} />
                         Resources
                     </h1>
-                    <p className="text-sm text-gray-400">Templates, SOPs, and firm knowledge – all in one place</p>
+                    <p className="text-[12px] text-slate-500 mt-0.5">Templates, SOPs, and firm knowledge — all in one place</p>
                 </div>
             </div>
 
             {/* ── Tab Switcher ── */}
-            <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-xl w-fit">
+            <div className="flex items-center gap-0.5 p-0.5 bg-white/[0.03] border border-white/[0.06] rounded-lg w-fit">
                 <button
                     onClick={() => setActiveTab('templates')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'templates'
-                        ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/30'
-                        : 'text-gray-400 hover:text-white'
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${activeTab === 'templates'
+                        ? 'bg-amber-500 text-black shadow-sm shadow-amber-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
                         }`}
                 >
-                    <FileCode size={15} /> Templates
+                    <FileCode size={13} /> Templates
                 </button>
                 <button
                     onClick={() => setActiveTab('knowledge')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'knowledge'
-                        ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/30'
-                        : 'text-gray-400 hover:text-white'
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${activeTab === 'knowledge'
+                        ? 'bg-amber-500 text-black shadow-sm shadow-amber-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
                         }`}
                 >
-                    <BookOpen size={15} /> Knowledge Base
+                    <BookOpen size={13} /> Knowledge Base
                 </button>
             </div>
 
@@ -310,53 +310,53 @@ const TemplatesPage: React.FC = () => {
                     </div>
 
                     {/* Templates Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredTemplates.map((template, index) => (
                             <div key={template.id}
-                                className="glass-panel p-5 rounded-2xl hover:border-amber-500/30 transition-all group relative overflow-hidden flex flex-col h-full"
+                                className="bg-[#0d1117]/80 backdrop-blur-sm border border-white/[0.06] p-4 rounded-xl hover:border-white/[0.12] transition-all group relative overflow-hidden flex flex-col h-full hover:shadow-lg hover:shadow-black/20 hover:-translate-y-[1px]"
                                 style={{ animationDelay: `${index * 50}ms` }}>
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-gradient-to-br from-blue-500/20 to-yellow-500/10 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform">
-                                        {template.category === 'CHECKLIST' ? <CheckSquare className="text-amber-400" size={22} /> : <FileText className="text-cyan-400" size={22} />}
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="p-2.5 bg-white/[0.04] rounded-lg border border-white/[0.06] group-hover:border-white/[0.12] transition-all">
+                                        {template.category === 'CHECKLIST' ? <CheckSquare className="text-amber-400" size={18} /> : <FileText className="text-cyan-400" size={18} />}
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${template.category === 'TASK' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border ${template.category === 'TASK' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
                                             template.category === 'CHECKLIST' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                 'bg-purple-500/10 text-purple-400 border-purple-500/20'}`}>
                                             {template.category}
                                         </span>
                                         {isAdmin && (
-                                            <button onClick={() => handleDeleteTemplate(template.id)} className="text-gray-500 hover:text-red-400 transition-colors">
-                                                <Trash2 size={13} />
+                                            <button onClick={() => handleDeleteTemplate(template.id)} className="text-gray-600 hover:text-red-400 transition-colors p-0.5 rounded hover:bg-red-500/10">
+                                                <Trash2 size={12} />
                                             </button>
                                         )}
                                     </div>
                                 </div>
-                                <h3 className="font-bold text-white text-base mb-1.5 leading-tight">{template.name}</h3>
-                                <p className="text-sm text-gray-400 mb-4 line-clamp-3 flex-1">{template.description}</p>
+                                <h3 className="font-semibold text-white text-sm mb-1 leading-snug">{template.name}</h3>
+                                <p className="text-[12px] text-slate-500 mb-3 line-clamp-2 flex-1">{template.description}</p>
 
                                 {template.attachments && template.attachments.length > 0 && (
                                     <div className="mb-3 space-y-1">
-                                        <p className="text-xs font-semibold text-gray-500 uppercase">Attachments</p>
+                                        <p className="text-[9px] font-semibold text-slate-600 uppercase tracking-wider">Attachments</p>
                                         {template.attachments.slice(0, 2).map((att: any, i: number) => (
                                             <a key={i} href={att.url} target="_blank" rel="noreferrer"
-                                                className="flex items-center p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group/file">
+                                                className="flex items-center p-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.06] transition-colors group/file border border-white/[0.04]">
                                                 <div className="mr-2">{getTemplateIcon(att.name)}</div>
-                                                <span className="text-xs text-gray-300 truncate flex-1">{att.name}</span>
-                                                <ExternalLink size={11} className="text-gray-500 opacity-0 group-hover/file:opacity-100 transition-opacity" />
+                                                <span className="text-[11px] text-gray-300 truncate flex-1">{att.name}</span>
+                                                <ExternalLink size={10} className="text-gray-600 opacity-0 group-hover/file:opacity-100 transition-opacity" />
                                             </a>
                                         ))}
                                     </div>
                                 )}
 
-                                <div className="pt-3 border-t border-white/5 mt-auto flex items-center justify-between">
-                                    <div className="flex items-center space-x-1 text-xs text-gray-500">
-                                        <Star size={11} className="text-amber-400" />
-                                        <span>{template.usageCount || 0} Uses</span>
+                                <div className="pt-2.5 border-t border-white/[0.04] mt-auto flex items-center justify-between">
+                                    <div className="flex items-center space-x-1 text-[10px] text-slate-600">
+                                        <Star size={10} className="text-amber-500/60" />
+                                        <span>{template.usageCount || 0} uses</span>
                                     </div>
                                     <button onClick={() => setPreviewTemplate(template)}
-                                        className="text-sm font-bold text-amber-400 hover:text-amber-300 flex items-center transition-colors">
-                                        <ExternalLink size={13} className="mr-1.5" /> View & Use
+                                        className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center transition-colors">
+                                        <ExternalLink size={11} className="mr-1" /> View & Use
                                     </button>
                                 </div>
                             </div>
@@ -450,9 +450,9 @@ const TemplatesPage: React.FC = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {filteredResources.map(resource => (
                                         <div key={resource.id} onClick={() => handleOpenResource(resource)}
-                                            className="glass-panel p-4 rounded-xl hover:bg-white/5 transition-all group relative border border-white/5 hover:border-brand-500/30 cursor-pointer flex flex-col h-full">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="p-2.5 bg-white/5 rounded-lg group-hover:bg-brand-500/10 transition-colors">
+                                            className="bg-[#0d1117]/80 backdrop-blur-sm border border-white/[0.06] p-4 rounded-xl hover:border-white/[0.12] transition-all group relative cursor-pointer flex flex-col h-full hover:shadow-lg hover:shadow-black/20 hover:-translate-y-[1px]">
+                                            <div className="flex items-start justify-between mb-2.5">
+                                                <div className="p-2 bg-white/[0.04] rounded-lg border border-white/[0.06] group-hover:border-white/[0.12] transition-all">
                                                     {getResourceIcon(resource.type)}
                                                 </div>
                                                 <div className="flex space-x-2 items-center">
@@ -469,10 +469,10 @@ const TemplatesPage: React.FC = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <h3 className="text-white font-bold mb-1 line-clamp-2 min-h-[2.5rem] text-sm group-hover:text-brand-300 transition-colors">{resource.title}</h3>
-                                            <div className="mt-auto pt-2.5 border-t border-white/5 flex items-center justify-between">
-                                                <span className="text-[10px] text-gray-500 uppercase tracking-wider">{new Date(resource.updatedAt).toLocaleDateString()}</span>
-                                                <ExternalLink size={13} className="text-gray-600 group-hover:text-brand-400 transition-colors" />
+                                            <h3 className="text-white font-semibold mb-1 line-clamp-2 min-h-[2.5rem] text-[13px] group-hover:text-amber-300 transition-colors">{resource.title}</h3>
+                                            <div className="mt-auto pt-2 border-t border-white/[0.04] flex items-center justify-between">
+                                                <span className="text-[9px] text-slate-600 uppercase tracking-wider">{new Date(resource.updatedAt).toLocaleDateString()}</span>
+                                                <ExternalLink size={12} className="text-slate-700 group-hover:text-amber-400 transition-colors" />
                                             </div>
                                         </div>
                                     ))}

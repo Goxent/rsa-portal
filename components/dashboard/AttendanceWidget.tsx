@@ -386,7 +386,7 @@ const AttendanceWidget: React.FC = () => {
 
     // Default Full Widget Render
     return (
-        <div className="relative w-full rounded-2xl bg-slate-50/80 dark:bg-[#0d1526]/60 backdrop-blur-xl border border-slate-200/50 dark:border-white/[0.03] shadow-sm hover:shadow-md dark:shadow-none transition-all duration-300 z-[20]">
+        <div className="relative w-full rounded-2xl overflow-hidden glass-panel hover-lift z-[20]">
             {/* Subtle top glow line for premium feel */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent"></div>
             
@@ -425,17 +425,17 @@ const AttendanceWidget: React.FC = () => {
                         <Minimize2 size={18} />
                     </button>
 
-                    <div className="bg-black/30 rounded-xl p-3 border border-white/5 min-w-[140px] text-center">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0.5">Current Time</p>
-                        <p className="text-xl font-mono font-bold text-white leading-none">
+                    <div className="glass-panel rounded-xl p-3 min-w-[140px] text-center">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">Current Time</p>
+                        <p className="text-xl font-mono font-bold text-slate-800 dark:text-white leading-none">
                             {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </p>
                     </div>
 
                     {status === 'CLOCKED_IN' && (
-                        <div className="bg-green-500/10 rounded-xl p-3 border border-green-500/20 min-w-[140px] text-center animate-pulse-slow">
-                            <p className="text-[10px] text-green-400/80 uppercase tracking-widest font-bold mb-0.5">Session Timer</p>
-                            <p className="text-xl font-mono font-bold text-green-400 leading-none">
+                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Session Timer</p>
+                            <p className="text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 leading-none drop-shadow-sm">
                                 {formatTime(sessionSeconds)}
                             </p>
                         </div>
@@ -534,9 +534,9 @@ const AttendanceWidget: React.FC = () => {
                                 <button
                                     onClick={handleClockOut}
                                     disabled={loading}
-                                    className="w-full py-3 bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-gray-300 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 group shadow-sm hover:shadow"
+                                    className="w-full py-3.5 glass-panel hover-lift border border-rose-500/30 hover:bg-rose-500/10 hover:border-rose-500/50 text-rose-600 dark:text-rose-400 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group shadow-sm text-sm"
                                 >
-                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current text-red-500" size={18} />}
+                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current" size={18} />}
                                     Clock Out & Save Logs
                                 </button>
                             </div>

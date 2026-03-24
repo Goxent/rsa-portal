@@ -19,23 +19,17 @@ import { Plus, Edit3, Save, X } from 'lucide-react';
 import { WidgetConfig, WIDGET_REGISTRY, getDefaultWidgetConfig } from './widgetTypes';
 import WidgetWrapper from './WidgetWrapper';
 
-// Widget Components (will be created separately)
+// Widget Components
 import TaskStatsWidget from './widgets/TaskStatsWidget';
 import MyTasksWidget from './widgets/MyTasksWidget';
 import CalendarWidget from './widgets/CalendarWidget';
-import QuickActionsWidget from './widgets/QuickActionsWidget';
 import PendingActionsWidget from './widgets/PendingActionsWidget';
 import RecentActivityWidget from './widgets/RecentActivityWidget';
-import ClientStatsWidget from './widgets/ClientStatsWidget';
-import StaffStatsWidget from './widgets/StaffStatsWidget';
-import ImpactStatsWidget from './widgets/ImpactStatsWidget';
-import ComplianceCountdownWidget from './widgets/ComplianceCountdownWidget';
 import AllTasksWidget from './widgets/AllTasksWidget';
 
 // Newly Migrated from static layout
 import FocusWidget from './widgets/FocusWidget';
 import WorkloadHeatmap from './widgets/WorkloadHeatmap';
-import AiInsightWidget from './widgets/AiInsightWidget';
 import { UserRole } from '../../types';
 
 interface WidgetContainerProps {
@@ -154,12 +148,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <FocusWidget />;
             case 'workload-heatmap':
                 return <WorkloadHeatmap staffStats={dashboardData.staffStats} totalTasks={dashboardData.relevantTasks?.length || 0} />;
-            case 'ai-insight':
-                return <AiInsightWidget />;
-            case 'impact-stats':
-                return <ImpactStatsWidget {...props} />;
-            case 'compliance-countdown':
-                return <ComplianceCountdownWidget />;
             case 'all-tasks':
                 return <AllTasksWidget recentTasks={dashboardData.recentTasks} userMap={dashboardData.userMap} isLoading={dashboardData.isLoading} />;
             case 'task-stats':
@@ -168,15 +156,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <MyTasksWidget {...props} />;
             case 'calendar':
                 return <CalendarWidget {...props} />;
-            case 'quick-actions':
-                return <QuickActionsWidget {...props} />;
-
             case 'recent-activity':
                 return <RecentActivityWidget {...props} />;
-            case 'client-stats':
-                return <ClientStatsWidget widget={widget} clientStats={dashboardData.clientStats} />;
-            case 'staff-stats':
-                return <StaffStatsWidget widget={widget} staffStats={dashboardData.staffStats} />;
             default:
                 return <div className="text-gray-400 text-sm">Unknown widget type</div>;
         }
@@ -194,23 +175,23 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     <>
                         <button
                             onClick={() => setShowWidgetPicker(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 hover:-translate-y-0.5"
                         >
-                            <Plus size={13} /> Add Widget
+                            <Plus size={14} /> Add Widget
                         </button>
                         <button
                             onClick={() => setIsEditing(false)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
                         >
-                            <Save size={13} /> Done
+                            <Save size={14} /> Done
                         </button>
                     </>
                 ) : (
                     <button
                         onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.06] hover:bg-white/[0.10] text-gray-300 hover:text-white rounded-lg text-xs font-bold transition-all border border-white/[0.08]"
+                        className="flex items-center gap-2 px-4 py-2 glass-panel hover-lift text-gray-300 hover:text-white rounded-xl text-xs font-bold transition-all"
                     >
-                        <Edit3 size={13} /> Customize Layout
+                        <Edit3 size={14} /> Customize Layout
                     </button>
                 )}
             </div>
@@ -243,13 +224,13 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 
             {/* Widget Picker Modal */}
             {showWidgetPicker && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="glass-modal rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add Widget</h2>
                             <button
                                 onClick={() => setShowWidgetPicker(false)}
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors text-slate-500 dark:text-gray-400"
+                                className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl transition-colors text-slate-500 dark:text-gray-400 hover:text-red-500"
                             >
                                 <X size={20} />
                             </button>
@@ -265,12 +246,12 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                                     <button
                                         key={meta.type}
                                         onClick={() => handleAddWidget(meta.type)}
-                                        className="p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl hover:border-brand-500 hover:shadow-lg dark:hover:border-brand-500/50 text-left transition-all group"
+                                        className="p-4 glass-card hover-lift text-left transition-all group flex flex-col gap-1"
                                     >
-                                        <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                        <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-amber-400 transition-colors">
                                             {meta.title}
                                         </h3>
-                                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">{meta.description}</p>
+                                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 leading-relaxed">{meta.description}</p>
                                     </button>
                                 ))}
                             </div>

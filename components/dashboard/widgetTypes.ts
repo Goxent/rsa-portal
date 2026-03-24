@@ -3,20 +3,13 @@
 export type WidgetType =
     | 'my-tasks'
     | 'all-tasks'
-    | 'team-workload'
     | 'pending-actions'
     | 'calendar'
-    | 'quick-actions'
     | 'recent-activity'
     | 'task-stats'
-    | 'client-stats'
-    | 'staff-stats'
-    | 'impact-stats'
-    | 'compliance-countdown'
     | 'greetings'
     | 'compliance-banner'
     | 'focus'
-    | 'ai-insight'
     | 'workload-heatmap';
 
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
@@ -49,21 +42,6 @@ export interface WidgetMeta {
 
 export const WIDGET_REGISTRY: WidgetMeta[] = [
     {
-        type: 'impact-stats',
-        title: 'Impact Stats',
-        description: 'High-level business numbers (Revenue, Clients, Deadlines)',
-        icon: 'BarChart2',
-        defaultSize: 'full',
-        adminOnly: true,
-    },
-    {
-        type: 'compliance-countdown',
-        title: 'Tax Deadlines',
-        description: 'Countdown to major compliance dates',
-        icon: 'Clock',
-        defaultSize: 'md',
-    },
-    {
         type: 'my-tasks',
         title: 'My Tasks',
         description: 'Your personal task list with status updates',
@@ -93,38 +71,13 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         defaultSize: 'md',
     },
     {
-        type: 'quick-actions',
-        title: 'Quick Actions',
-        description: 'Shortcuts for common tasks',
-        icon: 'Zap',
-        defaultSize: 'sm',
-    },
-
-    {
         type: 'recent-activity',
         title: 'Recent Activity',
         description: 'Latest actions and updates',
         icon: 'Activity',
         defaultSize: 'md',
     },
-    {
-        type: 'client-stats',
-        title: 'Client Overview',
-        description: 'Client distribution and signing status',
-        icon: 'Briefcase',
-        defaultSize: 'sm',
-        adminOnly: true,
-    },
-    {
-        type: 'staff-stats',
-        title: 'Department Overview',
-        description: 'Staff distribution by department',
-        icon: 'Users',
-        defaultSize: 'sm',
-        adminOnly: true,
-    },
     { type: 'focus', title: 'Focus Timer', description: 'Pomodoro timer for focused work', icon: 'Target', defaultSize: 'md' },
-    { type: 'ai-insight', title: 'AI Insights', description: 'AI-generated task insights', icon: 'Sparkles', defaultSize: 'md', adminOnly: true },
     { type: 'workload-heatmap', title: 'Workload Map', description: 'Heatmap of staff task distribution', icon: 'LayoutGrid', defaultSize: 'lg', adminOnly: true },
 ];
 
@@ -140,7 +93,6 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
         case UserRole.MANAGER:
             return [
                 { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
-                { id: 'w_sstat', type: 'staff-stats', title: 'Department Overview', position: 1, size: 'sm', visible: true },
             ];
         case UserRole.ADMIN:
         case UserRole.MASTER_ADMIN:

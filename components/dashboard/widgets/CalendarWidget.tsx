@@ -73,7 +73,7 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ upcomingSchedule = [] }
                 return (
                     <div
                         key={item.id}
-                        className="flex items-center gap-4 px-2 py-2.5 rounded-xl transition-all duration-200 hover:bg-slate-100 dark:hover:bg-white/[0.03] group"
+                        className="flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:shadow-sm hover:translate-x-1 border border-transparent hover:border-slate-200/50 dark:hover:border-white/5 group"
                     >
                         {/* Status Dot */}
                         <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
@@ -93,10 +93,10 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ upcomingSchedule = [] }
                         </div>
 
                         {/* Days badge */}
-                        <div className={`flex-shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${daysUntil < 0 ? 'bg-red-500/10 text-red-600 border-red-500/10' :
-                                daysUntil <= 2 ? 'bg-red-500/5 text-red-500 border-red-500/10' :
-                                    daysUntil <= 7 ? 'bg-amber-500/5 text-amber-500 border-amber-500/10' :
-                                        'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-gray-500 border-transparent'
+                        <div className={`flex-shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${daysUntil < 0 ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-sm border-transparent' :
+                                daysUntil <= 2 ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                    daysUntil <= 7 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                        'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 border-transparent'
                             }`}>
                             {daysLabel}
                         </div>

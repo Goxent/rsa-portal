@@ -192,18 +192,18 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-[2px]"
                         onClick={handleCloseAttempt}
                     />
 
-                    {/* Modal */}
+                    {/* Drawer */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.97, y: 12 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.97, y: 12 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 350, mass: 0.7 }}
-                        className="relative w-full max-w-2xl bg-[#0c0c0f] shadow-2xl border border-white/[0.08] flex flex-col max-h-[92vh] rounded-2xl overflow-hidden"
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
+                        className="absolute right-0 top-0 bottom-0 w-full max-w-[850px] bg-[#0c0c0f] shadow-2xl border-l border-white/[0.08] flex flex-col overflow-hidden z-50"
                     >
                         {/* Status color bar */}
                         <div className={`h-0.5 w-full ${
@@ -234,254 +234,191 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </button>
                         </div>
 
-                        {/* Content */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <div className="flex flex-col gap-4 px-5 py-4 pb-6">
-
-                                {/* ── Title ── */}
-                                <div className="group">
-                                    <input
-                                        autoFocus
-                                        className={`w-full bg-transparent text-lg font-bold ${errors.title ? 'text-red-400' : 'text-white'} placeholder:text-gray-700 focus:outline-none border-none px-0 transition-all`}
-                                        placeholder="Task Title..."
-                                        {...register('title')}
-                                    />
-                                    <div className={`w-full h-px mt-1 ${errors.title ? 'bg-red-500/50' : 'bg-white/[0.04]'} group-focus-within:bg-amber-500/40 transition-colors`} />
-                                    {errors.title && <p className="text-red-400 text-[10px] mt-1">{errors.title.message}</p>}
-                                </div>
-
-                                {/* ── Description — auto-resize ── */}
-                                <textarea
-                                    className="w-full bg-white/[0.03] border border-white/[0.05] focus:border-amber-500/30 rounded-xl p-3 text-[13px] leading-relaxed resize-none text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/10 transition-all"
-                                    placeholder="Describe the work... (@ to mention staff)"
-                                    style={{ minHeight: '48px', maxHeight: '240px' }}
-                                    {...descRegister}
-                                    ref={e => {
-                                        descRegister.ref(e);
-                                        descRef.current = e;
-                                    }}
-                                    onInput={autoResize}
-                                />
-
-                                {/* ── Context: Client + Audit Phase ── */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <Field label="Client" icon={<Briefcase size={11} className="text-amber-400" />} error={!!errors.clientId}
-                                        extra={watch('clientId') && onOpenClientDetail ? (
-                                            <button
-                                                onClick={(e) => { e.preventDefault(); onOpenClientDetail(watch('clientId')!); }}
-                                                className="text-[8px] font-black text-amber-400 hover:text-amber-300 uppercase tracking-widest flex items-center gap-0.5 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 transition-all"
-                                            >
-                                                <Eye size={9} /> View
-                                            </button>
-                                        ) : undefined}
-                                    >
-                                        <Controller
-                                            name="clientId"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
-                                            )}
-                                        />
-                                        {errors.clientId && <p className="text-red-400 text-[10px]">{errors.clientId.message}</p>}
-                                    </Field>
-
-                                    <Field label="Audit Phase" icon={<Sparkles size={11} className="text-amber-400" />} error={!!errors.auditPhase}>
-                                        <select className={selectClass} {...register('auditPhase')}>
-                                            {Object.values(AuditPhase).map(ph => (
-                                                <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>
-                                            ))}
-                                        </select>
-                                    </Field>
-                                </div>
-
-                                {/* ── Status + Priority ── */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Field label="Status" icon={<Activity size={11} className="text-amber-400" />} error={!!errors.status}>
-                                        <select className={selectClass} {...register('status')}>
-                                            {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
-                                        </select>
-                                    </Field>
-
-                                    <Field label="Priority" icon={<AlertTriangle size={11} className={watch('priority') === 'URGENT' ? 'text-rose-400' : 'text-orange-400'} />} error={!!errors.priority}>
-                                        <select className={selectClass} {...register('priority')}>
-                                            {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
-                                        </select>
-                                    </Field>
-                                </div>
-
-                                {/* ── Dates ── */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Field label="Start Date" icon={<Calendar size={11} className="text-gray-400" />} error={!!errors.startDate}>
-                                        <Controller
-                                            name="startDate"
-                                            control={control}
-                                            render={({ field }) => dateMode === 'AD' ? (
-                                                <input type="date" value={field.value || ''} onChange={field.onChange}
-                                                    className="w-full bg-transparent text-[13px] font-semibold text-gray-200 focus:text-white focus:outline-none cursor-pointer" />
-                                            ) : (
-                                                <NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Select Start Date" />
-                                            )}
-                                        />
-                                        {errors.startDate && <p className="text-red-400 text-[10px]">{errors.startDate.message}</p>}
-                                    </Field>
-
-                                    <Field label="Due Date" icon={<Calendar size={11} className="text-emerald-400" />} error={!!errors.dueDate}
-                                        extra={
-                                            <div className="flex items-center gap-0.5 bg-black/40 p-0.5 rounded-md border border-white/[0.04]">
-                                                {(['AD', 'BS'] as const).map(mode => (
-                                                    <button key={mode} onClick={(e) => { e.preventDefault(); setDateMode(mode); }}
-                                                        className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all ${dateMode === mode ? 'bg-emerald-500 text-white' : 'text-gray-600 hover:text-gray-400'}`}
-                                                    >{mode}</button>
-                                                ))}
-                                            </div>
-                                        }
-                                    >
-                                        <Controller
-                                            name="dueDate"
-                                            control={control}
-                                            render={({ field }) => dateMode === 'AD' ? (
-                                                <input type="date" value={field.value} onChange={field.onChange}
-                                                    className="w-full bg-transparent text-[13px] font-semibold text-gray-200 focus:text-white focus:outline-none cursor-pointer" />
-                                            ) : (
-                                                <NepaliDatePicker value={field.value} onChange={field.onChange} placeholder="Select Due Date" />
-                                            )}
-                                        />
-                                        {errors.dueDate && <p className="text-red-400 text-[10px]">{errors.dueDate.message}</p>}
-                                    </Field>
-                                </div>
-
-                                {/* ── Team Leader ── */}
-                                <div className="grid grid-cols-1 gap-2">
-                                    <Field label="Team Leader" icon={<ShieldAlert size={11} className="text-amber-400" />} error={!!errors.teamLeaderId}>
-                                        <select className={selectClass} {...register('teamLeaderId')}>
-                                            <option value="" className="bg-[#1e293b] text-gray-400">— Select Leader —</option>
-                                            {usersList
-                                                .filter(u => watch('assignedTo')?.includes(u.uid))
-                                                .map(u => (
-                                                    <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>
-                                                ))}
-                                        </select>
-                                    </Field>
-                                </div>
-
-                                {/* Assignees — full width */}
-                                <Field label="Assignees" icon={<UserCircle2 size={11} className="text-cyan-400" />} span2>
-                                    <Controller
-                                        name="assignedTo"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <StaffSelect users={usersList} value={field.value || []} onChange={field.onChange} multi={true} />
-                                        )}
-                                    />
-                                </Field>
-
-                                {/* Suggested SOPs / Resources */}
-                                {suggestedResources.length > 0 && (
-                                    <div className="space-y-2 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10 relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-500/50" />
-                                        <label className="text-[9px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                                            <Sparkles size={10} /> Suggested Knowledge
-                                        </label>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {suggestedResources.map(r => (
-                                                <a key={r.id} href={r.link || '#'} target="_blank" rel="noreferrer"
-                                                    className="flex items-center gap-2 p-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg transition-colors border border-white/[0.04] group">
-                                                    <div className="p-1.5 bg-amber-500/10 rounded-md text-amber-400 flex-shrink-0">
-                                                        <Book size={12} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="text-[11px] font-bold text-gray-300 group-hover:text-amber-300 transition-colors truncate">{r.title}</h4>
-                                                        <p className="text-[9px] text-gray-600 uppercase tracking-wider">{r.category || 'Documentation'}</p>
-                                                    </div>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Subtasks */}
-                                <div className="space-y-2 bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                                    <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between ml-0.5">
-                                        <span>Subtasks ({task.subtasks?.length || 0})</span>
-                                    </label>
-                                    <div className="flex gap-2">
+                        {/* Content Split Layout */}
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                            
+                            {/* Left Column (Main) */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-5 border-r border-white/[0.04] bg-[#0c0c0f]">
+                                <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+                                    {/* ── Title ── */}
+                                    <div className="group">
                                         <input
-                                            type="text"
-                                            value={newSubtaskTitle}
-                                            onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                            placeholder="Add a subtask..."
-                                            className="flex-1 glass-input text-[12px] py-1.5"
-                                            onKeyDown={(e) => e.key === 'Enter' && onAddSubtask()}
+                                            autoFocus
+                                            className={`w-full bg-transparent text-xl font-bold ${errors.title ? 'text-red-400' : 'text-white'} placeholder:text-gray-700 focus:outline-none border-none px-0 transition-all`}
+                                            placeholder="Task Title..."
+                                            {...register('title')}
                                         />
-                                        <button
-                                            onClick={onAddSubtask}
-                                            className="px-3 py-1.5 bg-amber-500/15 text-amber-400 rounded-lg hover:bg-amber-500/25 transition-all font-bold text-[11px] flex items-center gap-1"
-                                        >
-                                            <Plus size={12} /> Add
-                                        </button>
+                                        <div className={`w-full h-px mt-1 ${errors.title ? 'bg-red-500/50' : 'bg-transparent'} group-focus-within:bg-emerald-500/40 transition-colors`} />
+                                        {errors.title && <p className="text-red-400 text-[10px] mt-1">{errors.title.message}</p>}
                                     </div>
-                                    {task.subtasks?.map((st, i) => (
-                                        <div key={st.id} className="flex flex-col gap-2 p-3 bg-black/20 rounded-lg border border-white/[0.04] group">
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex items-start gap-2.5 flex-1">
-                                                    <div
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const updated = [...(task.subtasks || [])];
-                                                            updated[i] = { ...updated[i], isCompleted: !updated[i].isCompleted };
-                                                            onChange({ subtasks: updated });
-                                                        }}
-                                                        className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all flex-shrink-0 mt-0.5
-                                                            ${st.isCompleted ? 'bg-amber-500 border-amber-500' : 'border-slate-600 bg-transparent hover:border-blue-400'}`}
-                                                    >
-                                                        {st.isCompleted && <Check size={10} className="text-white" strokeWidth={3} />}
-                                                    </div>
-                                                    <div className="flex flex-col gap-1 flex-1">
-                                                        <span className={`text-[12px] font-semibold leading-tight ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-200'}`}>
-                                                            {st.title}
-                                                        </span>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <UserCircle2 size={11} className="text-gray-600" />
-                                                            <select
-                                                                className="bg-transparent text-[10px] font-bold text-gray-500 focus:text-white focus:outline-none cursor-pointer hover:text-gray-300"
-                                                                value={st.assignedTo || ''}
-                                                                onChange={(e) => {
-                                                                    const updated = [...(task.subtasks || [])];
-                                                                    updated[i].assignedTo = e.target.value;
-                                                                    onChange({ subtasks: updated });
-                                                                }}
-                                                            >
-                                                                <option value="" className="bg-transparent text-gray-900">— Unassigned —</option>
-                                                                {usersList
-                                                                    .filter(u => watch('assignedTo')?.includes(u.uid))
-                                                                    .map((u) => (
-                                                                        <option key={u.uid} value={u.uid} className="bg-transparent text-gray-900">{u.displayName}</option>
-                                                                ))}
-                                                            </select>
+
+                                    {/* ── Description ── */}
+                                    <textarea
+                                        className="w-full bg-transparent border border-white/[0.05] focus:border-emerald-500/30 rounded-xl p-3 text-[13px] leading-relaxed resize-none text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all hover:bg-white/[0.02]"
+                                        placeholder="Add description..."
+                                        style={{ minHeight: '80px', maxHeight: '300px' }}
+                                        {...descRegister}
+                                        ref={e => {
+                                            descRegister.ref(e);
+                                            descRef.current = e;
+                                        }}
+                                        onInput={autoResize}
+                                    />
+
+                                    {/* Subtasks */}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between">
+                                            <span>Subtasks ({task.subtasks?.length || 0})</span>
+                                        </label>
+                                        <div className="flex gap-2 items-center mb-1">
+                                            <input
+                                                type="text"
+                                                value={newSubtaskTitle}
+                                                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                                placeholder="Add a subtask..."
+                                                className="flex-1 bg-white/[0.03] focus:bg-white/[0.05] text-[12px] py-1.5 px-3 rounded-lg border border-white/[0.04] focus:border-white/[0.1] outline-none transition-colors"
+                                                onKeyDown={(e) => e.key === 'Enter' && onAddSubtask()}
+                                            />
+                                            <button
+                                                onClick={onAddSubtask}
+                                                className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] rounded-lg transition-all text-gray-300"
+                                            >
+                                                <Plus size={14} />
+                                            </button>
+                                        </div>
+                                        {task.subtasks?.map((st, i) => (
+                                            <div key={st.id} className="flex flex-col gap-2 p-2 hover:bg-white/[0.02] rounded-lg group transition-colors -mx-2 px-2">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-start gap-3 flex-1">
+                                                        <div
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const updated = [...(task.subtasks || [])];
+                                                                updated[i] = { ...updated[i], isCompleted: !updated[i].isCompleted };
+                                                                onChange({ subtasks: updated });
+                                                            }}
+                                                            className={`w-4 h-4 rounded-full border flex items-center justify-center cursor-pointer transition-all flex-shrink-0 mt-0.5
+                                                                ${st.isCompleted ? 'bg-emerald-500 border-emerald-500' : 'border-slate-500 bg-transparent hover:border-emerald-400'}`}
+                                                        >
+                                                            {st.isCompleted && <Check size={10} className="text-white" strokeWidth={3} />}
+                                                        </div>
+                                                        <div className="flex flex-col justify-center flex-1">
+                                                            <span className={`text-[12px] ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-300'} transition-all`}>
+                                                                {st.title}
+                                                            </span>
                                                         </div>
                                                     </div>
+                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <select
+                                                            className="bg-white/[0.05] rounded pl-1 pr-4 py-0.5 text-[9px] text-gray-400 focus:outline-none cursor-pointer max-w-[80px] truncate"
+                                                            value={st.assignedTo || ''}
+                                                            onChange={(e) => {
+                                                                const updated = [...(task.subtasks || [])];
+                                                                updated[i].assignedTo = e.target.value;
+                                                                onChange({ subtasks: updated });
+                                                            }}
+                                                        >
+                                                            <option value="" className="bg-[#1e293b]">Unassigned</option>
+                                                            {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-[#1e293b]">{u.displayName}</option>)}
+                                                        </select>
+                                                        <button onClick={() => onRemoveSubtask(st.id)} className="text-gray-500 hover:text-rose-400">
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => onRemoveSubtask(st.id)}
-                                                    className="text-gray-600 hover:text-rose-400 p-1.5 opacity-0 group-hover:opacity-100 transition-all bg-white/[0.03] rounded-md ml-2 shrink-0"
-                                                >
-                                                    <Trash2 size={12} />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Comments */}
+                                    <div className="space-y-3 mt-4">
+                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Activity</h4>
+                                        <div className="-mx-2 border-t border-white/[0.04] pt-4 px-2">
+                                            <TaskComments comments={task.comments || []} onAddComment={onAddComment} users={usersList} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column (Sidebar properties) */}
+                            <div className="w-full md:w-[280px] bg-[#06080a] overflow-y-auto custom-scrollbar px-5 py-5 flex-shrink-0">
+                                <div className="flex flex-col gap-3">
+                                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Properties</h4>
+                                    
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <Field label="Status" icon={<Activity size={11} className="text-gray-400" />} error={!!errors.status}>
+                                            <select className={selectClass} {...register('status')}>
+                                                {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Priority" icon={<AlertTriangle size={11} className="text-gray-400" />} error={!!errors.priority}>
+                                            <select className={selectClass} {...register('priority')}>
+                                                {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Assignees" icon={<UserCircle2 size={11} className="text-gray-400" />}>
+                                            <Controller name="assignedTo" control={control} render={({ field }) => (
+                                                <StaffSelect users={usersList} value={field.value || []} onChange={field.onChange} multi={true} />
+                                            )} />
+                                        </Field>
+
+                                        <Field label="Team Leader" icon={<ShieldAlert size={11} className="text-gray-400" />} error={!!errors.teamLeaderId}>
+                                            <select className={selectClass} {...register('teamLeaderId')}>
+                                                <option value="" className="bg-[#1e293b] text-gray-500">— Unassigned —</option>
+                                                {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Client" icon={<Briefcase size={11} className="text-gray-400" />} error={!!errors.clientId}
+                                            extra={watch('clientId') && onOpenClientDetail ? (
+                                                <button onClick={(e) => { e.preventDefault(); onOpenClientDetail(watch('clientId')!); }} className="text-[9px] font-bold text-emerald-400 hover:underline">
+                                                    View
                                                 </button>
+                                            ) : undefined}
+                                        >
+                                            <Controller name="clientId" control={control} render={({ field }) => (
+                                                <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
+                                            )} />
+                                        </Field>
+
+                                        <Field label="Dates" icon={<Calendar size={11} className="text-gray-400" />}>
+                                            <div className="flex flex-col gap-2 mt-1">
+                                                <div className="flex items-center justify-between text-[11px]">
+                                                    <span className="text-gray-500 font-semibold">Starts</span>
+                                                    <Controller name="startDate" control={control} render={({ field }) => dateMode === 'AD' ? (
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-200 focus:outline-none w-[110px] text-right" />
+                                                    ) : ( <div className="w-[110px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Start date" /></div> )} />
+                                                </div>
+                                                <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/[0.04]">
+                                                    <span className="text-gray-500 font-semibold">Due</span>
+                                                    <Controller name="dueDate" control={control} render={({ field }) => dateMode === 'AD' ? (
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-200 focus:outline-none w-[110px] text-right" />
+                                                    ) : ( <div className="w-[110px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Due date" /></div> )} />
+                                                </div>
+                                            </div>
+                                        </Field>
+
+                                        <Field label="Audit Phase" icon={<Sparkles size={11} className="text-gray-400" />} error={!!errors.auditPhase}>
+                                            <select className={selectClass} {...register('auditPhase')}>
+                                                {Object.values(AuditPhase).map(ph => <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>)}
+                                            </select>
+                                        </Field>
+                                    </div>
+                                    
+                                    {suggestedResources.length > 0 && (
+                                        <div className="mt-2 p-3 bg-white/[0.02] rounded-lg border border-white/[0.04]">
+                                            <h5 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1"><Book size={10} /> Suggested</h5>
+                                            <div className="flex flex-col gap-1.5">
+                                                {suggestedResources.map(r => (
+                                                    <a key={r.id} href={r.link || '#'} target="_blank" rel="noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300 truncate">
+                                                        {r.title}
+                                                    </a>
+                                                ))}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-
-                                {/* Comments */}
-                                <div className="space-y-2 bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                                    <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest ml-0.5">Activity & Comments</h4>
-                                    <div className="bg-black/20 rounded-lg p-3">
-                                        <TaskComments
-                                            comments={task.comments || []}
-                                            onAddComment={onAddComment}
-                                            users={usersList}
-                                        />
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

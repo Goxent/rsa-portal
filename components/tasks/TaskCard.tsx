@@ -1,18 +1,18 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Check, Tag, Calendar, CheckCircle2, AlertTriangle, GripVertical } from 'lucide-react';
+import { Check, Tag, Calendar, CheckCircle2, AlertTriangle, GripVertical, ArrowRight } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile } from '../../types';
 
 // ── Priority config ─────────────────────────────────────────────────────────
-const P: Record<string, { bar: string; badge: string; label: string }> = {
-    [TaskPriority.URGENT]: { bar: 'bg-[#dc2626]', badge: 'text-red-400 bg-red-950/60 border-red-800/50', label: 'Urgent' },
-    [TaskPriority.HIGH]: { bar: 'bg-[#d97706]', badge: 'text-amber-400 bg-amber-950/60 border-amber-800/50', label: 'High' },
-    [TaskPriority.MEDIUM]: { bar: 'bg-[#2563eb]', badge: 'text-amber-400 bg-blue-950/60 border-blue-800/50', label: 'Medium' },
-    [TaskPriority.LOW]: { bar: 'bg-[#475569]', badge: 'text-slate-400 bg-slate-800/60 border-slate-700/50', label: 'Low' },
+const P: Record<string, { accent: string; badge: string; label: string; glow: string }> = {
+    [TaskPriority.URGENT]: { accent: '#ef4444', badge: 'text-red-300 bg-red-500/15 border-red-500/25', label: 'Urgent', glow: 'shadow-[0_0_12px_rgba(239,68,68,0.15)]' },
+    [TaskPriority.HIGH]: { accent: '#f59e0b', badge: 'text-amber-300 bg-amber-500/15 border-amber-500/25', label: 'High', glow: 'shadow-[0_0_12px_rgba(245,158,11,0.1)]' },
+    [TaskPriority.MEDIUM]: { accent: '#3b82f6', badge: 'text-blue-300 bg-blue-500/15 border-blue-500/25', label: 'Medium', glow: '' },
+    [TaskPriority.LOW]: { accent: '#64748b', badge: 'text-slate-400 bg-slate-500/10 border-slate-500/20', label: 'Low', glow: '' },
 };
 
 // ── Avatar colours — deterministic per index ────────────────────────────────
-const AV = ['#3b5bdb', '#7048e8', '#0ca678', '#f59f00', '#e64980', '#1098ad', '#74c0fc', '#a9e34b'];
+const AV = ['#6366f1', '#8b5cf6', '#0ea5e9', '#14b8a6', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'];
 const avatarColor = (i: number) => AV[i % AV.length];
 
 function formatDate(d?: string) {
@@ -43,6 +43,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() &&
         task.status !== TaskStatus.COMPLETED && task.status !== TaskStatus.ARCHIVED;
     const pc = P[task.priority] ?? P[TaskPriority.LOW];
+    const isCompleted = task.status === TaskStatus.COMPLETED;
 
     return (
         <Draggable draggableId={task.id} index={index}>
@@ -53,59 +54,65 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                     style={prov.draggableProps.style}
                     onClick={() => onClick(task)}
                     className={[
-                        'relative group/card rounded-xl border border-white/[0.04] cursor-pointer select-none',
-                        'bg-[#0c0f16] hover:bg-[#111621] transition-all duration-300',
+                        'relative group/card rounded-xl cursor-pointer select-none overflow-hidden',
+                        'bg-[#101216]/60 backdrop-blur-md',
+                        'border border-white/[0.04]',
+                        'transition-all duration-300 ease-out',
                         snap.isDragging
-                            ? 'shadow-2xl shadow-black/80 scale-[1.02] z-50 ring-1 ring-amber-500/50 rotate-[1deg]'
-                            : 'hover:shadow-xl hover:shadow-black/50 hover:border-white/[0.08] hover:-translate-y-0.5',
-                        isSelected ? 'border-amber-500/50 bg-[#161208] ring-1 ring-amber-500/20' : '',
-                        isOverdue ? 'border-red-900/40 bg-red-950/10 hover:border-red-700/50' : ''
+                            ? 'shadow-2xl shadow-black/60 scale-[1.02] z-50 ring-1 ring-emerald-500/40 border-emerald-500/30'
+                            : 'hover:shadow-md hover:shadow-black/40 hover:border-white/[0.08] hover:-translate-y-[1px]',
+                        isSelected ? 'ring-1 ring-emerald-500/30 border-emerald-500/40 bg-emerald-950/10' : '',
+                        isOverdue ? 'border-red-500/20' : '',
+                        isCompleted ? 'opacity-60' : '',
+                        pc.glow
                     ].filter(Boolean).join(' ')}
                 >
-                    {/* Priority Top Accents */}
-                    <div className={`absolute left-0 right-0 top-0 h-[3px] rounded-t-xl opacity-30 ${pc.bar}`} />
-                    <div className={`absolute left-0 top-0 right-0 h-10 bg-gradient-to-b from-${pc.bar.replace('bg-', '')}/10 to-transparent rounded-t-xl pointer-events-none opacity-50`} />
+                    {/* Priority accent — left edge bar */}
+                    <div
+                        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl transition-opacity"
+                        style={{ backgroundColor: pc.accent, opacity: isCompleted ? 0.3 : 0.7 }}
+                    />
 
-                    <div className="p-3">
-                        {/* Top row: Tags & Selection */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                            <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="pl-3.5 pr-3 py-3">
+                        {/* Top row: Priority badge + ID + drag handle */}
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-1.5">
                                 {/* Checkbox */}
                                 <div
-                                    className={`relative w-4 h-4 flex-shrink-0 transition-all duration-200 cursor-pointer ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75 group-hover/card:opacity-100 group-hover/card:scale-100'}`}
+                                    className={`relative w-[15px] h-[15px] flex-shrink-0 transition-all duration-150 cursor-pointer ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover/card:opacity-100 group-hover/card:scale-100'}`}
                                     onClick={e => { e.stopPropagation(); onToggleSelection(task.id); }}
                                 >
-                                    <div className={`w-full h-full rounded-[4px] border flex items-center justify-center transition-all ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-500/50 bg-black/20 hover:border-slate-400'}`}>
-                                        {isSelected && <Check size={10} className="text-black" strokeWidth={4} />}
+                                    <div className={`w-full h-full rounded-[4px] border flex items-center justify-center transition-all ${isSelected ? 'bg-amber-500 border-amber-400' : 'border-slate-600 bg-transparent hover:border-slate-400'}`}>
+                                        {isSelected && <Check size={9} className="text-black" strokeWidth={4} />}
                                     </div>
                                 </div>
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] border uppercase tracking-wider ${pc.badge}`}>
-                                    {pc.label}
-                                </span>
-                                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px] bg-white/[0.04] text-slate-300 border border-white/[0.05]">
-                                    {task.status.replace(/_/g, ' ')}
-                                </span>
+                                <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.05] pl-1 pr-1.5 py-[2px] rounded shadow-sm">
+                                    <div className="w-[5px] h-[5px] rounded-full" style={{ backgroundColor: pc.accent, boxShadow: `0 0 6px ${pc.accent}80` }} />
+                                    <span className="text-[9.5px] font-medium text-slate-300 tracking-wide">
+                                        {pc.label}
+                                    </span>
+                                </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-1">
-                                <span className="text-[10px] font-bold text-slate-600 group-hover/card:text-slate-400 transition-colors uppercase tracking-wider">
-                                    #{task.id.substring(0, 4)}
+                                <span className="text-[9px] font-mono text-slate-600 group-hover/card:text-slate-400 transition-colors">
+                                    #{task.id.substring(0, 4).toUpperCase()}
                                 </span>
-                                <div {...prov.dragHandleProps} onClick={e => e.stopPropagation()} className="px-0.5 text-slate-700 hover:text-slate-300 cursor-grab active:cursor-grabbing transition-colors">
-                                    <GripVertical size={14} />
+                                <div {...prov.dragHandleProps} onClick={e => e.stopPropagation()} className="p-0.5 text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing transition-colors rounded hover:bg-white/5">
+                                    <GripVertical size={13} />
                                 </div>
                             </div>
                         </div>
 
                         {/* Title */}
-                        <h4 className={`text-[13px] font-medium leading-relaxed line-clamp-2 mb-2 transition-colors ${isSelected ? 'text-amber-100' : 'text-slate-200 group-hover/card:text-white'}`}>
+                        <h4 className={`text-[13px] font-medium leading-snug line-clamp-2 mb-1.5 transition-colors ${isCompleted ? 'text-slate-500 line-through' : isSelected ? 'text-amber-50' : 'text-slate-200 group-hover/card:text-white'}`}>
                             {task.title}
                         </h4>
 
                         {/* Client context */}
                         {task.clientName && (
-                            <div 
-                                className="inline-flex items-center gap-1.5 mb-3 px-1.5 py-0.5 rounded-md bg-white/[0.02] border border-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all cursor-pointer group/client"
+                            <div
+                                className="inline-flex items-center gap-1 mb-2 cursor-pointer group/client"
                                 onClick={(e) => {
                                     if (onOpenClientDetail && task.clientIds?.[0]) {
                                         e.stopPropagation();
@@ -113,8 +120,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                                     }
                                 }}
                             >
-                                <Tag size={10} className="text-blue-400/70 group-hover/client:text-blue-400 transition-colors" />
-                                <span className="text-[10px] font-medium text-slate-400 group-hover/client:text-slate-200 transition-colors truncate max-w-[140px]">
+                                <Tag size={9} className="text-blue-500/60 group-hover/client:text-blue-400 transition-colors" />
+                                <span className="text-[10px] text-slate-500 group-hover/client:text-slate-300 transition-colors truncate max-w-[140px]">
                                     {task.clientName}
                                 </span>
                             </div>
@@ -122,34 +129,42 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
 
                         {/* Subtask progress */}
                         {pct >= 0 && (
-                            <div className="mb-3 px-1">
-                                <div className="flex justify-between items-center text-[9px] font-bold mb-1.5">
-                                    <span className="text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                                        <CheckCircle2 size={10} className={pct === 100 ? 'text-emerald-500' : 'text-slate-600'} />
-                                        {done}/{total} Tasks
+                            <div className="mb-2.5">
+                                <div className="flex justify-between items-center text-[9px] font-medium mb-1">
+                                    <span className="text-slate-500 flex items-center gap-1">
+                                        <CheckCircle2 size={9} className={pct === 100 ? 'text-emerald-400' : 'text-slate-600'} />
+                                        {done}/{total} subtasks
                                     </span>
-                                    <span className={pct === 100 ? 'text-emerald-500' : pct > 0 ? 'text-blue-400' : 'text-slate-500'}>{pct}%</span>
+                                    <span className={pct === 100 ? 'text-emerald-400' : pct > 0 ? 'text-emerald-400/80' : 'text-slate-600'}>{pct}%</span>
                                 </div>
-                                <div className="h-[4px] w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
+                                <div className="h-[3px] w-full bg-white/[0.04] rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full transition-all duration-700 ease-out ${pct === 100 ? 'bg-emerald-500 shadow-[0_0_8px_#10b98180]' : 'bg-blue-500 shadow-[0_0_8px_#3b82f680]'}`}
+                                        className={`h-full rounded-full transition-all duration-700 ease-out ${pct === 100 ? 'bg-emerald-500 glow-emerald' : 'bg-emerald-500/70'}`}
                                         style={{ width: `${pct}%` }}
                                     />
                                 </div>
                             </div>
                         )}
 
-                        {/* Footer details */}
-                        <div className="flex flex-wrap items-center justify-between pt-2.5 mt-1 border-t border-white/[0.03] gap-2">
-                            <div className={`flex items-center gap-1.5 text-[10px] font-semibold rounded-md px-1.5 py-1 ${isOverdue ? 'text-red-400 bg-red-500/10 border border-red-500/20' : 'text-slate-500 bg-black/20 border border-white/[0.02]'}`}>
+                        {/* Workflow indicator */}
+                        {task.nextTemplateId && (
+                            <div className="flex items-center gap-1 mb-2 text-[9px] text-purple-400/70 font-medium">
+                                <ArrowRight size={9} />
+                                <span>Workflow linked</span>
+                            </div>
+                        )}
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-2 border-t border-white/[0.04] gap-2">
+                            <div className={`flex items-center gap-1 text-[10px] font-medium ${isOverdue ? 'text-red-400' : 'text-slate-600'}`}>
                                 {isOverdue
-                                    ? <><AlertTriangle size={11} className="animate-pulse" /> Overdue</>
-                                    : <><Calendar size={11} /> {formatDate(task.dueDate)}</>
+                                    ? <><AlertTriangle size={10} className="animate-pulse" /> <span className="font-semibold">Overdue</span></>
+                                    : <><Calendar size={10} /> {formatDate(task.dueDate)}</>
                                 }
                             </div>
-                            
-                            <div className="flex -space-x-1.5 hover:space-x-0.5 transition-all duration-300">
-                                {task.assignedTo.slice(0, 4).map((uid, i) => {
+
+                            <div className="flex -space-x-1.5 hover:space-x-0 transition-all duration-200">
+                                {task.assignedTo.slice(0, 3).map((uid, i) => {
                                     const u = usersList.find(x => x.uid === uid);
                                     const initials = u?.displayName
                                         ? u.displayName.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
@@ -159,15 +174,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                                             key={uid}
                                             title={u?.displayName}
                                             style={{ backgroundColor: avatarColor(i) }}
-                                            className="w-[22px] h-[22px] rounded-full ring-2 ring-[#0c0f16] flex items-center justify-center text-[9px] font-black text-white flex-shrink-0 shadow-sm transition-transform hover:scale-110 hover:z-10"
+                                            className="w-[20px] h-[20px] rounded-full ring-[1.5px] ring-[#0d1117] flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0 transition-transform hover:scale-110 hover:z-10"
                                         >
                                             {initials}
                                         </div>
                                     );
                                 })}
-                                {task.assignedTo.length > 4 && (
-                                    <div className="w-[22px] h-[22px] rounded-full bg-slate-800 ring-2 ring-[#0c0f16] flex items-center justify-center text-[9px] font-bold text-slate-300 shadow-sm">
-                                        +{task.assignedTo.length - 4}
+                                {task.assignedTo.length > 3 && (
+                                    <div className="w-[20px] h-[20px] rounded-full bg-slate-800 ring-[1.5px] ring-[#0d1117] flex items-center justify-center text-[8px] font-semibold text-slate-400">
+                                        +{task.assignedTo.length - 3}
                                     </div>
                                 )}
                             </div>

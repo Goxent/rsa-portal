@@ -126,9 +126,9 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ recentTasks = [] }) => {
                         key={task.id}
                         onClick={() => navigate('/tasks')}
                         className={`
-                            flex items-center gap-3 rounded-xl px-2 py-2.5
-                            cursor-pointer transition-all duration-200 group
-                            hover:bg-slate-100 dark:hover:bg-white/[0.03]
+                            flex items-center gap-3 rounded-xl px-3 py-2.5
+                            cursor-pointer transition-all duration-300 group
+                            hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:shadow-sm hover:translate-x-1 border border-transparent hover:border-slate-200/50 dark:hover:border-white/5
                         `}
                     >
                         {/* Priority Dot */}
