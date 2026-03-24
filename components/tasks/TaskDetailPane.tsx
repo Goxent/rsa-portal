@@ -47,14 +47,17 @@ const Field: React.FC<{
     extra?: React.ReactNode;
     children: React.ReactNode;
 }> = ({ label, icon, error, span2, extra, children }) => (
-    <div className={`flex flex-col gap-1.5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors p-3 rounded-xl border ${error ? 'border-red-500/40' : 'border-white/[0.05]'} ${span2 ? 'md:col-span-2' : ''}`}>
-        <div className="flex items-center justify-between">
-            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+    <div className={`group flex flex-row items-center justify-between py-2 border-b border-white/[0.03] last:border-0 transition-colors ${error ? 'bg-red-500/5 px-2 rounded-t-none' : ''} ${span2 ? 'md:col-span-2 !flex-col !items-start gap-2 border-b-0 pt-3' : ''}`}>
+        <div className="flex items-center justify-between w-[110px] flex-shrink-0">
+            <label className="text-[10.5px] font-medium text-gray-500 flex items-center gap-2.5">
                 {icon} {label}
             </label>
-            {extra}
+            {extra && <div className="md:hidden">{extra}</div>}
         </div>
-        {children}
+        <div className={`flex-1 flex items-center justify-end min-w-0 ${span2 ? 'w-full justify-start' : ''}`}>
+            {children}
+        </div>
+        {extra && <div className="hidden md:block ml-3">{extra}</div>}
     </div>
 );
 
@@ -181,7 +184,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         setShowDiscardBanner(false);
     };
 
-    const selectClass = "w-full bg-transparent text-[13px] font-semibold text-gray-200 focus:text-white focus:outline-none py-0.5 cursor-pointer";
+    const selectClass = "w-full bg-transparent text-[12px] font-medium text-gray-300 hover:text-white focus:outline-none cursor-pointer appearance-none text-right";
 
     return (
         <AnimatePresence>
@@ -235,10 +238,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         </div>
 
                         {/* Content Split Layout */}
-                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-[#0a0a0c]">
                             
                             {/* Left Column (Main) */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-5 border-r border-white/[0.04] bg-[#0c0c0f]">
+                            <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 border-r border-white/[0.06]">
                                 <div className="flex flex-col gap-6 max-w-2xl mx-auto">
                                     {/* ── Title ── */}
                                     <div className="group">
@@ -270,21 +273,21 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between">
                                             <span>Subtasks ({task.subtasks?.length || 0})</span>
                                         </label>
-                                        <div className="flex gap-2 items-center mb-1">
+                                        <div className="flex gap-2 items-center mb-1 group/add px-3 py-2 -ml-2 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-white/[0.05] transition-all">
+                                            <Plus size={14} className="text-gray-500 group-hover/add:text-gray-300 transition-colors" />
                                             <input
                                                 type="text"
                                                 value={newSubtaskTitle}
                                                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                                placeholder="Add a subtask..."
-                                                className="flex-1 bg-white/[0.03] focus:bg-white/[0.05] text-[12px] py-1.5 px-3 rounded-lg border border-white/[0.04] focus:border-white/[0.1] outline-none transition-colors"
-                                                onKeyDown={(e) => e.key === 'Enter' && onAddSubtask()}
+                                                placeholder="Add a subtask... (Press Enter to save)"
+                                                className="flex-1 bg-transparent text-[12.5px] text-gray-300 placeholder:text-gray-600 outline-none"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        onAddSubtask();
+                                                    }
+                                                }}
                                             />
-                                            <button
-                                                onClick={onAddSubtask}
-                                                className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] rounded-lg transition-all text-gray-300"
-                                            >
-                                                <Plus size={14} />
-                                            </button>
                                         </div>
                                         {task.subtasks?.map((st, i) => (
                                             <div key={st.id} className="flex flex-col gap-2 p-2 hover:bg-white/[0.02] rounded-lg group transition-colors -mx-2 px-2">
@@ -341,12 +344,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </div>
 
                             {/* Right Column (Sidebar properties) */}
-                            <div className="w-full md:w-[280px] bg-[#06080a] overflow-y-auto custom-scrollbar px-5 py-5 flex-shrink-0">
-                                <div className="flex flex-col gap-3">
-                                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Properties</h4>
+                            <div className="w-full md:w-[320px] lg:w-[340px] overflow-y-auto custom-scrollbar px-6 py-6 flex-shrink-0">
+                                <div className="flex flex-col">
+                                    <h4 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Properties</h4>
                                     
-                                    <div className="grid grid-cols-1 gap-2">
-                                        <Field label="Status" icon={<Activity size={11} className="text-gray-400" />} error={!!errors.status}>
+                                    <div className="flex flex-col">
+                                        <Field label="Status" icon={<Activity size={12} className="text-gray-400" />} error={!!errors.status}>
                                             <select className={selectClass} {...register('status')}>
                                                 {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
                                             </select>
@@ -383,19 +386,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             )} />
                                         </Field>
 
-                                        <Field label="Dates" icon={<Calendar size={11} className="text-gray-400" />}>
-                                            <div className="flex flex-col gap-2 mt-1">
-                                                <div className="flex items-center justify-between text-[11px]">
-                                                    <span className="text-gray-500 font-semibold">Starts</span>
+                                        <Field label="Dates" icon={<Calendar size={12} className="text-gray-400" />}>
+                                            <div className="flex flex-col items-end gap-1.5 w-full">
+                                                <div className="flex items-center gap-2 text-[12px] group/date w-full justify-end">
+                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Start</span>
                                                     <Controller name="startDate" control={control} render={({ field }) => dateMode === 'AD' ? (
-                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-200 focus:outline-none w-[110px] text-right" />
-                                                    ) : ( <div className="w-[110px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Start date" /></div> )} />
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
+                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Start date" /></div> )} />
                                                 </div>
-                                                <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/[0.04]">
-                                                    <span className="text-gray-500 font-semibold">Due</span>
+                                                <div className="flex items-center gap-2 text-[12px] group/date w-full justify-end">
+                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Due</span>
                                                     <Controller name="dueDate" control={control} render={({ field }) => dateMode === 'AD' ? (
-                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-200 focus:outline-none w-[110px] text-right" />
-                                                    ) : ( <div className="w-[110px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Due date" /></div> )} />
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
+                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Due date" /></div> )} />
                                                 </div>
                                             </div>
                                         </Field>
