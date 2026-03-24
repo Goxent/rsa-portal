@@ -238,11 +238,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         </div>
 
                         {/* Content Split Layout */}
-                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-[#0a0a0c]">
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-[#080a0c]">
                             
-                            {/* Left Column (Main) */}
-                            <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 border-r border-white/[0.06]">
-                                <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+                            {/* Left Column (Main Properties & Details) */}
+                            <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 border-r border-white/[0.06] flex flex-col gap-6">
+                                <div className="max-w-3xl w-full mx-auto flex flex-col gap-6">
                                     {/* ── Title ── */}
                                     <div className="group">
                                         <input
@@ -268,7 +268,78 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         onInput={autoResize}
                                     />
 
-                                    {/* Subtasks */}
+                                    {/* ── Properties Grid ── */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1 py-4 border-y border-white/[0.04]">
+                                        <Field label="Status" icon={<Activity size={12} className="text-gray-400" />} error={!!errors.status}>
+                                            <select className={selectClass} {...register('status')}>
+                                                {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Priority" icon={<AlertTriangle size={11} className="text-gray-400" />} error={!!errors.priority}>
+                                            <select className={selectClass} {...register('priority')}>
+                                                {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Assignees" icon={<UserCircle2 size={11} className="text-gray-400" />}>
+                                            <Controller name="assignedTo" control={control} render={({ field }) => (
+                                                <StaffSelect users={usersList} value={field.value || []} onChange={field.onChange} multi={true} />
+                                            )} />
+                                        </Field>
+
+                                        <Field label="Team Leader" icon={<ShieldAlert size={11} className="text-gray-400" />} error={!!errors.teamLeaderId}>
+                                            <select className={selectClass} {...register('teamLeaderId')}>
+                                                <option value="" className="bg-[#1e293b] text-gray-500">— Unassigned —</option>
+                                                {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Client" icon={<Briefcase size={11} className="text-gray-400" />} error={!!errors.clientId}
+                                            extra={watch('clientId') && onOpenClientDetail ? (
+                                                <button onClick={(e) => { e.preventDefault(); onOpenClientDetail(watch('clientId')!); }} className="text-[9px] font-bold text-emerald-400 hover:underline">
+                                                    View
+                                                </button>
+                                            ) : undefined}
+                                        >
+                                            <Controller name="clientId" control={control} render={({ field }) => (
+                                                <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
+                                            )} />
+                                        </Field>
+
+                                        <Field label="Audit Phase" icon={<Sparkles size={11} className="text-gray-400" />} error={!!errors.auditPhase}>
+                                            <select className={selectClass} {...register('auditPhase')}>
+                                                {Object.values(AuditPhase).map(ph => <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>)}
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Dates" icon={<Calendar size={12} className="text-gray-400" />} span2
+                                            extra={
+                                                <div className="flex items-center gap-0.5 bg-black/40 p-0.5 rounded-md border border-white/[0.04]">
+                                                    {(['AD', 'BS'] as const).map(mode => (
+                                                        <button key={mode} onClick={(e) => { e.preventDefault(); setDateMode(mode); }} className={`px-2 py-0.5 rounded text-[9px] font-black transition-all ${dateMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-400'}`}>{mode}</button>
+                                                    ))}
+                                                </div>
+                                            }>
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full justify-end mt-1">
+                                                <div className="flex items-center gap-2 text-[12px] group/date flex-1 sm:flex-none justify-end">
+                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Start</span>
+                                                    <Controller name="startDate" control={control} render={({ field }) => dateMode === 'AD' ? (
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
+                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Start date" /></div> )} />
+                                                </div>
+                                                <div className="hidden sm:block w-px h-4 bg-white/[0.06]" />
+                                                <div className="flex items-center gap-2 text-[12px] group/date flex-1 sm:flex-none justify-end">
+                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Due</span>
+                                                    <Controller name="dueDate" control={control} render={({ field }) => dateMode === 'AD' ? (
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
+                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Due date" /></div> )} />
+                                                </div>
+                                            </div>
+                                        </Field>
+                                    </div>
+
+                                    {/* ── Subtasks ── */}
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between">
                                             <span>Subtasks ({task.subtasks?.length || 0})</span>
@@ -332,90 +403,28 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            </div>
 
+                            {/* Right Column (Sidebar Activity) */}
+                            <div className="w-full md:w-[320px] lg:w-[360px] overflow-y-auto custom-scrollbar px-6 py-6 flex-shrink-0 bg-[#040608]">
+                                <div className="flex flex-col h-full">
                                     {/* Comments */}
-                                    <div className="space-y-3 mt-4">
-                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Activity</h4>
+                                    <div className="flex-1 space-y-3">
+                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Activity size={12} /> Comments & Activity
+                                        </h4>
                                         <div className="-mx-2 border-t border-white/[0.04] pt-4 px-2">
                                             <TaskComments comments={task.comments || []} onAddComment={onAddComment} users={usersList} />
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Right Column (Sidebar properties) */}
-                            <div className="w-full md:w-[320px] lg:w-[340px] overflow-y-auto custom-scrollbar px-6 py-6 flex-shrink-0">
-                                <div className="flex flex-col">
-                                    <h4 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Properties</h4>
-                                    
-                                    <div className="flex flex-col">
-                                        <Field label="Status" icon={<Activity size={12} className="text-gray-400" />} error={!!errors.status}>
-                                            <select className={selectClass} {...register('status')}>
-                                                {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
-                                            </select>
-                                        </Field>
-
-                                        <Field label="Priority" icon={<AlertTriangle size={11} className="text-gray-400" />} error={!!errors.priority}>
-                                            <select className={selectClass} {...register('priority')}>
-                                                {Object.values(TaskPriority).map(p => <option key={p} value={p} className="bg-[#1e293b]">{p}</option>)}
-                                            </select>
-                                        </Field>
-
-                                        <Field label="Assignees" icon={<UserCircle2 size={11} className="text-gray-400" />}>
-                                            <Controller name="assignedTo" control={control} render={({ field }) => (
-                                                <StaffSelect users={usersList} value={field.value || []} onChange={field.onChange} multi={true} />
-                                            )} />
-                                        </Field>
-
-                                        <Field label="Team Leader" icon={<ShieldAlert size={11} className="text-gray-400" />} error={!!errors.teamLeaderId}>
-                                            <select className={selectClass} {...register('teamLeaderId')}>
-                                                <option value="" className="bg-[#1e293b] text-gray-500">— Unassigned —</option>
-                                                {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>)}
-                                            </select>
-                                        </Field>
-
-                                        <Field label="Client" icon={<Briefcase size={11} className="text-gray-400" />} error={!!errors.clientId}
-                                            extra={watch('clientId') && onOpenClientDetail ? (
-                                                <button onClick={(e) => { e.preventDefault(); onOpenClientDetail(watch('clientId')!); }} className="text-[9px] font-bold text-emerald-400 hover:underline">
-                                                    View
-                                                </button>
-                                            ) : undefined}
-                                        >
-                                            <Controller name="clientId" control={control} render={({ field }) => (
-                                                <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
-                                            )} />
-                                        </Field>
-
-                                        <Field label="Dates" icon={<Calendar size={12} className="text-gray-400" />}>
-                                            <div className="flex flex-col items-end gap-1.5 w-full">
-                                                <div className="flex items-center gap-2 text-[12px] group/date w-full justify-end">
-                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Start</span>
-                                                    <Controller name="startDate" control={control} render={({ field }) => dateMode === 'AD' ? (
-                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
-                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Start date" /></div> )} />
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[12px] group/date w-full justify-end">
-                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Due</span>
-                                                    <Controller name="dueDate" control={control} render={({ field }) => dateMode === 'AD' ? (
-                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
-                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Due date" /></div> )} />
-                                                </div>
-                                            </div>
-                                        </Field>
-
-                                        <Field label="Audit Phase" icon={<Sparkles size={11} className="text-gray-400" />} error={!!errors.auditPhase}>
-                                            <select className={selectClass} {...register('auditPhase')}>
-                                                {Object.values(AuditPhase).map(ph => <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>)}
-                                            </select>
-                                        </Field>
-                                    </div>
-                                    
                                     {suggestedResources.length > 0 && (
-                                        <div className="mt-2 p-3 bg-white/[0.02] rounded-lg border border-white/[0.04]">
-                                            <h5 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1"><Book size={10} /> Suggested</h5>
-                                            <div className="flex flex-col gap-1.5">
+                                        <div className="mt-8 pt-6 border-t border-white/[0.04]">
+                                            <h5 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Book size={10} /> Suggested Knowledge</h5>
+                                            <div className="flex flex-col gap-2">
                                                 {suggestedResources.map(r => (
-                                                    <a key={r.id} href={r.link || '#'} target="_blank" rel="noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300 truncate">
+                                                    <a key={r.id} href={r.link || '#'} target="_blank" rel="noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300 truncate bg-emerald-500/5 hover:bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/10 transition-colors">
                                                         {r.title}
                                                     </a>
                                                 ))}

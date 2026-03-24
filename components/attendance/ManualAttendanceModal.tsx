@@ -102,36 +102,36 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="glass-modal rounded-xl w-full max-w-lg border border-white/10 shadow-2xl flex flex-col bg-[#09090b]">
-                <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-[#161b22] rounded-2xl w-full max-w-lg border border-[#30363d] shadow-2xl flex flex-col overflow-hidden">
+                <div className="px-6 py-5 border-b border-[#30363d] flex justify-between items-center bg-[#0d1117]/50">
                     <div>
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <CheckCircle2 className="text-brand-400" size={20} />
-                            Adjust Attendance
+                        <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
+                            <CheckCircle2 className="text-amber-500" size={20} />
+                            Log Attendance
                         </h2>
-                        <p className="text-xs text-gray-400 mt-1">
-                            {selectedUser.displayName} • {new Date(selectedDate).toDateString()}
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                            {selectedUser.displayName} <span className="mx-1 text-gray-700">•</span> {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
+                    <button onClick={onClose} className="text-gray-500 hover:text-white transition-all p-1.5 hover:bg-white/5 rounded-xl border border-transparent hover:border-white/5">
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {/* Status Selection */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
                             Attendance Status
                         </label>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="flex flex-wrap gap-2">
                             {['PRESENT', 'LATE', 'HALF_DAY', 'ABSENT', 'ON LEAVE'].map(status => (
                                 <label key={status} className={`
-                                    cursor-pointer border rounded-lg p-2 text-center text-xs font-bold transition-all
+                                    cursor-pointer px-4 py-2 rounded-xl text-[11px] font-black border transition-all uppercase tracking-wider
                                     ${formData.status === status
-                                        ? 'bg-brand-500/20 border-brand-500 text-brand-300 ring-1 ring-brand-500/50'
-                                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}
+                                        ? 'bg-amber-500 text-black border-amber-500 shadow-lg shadow-amber-500/20'
+                                        : 'bg-[#0d1117] border-[#30363d] text-gray-500 hover:text-gray-300 hover:border-gray-600'}
                                 `}>
                                     <input
                                         type="radio"
@@ -150,25 +150,25 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     {/* Time Inputs - Hide for Absent/Leave */}
                     {formData.status !== 'ABSENT' && formData.status !== 'ON LEAVE' && (
                         <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                    <Clock size={12} /> Clock In
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                    <Clock size={12} className="text-amber-500/50" /> Clock In
                                 </label>
                                 <input
                                     type="time"
                                     required
-                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none"
+                                    className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-white focus:border-amber-500/50 outline-none transition-all tabular-nums"
                                     value={formData.clockIn}
                                     onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                    <Clock size={12} /> Clock Out
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                    <Clock size={12} className="text-amber-500/50" /> Clock Out
                                 </label>
                                 <input
                                     type="time"
-                                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none"
+                                    className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-white focus:border-amber-500/50 outline-none transition-all tabular-nums"
                                     value={formData.clockOut}
                                     onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
                                 />
@@ -178,48 +178,50 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
 
                     {/* Client Selection */}
                     {formData.status !== 'ABSENT' && formData.status !== 'ON LEAVE' && (
-                        <div className="animate-in fade-in slide-in-from-top-3">
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <User size={12} /> Assigned Client(s)
+                        <div className="animate-in fade-in slide-in-from-top-3 space-y-2">
+                            <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                <User size={12} className="text-amber-500/50" /> Assigned Client(s)
                             </label>
-                            <ClientSelect
-                                clients={clients}
-                                value={formData.clientIds || []}
-                                onChange={(val) => setFormData({ ...formData, clientIds: Array.isArray(val) ? val : [val] })}
-                                multi={true}
-                                placeholder="Select Worked Clients..."
-                            />
+                            <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden shadow-inner">
+                                <ClientSelect
+                                    clients={clients}
+                                    value={formData.clientIds || []}
+                                    onChange={(val) => setFormData({ ...formData, clientIds: Array.isArray(val) ? val : [val] })}
+                                    multi={true}
+                                    placeholder="Select Worked Clients..."
+                                />
+                            </div>
                         </div>
                     )}
 
                     {/* Notes */}
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                            <FileText size={12} /> Notes / Reason
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                            <FileText size={12} className="text-amber-500/50" /> Notes / Reason
                         </label>
                         <textarea
-                            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white placeholder:text-gray-600 focus:ring-1 focus:ring-brand-500 outline-none text-sm min-h-[80px]"
+                            className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-3 text-white placeholder:text-gray-700 focus:border-amber-500/50 outline-none text-[13px] min-h-[100px] resize-none transition-all"
                             placeholder="Reason for manual adjustment..."
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-2">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-[#30363d]">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                            className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 transition-all"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSaving}
-                            className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-lg shadow-brand-500/20 flex items-center gap-2 transition-all hover:scale-105 disabled:opacity-50 disabled:scale-100"
+                            className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                         >
-                            {isSaving ? <span className="animate-spin">⏳</span> : <Save size={16} />}
-                            Save Adjustment
+                            {isSaving ? <span className="animate-spin italic font-serif">save</span> : <Save size={14} />}
+                            Confirm Log
                         </button>
                     </div>
                 </form>

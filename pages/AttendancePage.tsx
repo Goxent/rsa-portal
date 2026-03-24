@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AttendanceRecord, UserRole, UserProfile, Client, LeaveRequest, CalendarEvent } from '../types';
@@ -11,9 +10,65 @@ import { useLocation } from 'react-router-dom';
 import { getCurrentDateUTC } from '../utils/dates';
 import StaffSelect from '../components/StaffSelect';
 import ManualAttendanceModal from '../components/attendance/ManualAttendanceModal';
-import { FileText, Download, Filter, Search, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, AlertTriangle, Briefcase, ChevronRight, User, Edit2, Plus } from 'lucide-react';
+import { 
+    FileText, Download, Filter, Search, Calendar as CalendarIcon, 
+    Users, CheckCircle, XCircle, Clock, AlertTriangle, Briefcase, 
+    ChevronRight, User, Edit2, Plus, LayoutGrid, List as ListIcon, 
+    ExternalLink, MapPin, TrendingUp, UserCheck, UserPlus, CalendarDays
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import NepaliDatePicker from '../components/NepaliDatePicker';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// ── Components ──
+
+const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
+    <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4 flex items-start justify-between hover:border-[#8b949e] transition-all group">
+        <div>
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Icon size={12} className={color} /> {title}
+            </p>
+            <h3 className="text-2xl font-black text-white tracking-tight">{value}</h3>
+            {trend && (
+                <div className="flex items-center gap-1 mt-1">
+                    <TrendingUp size={10} className="text-emerald-500" />
+                    <span className="text-[10px] text-emerald-500 font-bold">{trend}</span>
+                </div>
+            )}
+        </div>
+        <div className={`p-2.5 rounded-lg bg-opacity-10 ${color.replace('text-', 'bg-')} border border-white/[0.03]`}>
+            <Icon size={18} className={color} />
+        </div>
+    </div>
+);
+
+const ClockWidget = () => {
+    const [time, setTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const np = new NepaliDate(time);
+
+    return (
+        <div className="bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-[#30363d] rounded-2xl p-5 flex flex-col items-center justify-center relative overflow-hidden group shadow-xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-amber-500/10 transition-all duration-700" />
+            <div className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Live Tracker
+            </div>
+            <div className="text-4xl font-black text-white tracking-tighter tabular-nums mb-1">
+                {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+            </div>
+            <div className="flex items-center gap-3 text-gray-500 font-bold text-[11px]">
+                <span className="flex items-center gap-1"><CalendarIcon size={11} /> {time.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
+                <span className="w-1 h-1 rounded-full bg-gray-800" />
+                <span>{np.format('DD MMMM, YYYY')} BS</span>
+            </div>
+        </div>
+    );
+};
 
 const AttendancePage: React.FC = () => {
     const { user } = useAuth();
@@ -40,6 +95,8 @@ const AttendancePage: React.FC = () => {
     const [filterEndDate, setFilterEndDate] = useState<string>('');
     const [useNepaliFrom, setUseNepaliFrom] = useState(false);
     const [useNepaliTo, setUseNepaliTo] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [searchQuery, setSearchQuery] = useState('');
 
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
 
@@ -194,8 +251,29 @@ const AttendancePage: React.FC = () => {
             filtered = report.filter(r => r.status === filterStatus || (filterStatus === 'PRESENT' && r.status === 'LATE'));
         }
 
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            filtered = filtered.filter(r => 
+                r.userName.toLowerCase().includes(q) || 
+                r.clientName?.toLowerCase().includes(q) ||
+                r.notes?.toLowerCase().includes(q)
+            );
+        }
+
         return filtered.sort((a, b) => b.date.localeCompare(a.date) || a.userName.localeCompare(b.userName));
-    }, [history, leavesList, holidays, usersList, filterStartDate, filterEndDate, filterStaffId, user, filterStatus]);
+    }, [history, leavesList, holidays, usersList, filterStartDate, filterEndDate, filterStaffId, user, filterStatus, searchQuery]);
+
+    // Compute Stats
+    const stats = useMemo(() => {
+        const today = getCurrentDateUTC();
+        const todaysRecords = reportData.filter(r => r.date === today);
+        return {
+            present: todaysRecords.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length,
+            absent: todaysRecords.filter(r => r.status === 'ABSENT').length,
+            onLeave: todaysRecords.filter(r => r.status === 'ON LEAVE').length,
+            late: todaysRecords.filter(r => r.status === 'LATE').length,
+        };
+    }, [reportData]);
 
     // EXPORT
     const handleExportPDF = () => {
@@ -422,245 +500,333 @@ const AttendancePage: React.FC = () => {
     };
 
     return (
-        <div className="animate-in fade-in duration-500 space-y-6">
-            {/* Header Section */}
-            <div className="glass-panel p-4 md:p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-white/10 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-brand-500/5 rounded-full blur-3xl -mr-24 -mt-24"></div>
-                <div className="relative z-10 flex items-center gap-4">
-                    <div className="p-3 bg-brand-600/20 rounded-xl border border-brand-500/20">
-                        <Users className="text-brand-400" size={24} />
+        <div className="bg-[#0d1117] min-h-screen text-[#c9d1d9] pb-12">
+            <div className="max-w-[1600px] mx-auto space-y-8 px-4 sm:px-6 lg:px-8 pt-6">
+                
+                {/* ── Top Bar (Navigation & Actions) ── */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-lg shadow-amber-500/5">
+                            <Users className="text-amber-500" size={24} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 tracking-widest uppercase">
+                                <span className="hover:text-amber-500 cursor-pointer transition-colors">Operations</span>
+                                <ChevronRight size={10} />
+                                <span className="text-gray-400">Attendance</span>
+                            </div>
+                            <h1 className="text-2xl font-black text-white tracking-tight mt-0.5">Firm Attendance</h1>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">Attendance Center</h1>
-                        <p className="text-gray-400 text-xs font-medium mt-0.5">Track punctuality, work logs, and team availability.</p>
-                    </div>
-                </div>
-                <div className="relative z-10 flex gap-2">
-                    <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all text-sm font-bold shadow-lg">
-                        <FileText size={16} className="text-rose-400" />
-                        PDF Export
-                    </button>
-                    <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all text-sm font-bold shadow-lg">
-                        <Download size={16} className="text-emerald-400" />
-                        Excel
-                    </button>
-                </div>
-            </div>
 
-            {/* Filters Section */}
-            <div className="glass-panel p-4 rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end border border-white/10 shadow-xl bg-navy-900/40 relative z-20">
-                {isAdmin && (
-                    <div className="space-y-1.5 lg:col-span-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                            <User size={10} /> Team Member
-                        </label>
-                        <StaffSelect
-                            value={filterStaffId}
-                            onChange={(val) => setFilterStaffId(Array.isArray(val) ? val[0] : val)}
-                            users={usersList}
-                            showAllOption
+                    <div className="flex items-center gap-3 w-full lg:w-auto">
+                        <div className="flex bg-[#161b22] border border-[#30363d] p-1 rounded-xl shadow-inner">
+                            <button 
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[#21262d] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                <ListIcon size={18} />
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[#21262d] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                        </div>
+                        <div className="h-8 w-px bg-[#30363d]" />
+                        <button onClick={handleExportPDF} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] transition-all text-sm font-bold shadow-md">
+                            <FileText size={16} className="text-rose-400" /> PDF
+                        </button>
+                        <button onClick={handleExportExcel} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] transition-all text-sm font-bold shadow-md">
+                            <Download size={16} className="text-emerald-400" /> Excel
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── Dashboard Stats Row ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="lg:col-span-2">
+                        <ClockWidget />
+                    </div>
+                    <StatCard title="Total Present" value={stats.present} icon={UserCheck} color="text-emerald-400" trend={`${stats.late} delayed`} />
+                    <StatCard title="Absentees" value={stats.absent} icon={XCircle} color="text-rose-400" />
+                    <StatCard title="Personal Leave" value={stats.onLeave} icon={UserPlus} color="text-sky-400" />
+                </div>
+
+                {/* ── Filter & Search Bar ── */}
+                <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 flex flex-col xl:flex-row items-center gap-4 shadow-xl">
+                    {/* Search */}
+                    <div className="relative w-full xl:w-80">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                        <input 
+                            type="text"
+                            placeholder="Search team member or status..."
+                            className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-600"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                )}
 
-                <div className="space-y-2 lg:col-span-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
-                        <Filter size={10} /> Status Filter
-                    </label>
-                    <div className="relative group">
+                    <div className="flex flex-wrap items-center gap-3 flex-1 w-full">
+                        {isAdmin && (
+                            <div className="min-w-[180px] flex-1 lg:flex-none">
+                                <StaffSelect
+                                    value={filterStaffId}
+                                    onChange={(val) => setFilterStaffId(Array.isArray(val) ? val[0] : val)}
+                                    users={usersList}
+                                    showAllOption
+                                />
+                            </div>
+                        )}
+
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none appearance-none hover:bg-black/40 transition-all"
+                            className="bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none hover:border-gray-600 transition-all flex-1 lg:flex-none"
                         >
-                            <option value="ALL">Total View</option>
-                            <option value="PRESENT">Present / Late</option>
-                            <option value="ABSENT">Absent</option>
+                            <option value="ALL">All Statuses</option>
+                            <option value="PRESENT">Present Only</option>
+                            <option value="ABSENT">Absent Only</option>
                             <option value="ON LEAVE">On Leave</option>
                             <option value="HOLIDAY">Firm Holidays</option>
                         </select>
-                        <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 group-hover:text-brand-400 transition-colors rotate-90" size={12} />
-                    </div>
-                </div>
 
-                <div className="space-y-2 relative z-50">
-                    <div className="flex items-center justify-between ml-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                            <CalendarIcon size={10} /> From Date
-                        </label>
-                        <button
-                            onClick={() => setUseNepaliFrom(!useNepaliFrom)}
-                            className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${useNepaliFrom ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-500'}`}
-                        >
-                            {useNepaliFrom ? 'BS' : 'AD'}
+                        <div className="flex items-center gap-2 bg-[#21262d] border border-[#30363d] rounded-xl px-3 py-1.5 flex-1 lg:flex-none min-w-[200px]">
+                            <CalendarDays size={14} className="text-gray-500 shrink-0" />
+                            <div className="flex flex-col gap-0.5 w-full">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-tighter">Date Range</span>
+                                    <button onClick={() => setUseNepaliFrom(!useNepaliFrom)} className={`text-[8px] px-1 rounded font-black ${useNepaliFrom ? 'bg-amber-500 text-black' : 'text-gray-600'}`}>BS</button>
+                                </div>
+                                {useNepaliFrom ? (
+                                    <NepaliDatePicker value={filterStartDate} onChange={setFilterStartDate} className="!bg-transparent !border-0 !p-0 !h-6 !text-white !w-full" />
+                                ) : (
+                                    <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-xs text-white outline-none w-full" />
+                                )}
+                            </div>
+                        </div>
+
+                        <button onClick={loadData} className="w-full lg:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl transition-all font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-600/20">
+                            Apply Filter
                         </button>
                     </div>
-                    {useNepaliFrom ? (
-                        <NepaliDatePicker
-                            value={filterStartDate || ''}
-                            onChange={(ad) => setFilterStartDate(ad)}
-                            className="w-full"
-                        />
-                    ) : (
-                        <input
-                            type="date"
-                            value={filterStartDate}
-                            onChange={(e) => setFilterStartDate(e.target.value)}
-                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none hover:bg-black/40 transition-all h-[42px]"
-                        />
+
+                    {isAdmin && (
+                        <button 
+                            onClick={() => {
+                                setSelectedUserForEdit(null);
+                                setSelectedDateForEdit(getCurrentDateUTC());
+                                setSelectedRecord(null);
+                                setIsEditModalOpen(true);
+                            }}
+                            className="w-full xl:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all font-black text-xs uppercase tracking-widest"
+                        >
+                            <Plus size={16} /> Manual Log
+                        </button>
                     )}
                 </div>
 
-                <div className="space-y-2 relative z-50">
-                    <div className="flex items-center justify-between ml-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                            <CalendarIcon size={10} /> To Date
-                        </label>
-                        <button
-                            onClick={() => setUseNepaliTo(!useNepaliTo)}
-                            className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${useNepaliTo ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-500'}`}
+                {/* ── Main Records Section ── */}
+                <AnimatePresence mode="wait">
+                    {viewMode === 'list' ? (
+                        <motion.div 
+                            key="list"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="bg-[#161b22] border border-[#30363d] rounded-2xl overflow-hidden shadow-2xl relative"
                         >
-                            {useNepaliTo ? 'BS' : 'AD'}
-                        </button>
-                    </div>
-                    {useNepaliTo ? (
-                        <NepaliDatePicker
-                            value={filterEndDate || ''}
-                            onChange={(ad) => setFilterEndDate(ad)}
-                            className="w-full"
-                        />
-                    ) : (
-                        <input
-                            type="date"
-                            value={filterEndDate}
-                            onChange={(e) => setFilterEndDate(e.target.value)}
-                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none hover:bg-black/40 transition-all h-[42px]"
-                        />
-                    )}
-                </div>
-
-                <button onClick={loadData} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-500/10 text-brand-400 rounded-xl border border-brand-500/20 hover:bg-brand-500/20 transition-all font-bold text-sm">
-                    <Search size={16} /> Refresh Records
-                </button>
-            </div>
-
-            {/* Results Table */}
-            <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl bg-navy-900/20">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 border-b border-white/10 text-[10px] text-gray-500 uppercase font-black tracking-widest">
-                                <th className="p-6">Date & Punctuality</th>
-                                <th className="p-6">Team Member</th>
-                                <th className="p-6">Timeline</th>
-                                <th className="p-6">Activities / Clients</th>
-                                {isAdmin && <th className="p-6">Actions</th>}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {loading ? (
-                                <tr><td colSpan={4} className="p-20 text-center text-gray-500 font-medium">Scanning records...</td></tr>
-                            ) : reportData.length === 0 ? (
-                                <tr><td colSpan={4} className="p-20 text-center text-gray-500 font-medium">No results matched your filters.</td></tr>
-                            ) : (
-                                reportData.map((record) => (
-                                    <tr key={record.id} className="hover:bg-white/5 transition-all group/row">
-                                        <td className="p-6 align-top">
-                                            <div className="flex flex-col">
-                                                <span className="text-white font-bold text-sm tracking-tight">{record.date}</span>
-                                                <span className="text-[10px] text-gray-600 font-bold uppercase mt-0.5">
-                                                    {new Date(record.date).toLocaleDateString('en-US', { weekday: 'long' })}
-                                                </span>
-                                                <div className="mt-2 text-[10px]">
-                                                    <span className={`px-2 py-0.5 rounded-full font-black border ${record.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                        record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                            <div className="overflow-x-auto overflow-y-hidden">
+                                <table className="w-full text-left border-collapse min-w-[1000px]">
+                                    <thead>
+                                        <tr className="border-b border-[#30363d] bg-[#0d1117]/50">
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Date & Staff</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Timing</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Status / Activity</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Clients & Work Logs</th>
+                                            {isAdmin && <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#30363d]">
+                                        {loading ? (
+                                            <tr><td colSpan={5} className="p-32 text-center">
+                                                <div className="flex flex-col items-center gap-4">
+                                                    <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+                                                    <span className="text-gray-500 font-bold uppercase tracking-widest text-[11px]">Synchronizing Records...</span>
+                                                </div>
+                                            </td></tr>
+                                        ) : reportData.length === 0 ? (
+                                            <tr><td colSpan={5} className="p-32 text-center text-gray-600 font-bold italic tracking-wide">No attendance records found for the selected criteria.</td></tr>
+                                        ) : (
+                                            reportData.map((record) => (
+                                                <tr key={record.id} className="hover:bg-[#21262d]/40 transition-all group/row">
+                                                    <td className="px-6 py-5">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-full bg-[#30363d] border border-[#484f58] flex items-center justify-center text-gray-300 font-black text-xs shadow-inner">
+                                                                {record.userName.substring(0, 2).toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[13px] font-bold text-white leading-tight">{record.userName}</div>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="text-[10px] font-black text-gray-500 uppercase">{new Date(record.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
+                                                                    <span className="w-1 h-1 rounded-full bg-gray-700" />
+                                                                    <span className="text-[10px] font-bold text-amber-500/80">{new NepaliDate(new Date(record.date)).format('DD MMM')}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        {record.clockIn ? (
+                                                            <div className="space-y-1.5">
+                                                                <div className="flex items-center gap-2 text-[11px] text-gray-300 font-bold tabular-nums">
+                                                                    <Clock size={12} className="text-emerald-500" /> {record.clockIn}
+                                                                    {record.clockOut && <span className="text-gray-600">→</span>}
+                                                                    {record.clockOut && <span>{record.clockOut}</span>}
+                                                                </div>
+                                                                {record.workHours > 0 && (
+                                                                    <div className="bg-white/5 border border-white/5 px-2 py-0.5 rounded text-[9px] font-black text-gray-500 w-fit">
+                                                                        {record.workHours}H TOTAL
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-gray-700 font-black tracking-widest text-[10px]">UNTRACKED</div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black border uppercase tracking-widest shadow-sm ${
+                                                            record.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                            record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                                                             record.status === 'ABSENT' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                                                record.status === 'ON LEAVE' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                                                                    'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                            record.status === 'ON LEAVE' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
+                                                            'bg-purple-500/10 text-purple-400 border-purple-500/20'
                                                         }`}>
-                                                        {record.status}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-6 align-top">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-brand-500/20 border border-brand-500/20 flex items-center justify-center text-brand-400 text-xs font-bold">
-                                                    {record.userName.substring(0, 2).toUpperCase()}
-                                                </div>
-                                                <span className="text-gray-200 font-semibold">{record.userName}</span>
-                                            </div>
-                                        </td>
-                                        <td className="p-6 align-top">
-                                            {record.clockIn ? (
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2 text-xs text-emerald-400 font-mono">
-                                                        <Clock size={12} /> IN: {record.clockIn}
-                                                    </div>
-                                                    {record.clockOut && (
-                                                        <div className="flex items-center gap-2 text-xs text-rose-400 font-mono">
-                                                            <Clock size={12} /> OUT: {record.clockOut}
-                                                        </div>
+                                                            {record.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        {record.workLogs?.length > 0 ? (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {record.workLogs.slice(0, 3).map((log: any, i: number) => (
+                                                                    <div key={i} className="px-2 py-1 bg-white/[0.03] border border-white/5 rounded-md group/log cursor-default hover:bg-white/5 transition-colors max-w-[120px]">
+                                                                        <div className="text-[9px] font-black text-amber-500 truncate">{log.clientName || 'TASK'}</div>
+                                                                        <div className="text-[10px] text-gray-500 truncate mt-0.5">{log.description}</div>
+                                                                    </div>
+                                                                ))}
+                                                                {record.workLogs.length > 3 && (
+                                                                    <div className="text-[9px] font-black text-gray-600 mt-2">+{record.workLogs.length - 3} MORE</div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-gray-600 italic text-[11px] leading-relaxed">
+                                                                {record.clientName || record.notes || '—'}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    {isAdmin && (
+                                                        <td className="px-6 py-5 text-right">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const userProfile = usersList.find(u => u.uid === record.userId);
+                                                                    if (userProfile) {
+                                                                        setSelectedUserForEdit(userProfile);
+                                                                        setSelectedDateForEdit(record.date);
+                                                                        const realRecord = history.find(h => h.userId === record.userId && h.date === record.date);
+                                                                        setSelectedRecord(realRecord || null);
+                                                                        setIsEditModalOpen(true);
+                                                                    }
+                                                                }}
+                                                                className="p-2 hover:bg-[#30363d] rounded-lg text-gray-500 hover:text-amber-500 transition-all shadow-sm"
+                                                            >
+                                                                <Edit2 size={16} />
+                                                            </button>
+                                                        </td>
                                                     )}
-                                                    {record.workHours > 0 && (
-                                                        <div className="text-[10px] text-gray-500 font-bold uppercase mt-2">
-                                                            Total: {record.workHours} Hours
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-700 font-mono text-xs">-- : --</span>
-                                            )}
-                                        </td>
-                                        <td className="p-6 align-top">
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="grid"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                        >
+                            {reportData.map((record) => (
+                                <div key={record.id} className="bg-[#161b22] border border-[#30363d] rounded-2xl p-5 hover:border-amber-500/30 transition-all group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-3">
+                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                                            record.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                            record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                            record.status === 'ABSENT' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                            'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                                        }`}>
+                                            {record.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-[#0d1117] border border-[#30363d] flex items-center justify-center text-amber-500 font-black text-sm shadow-xl group-hover:scale-110 transition-transform">
+                                            {record.userName.substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold text-white tracking-tight">{record.userName}</div>
+                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter mt-0.5">{record.date}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-3 flex justify-between items-center group-hover:bg-[#1c2128] transition-colors">
+                                            <div className="text-[10px] font-black text-gray-600 uppercase">Timing</div>
+                                            <div className="text-[11px] font-bold text-gray-300 tabular-nums">
+                                                {record.clockIn || '--:--'} <span className="mx-1 text-gray-700">/</span> {record.clockOut || '--:--'}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="min-h-[60px]">
+                                            <div className="text-[10px] font-black text-gray-600 uppercase mb-2">Activities</div>
                                             {record.workLogs?.length > 0 ? (
-                                                <div className="space-y-3">
-                                                    {record.workLogs.map((log: any, i: number) => (
-                                                        <div key={i} className="group/log">
-                                                            <div className="text-[11px] font-black text-brand-400 tracking-wide uppercase">
-                                                                {log.clientName || 'Internal'}
-                                                            </div>
-                                                            <div className="text-xs text-gray-400 leading-relaxed mt-0.5">
-                                                                {log.description}
-                                                            </div>
+                                                <div className="space-y-1.5">
+                                                    {record.workLogs.slice(0, 2).map((log: any, i: number) => (
+                                                        <div key={i} className="text-[11px] text-gray-400 italic line-clamp-1 border-l-2 border-amber-500/30 pl-2">
+                                                            {log.description}
                                                         </div>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-xs text-gray-500 italic">
-                                                    {record.clientName || record.notes || 'No work log entry.'}
-                                                </div>
+                                                <div className="text-[11px] text-gray-700 italic">{record.notes || 'No activities logged.'}</div>
                                             )}
-                                        </td>
-                                        {isAdmin && (
-                                            <td className="p-6 align-top">
-                                                <button
-                                                    onClick={() => {
-                                                        const userProfile = usersList.find(u => u.uid === record.userId);
-                                                        if (userProfile) {
-                                                            setSelectedUserForEdit(userProfile);
-                                                            setSelectedDateForEdit(record.date);
-                                                            // Provide the full record if it exists (status is not missing/absent placeholder)
-                                                            // BUT: reportData generates placeholder "ABSENT" records which are not real DB records
-                                                            // So check if 'type' is 'RECORD'
-                                                            const realRecord = history.find(h => h.userId === record.userId && h.date === record.date);
-                                                            setSelectedRecord(realRecord || null);
-                                                            setIsEditModalOpen(true);
-                                                        }
-                                                    }}
-                                                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-brand-400 transition-colors"
-                                                    title="Adjust Attendance"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                        </div>
+                                    </div>
+
+                                    {isAdmin && (
+                                        <button 
+                                            onClick={() => {
+                                                const userProfile = usersList.find(u => u.uid === record.userId);
+                                                if (userProfile) {
+                                                    setSelectedUserForEdit(userProfile);
+                                                    setSelectedDateForEdit(record.date);
+                                                    const realRecord = history.find(h => h.userId === record.userId && h.date === record.date);
+                                                    setSelectedRecord(realRecord || null);
+                                                    setIsEditModalOpen(true);
+                                                }
+                                            }}
+                                            className="mt-4 w-full py-2 bg-[#21262d] hover:bg-[#30363d] text-gray-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[#30363d]"
+                                        >
+                                            Modify Record
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             <ManualAttendanceModal
