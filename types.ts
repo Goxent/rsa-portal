@@ -61,6 +61,7 @@ export interface WorkLog {
   id: string;
   clientId: string;
   clientName: string;
+  natureOfAssignment?: string; // New: Internal Audit, Statutory Audit, etc.
   description: string;
   duration: number;   // in hours
   billable: boolean;

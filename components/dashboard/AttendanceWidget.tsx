@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee, Search, ChevronDown, Minimize2, Maximize2, ChevronUp, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { AttendanceRecord, Client, UserRole } from '../../types';
+import { AttendanceRecord, Client, UserRole, WorkLog } from '../../types';
 import { AuthService } from '../../services/firebase';
+import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
 import EmptyState from '../common/EmptyState';
@@ -206,8 +207,8 @@ const AttendanceWidget: React.FC = () => {
     }, [clientsList]);
 
     // Modernized Work Logs
-    const [workLogs, setWorkLogs] = useState<{ id: string; clientId: string; clientName: string; description: string; duration: number; billable: boolean }[]>([
-        { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', description: '', duration: 0, billable: true }
+    const [workLogs, setWorkLogs] = useState<WorkLog[]>([
+        { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: 'Internal Audit', description: '', duration: 0, billable: true }
     ]);
 
     // Effect: Sync state with fetched history
@@ -312,6 +313,7 @@ const AttendanceWidget: React.FC = () => {
             id: Math.random().toString(36).substr(2, 9),
             clientId: 'INTERNAL',
             clientName: 'Internal Work / Office',
+            natureOfAssignment: 'Internal Audit',
             description: '',
             duration: 0,
             billable: true
@@ -491,9 +493,9 @@ const AttendanceWidget: React.FC = () => {
 
                             <div className="space-y-2">
                                 {workLogs.map((log, index) => (
-                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-white/5 border border-white/5 rounded-xl p-3 flex gap-3 group hover:border-white/10 transition-colors">
+                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-white/5 border border-white/5 rounded-xl p-3 flex flex-col xl:flex-row gap-3 group hover:border-white/10 transition-colors">
                                         {/* Client Select */}
-                                        <div className="w-1/3 min-w-[180px]">
+                                        <div className="w-full xl:w-1/4 min-w-[140px]">
                                             <SearchableClientSelect
                                                 clients={clients}
                                                 value={log.clientId}
@@ -502,15 +504,29 @@ const AttendanceWidget: React.FC = () => {
                                             />
                                         </div>
 
+                                        {/* Nature of Assignment */}
+                                        <div className="w-full xl:w-1/4">
+                                            <select
+                                                value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
+                                                onChange={(e) => updateLog(log.id, 'natureOfAssignment', e.target.value)}
+                                                disabled={status === 'COMPLETED'}
+                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-white focus:outline-none focus:border-brand-500/50 focus:bg-brand-500/5 transition-all h-[38px] appearance-none"
+                                            >
+                                                {NATURE_OF_ASSIGNMENTS.map(n => (
+                                                    <option key={n} value={n} className="bg-[#0d1526]">{n}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
                                         {/* Description */}
                                         <div className="flex-1">
                                             <input
                                                 type="text"
                                                 value={log.description}
                                                 onChange={(e) => updateLog(log.id, 'description', e.target.value)}
-                                                placeholder="What are you working on?"
+                                                placeholder="What did you do?"
                                                 disabled={status === 'COMPLETED'}
-                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/50 focus:bg-brand-500/5 transition-all h-[38px]"
+                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/50 focus:bg-brand-500/5 transition-all h-[38px]"
                                             />
                                         </div>
 

@@ -313,7 +313,7 @@ const AttendancePage: React.FC = () => {
             r.clockOut || '-',
             r.workHours ? `${r.workHours}h` : '-',
             r.workLogs?.length > 0
-                ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('; ')
+                ? r.workLogs.map((l: any) => `${l.clientName} (${l.natureOfAssignment || 'General'}): ${l.description}`).join('; ')
                 : (r.clientName || '-')
         ]);
 
@@ -366,7 +366,7 @@ const AttendancePage: React.FC = () => {
         });
 
         // ── Company Header Block ────────────────────────────────────────
-        sheet.mergeCells('A1:H1');
+        sheet.mergeCells('A1:I1');
         const titleCell = sheet.getCell('A1');
         titleCell.value = 'R. Sapkota & Associates';
         titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -374,7 +374,7 @@ const AttendancePage: React.FC = () => {
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
         sheet.getRow(1).height = 32;
 
-        sheet.mergeCells('A2:H2');
+        sheet.mergeCells('A2:I2');
         const addrCell = sheet.getCell('A2');
         addrCell.value = 'Chartered Accountants  |  Kathmandu, Nepal';
         addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FFB4C8E6' } };
@@ -382,7 +382,7 @@ const AttendancePage: React.FC = () => {
         addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
         sheet.getRow(2).height = 18;
 
-        sheet.mergeCells('A3:H3');
+        sheet.mergeCells('A3:I3');
         const reportTitleCell = sheet.getCell('A3');
         reportTitleCell.value = 'Attendance & Work Log Report';
         reportTitleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF1E293B' } };
@@ -390,7 +390,7 @@ const AttendancePage: React.FC = () => {
         reportTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
         sheet.getRow(3).height = 22;
 
-        sheet.mergeCells('A4:H4');
+        sheet.mergeCells('A4:I4');
         const periodCell = sheet.getCell('A4');
         periodCell.value = `Period: ${filterStartDate}  to  ${filterEndDate}   |   Generated: ${new Date().toLocaleString()}`;
         periodCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
@@ -409,8 +409,9 @@ const AttendancePage: React.FC = () => {
             { header: 'Clock In', key: 'in', width: 11 },
             { header: 'Clock Out', key: 'out', width: 11 },
             { header: 'Hours', key: 'hours', width: 9 },
-            { header: 'Client Name', key: 'client', width: 28 },
-            { header: 'Work Description', key: 'description', width: 50 },
+            { header: 'Client Name', key: 'client', width: 25 },
+            { header: 'Nature', key: 'nature', width: 20 },
+            { header: 'Work Description', key: 'description', width: 45 },
         ];
         sheet.columns = COLS;
 
@@ -442,6 +443,9 @@ const AttendancePage: React.FC = () => {
             const clientName = r.workLogs?.length > 0
                 ? [...new Set(r.workLogs.map((l: any) => l.clientName).filter(Boolean))].join('\n')
                 : (r.clientName || '-');
+            const natureOfAssignment = r.workLogs?.length > 0
+                ? [...new Set(r.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].join('\n')
+                : '-';
             const description = r.workLogs?.length > 0
                 ? r.workLogs.map((l: any) => l.description).filter(Boolean).join('\n')
                 : (r.notes && r.notes !== '-' ? r.notes : '-');
@@ -454,6 +458,7 @@ const AttendancePage: React.FC = () => {
                 out: r.clockOut || '-',
                 hours: r.workHours ? `${r.workHours}h` : '-',
                 client: clientName,
+                nature: natureOfAssignment,
                 description: description,
             });
 
@@ -481,6 +486,10 @@ const AttendancePage: React.FC = () => {
             // Light teal tint for client name column for easy scanning
             const clientCell = row.getCell(7);
             clientCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF0F4C75' } };
+
+            // Nature cell styling
+            const natureCell = row.getCell(8);
+            natureCell.font = { name: 'Calibri', size: 8, italic: true, color: { argb: 'FF475569' } };
 
             row.height = r.workLogs?.length > 1 ? Math.min(r.workLogs.length * 16, 80) : 18;
         });
@@ -592,18 +601,28 @@ const AttendancePage: React.FC = () => {
                             <option value="HOLIDAY">Firm Holidays</option>
                         </select>
 
-                        <div className="flex items-center gap-2 bg-[#21262d] border border-[#30363d] rounded-xl px-3 py-1.5 flex-1 lg:flex-none min-w-[200px]">
-                            <CalendarDays size={14} className="text-gray-500 shrink-0" />
-                            <div className="flex flex-col gap-0.5 w-full">
+                        <div className="flex items-start gap-3 bg-[#21262d] border border-[#30363d] rounded-xl px-3 py-2 flex-1 lg:flex-none">
+                            <CalendarDays size={14} className="text-gray-500 shrink-0 mt-1" />
+                            <div className="flex flex-col gap-1 w-full">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-tighter">Date Range</span>
-                                    <button onClick={() => setUseNepaliFrom(!useNepaliFrom)} className={`text-[8px] px-1 rounded font-black ${useNepaliFrom ? 'bg-amber-500 text-black' : 'text-gray-600'}`}>BS</button>
+                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Date Range</span>
+                                    <button onClick={() => setUseNepaliFrom(!useNepaliFrom)} className={`text-[8px] px-1.5 py-0.5 rounded font-black transition-colors ${useNepaliFrom ? 'bg-amber-500 text-black' : 'text-gray-500 bg-white/5 hover:text-gray-300'}`}>BS</button>
                                 </div>
-                                {useNepaliFrom ? (
-                                    <NepaliDatePicker value={filterStartDate} onChange={setFilterStartDate} className="!bg-transparent !border-0 !p-0 !h-6 !text-white !w-full" />
-                                ) : (
-                                    <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-xs text-white outline-none w-full" />
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {useNepaliFrom ? (
+                                        <>
+                                            <NepaliDatePicker value={filterStartDate} onChange={setFilterStartDate} className="!bg-transparent !border-0 !p-0 !h-6 !text-white !w-[80px] !text-[10px]" />
+                                            <span className="text-gray-600 text-[10px]">—</span>
+                                            <NepaliDatePicker value={filterEndDate} onChange={setFilterEndDate} className="!bg-transparent !border-0 !p-0 !h-6 !text-white !w-[80px] !text-[10px]" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-[10px] text-white outline-none w-[100px]" />
+                                            <span className="text-gray-600 text-[10px]">—</span>
+                                            <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-[10px] text-white outline-none w-[100px]" />
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -612,19 +631,19 @@ const AttendancePage: React.FC = () => {
                         </button>
                     </div>
 
-                    {isAdmin && (
-                        <button 
-                            onClick={() => {
-                                setSelectedUserForEdit(null);
-                                setSelectedDateForEdit(getCurrentDateUTC());
-                                setSelectedRecord(null);
-                                setIsEditModalOpen(true);
-                            }}
-                            className="w-full xl:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all font-black text-xs uppercase tracking-widest"
-                        >
-                            <Plus size={16} /> Manual Log
-                        </button>
-                    )}
+                    {/* Manual Log Button - Always visible for now but with role-based label if needed */}
+                    <button 
+                        onClick={() => {
+                            setSelectedUserForEdit(null);
+                            setSelectedDateForEdit(getCurrentDateUTC());
+                            setSelectedRecord(null);
+                            setIsEditModalOpen(true);
+                        }}
+                        className="w-full xl:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/20 group"
+                    >
+                        <Plus size={16} className="text-amber-500 group-hover:scale-110 transition-transform" /> 
+                        <span>Manual Log</span>
+                    </button>
                 </div>
 
                 {/* ── Main Records Section ── */}
@@ -709,9 +728,10 @@ const AttendancePage: React.FC = () => {
                                                         {record.workLogs?.length > 0 ? (
                                                             <div className="flex flex-wrap gap-2">
                                                                 {record.workLogs.slice(0, 3).map((log: any, i: number) => (
-                                                                    <div key={i} className="px-2 py-1 bg-white/[0.03] border border-white/5 rounded-md group/log cursor-default hover:bg-white/5 transition-colors max-w-[120px]">
+                                                                    <div key={i} className="px-2 py-1 bg-white/[0.03] border border-white/5 rounded-md group/log cursor-default hover:bg-white/5 transition-colors max-w-[140px]">
                                                                         <div className="text-[9px] font-black text-amber-500 truncate">{log.clientName || 'TASK'}</div>
-                                                                        <div className="text-[10px] text-gray-500 truncate mt-0.5">{log.description}</div>
+                                                                        {log.natureOfAssignment && <div className="text-[8px] font-bold text-gray-500 truncate tracking-wide">{log.natureOfAssignment}</div>}
+                                                                        <div className="text-[10px] text-gray-400 truncate mt-0.5">{log.description}</div>
                                                                     </div>
                                                                 ))}
                                                                 {record.workLogs.length > 3 && (
@@ -795,6 +815,7 @@ const AttendancePage: React.FC = () => {
                                                 <div className="space-y-1.5">
                                                     {record.workLogs.slice(0, 2).map((log: any, i: number) => (
                                                         <div key={i} className="text-[11px] text-gray-400 italic line-clamp-1 border-l-2 border-amber-500/30 pl-2">
+                                                            {log.natureOfAssignment && <span className="text-[9px] font-black text-amber-500/70 not-italic mr-1">[{log.natureOfAssignment}]</span>}
                                                             {log.description}
                                                         </div>
                                                     ))}

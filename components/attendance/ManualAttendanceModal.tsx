@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Clock, Calendar, FileText, CheckCircle2, User } from 'lucide-react';
-import { AttendanceRecord, Client, UserProfile } from '../../types';
+import { AttendanceRecord, Client, UserProfile, WorkLog } from '../../types';
 import ClientSelect from '../ClientSelect';
-import StaffSelect from '../StaffSelect'; // Assuming this exists, or we might not need it if we pass the user
+import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
+import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2 } from 'lucide-react';
 
 interface ManualAttendanceModalProps {
     isOpen: boolean;
@@ -29,6 +29,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
         clockIn: '09:00',
         clockOut: '17:00',
         clientIds: [],
+        workLogs: [],
         notes: ''
     });
 
@@ -51,6 +52,9 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     clockIn: '10:00',
                     clockOut: '17:00',
                     clientIds: [],
+                    workLogs: [
+                        { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: 'Internal Audit', description: '', duration: 0, billable: true }
+                    ],
                     notes: ''
                 });
             }
@@ -95,10 +99,42 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
         if (status === 'ABSENT' || status === 'ON LEAVE') return 0;
         if (!inTime || !outTime) return 0;
 
-        const start = new Date(`2000-01-01T${inTime}`);
-        const end = new Date(`2000-01-01T${outTime}`);
-        const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-        return diff > 0 ? Number(diff.toFixed(1)) : 0;
+        const [h, m] = inTime.split(':').map(Number);
+        const [oh, om] = outTime.split(':').map(Number);
+        const diff = (oh + om / 60) - (h + m / 60);
+        return Math.max(0, Number(diff.toFixed(2)));
+    };
+
+    const addWorkLog = () => {
+        const newLog: WorkLog = {
+            id: Math.random().toString(36).substr(2, 9),
+            clientId: 'INTERNAL',
+            clientName: 'Internal Work / Office',
+            natureOfAssignment: 'Internal Audit',
+            description: '',
+            duration: 0,
+            billable: true
+        };
+        setFormData({ ...formData, workLogs: [...(formData.workLogs || []), newLog] });
+    };
+
+    const removeWorkLog = (id: string) => {
+        setFormData({ ...formData, workLogs: (formData.workLogs || []).filter(l => l.id !== id) });
+    };
+
+    const updateWorkLog = (id: string, field: string, value: any) => {
+        const updatedLogs = (formData.workLogs || []).map(l => {
+            if (l.id === id) {
+                const updated = { ...l, [field]: value };
+                if (field === 'clientId') {
+                    const client = clients.find(c => c.id === value);
+                    if (client) updated.clientName = client.name;
+                }
+                return updated;
+            }
+            return l;
+        });
+        setFormData({ ...formData, workLogs: updatedLogs });
     };
 
     return (
@@ -176,20 +212,70 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                         </div>
                     )}
 
-                    {/* Client Selection */}
+                    {/* Work Logs Section */}
                     {formData.status !== 'ABSENT' && formData.status !== 'ON LEAVE' && (
-                        <div className="animate-in fade-in slide-in-from-top-3 space-y-2">
-                            <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                <User size={12} className="text-amber-500/50" /> Assigned Client(s)
-                            </label>
-                            <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden shadow-inner">
-                                <ClientSelect
-                                    clients={clients}
-                                    value={formData.clientIds || []}
-                                    onChange={(val) => setFormData({ ...formData, clientIds: Array.isArray(val) ? val : [val] })}
-                                    multi={true}
-                                    placeholder="Select Worked Clients..."
-                                />
+                        <div className="animate-in fade-in slide-in-from-top-3 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                    <Briefcase size={12} className="text-amber-500/50" /> Work Logs
+                                </label>
+                                <button 
+                                    type="button"
+                                    onClick={addWorkLog} 
+                                    className="text-[9px] text-amber-500 hover:text-amber-400 font-black uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 transition-all"
+                                >
+                                    + Add Item
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                {(formData.workLogs || []).map((log) => (
+                                    <div key={log.id} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-3 space-y-3 relative group">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Client</span>
+                                                <ClientSelect
+                                                    clients={clients}
+                                                    value={log.clientId}
+                                                    onChange={(val) => updateWorkLog(log.id, 'clientId', val as string)}
+                                                    placeholder="Select Client..."
+                                                    className="!h-9"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Nature of Assignment</span>
+                                                <select
+                                                    value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
+                                                    onChange={(e) => updateWorkLog(log.id, 'natureOfAssignment', e.target.value)}
+                                                    className="w-full bg-[#161b22] border border-[#30363d] rounded-xl px-3 py-1.5 text-xs text-white focus:border-amber-500/50 outline-none transition-all appearance-none h-9"
+                                                >
+                                                    {NATURE_OF_ASSIGNMENTS.map(n => (
+                                                        <option key={n} value={n}>{n}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Work Description</span>
+                                            <input
+                                                type="text"
+                                                value={log.description}
+                                                onChange={(e) => updateWorkLog(log.id, 'description', e.target.value)}
+                                                placeholder="What did you do today?"
+                                                className="w-full bg-[#161b22] border border-[#30363d] rounded-xl px-3 py-2 text-xs text-white placeholder:text-gray-700 focus:border-amber-500/50 outline-none transition-all h-9"
+                                            />
+                                        </div>
+                                        {(formData.workLogs || []).length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeWorkLog(log.id)}
+                                                className="absolute -top-2 -right-2 p-1.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg border border-rose-500/20 transition-all opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}

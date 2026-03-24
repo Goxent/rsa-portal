@@ -34,7 +34,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
 
     const filteredClients = clients.filter(client =>
         client.name.toLowerCase().includes(search.toLowerCase()) ||
-        client.code.toLowerCase().includes(search.toLowerCase())
+        (client.code && client.code.toLowerCase().includes(search.toLowerCase()))
     );
 
     const handleSelect = (clientId: string) => {
