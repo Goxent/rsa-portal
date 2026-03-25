@@ -784,7 +784,41 @@ const TasksPage: React.FC = () => {
         if (parts.length === 2) {
             const [newPhase, newStatus] = parts;
             const updates: any = {};
-            if (task.auditPhase !== newPhase) updates.auditPhase = newPhase;
+            if (task.auditPhase !== newPhase) {
+                updates.auditPhase = newPhase;
+                if (task.templateId) {
+                    const template = templates.find(t => t.id === task.templateId);
+                    if (template) {
+                        const templateSubtasks = template.subtaskDetails || [];
+                        const phaseSubtasks = templateSubtasks.filter(s => s.phase === newPhase);
+                        if (phaseSubtasks.length > 0) {
+                            const newSubtasks: SubTask[] = phaseSubtasks.map(s => {
+                                let assignedUserId = undefined;
+                                if (s.assigneeRole) {
+                                    const matchedUser = usersList.find(u => u.role === s.assigneeRole);
+                                    if (matchedUser) assignedUserId = matchedUser.uid;
+                                }
+                                return {
+                                    id: Math.random().toString(36).substr(2, 9),
+                                    title: s.title,
+                                    isCompleted: false,
+                                    createdAt: new Date().toISOString(),
+                                    createdBy: user?.uid || 'system',
+                                    assignedTo: assignedUserId
+                                };
+                            });
+                            
+                            const existingTitles = new Set(task.subtasks?.map(st => st.title) || []);
+                            const uniqueNewSubtasks = newSubtasks.filter(st => !existingTitles.has(st.title));
+                            
+                            if (uniqueNewSubtasks.length > 0) {
+                                updates.subtasks = [...(task.subtasks || []), ...uniqueNewSubtasks];
+                                toast.success(`Auto-generated ${uniqueNewSubtasks.length} subtask(s) for phase.`);
+                            }
+                        }
+                    }
+                }
+            }
             if (task.status !== newStatus) updates.status = newStatus;
             if (Object.keys(updates).length > 0) {
                 updateTaskMutation.mutate({ id: draggableId, updates });
@@ -801,6 +835,7 @@ const TasksPage: React.FC = () => {
         const assignedSet = new Set<string>();
 
         templateSubtasks.forEach((s: any) => {
+            if (s.phase && s.phase !== AuditPhase.ONBOARDING) return;
             let assignedUserId = undefined;
             if (s.assigneeRole) {
                 const matchedUser = usersList.find(u => u.role === s.assigneeRole);
@@ -835,6 +870,8 @@ const TasksPage: React.FC = () => {
             dueDate: dueDate,
             totalTimeSpent: 0,
             nextTemplateId: template.nextTemplateId || '',
+            templateId: template.id,
+            auditPhase: AuditPhase.ONBOARDING,
             assignedTo: Array.from(assignedSet)
         });
         setIsTemplateModalOpen(false);

@@ -38,7 +38,7 @@ interface TaskDetailPaneProps {
     onOpenClientDetail?: (clientId: string) => void;
 }
 
-// ── Reusable compact field wrapper ──────────────────────────────────────────
+// ── Reusable boxed field wrapper ──────────────────────────────────────────
 const Field: React.FC<{
     label: string;
     icon: React.ReactNode;
@@ -47,17 +47,16 @@ const Field: React.FC<{
     extra?: React.ReactNode;
     children: React.ReactNode;
 }> = ({ label, icon, error, span2, extra, children }) => (
-    <div className={`group flex flex-row items-center justify-between py-2 border-b border-white/[0.03] last:border-0 transition-colors ${error ? 'bg-red-500/5 px-2 rounded-t-none' : ''} ${span2 ? 'md:col-span-2 !flex-col !items-start gap-2 border-b-0 pt-3' : ''}`}>
-        <div className="flex items-center justify-between w-[110px] flex-shrink-0">
-            <label className="text-[10.5px] font-medium text-gray-500 flex items-center gap-2.5">
+    <div className={`group flex flex-col items-start gap-2 py-2 ${span2 ? 'md:col-span-2' : ''}`}>
+        <div className="flex items-center justify-between w-full">
+            <label className={`text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 ${error ? 'text-rose-400' : 'text-gray-500'}`}>
                 {icon} {label}
             </label>
-            {extra && <div className="md:hidden">{extra}</div>}
+            {extra && <div>{extra}</div>}
         </div>
-        <div className={`flex-1 flex items-center justify-end min-w-0 ${span2 ? 'w-full justify-start' : ''}`}>
+        <div className="w-full">
             {children}
         </div>
-        {extra && <div className="hidden md:block ml-3">{extra}</div>}
     </div>
 );
 
@@ -131,7 +130,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     }, [isOpen, task.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<TaskFormValues>({
+    const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
         defaultValues: {
             title: task.title || '',
@@ -150,6 +149,15 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     // Wire up description register with ref for auto-resize
     const descRegister = register('description');
+
+    const currentAssignees = watch('assignedTo') || [];
+    const currentTeamLeader = watch('teamLeaderId');
+
+    useEffect(() => {
+        if (currentTeamLeader && !currentAssignees.includes(currentTeamLeader)) {
+            setValue('teamLeaderId', '');
+        }
+    }, [currentAssignees, currentTeamLeader, setValue]);
 
     const hasUnsavedChanges = isOpen
         ? JSON.stringify(task) !== JSON.stringify(initialTaskRef.current)
@@ -184,7 +192,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         setShowDiscardBanner(false);
     };
 
-    const selectClass = "w-full bg-transparent text-[12px] font-medium text-gray-300 hover:text-white focus:outline-none cursor-pointer appearance-none text-right";
+    const selectClass = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 transition-all text-sm text-left text-gray-200 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer";
 
     return (
         <AnimatePresence>
@@ -257,9 +265,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                                     {/* ── Description ── */}
                                     <textarea
-                                        className="w-full bg-transparent border border-white/[0.05] focus:border-emerald-500/30 rounded-xl p-3 text-[13px] leading-relaxed resize-none text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all hover:bg-white/[0.02]"
-                                        placeholder="Add description..."
-                                        style={{ minHeight: '80px', maxHeight: '300px' }}
+                                        className="w-full bg-white/5 border border-white/10 focus:border-amber-500/50 rounded-xl p-4 text-[13px] leading-relaxed resize-none text-gray-200 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all hover:border-white/20"
+                                        placeholder="Add a detailed description..."
+                                        style={{ minHeight: '100px', maxHeight: '300px' }}
                                         {...descRegister}
                                         ref={e => {
                                             descRegister.ref(e);
@@ -269,7 +277,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     />
 
                                     {/* ── Properties Grid ── */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1 py-4 border-y border-white/[0.04]">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 py-6 border-y border-white/[0.06]">
                                         <Field label="Status" icon={<Activity size={12} className="text-gray-400" />} error={!!errors.status}>
                                             <select className={selectClass} {...register('status')}>
                                                 {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
@@ -291,7 +299,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         <Field label="Team Leader" icon={<ShieldAlert size={11} className="text-gray-400" />} error={!!errors.teamLeaderId}>
                                             <select className={selectClass} {...register('teamLeaderId')}>
                                                 <option value="" className="bg-[#1e293b] text-gray-500">— Unassigned —</option>
-                                                {usersList.map(u => <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>)}
+                                                {usersList.filter(u => currentAssignees.includes(u.uid)).map(u => <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>)}
                                             </select>
                                         </Field>
 
@@ -315,25 +323,25 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                                         <Field label="Dates" icon={<Calendar size={12} className="text-gray-400" />} span2
                                             extra={
-                                                <div className="flex items-center gap-0.5 bg-black/40 p-0.5 rounded-md border border-white/[0.04]">
+                                                <div className="flex items-center gap-0.5 bg-black/40 p-0.5 rounded-md border border-white/10">
                                                     {(['AD', 'BS'] as const).map(mode => (
-                                                        <button key={mode} onClick={(e) => { e.preventDefault(); setDateMode(mode); }} className={`px-2 py-0.5 rounded text-[9px] font-black transition-all ${dateMode === mode ? 'bg-brand-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-400'}`}>{mode}</button>
+                                                        <button key={mode} onClick={(e) => { e.preventDefault(); setDateMode(mode); }} className={`px-2 py-0.5 rounded text-[9px] font-black transition-all ${dateMode === mode ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}>{mode}</button>
                                                     ))}
                                                 </div>
                                             }>
-                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full justify-end mt-1">
-                                                <div className="flex items-center gap-2 text-[12px] group/date flex-1 sm:flex-none justify-end">
-                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Start</span>
+                                            <div className="flex items-center gap-4 w-full">
+                                                <div className="flex-1 relative">
+                                                    <span className="absolute -top-2 left-3 bg-[#0c0c0f] px-1 text-[9px] font-bold text-gray-500 z-10">START</span>
                                                     <Controller name="startDate" control={control} render={({ field }) => dateMode === 'AD' ? (
-                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
-                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Start date" /></div> )} />
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className={`${selectClass} text-gray-300 [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100`} />
+                                                    ) : ( <div className="w-full relative z-20"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Start date" /></div> )} />
                                                 </div>
-                                                <div className="hidden sm:block w-px h-4 bg-white/[0.06]" />
-                                                <div className="flex items-center gap-2 text-[12px] group/date flex-1 sm:flex-none justify-end">
-                                                    <span className="text-gray-600/60 text-[9px] uppercase font-bold group-hover/date:text-gray-500 transition-colors">Due</span>
+                                                <div className="w-px h-6 bg-white/[0.06]" />
+                                                <div className="flex-1 relative">
+                                                    <span className="absolute -top-2 left-3 bg-[#0c0c0f] px-1 text-[9px] font-bold text-gray-500 z-10">DUE</span>
                                                     <Controller name="dueDate" control={control} render={({ field }) => dateMode === 'AD' ? (
-                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className="bg-transparent text-gray-300 hover:text-white focus:outline-none w-[115px] sm:w-[130px] text-right cursor-pointer" />
-                                                    ) : ( <div className="w-[115px] sm:w-[130px]"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Due date" /></div> )} />
+                                                        <input type="date" value={field.value || ''} onChange={field.onChange} className={`${selectClass} text-gray-300 [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100`} />
+                                                    ) : ( <div className="w-full relative z-20"><NepaliDatePicker value={field.value || ''} onChange={field.onChange} placeholder="Due date" /></div> )} />
                                                 </div>
                                             </div>
                                         </Field>
@@ -406,33 +414,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 </div>
                             </div>
 
-                            {/* Right Column (Sidebar Activity) */}
-                            <div className="w-full md:w-[320px] lg:w-[360px] overflow-y-auto custom-scrollbar px-6 py-6 flex-shrink-0 bg-[#040608]">
-                                <div className="flex flex-col h-full">
-                                    {/* Comments */}
-                                    <div className="flex-1 space-y-3">
-                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                            <Activity size={12} /> Comments & Activity
-                                        </h4>
-                                        <div className="-mx-2 border-t border-white/[0.04] pt-4 px-2">
-                                            <TaskComments comments={task.comments || []} onAddComment={onAddComment} users={usersList} />
-                                        </div>
-                                    </div>
-
-                                    {suggestedResources.length > 0 && (
-                                        <div className="mt-8 pt-6 border-t border-white/[0.04]">
-                                            <h5 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Book size={10} /> Suggested Knowledge</h5>
-                                            <div className="flex flex-col gap-2">
-                                                {suggestedResources.map(r => (
-                                                    <a key={r.id} href={r.link || '#'} target="_blank" rel="noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300 truncate bg-emerald-500/5 hover:bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/10 transition-colors">
-                                                        {r.title}
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            {/* Right Column (Sidebar Activity) TEMPORARILY DISABLED to give main grid more horizontal space */}
                         </div>
 
                         {/* Footer Actions — slim */}

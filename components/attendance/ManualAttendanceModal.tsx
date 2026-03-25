@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { AttendanceRecord, Client, UserProfile, WorkLog } from '../../types';
 import ClientSelect from '../ClientSelect';
+import StaffSelect from '../StaffSelect';
 import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
-import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2 } from 'lucide-react';
+import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users } from 'lucide-react';
 
 interface ManualAttendanceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    record: Partial<AttendanceRecord> | null; // null means new record
-    selectedDate: string; // The date we are adding/editing for
-    selectedUser: UserProfile | null; // The user we are acting upon
+    record: Partial<AttendanceRecord> | null;
+    selectedDate: string;
+    selectedUser: UserProfile | null;
     clients: Client[];
+    users?: UserProfile[];
+    isAdmin?: boolean;
     onSave: (record: AttendanceRecord) => Promise<void>;
 }
 
@@ -21,9 +24,12 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
     selectedDate,
     selectedUser,
     clients,
+    users = [],
+    isAdmin = false,
     onSave
 }) => {
     const [isSaving, setIsSaving] = useState(false);
+    const [localUser, setLocalUser] = useState<UserProfile | null>(selectedUser);
     const [formData, setFormData] = useState<Partial<AttendanceRecord>>({
         status: 'PRESENT',
         clockIn: '09:00',
@@ -35,10 +41,10 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
+            setLocalUser(selectedUser);
             if (record) {
                 setFormData({
                     ...record,
-                    // Ensure defaults for editing
                     status: record.status || 'PRESENT',
                     clockIn: record.clockIn || '09:00',
                     clockOut: record.clockOut || '',
@@ -46,7 +52,6 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     notes: record.notes || ''
                 });
             } else {
-                // New Record Default
                 setFormData({
                     status: 'PRESENT',
                     clockIn: '10:00',
@@ -59,27 +64,30 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 });
             }
         }
-    }, [isOpen, record]);
+    }, [isOpen, record, selectedUser]);
 
-    if (!isOpen || !selectedUser) return null;
+    if (!isOpen) return null;
+
+    const activeUser = localUser;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!activeUser) {
+            return;
+        }
         setIsSaving(true);
         try {
-            // Construct the payload
             const finalRecord: AttendanceRecord = {
-                id: record?.id || `manual_${Date.now()}`, // Generate ID if new
-                userId: selectedUser.uid,
-                userName: selectedUser.displayName,
+                id: record?.id || `manual_${Date.now()}`,
+                userId: activeUser.uid,
+                userName: activeUser.displayName,
                 date: selectedDate,
                 status: formData.status as any,
                 clockIn: formData.status === 'ABSENT' || formData.status === 'ON LEAVE' ? '' : formData.clockIn!,
                 clockOut: formData.status === 'ABSENT' || formData.status === 'ON LEAVE' ? '' : formData.clockOut,
                 workHours: calculateWorkHours(formData.clockIn, formData.clockOut, formData.status as any),
                 notes: formData.notes,
-                clientIds: formData.clientIds, // Array of IDs
-                // Helper for legacy support if needed, or leave empty
+                clientIds: formData.clientIds,
                 clientId: formData.clientIds && formData.clientIds.length > 0 ? formData.clientIds[0] : undefined,
                 clientName: formData.clientIds && formData.clientIds.length > 0
                     ? clients.find(c => c.id === formData.clientIds![0])?.name
@@ -139,7 +147,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#161b22] rounded-2xl w-full max-w-lg border border-[#30363d] shadow-2xl flex flex-col overflow-hidden">
+            <div className="bg-[#161b22] rounded-2xl w-full max-w-lg border border-[#30363d] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
                 <div className="px-6 py-5 border-b border-[#30363d] flex justify-between items-center bg-[#0d1117]/50">
                     <div>
                         <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
@@ -147,7 +155,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             Log Attendance
                         </h2>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                            {selectedUser.displayName} <span className="mx-1 text-gray-700">•</span> {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {activeUser ? activeUser.displayName : 'Select Staff Member'} <span className="mx-1 text-gray-700">•</span> {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                     </div>
                     <button onClick={onClose} className="text-gray-500 hover:text-white transition-all p-1.5 hover:bg-white/5 rounded-xl border border-transparent hover:border-white/5">
@@ -155,7 +163,28 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                    {/* Staff Selector - shown when no user is pre-selected (admin creating new log) */}
+                    {!selectedUser && isAdmin && users.length > 0 && (
+                        <div className="animate-in fade-in slide-in-from-top-2">
+                            <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
+                                <Users size={12} className="text-amber-500/50" /> Select Staff Member
+                            </label>
+                            <StaffSelect
+                                value={localUser?.uid || ''}
+                                onChange={(val) => {
+                                    const uid = Array.isArray(val) ? val[0] : val;
+                                    const found = users.find(u => u.uid === uid);
+                                    setLocalUser(found || null);
+                                }}
+                                users={users}
+                            />
+                            {!localUser && (
+                                <p className="text-[10px] text-amber-500/70 mt-2 font-bold">⚠ Please select a staff member to continue</p>
+                            )}
+                        </div>
+                    )}
+
                     {/* Status Selection */}
                     <div>
                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
@@ -303,7 +332,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={isSaving}
+                            disabled={isSaving || !activeUser}
                             className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                         >
                             {isSaving ? <span className="animate-spin italic font-serif">save</span> : <Save size={14} />}

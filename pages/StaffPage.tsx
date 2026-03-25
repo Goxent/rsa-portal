@@ -149,8 +149,7 @@ const StaffPage: React.FC = () => {
     const filteredUsers = users
         .filter(u =>
             u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.department.toLowerCase().includes(searchTerm.toLowerCase())
+            u.email.toLowerCase().includes(searchTerm.toLowerCase())
         )
         .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
@@ -255,13 +254,7 @@ const StaffPage: React.FC = () => {
                                 {/* Card Body */}
                                 <div className="p-6 space-y-4 bg-navy-900/40 backdrop-blur-sm">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Department</p>
-                                            <div className="flex items-center text-sm font-medium text-gray-200">
-                                                <Briefcase size={14} className={`mr-2 ${accentColor}`} />
-                                                <span className="truncate">{staff.department}</span>
-                                            </div>
-                                        </div>
+
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Position</p>
                                             <div className="flex items-center text-sm font-medium text-gray-200">
@@ -300,7 +293,7 @@ const StaffPage: React.FC = () => {
                                 <th className="px-6 py-4 font-heading">Name</th>
                                 <th className="px-6 py-4 font-heading">Role / Position</th>
                                 <th className="px-6 py-4 font-heading">Contact</th>
-                                <th className="px-6 py-4 font-heading">Department</th>
+
                                 <th className="px-6 py-4 font-heading">Gender</th>
                                 <th className="px-6 py-4 font-heading">Status</th>
                                 <th className="px-6 py-4 font-heading">Action</th>
@@ -323,7 +316,7 @@ const StaffPage: React.FC = () => {
                                         <div>{staff.email}</div>
                                         <div className="text-gray-500">{staff.phoneNumber}</div>
                                     </td>
-                                    <td className="px-6 py-4">{staff.department}</td>
+
                                     <td className="px-6 py-4">{staff.gender || '-'}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${staff.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
@@ -381,15 +374,7 @@ const StaffPage: React.FC = () => {
                                     </select>
                                     <div className="text-[10px] text-gray-500 mt-1">* Only Master Admin can assign Admin roles</div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Department</label>
-                                    <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })}>
-                                        <option value="Audit">Audit</option>
-                                        <option value="Tax">Tax</option>
-                                        <option value="Management">Management</option>
-                                        <option value="General">General</option>
-                                    </select>
-                                </div>
+
 
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Job Position</label>
@@ -399,8 +384,11 @@ const StaffPage: React.FC = () => {
                                         onChange={e => setFormData({ ...formData, position: e.target.value })}
                                     >
                                         <option value="">Select Position</option>
+                                        <option value="Principal">Principal</option>
+                                        <option value="Manager">Manager</option>
                                         <option value="Admin">Admin</option>
                                         <option value="Staff">Staff</option>
+                                        <option value="Article Trainee">Article Trainee</option>
                                     </select>
                                 </div>
                                 <div>

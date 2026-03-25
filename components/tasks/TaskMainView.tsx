@@ -357,9 +357,9 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     const STATUS_COLS = [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.COMPLETED];
 
     const PHASE_META: Record<string, { label: string; color: string; dot: string; bg: string; border: string; headerBg: string; topBar: string; accentHex: string }> = {
-        [AuditPhase.ONBOARDING]: { label: 'Onboarding', color: 'text-cyan-400', dot: 'bg-cyan-400', bg: 'bg-[#080f14]', border: 'border-white/[0.06]', headerBg: 'bg-[#0a1520]/80', topBar: 'bg-cyan-500', accentHex: '#22d3ee' },
-        [AuditPhase.PLANNING_AND_EXECUTION]: { label: 'Planning & Execution', color: 'text-amber-400', dot: 'bg-amber-400', bg: 'bg-[#0f0d08]', border: 'border-white/[0.06]', headerBg: 'bg-[#151008]/80', topBar: 'bg-amber-500', accentHex: '#fbbf24' },
-        [AuditPhase.REVIEW_AND_CONCLUSION]: { label: 'Review & Conclusion', color: 'text-emerald-400', dot: 'bg-emerald-400', bg: 'bg-[#080f0d]', border: 'border-white/[0.06]', headerBg: 'bg-[#0a1510]/80', topBar: 'bg-emerald-500', accentHex: '#34d399' },
+        [AuditPhase.ONBOARDING]: { label: 'Onboarding', color: 'text-cyan-400', dot: 'bg-cyan-400', bg: 'bg-[#0a0c10]', border: 'border-white/[0.04]', headerBg: 'bg-[#0f1117]/90', topBar: 'bg-cyan-500', accentHex: '#22d3ee' },
+        [AuditPhase.PLANNING_AND_EXECUTION]: { label: 'Planning & Execution', color: 'text-amber-400', dot: 'bg-amber-400', bg: 'bg-[#0a0c10]', border: 'border-white/[0.04]', headerBg: 'bg-[#0f1117]/90', topBar: 'bg-amber-500', accentHex: '#fbbf24' },
+        [AuditPhase.REVIEW_AND_CONCLUSION]: { label: 'Review & Conclusion', color: 'text-emerald-400', dot: 'bg-emerald-400', bg: 'bg-[#0a0c10]', border: 'border-white/[0.04]', headerBg: 'bg-[#0f1117]/90', topBar: 'bg-emerald-500', accentHex: '#34d399' },
     };
 
     return (

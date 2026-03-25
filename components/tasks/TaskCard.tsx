@@ -57,10 +57,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
                         onClick={() => onClick(task)}
                         className={[
                             'relative group/card rounded-xl cursor-pointer select-none overflow-hidden',
-                            'bg-[#101216]/60 transition-[box-shadow,transform,background-color,border-color] duration-300 ease-out',
+                            'bg-[#1a1d24] border border-white/[0.06] shadow-sm transition-[box-shadow,transform,background-color,border-color] duration-300 ease-out',
                             snap.isDragging
-                                ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-[1.03] z-[9999] ring-2 ring-amber-500/40 border-amber-500/40 bg-[#1a1f26] !transition-none !backdrop-blur-none'
-                                : 'backdrop-blur-md hover:shadow-[0_8px_20px_rgba(0,0,0,0.4)] hover:border-white/[0.08] hover:-translate-y-[1px]',
+                                ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-[1.03] z-[9999] ring-2 ring-amber-500/40 border-amber-500/40 bg-[#262a35] !transition-none'
+                                : 'hover:bg-[#20242c] hover:shadow-[0_8px_20px_rgba(0,0,0,0.5)] hover:border-white/[0.12] hover:-translate-y-[1px]',
                             isSelected ? 'ring-1 ring-emerald-500/30 border-emerald-500/40 bg-emerald-950/10' : '',
                             isOverdue ? 'border-red-500/20' : '',
                             isCompleted ? 'opacity-60' : '',

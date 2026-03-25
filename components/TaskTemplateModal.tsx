@@ -99,11 +99,16 @@ const TaskTemplateModal: React.FC<TaskTemplateModalProps> = ({ isOpen, onClose, 
                                         <div className="mt-4 pt-4 border-t border-white/10 animate-in slide-in-from-top-2">
                                             <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Included Subtasks:</p>
                                             <ul className="space-y-1">
-                                                {(template.subtaskDetails || template.subtasks?.map(t => ({ title: t, minimumRequirement: undefined })) || []).map((task, i) => (
+                                                {(template.subtaskDetails || template.subtasks?.map(t => ({ title: t, minimumRequirement: undefined, phase: undefined })) || []).map((task, i) => (
                                                     <li key={i} className="text-sm text-gray-300 flex flex-col items-start bg-white/5 p-2 rounded border border-white/5">
                                                         <div className="flex items-center w-full">
                                                             <ChevronRight size={14} className="mr-2 text-brand-400 shrink-0" />
-                                                            <span className="font-medium">{task.title}</span>
+                                                            <span className="font-medium flex-1">{task.title}</span>
+                                                            {task.phase && (
+                                                                <span className="ml-2 text-[9px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 whitespace-nowrap">
+                                                                    {task.phase.replace(/_/g, ' ')}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         {task.minimumRequirement && (
                                                             <div className="ml-6 mt-1 text-[10px] text-gray-400 italic">

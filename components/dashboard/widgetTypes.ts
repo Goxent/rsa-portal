@@ -5,12 +5,10 @@ export type WidgetType =
     | 'all-tasks'
     | 'pending-actions'
     | 'calendar'
-    | 'recent-activity'
     | 'task-stats'
     | 'greetings'
     | 'compliance-banner'
-    | 'focus'
-    | 'workload-heatmap';
+    | 'focus';
 
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
 
@@ -70,15 +68,7 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         icon: 'Calendar',
         defaultSize: 'md',
     },
-    {
-        type: 'recent-activity',
-        title: 'Recent Activity',
-        description: 'Latest actions and updates',
-        icon: 'Activity',
-        defaultSize: 'md',
-    },
     { type: 'focus', title: 'Focus Timer', description: 'Pomodoro timer for focused work', icon: 'Target', defaultSize: 'md' },
-    { type: 'workload-heatmap', title: 'Workload Map', description: 'Heatmap of staff task distribution', icon: 'LayoutGrid', defaultSize: 'lg', adminOnly: true },
 ];
 
 import { UserRole } from '../../types';
@@ -99,10 +89,9 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
         default:
             return [
                 { id: 'w_focus', type: 'focus', title: 'Focus Timer', position: 0, size: 'md', visible: true },
-                { id: 'w_heat', type: 'workload-heatmap', title: 'Workload Map', position: 1, size: 'lg', visible: true },
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 2, size: 'md', visible: true },
-                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 3, size: 'full', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 4, size: 'md', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 1, size: 'md', visible: true },
+                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 2, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
             ];
     }
 };

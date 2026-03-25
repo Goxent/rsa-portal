@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Save, X, List, CheckCircle2, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
-import { TaskTemplate, TaskPriority, UserRole } from '../types';
+import { TaskTemplate, TaskPriority, UserRole, AuditPhase } from '../types';
 import { TemplateService } from '../services/templates';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -79,6 +79,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [newSubtaskRequirement, setNewSubtaskRequirement] = useState('');
     const [newSubtaskRole, setNewSubtaskRole] = useState<UserRole | ''>('');
     const [newSubtaskOffset, setNewSubtaskOffset] = useState('');
+    const [newSubtaskPhase, setNewSubtaskPhase] = useState<AuditPhase | ''>('');
 
     const addSubtask = () => {
         if (!newSubtask.trim()) return;
@@ -86,7 +87,8 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             title: newSubtask.trim(), 
             minimumRequirement: newSubtaskRequirement.trim() || undefined,
             assigneeRole: newSubtaskRole || undefined,
-            daysOffset: newSubtaskOffset ? parseInt(newSubtaskOffset) : undefined
+            daysOffset: newSubtaskOffset ? parseInt(newSubtaskOffset) : undefined,
+            phase: newSubtaskPhase || undefined
         };
         setCurrentTemplate(prev => ({
             ...prev,
@@ -97,6 +99,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setNewSubtaskRequirement('');
         setNewSubtaskRole('');
         setNewSubtaskOffset('');
+        setNewSubtaskPhase('');
     };
 
     const removeSubtask = (index: number) => {
@@ -234,13 +237,14 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         <span className="ml-2 px-2 py-0.5 rounded-full bg-navy-800 text-gray-400 text-[10px]">{currentTemplate.subtaskDetails?.length || 0} TOTAL</span>
                                     </label>
                                     <div className="space-y-2 mb-4">
-                                        {(currentTemplate.subtaskDetails || currentTemplate.subtasks?.map(t => ({ title: t, assigneeRole: undefined, daysOffset: undefined, minimumRequirement: undefined })) || []).map((s, idx) => (
+                                        {(currentTemplate.subtaskDetails || currentTemplate.subtasks?.map(t => ({ title: t, assigneeRole: undefined, daysOffset: undefined, minimumRequirement: undefined, phase: undefined })) || []).map((s, idx) => (
                                             <div key={idx} className="flex flex-col group bg-white/5 border border-white/5 rounded-lg p-2 hover:border-white/10 transition-colors">
                                                 <div className="flex items-center">
                                                     <div className="w-6 h-6 rounded bg-navy-800 flex items-center justify-center text-[10px] text-gray-400 font-mono mr-3 border border-white/5">
                                                         {idx + 1}
                                                     </div>
                                                     <span className="flex-1 text-sm">{s.title}</span>
+                                                    {s.phase && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{s.phase.replace(/_/g, ' ')}</span>}
                                                     {s.assigneeRole && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{s.assigneeRole}</span>}
                                                     {s.daysOffset !== undefined && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">+{s.daysOffset} d</span>}
                                                     {isAdmin && (
@@ -275,10 +279,18 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 />
                                                 <select
                                                     className="w-1/5 min-w-[100px] glass-input py-2 text-sm"
+                                                    value={newSubtaskPhase}
+                                                    onChange={e => setNewSubtaskPhase(e.target.value as AuditPhase | '')}
+                                                >
+                                                    <option value="">- Phase Setup -</option>
+                                                    {Object.values(AuditPhase).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
+                                                </select>
+                                                <select
+                                                    className="w-1/5 min-w-[100px] glass-input py-2 text-sm"
                                                     value={newSubtaskRole}
                                                     onChange={e => setNewSubtaskRole(e.target.value as UserRole | '')}
                                                 >
-                                                    <option value="">Role Setup</option>
+                                                    <option value="">- Role Setup -</option>
                                                     {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
                                                 </select>
                                                 <input

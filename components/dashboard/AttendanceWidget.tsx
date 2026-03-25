@@ -268,12 +268,7 @@ const AttendanceWidget: React.FC = () => {
                         <Minimize2 size={18} />
                     </button>
 
-                    <div className="glass-panel rounded-xl p-3 min-w-[140px] text-center">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">Current Time</p>
-                        <p className="text-xl font-mono font-bold text-slate-800 dark:text-white leading-none">
-                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        </p>
-                    </div>
+
 
                     {status === 'CLOCKED_IN' && (
                         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-[0_0_15px_rgba(16,185,129,0.15)]">

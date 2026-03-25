@@ -140,6 +140,7 @@ export interface Task {
   riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
   reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   comments?: TaskComment[];
+  templateId?: string; // NEW: The ID of the template from which this task was created
   nextTemplateId?: string; // NEW: The ID of the template to trigger upon completion
 
   // Advanced Workflow Features (TaxDome-style)
@@ -366,6 +367,7 @@ export interface TaskTemplate {
     minimumRequirement?: string; 
     assigneeRole?: UserRole | string; // NEW: Auto-assign user with this role
     daysOffset?: number; // NEW: Due date offset from anchor date
+    phase?: AuditPhase; // NEW: Phase this subtask belongs to (for auto-generation)
   }[]; // Enhanced subtasks
   expectedDays?: number;
   createdAt: string;

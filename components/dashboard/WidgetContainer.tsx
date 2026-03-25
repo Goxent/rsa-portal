@@ -146,8 +146,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         switch (widget.type) {
             case 'focus':
                 return <FocusWidget />;
-            case 'workload-heatmap':
-                return <WorkloadHeatmap staffStats={dashboardData.staffStats} totalTasks={dashboardData.relevantTasks?.length || 0} />;
             case 'all-tasks':
                 return <AllTasksWidget recentTasks={dashboardData.recentTasks} userMap={dashboardData.userMap} isLoading={dashboardData.isLoading} />;
             case 'task-stats':
@@ -156,8 +154,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                 return <MyTasksWidget {...props} />;
             case 'calendar':
                 return <CalendarWidget {...props} />;
-            case 'recent-activity':
-                return <RecentActivityWidget {...props} />;
             default:
                 return <div className="text-gray-400 text-sm">Unknown widget type</div>;
         }

@@ -62,7 +62,7 @@ const ClockWidget = () => {
                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
             </div>
             <div className="flex items-center gap-3 text-gray-500 font-bold text-[11px]">
-                <span className="flex items-center gap-1"><CalendarIcon size={11} /> {time.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
+                <span className="flex items-center gap-1"><CalendarIcon size={11} /> {time.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 <span className="w-1 h-1 rounded-full bg-gray-800" />
                 <span>{np.format('DD MMMM, YYYY')} BS</span>
             </div>
@@ -275,29 +275,53 @@ const AttendancePage: React.FC = () => {
         };
     }, [reportData]);
 
+    // ── Helper Functions for Exports ─────────────────────────────────
+    const formatDateAD = (dateStr: string) => {
+        try { return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }); }
+        catch { return dateStr; }
+    };
+    const formatDateBS = (dateStr: string) => {
+        try { return new NepaliDate(new Date(dateStr + 'T00:00:00')).format('DD MMM, YYYY'); }
+        catch { return '-'; }
+    };
+    const getDayOfWeek = (dateStr: string) => {
+        try { return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }); }
+        catch { return '-'; }
+    };
+    const getPeriodStats = () => {
+        const totalPresent = reportData.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length;
+        const totalAbsent = reportData.filter(r => r.status === 'ABSENT').length;
+        const totalLeave = reportData.filter(r => r.status === 'ON LEAVE').length;
+        const totalHoliday = reportData.filter(r => r.status === 'HOLIDAY' || r.status === 'WEEKEND').length;
+        const totalHours = reportData.reduce((sum, r) => sum + (r.workHours || 0), 0);
+        return { totalPresent, totalAbsent, totalLeave, totalHoliday, totalHours: totalHours.toFixed(1) };
+    };
+
     // EXPORT
     const handleExportPDF = () => {
-        const doc = new jsPDF();
+        const doc = new jsPDF({ orientation: 'landscape' });
+        const pageW = doc.internal.pageSize.width;
 
         // ── Header Banner ──────────────────────────────────────────────
         doc.setFillColor(15, 23, 42);
-        doc.rect(0, 0, 210, 48, 'F');
+        doc.rect(0, 0, pageW, 48, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
-        doc.text('R. Sapkota & Associates', 105, 14, { align: 'center' });
+        doc.text('R. Sapkota & Associates', pageW / 2, 14, { align: 'center' });
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(180, 200, 230);
-        doc.text('Chartered Accountants  |  Kathmandu, Nepal', 105, 22, { align: 'center' });
+        doc.text('Chartered Accountants  |  Kathmandu, Nepal', pageW / 2, 22, { align: 'center' });
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text('Attendance & Work Log Report', 105, 32, { align: 'center' });
+        doc.text('Attendance & Work Log Report', pageW / 2, 32, { align: 'center' });
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(180, 200, 230);
-        doc.text(`Period: ${filterStartDate}  to  ${filterEndDate}`, 105, 40, { align: 'center' });
+        const periodBs = `${formatDateBS(filterStartDate)} - ${formatDateBS(filterEndDate)} BS`;
+        doc.text(`Period: ${formatDateAD(filterStartDate)} to ${formatDateAD(filterEndDate)}  |  ${periodBs}`, pageW / 2, 40, { align: 'center' });
 
         // ── Generated timestamp ─────────────────────────────────────────
         doc.setFontSize(7);
@@ -305,15 +329,21 @@ const AttendancePage: React.FC = () => {
         doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 55);
 
         // ── Table ───────────────────────────────────────────────────────
-        const rows = reportData.map(r => [
-            r.date,
+        const rows = reportData.map((r, idx) => [
+            idx + 1,
+            formatDateAD(r.date),
+            formatDateBS(r.date),
+            getDayOfWeek(r.date),
             r.userName,
             r.status,
             r.clockIn || '-',
             r.clockOut || '-',
             r.workHours ? `${r.workHours}h` : '-',
             r.workLogs?.length > 0
-                ? r.workLogs.map((l: any) => `${l.clientName} (${l.natureOfAssignment || 'General'}): ${l.description}`).join('; ')
+                ? [...new Set(r.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].join(', ')
+                : '-',
+            r.workLogs?.length > 0
+                ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('; ')
                 : (r.clientName || '-')
         ]);
 
@@ -326,14 +356,24 @@ const AttendancePage: React.FC = () => {
         };
 
         autoTable(doc, {
-            head: [['Date', 'Staff', 'Status', 'Clock In', 'Clock Out', 'Hrs', 'Work Description']],
+            head: [['SN', 'Date (AD)', 'Date (BS)', 'Day', 'Staff', 'Status', 'In', 'Out', 'Hrs', 'Nature of Assignment', 'Client & Work Description']],
             body: rows,
             startY: 60,
-            styles: { fontSize: 7.5, cellPadding: 3, lineColor: [220, 225, 235], lineWidth: 0.2 },
-            headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
-            columnStyles: { 6: { cellWidth: 70 } },
+            styles: { fontSize: 7, cellPadding: 2.5, lineColor: [220, 225, 235], lineWidth: 0.2 },
+            headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5 },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' },
+                1: { cellWidth: 24 },
+                2: { cellWidth: 24 },
+                3: { cellWidth: 12 },
+                5: { cellWidth: 16, halign: 'center' },
+                6: { cellWidth: 12 },
+                7: { cellWidth: 12 },
+                8: { cellWidth: 10, halign: 'center' },
+                10: { cellWidth: 'auto' },
+            },
             didParseCell: (data) => {
-                if (data.section === 'body' && data.column.index === 2) {
+                if (data.section === 'body' && data.column.index === 5) {
                     const status = data.cell.raw as string;
                     data.cell.styles.fillColor = getStatusColor(status);
                     data.cell.styles.textColor = [30, 41, 59];
@@ -343,6 +383,30 @@ const AttendancePage: React.FC = () => {
             alternateRowStyles: { fillColor: [248, 250, 252] },
         });
 
+        // ── Summary Stats ───────────────────────────────────────────────
+        const pStats = getPeriodStats();
+        const finalY = (doc as any).lastAutoTable.finalY + 8;
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(14, finalY, pageW - 28, 22, 2, 2, 'F');
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 41, 59);
+        doc.text('PERIOD SUMMARY', 20, finalY + 7);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.text(`Present: ${pStats.totalPresent}   |   Absent: ${pStats.totalAbsent}   |   On Leave: ${pStats.totalLeave}   |   Holidays/Weekends: ${pStats.totalHoliday}   |   Total Hours: ${pStats.totalHours}h   |   Total Records: ${reportData.length}`, 20, finalY + 15);
+
+        // ── Signature Block ─────────────────────────────────────────────
+        const sigY = finalY + 35;
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.line(20, sigY, 80, sigY);
+        doc.text('Staff Signature', 35, sigY + 5);
+        doc.line(110, sigY, 170, sigY);
+        doc.text('Supervisor / Manager', 125, sigY + 5);
+        doc.line(200, sigY, 260, sigY);
+        doc.text('Date', 225, sigY + 5);
+
         // ── Footer ──────────────────────────────────────────────────────
         const pageCount = (doc as any).internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
@@ -350,7 +414,7 @@ const AttendancePage: React.FC = () => {
             doc.setFontSize(7);
             doc.setTextColor(150, 160, 175);
             doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 8);
-            doc.text(`Page ${i} of ${pageCount}`, 196, doc.internal.pageSize.height - 8, { align: 'right' });
+            doc.text(`Page ${i} of ${pageCount}`, pageW - 14, doc.internal.pageSize.height - 8, { align: 'right' });
         }
 
         doc.save(`RSA_Attendance_${filterStartDate}_to_${filterEndDate}.pdf`);
@@ -365,8 +429,11 @@ const AttendancePage: React.FC = () => {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
+        const TOTAL_COLS = 12; // SN + Date(AD) + Date(BS) + Day + Staff + Status + In + Out + Hrs + Client + Nature + Description
+        const lastColLetter = 'L';
+
         // ── Company Header Block ────────────────────────────────────────
-        sheet.mergeCells('A1:I1');
+        sheet.mergeCells(`A1:${lastColLetter}1`);
         const titleCell = sheet.getCell('A1');
         titleCell.value = 'R. Sapkota & Associates';
         titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -374,7 +441,7 @@ const AttendancePage: React.FC = () => {
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
         sheet.getRow(1).height = 32;
 
-        sheet.mergeCells('A2:I2');
+        sheet.mergeCells(`A2:${lastColLetter}2`);
         const addrCell = sheet.getCell('A2');
         addrCell.value = 'Chartered Accountants  |  Kathmandu, Nepal';
         addrCell.font = { name: 'Calibri', size: 10, color: { argb: 'FFB4C8E6' } };
@@ -382,7 +449,7 @@ const AttendancePage: React.FC = () => {
         addrCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
         sheet.getRow(2).height = 18;
 
-        sheet.mergeCells('A3:I3');
+        sheet.mergeCells(`A3:${lastColLetter}3`);
         const reportTitleCell = sheet.getCell('A3');
         reportTitleCell.value = 'Attendance & Work Log Report';
         reportTitleCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF1E293B' } };
@@ -390,9 +457,10 @@ const AttendancePage: React.FC = () => {
         reportTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
         sheet.getRow(3).height = 22;
 
-        sheet.mergeCells('A4:I4');
+        sheet.mergeCells(`A4:${lastColLetter}4`);
         const periodCell = sheet.getCell('A4');
-        periodCell.value = `Period: ${filterStartDate}  to  ${filterEndDate}   |   Generated: ${new Date().toLocaleString()}`;
+        const bsPeriod = `${formatDateBS(filterStartDate)} - ${formatDateBS(filterEndDate)} BS`;
+        periodCell.value = `Period: ${formatDateAD(filterStartDate)} to ${formatDateAD(filterEndDate)}  |  ${bsPeriod}  |  Generated: ${new Date().toLocaleString()}`;
         periodCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
         periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
         periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
@@ -403,14 +471,17 @@ const AttendancePage: React.FC = () => {
 
         // ── Column Headers ──────────────────────────────────────────────
         const COLS = [
-            { header: 'Date', key: 'date', width: 13 },
+            { header: 'SN', key: 'sn', width: 6 },
+            { header: 'Date (AD)', key: 'dateAD', width: 16 },
+            { header: 'Date (BS)', key: 'dateBS', width: 16 },
+            { header: 'Day', key: 'day', width: 10 },
             { header: 'Staff Name', key: 'name', width: 22 },
             { header: 'Status', key: 'status', width: 13 },
             { header: 'Clock In', key: 'in', width: 11 },
             { header: 'Clock Out', key: 'out', width: 11 },
             { header: 'Hours', key: 'hours', width: 9 },
             { header: 'Client Name', key: 'client', width: 25 },
-            { header: 'Nature', key: 'nature', width: 20 },
+            { header: 'Nature of Assignment', key: 'nature', width: 22 },
             { header: 'Work Description', key: 'description', width: 45 },
         ];
         sheet.columns = COLS;
@@ -439,7 +510,6 @@ const AttendancePage: React.FC = () => {
         };
 
         reportData.forEach((r, idx) => {
-            // Build client name and description from workLogs if available
             const clientName = r.workLogs?.length > 0
                 ? [...new Set(r.workLogs.map((l: any) => l.clientName).filter(Boolean))].join('\n')
                 : (r.clientName || '-');
@@ -451,7 +521,10 @@ const AttendancePage: React.FC = () => {
                 : (r.notes && r.notes !== '-' ? r.notes : '-');
 
             const row = sheet.addRow({
-                date: r.date,
+                sn: idx + 1,
+                dateAD: formatDateAD(r.date),
+                dateBS: formatDateBS(r.date),
+                day: getDayOfWeek(r.date),
                 name: r.userName,
                 status: r.status,
                 in: r.clockIn || '-',
@@ -470,7 +543,7 @@ const AttendancePage: React.FC = () => {
                 cell.alignment = { vertical: 'top', wrapText: true };
                 cell.fill = {
                     type: 'pattern', pattern: 'solid',
-                    fgColor: { argb: colNum === 3 ? statusBg : rowBg }
+                    fgColor: { argb: colNum === 6 ? statusBg : rowBg }
                 };
                 cell.border = {
                     bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
@@ -478,20 +551,88 @@ const AttendancePage: React.FC = () => {
                 };
             });
 
+            // SN cell - centered
+            const snCell = row.getCell(1);
+            snCell.alignment = { horizontal: 'center', vertical: 'top' };
+
             // Bold + centered status cell
-            const statusCell = row.getCell(3);
+            const statusCell = row.getCell(6);
             statusCell.font = { name: 'Calibri', size: 9, bold: true };
             statusCell.alignment = { horizontal: 'center', vertical: 'top' };
 
-            // Light teal tint for client name column for easy scanning
-            const clientCell = row.getCell(7);
+            // Client name styling
+            const clientCell = row.getCell(10);
             clientCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF0F4C75' } };
 
             // Nature cell styling
-            const natureCell = row.getCell(8);
+            const natureCell = row.getCell(11);
             natureCell.font = { name: 'Calibri', size: 8, italic: true, color: { argb: 'FF475569' } };
 
             row.height = r.workLogs?.length > 1 ? Math.min(r.workLogs.length * 16, 80) : 18;
+        });
+
+        // ── Summary Statistics ───────────────────────────────────────────
+        const pStats = getPeriodStats();
+        const blankRow = sheet.addRow({});
+        blankRow.height = 8;
+
+        const summaryHeaderRow = sheet.addRow({});
+        sheet.mergeCells(`A${summaryHeaderRow.number}:${lastColLetter}${summaryHeaderRow.number}`);
+        const summaryHeaderCell = summaryHeaderRow.getCell(1);
+        summaryHeaderCell.value = 'PERIOD SUMMARY';
+        summaryHeaderCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+        summaryHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        summaryHeaderRow.height = 24;
+
+        const statsData = [
+            ['Total Present', pStats.totalPresent, 'Total Absent', pStats.totalAbsent, 'On Leave', pStats.totalLeave],
+            ['Holidays/Weekends', pStats.totalHoliday, 'Total Hours', `${pStats.totalHours}h`, 'Total Records', reportData.length],
+        ];
+
+        statsData.forEach(rowData => {
+            const sRow = sheet.addRow({});
+            [1, 3, 5].forEach((colIdx, i) => {
+                const labelCell = sRow.getCell(colIdx);
+                labelCell.value = rowData[i * 2] as string;
+                labelCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF475569' } };
+                labelCell.alignment = { horizontal: 'right', vertical: 'middle' };
+                const valCell = sRow.getCell(colIdx + 1);
+                valCell.value = rowData[i * 2 + 1];
+                valCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+                valCell.alignment = { horizontal: 'left', vertical: 'middle' };
+            });
+            sRow.height = 20;
+        });
+
+        // ── Signature Block ──────────────────────────────────────────────
+        const sigBlankRow = sheet.addRow({});
+        sigBlankRow.height = 30;
+
+        const sigRow = sheet.addRow({});
+        const sigLabels = [
+            { col: 2, text: '________________________' },
+            { col: 5, text: '________________________' },
+            { col: 8, text: '________________________' },
+        ];
+        sigLabels.forEach(s => {
+            const c = sigRow.getCell(s.col);
+            c.value = s.text;
+            c.font = { name: 'Calibri', size: 9, color: { argb: 'FF94A3B8' } };
+            c.alignment = { horizontal: 'center' };
+        });
+
+        const sigLabelRow = sheet.addRow({});
+        const sigTexts = [
+            { col: 2, text: 'Staff Signature' },
+            { col: 5, text: 'Supervisor / Manager' },
+            { col: 8, text: 'Date' },
+        ];
+        sigTexts.forEach(s => {
+            const c = sigLabelRow.getCell(s.col);
+            c.value = s.text;
+            c.font = { name: 'Calibri', size: 8, italic: true, color: { argb: 'FF94A3B8' } };
+            c.alignment = { horizontal: 'center' };
         });
 
         // ── Freeze header rows ──────────────────────────────────────────
@@ -617,9 +758,9 @@ const AttendancePage: React.FC = () => {
                                         </>
                                     ) : (
                                         <>
-                                            <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-[10px] text-white outline-none w-[100px]" />
-                                            <span className="text-gray-600 text-[10px]">—</span>
-                                            <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-[10px] text-white outline-none w-[100px]" />
+                                            <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-xs text-white outline-none w-[140px]" />
+                                            <span className="text-gray-600 text-xs">—</span>
+                                            <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-xs text-white outline-none w-[140px]" />
                                         </>
                                     )}
                                 </div>
@@ -660,42 +801,51 @@ const AttendancePage: React.FC = () => {
                                 <table className="w-full text-left border-collapse min-w-[1000px]">
                                     <thead>
                                         <tr className="border-b border-[#30363d] bg-[#0d1117]/50">
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Date & Staff</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Timing</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Status / Activity</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Clients & Work Logs</th>
-                                            {isAdmin && <th className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>}
+                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest w-12">SN</th>
+                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Date & Staff</th>
+                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest w-20">Day</th>
+                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Timing</th>
+                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Status</th>
+                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Nature of Assignment</th>
+                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Clients & Work Logs</th>
+                                            {isAdmin && <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#30363d]">
                                         {loading ? (
-                                            <tr><td colSpan={5} className="p-32 text-center">
+                                            <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center">
                                                 <div className="flex flex-col items-center gap-4">
                                                     <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
                                                     <span className="text-gray-500 font-bold uppercase tracking-widest text-[11px]">Synchronizing Records...</span>
                                                 </div>
                                             </td></tr>
                                         ) : reportData.length === 0 ? (
-                                            <tr><td colSpan={5} className="p-32 text-center text-gray-600 font-bold italic tracking-wide">No attendance records found for the selected criteria.</td></tr>
+                                            <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center text-gray-600 font-bold italic tracking-wide">No attendance records found for the selected criteria.</td></tr>
                                         ) : (
-                                            reportData.map((record) => (
+                                            reportData.map((record, idx) => (
                                                 <tr key={record.id} className="hover:bg-[#21262d]/40 transition-all group/row">
-                                                    <td className="px-6 py-5">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-full bg-[#30363d] border border-[#484f58] flex items-center justify-center text-gray-300 font-black text-xs shadow-inner">
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-[11px] font-bold text-gray-600 tabular-nums">{idx + 1}</span>
+                                                    </td>
+                                                    <td className="px-4 py-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-9 h-9 rounded-full bg-[#30363d] border border-[#484f58] flex items-center justify-center text-gray-300 font-black text-[10px] shadow-inner">
                                                                 {record.userName.substring(0, 2).toUpperCase()}
                                                             </div>
                                                             <div>
                                                                 <div className="text-[13px] font-bold text-white leading-tight">{record.userName}</div>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <span className="text-[10px] font-black text-gray-500 uppercase">{new Date(record.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
+                                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                                    <span className="text-[10px] font-black text-gray-500 uppercase">{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                                                     <span className="w-1 h-1 rounded-full bg-gray-700" />
-                                                                    <span className="text-[10px] font-bold text-amber-500/80">{new NepaliDate(new Date(record.date)).format('DD MMM')}</span>
+                                                                    <span className="text-[10px] font-bold text-amber-500/80">{(() => { try { return new NepaliDate(new Date(record.date + 'T00:00:00')).format('DD MMM, YYYY'); } catch { return '-'; } })()}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-5">
+                                                    <td className="px-4 py-4">
+                                                        <span className="text-[11px] font-bold text-gray-400">{(() => { try { return new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }); } catch { return '-'; } })()}</span>
+                                                    </td>
+                                                    <td className="px-4 py-5">
                                                         {record.clockIn ? (
                                                             <div className="space-y-1.5">
                                                                 <div className="flex items-center gap-2 text-[11px] text-gray-300 font-bold tabular-nums">
@@ -713,7 +863,7 @@ const AttendancePage: React.FC = () => {
                                                             <div className="text-gray-700 font-black tracking-widest text-[10px]">UNTRACKED</div>
                                                         )}
                                                     </td>
-                                                    <td className="px-6 py-5">
+                                                    <td className="px-4 py-5">
                                                         <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black border uppercase tracking-widest shadow-sm ${
                                                             record.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                             record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
@@ -724,13 +874,23 @@ const AttendancePage: React.FC = () => {
                                                             {record.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-5">
+                                                    <td className="px-4 py-5">
+                                                        {record.workLogs?.length > 0 ? (
+                                                            <div className="space-y-1">
+                                                                {[...new Set(record.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].map((nature: string, i: number) => (
+                                                                    <span key={i} className="inline-block px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/15 rounded text-[9px] font-bold mr-1 mb-1">{nature}</span>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-700 text-[10px] italic">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-5">
                                                         {record.workLogs?.length > 0 ? (
                                                             <div className="flex flex-wrap gap-2">
                                                                 {record.workLogs.slice(0, 3).map((log: any, i: number) => (
                                                                     <div key={i} className="px-2 py-1 bg-white/[0.03] border border-white/5 rounded-md group/log cursor-default hover:bg-white/5 transition-colors max-w-[140px]">
                                                                         <div className="text-[9px] font-black text-amber-500 truncate">{log.clientName || 'TASK'}</div>
-                                                                        {log.natureOfAssignment && <div className="text-[8px] font-bold text-gray-500 truncate tracking-wide">{log.natureOfAssignment}</div>}
                                                                         <div className="text-[10px] text-gray-400 truncate mt-0.5">{log.description}</div>
                                                                     </div>
                                                                 ))}
@@ -745,7 +905,7 @@ const AttendancePage: React.FC = () => {
                                                         )}
                                                     </td>
                                                     {isAdmin && (
-                                                        <td className="px-6 py-5 text-right">
+                                                        <td className="px-4 py-5 text-right">
                                                             <button
                                                                 onClick={() => {
                                                                     const userProfile = usersList.find(u => u.uid === record.userId);
@@ -797,7 +957,7 @@ const AttendancePage: React.FC = () => {
                                         </div>
                                         <div>
                                             <div className="text-sm font-bold text-white tracking-tight">{record.userName}</div>
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter mt-0.5">{record.date}</div>
+                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter mt-0.5">{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                                         </div>
                                     </div>
 
@@ -848,6 +1008,43 @@ const AttendancePage: React.FC = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* ── Period Summary Bar ── */}
+                {!loading && reportData.length > 0 && (() => {
+                    const pStats = getPeriodStats();
+                    return (
+                        <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+                            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Period Summary</div>
+                            <div className="flex flex-wrap items-center gap-6">
+                                <div className="text-center">
+                                    <div className="text-lg font-black text-emerald-400 tabular-nums">{pStats.totalPresent}</div>
+                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Present</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-lg font-black text-rose-400 tabular-nums">{pStats.totalAbsent}</div>
+                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Absent</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-lg font-black text-sky-400 tabular-nums">{pStats.totalLeave}</div>
+                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Leave</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-lg font-black text-purple-400 tabular-nums">{pStats.totalHoliday}</div>
+                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Holidays</div>
+                                </div>
+                                <div className="h-8 w-px bg-[#30363d]" />
+                                <div className="text-center">
+                                    <div className="text-lg font-black text-amber-400 tabular-nums">{pStats.totalHours}h</div>
+                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Total Hours</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-lg font-black text-gray-300 tabular-nums">{reportData.length}</div>
+                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
 
             <ManualAttendanceModal
@@ -857,6 +1054,8 @@ const AttendancePage: React.FC = () => {
                 selectedDate={selectedDateForEdit}
                 selectedUser={selectedUserForEdit}
                 clients={clients}
+                users={usersList}
+                isAdmin={isAdmin}
                 onSave={async (newRecord) => {
                     await AuthService.recordAttendance(newRecord);
                     toast.success('Attendance updated successfully');
