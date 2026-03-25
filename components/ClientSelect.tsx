@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronsUpDown, Search, Building2, User } from 'lucide-react';
 import { Client } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,6 +29,32 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
 }) => {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
+    const [coords, setCoords] = useState<{ top: number, left: number, width: number }>({ top: 0, left: 0, width: 0 });
+    const triggerRef = useRef<HTMLButtonElement>(null);
+
+    // Update position when opened or window resized/scrolled
+    const updateCoords = useCallback(() => {
+        if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setCoords({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        if (open) {
+            updateCoords();
+            window.addEventListener('resize', updateCoords);
+            window.addEventListener('scroll', updateCoords, true);
+        }
+        return () => {
+            window.removeEventListener('resize', updateCoords);
+            window.removeEventListener('scroll', updateCoords, true);
+        };
+    }, [open, updateCoords]);
 
     // Ensure value is always an array for consistent handling in multi-mode
     const selectedIds = Array.isArray(value) ? value : (value ? [value] : []);
@@ -78,9 +105,76 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
         }
     };
 
+    const dropdownContent = (
+        <div 
+            className="fixed z-[10000] animate-in fade-in slide-in-from-top-1 duration-150"
+            style={{
+                top: coords.top - window.scrollY,
+                left: coords.left - window.scrollX,
+                width: coords.width,
+                marginTop: '6px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+        >
+            <div className="bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl overflow-hidden p-2">
+                {/* Search Input */}
+                <div className="flex items-center px-3 pb-2 border-b border-white/5 mb-2">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <input
+                        className="flex h-10 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-gray-500 text-white"
+                        placeholder="Search clients..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        autoFocus
+                    />
+                </div>
+
+                {/* List */}
+                <div className="max-h-[250px] overflow-y-auto custom-scrollbar space-y-1">
+                    {filteredClients.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-gray-500">No client found.</div>
+                    ) : (
+                        filteredClients.map((client) => {
+                            const isSelected = selectedIds.includes(client.id);
+                            return (
+                                <div
+                                    key={client.id}
+                                    onClick={() => handleSelect(client.id)}
+                                    className={`
+                                        relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm outline-none 
+                                        transition-colors hover:bg-amber-600/20 data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                                        ${isSelected ? 'bg-amber-600/30 text-blue-100' : 'text-gray-300'}
+                                    `}
+                                >
+                                    <div className="flex-1">
+                                        <div className="font-medium text-white flex justify-between">
+                                            <span>{client.name}</span>
+                                            {client.code && <span className="text-xs bg-white/10 px-1.5 rounded text-gray-400 font-mono ml-2">{client.code}</span>}
+                                        </div>
+                                        <div className="text-xs text-gray-500 flex items-center mt-0.5">
+                                            {client.serviceType}
+                                            {client.status === 'Inactive' && <span className="ml-2 text-red-400">• Inactive</span>}
+                                        </div>
+                                    </div>
+                                    {isSelected && <Check className="ml-auto h-4 w-4 text-amber-400" />}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="pt-2 mt-2 border-t border-white/5 text-[10px] text-center text-gray-500">
+                    Showing {filteredClients.length} of {clients.length} clients
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className={`relative ${className}`}>
             <button
+                ref={triggerRef}
                 type="button"
                 onClick={() => !disabled && setOpen(!open)}
                 disabled={disabled}
@@ -105,67 +199,10 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-40"
+                            className="fixed inset-0 z-[9999]"
                             onClick={() => setOpen(false)}
                         />
-                        <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="absolute z-50 w-full mt-2 bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl overflow-hidden p-2"
-                        >
-                            {/* Search Input */}
-                            <div className="flex items-center px-3 pb-2 border-b border-white/5 mb-2">
-                                <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                                <input
-                                    className="flex h-10 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-gray-500 text-white"
-                                    placeholder="Search clients..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    autoFocus
-                                />
-                            </div>
-
-                            {/* List */}
-                            <div className="max-h-[250px] overflow-y-auto custom-scrollbar space-y-1">
-                                {filteredClients.length === 0 ? (
-                                    <div className="py-6 text-center text-sm text-gray-500">No client found.</div>
-                                ) : (
-                                    filteredClients.map((client) => {
-                                        const isSelected = selectedIds.includes(client.id);
-                                        return (
-                                            <div
-                                                key={client.id}
-                                                onClick={() => handleSelect(client.id)}
-                                                className={`
-                                                    relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm outline-none 
-                                                    transition-colors hover:bg-amber-600/20 data-[disabled]:pointer-events-none data-[disabled]:opacity-50
-                                                    ${isSelected ? 'bg-amber-600/30 text-blue-100' : 'text-gray-300'}
-                                                `}
-                                            >
-                                                <div className="flex-1">
-                                                    <div className="font-medium text-white flex justify-between">
-                                                        <span>{client.name}</span>
-                                                        {client.code && <span className="text-xs bg-white/10 px-1.5 rounded text-gray-400 font-mono ml-2">{client.code}</span>}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 flex items-center mt-0.5">
-                                                        {client.serviceType}
-                                                        {client.status === 'Inactive' && <span className="ml-2 text-red-400">• Inactive</span>}
-                                                    </div>
-                                                </div>
-                                                {isSelected && <Check className="ml-auto h-4 w-4 text-amber-400" />}
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-
-                            {/* Footer */}
-                            <div className="pt-2 mt-2 border-t border-white/5 text-[10px] text-center text-gray-500">
-                                Showing {filteredClients.length} of {clients.length} clients
-                            </div>
-                        </motion.div>
+                        {createPortal(dropdownContent, document.body)}
                     </>
                 )}
             </AnimatePresence>
