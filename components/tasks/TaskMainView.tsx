@@ -407,21 +407,21 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             ref={prov.innerRef}
                                                             {...prov.droppableProps}
                                                             className={[
-                                                                `pb-2 transition-all duration-200 flex flex-col`,
-                                                                snap.isDraggingOver ? `${cfg.dropGlow} ring-1 ${cfg.ring}` : '',
-                                                            ].join(' ')}
+                                                                `pb-2 transition-all duration-300 flex flex-col`,
+                                                                snap.isDraggingOver ? `ring-1 ring-inset ${cfg.ring} bg-white/[0.02]` : '',
+                                                            ].filter(Boolean).join(' ')}
                                                         >
                                                             {/* Status section header */}
-                                                            <div className={`flex items-center gap-2 px-3 py-2 sticky top-0 z-[5] ${cfg.headerBg} border-b border-white/[0.03]`} style={{ backdropFilter: 'blur(12px)' }}>
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} style={{ boxShadow: `0 0 6px ${cfg.dotColor}40` }} />
+                                                            <div className={`flex items-center gap-2 px-3 py-2 sticky top-0 z-[5] ${cfg.headerBg} border-b border-white/[0.03] transition-colors duration-300 ${snap.isDraggingOver ? 'bg-opacity-80' : ''}`} style={{ backdropFilter: 'blur(12px)' }}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot} transition-transform duration-300 ${snap.isDraggingOver ? 'scale-125' : ''}`} style={{ boxShadow: `0 0 6px ${cfg.dotColor}40` }} />
                                                                 <span className="text-[9px] font-bold uppercase tracking-[0.12em] flex-1 text-slate-400">{cfg.label}</span>
                                                                 <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${cfg.countBg}`}>{colTasks.length}</span>
                                                             </div>
 
                                                             {/* Task cards */}
-                                                            <div className="flex flex-col gap-1.5 min-h-[36px] px-2 pt-1.5">
+                                                            <div className="flex flex-col gap-1.5 min-h-[48px] px-2 pt-1.5">
                                                                 {colTasks.map((task, i) => (
-                                                                    <div key={task.id} className={`rounded-xl transition-all duration-200 hover:ring-1 ${cfg.ring}`}>
+                                                                    <div key={task.id} className="rounded-xl">
                                                                         <TaskCard
                                                                             task={task}
                                                                             index={i}
