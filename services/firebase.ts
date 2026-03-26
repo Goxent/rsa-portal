@@ -133,7 +133,30 @@ export const AuthService = {
                 });
                 return { uid, ...userDoc.data() } as UserProfile;
             } else {
-                throw new Error("No staff profile found for this account. Please contact your administrator.");
+                // Orphaned Auth Account recovery
+                // If the user's Auth account survived a deletion but an admin re-added them to the directory
+                const normalizedEmail = email.toLowerCase().trim();
+                const usersSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', normalizedEmail)));
+                
+                if (!usersSnapshot.empty) {
+                    const existingDoc = usersSnapshot.docs[0];
+                    const existingData = existingDoc.data() as UserProfile;
+                    
+                    const newUser = {
+                        ...existingData,
+                        uid,
+                        isSetupComplete: false,
+                        status: 'Active' as any,
+                    };
+                    
+                    await setDoc(doc(db, 'users', uid), newUser);
+                    await AuthService.migrateUserTasks(existingDoc.id, uid);
+                    await deleteDoc(doc(db, 'users', existingDoc.id));
+                    
+                    return newUser;
+                } else {
+                    throw new Error("No staff profile found for this account. Please contact your administrator.");
+                }
             }
         } catch (error: any) {
             // Log failure
@@ -178,7 +201,24 @@ export const AuthService = {
             }
 
             // STEP 2: Create Auth User FIRST (to bypass unauthenticated Firestore rules)
-            userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            try {
+                userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            } catch (authErr: any) {
+                if (authErr.code === 'auth/email-already-in-use') {
+                    // Seamless auto-recovery for orphaned testing accounts
+                    try {
+                        userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                        console.log("Successfully intercepted orphaned account and logged in dynamically.");
+                    } catch (loginErr: any) {
+                        if (loginErr.code === 'auth/wrong-password' || loginErr.code === 'auth/invalid-credential') {
+                            throw new Error('This email was already registered in a previous session. The password you just entered does not match the original one you set. Please use the Login tab instead.');
+                        }
+                        throw authErr; // Re-throw original if it's some other weird error
+                    }
+                } else {
+                    throw authErr;
+                }
+            }
             const uid = userCredential.user.uid;
 
             // STEP 3: Validate email is in users directory (Staff Directory)
