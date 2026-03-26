@@ -742,26 +742,57 @@ const AttendancePage: React.FC = () => {
                             <option value="HOLIDAY">Firm Holidays</option>
                         </select>
 
-                        <div className="flex items-start gap-3 bg-[#21262d] border border-[#30363d] rounded-xl px-3 py-2 flex-1 lg:flex-none">
-                            <CalendarDays size={14} className="text-gray-500 shrink-0 mt-1" />
-                            <div className="flex flex-col gap-1 w-full">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Date Range</span>
-                                    <button onClick={() => setUseNepaliFrom(!useNepaliFrom)} className={`text-[8px] px-1.5 py-0.5 rounded font-black transition-colors ${useNepaliFrom ? 'bg-amber-500 text-black' : 'text-gray-500 bg-white/5 hover:text-gray-300'}`}>BS</button>
-                                </div>
+                        <div className="flex-1 lg:flex-none min-w-[320px] bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2 group hover:border-[#484f58] transition-all">
+                            <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
+                                    <CalendarDays size={14} className="text-amber-500" />
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Date Range</span>
+                                </div>
+                                <button 
+                                    onClick={() => setUseNepaliFrom(!useNepaliFrom)} 
+                                    className={`text-[9px] px-2 py-0.5 rounded font-black transition-all ${useNepaliFrom ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-400 bg-white/5 hover:text-gray-300'}`}
+                                >
+                                    BS
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1 relative">
+                                    <span className="absolute -top-3.5 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">FROM</span>
                                     {useNepaliFrom ? (
-                                        <>
-                                            <NepaliDatePicker value={filterStartDate} onChange={setFilterStartDate} className="!bg-transparent !border-0 !p-0 !h-6 !text-white !w-[80px] !text-[10px]" />
-                                            <span className="text-gray-600 text-[10px]">—</span>
-                                            <NepaliDatePicker value={filterEndDate} onChange={setFilterEndDate} className="!bg-transparent !border-0 !p-0 !h-6 !text-white !w-[80px] !text-[10px]" />
-                                        </>
+                                        <NepaliDatePicker 
+                                            value={filterStartDate} 
+                                            onChange={setFilterStartDate} 
+                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-7 !text-white !text-xs !static" 
+                                            placeholder="Start Date"
+                                            showADDate={false}
+                                        />
                                     ) : (
-                                        <>
-                                            <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-xs text-white outline-none w-[140px]" />
-                                            <span className="text-gray-600 text-xs">—</span>
-                                            <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="bg-transparent border-0 p-0 h-6 text-xs text-white outline-none w-[140px]" />
-                                        </>
+                                        <input 
+                                            type="date" 
+                                            value={filterStartDate} 
+                                            onChange={(e) => setFilterStartDate(e.target.value)} 
+                                            className="w-full bg-transparent border-0 p-0 h-7 text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
+                                        />
+                                    )}
+                                </div>
+                                <div className="w-px h-5 bg-[#30363d]" />
+                                <div className="flex-1 relative">
+                                    <span className="absolute -top-3.5 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">TO</span>
+                                    {useNepaliFrom ? (
+                                        <NepaliDatePicker 
+                                            value={filterEndDate} 
+                                            onChange={setFilterEndDate} 
+                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-7 !text-white !text-xs !static" 
+                                            placeholder="End Date"
+                                            showADDate={false}
+                                        />
+                                    ) : (
+                                        <input 
+                                            type="date" 
+                                            value={filterEndDate} 
+                                            onChange={(e) => setFilterEndDate(e.target.value)} 
+                                            className="w-full bg-transparent border-0 p-0 h-7 text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
+                                        />
                                     )}
                                 </div>
                             </div>
