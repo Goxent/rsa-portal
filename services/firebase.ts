@@ -133,32 +133,7 @@ export const AuthService = {
                 });
                 return { uid, ...userDoc.data() } as UserProfile;
             } else {
-                // Fallback: If Auth successful but no Profile, create one!
-                const newUser: UserProfile = {
-                    uid,
-                    email,
-                    displayName: email.split('@')[0],
-                    role: UserRole.STAFF,
-                    department: 'General',
-                    isSetupComplete: false,
-                    status: 'Pending Approval' as any,
-                    phoneNumber: '',
-                    address: '',
-                    position: 'Staff',
-                    dateOfJoining: getCurrentDateUTC(),
-                    gender: 'Other'
-                };
-                await setDoc(doc(db, 'users', uid), newUser);
-                await createAuditLog({
-                    userId: uid,
-                    userName: newUser.displayName,
-                    action: AuditAction.USER_CREATED,
-                    targetType: 'user',
-                    targetId: uid,
-                    targetName: newUser.displayName,
-                    details: { method: 'Fallback during login' }
-                });
-                return newUser;
+                throw new Error("No staff profile found for this account. Please contact your administrator.");
             }
         } catch (error: any) {
             // Log failure
@@ -250,17 +225,7 @@ export const AuthService = {
                     // Delete the old placeholder doc
                     await deleteDoc(doc(db, 'users', existingUserDoc.id));
                 } else {
-                    // Create pending profile if not explicitly invited by Admin
-                    newUser = {
-                        uid,
-                        email: normalizedInputEmail,
-                        displayName: email.split('@')[0],
-                        role: UserRole.STAFF, // Default lowest role
-                        department: 'General',
-                        isSetupComplete: false,
-                        status: 'Pending Approval' as any, // Needs admin approval to access
-                    };
-                    await setDoc(doc(db, 'users', uid), newUser);
+                    throw new Error("No staff profile found for this email. Registration is restricted to pre-approved staff only.");
                 }
 
                 // Send Verification Email
