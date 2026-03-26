@@ -1,7 +1,7 @@
 // Client Engagement Scoring Service
 // Calculates and tracks client engagement levels based on interactions
 
-import { Client } from '../types';
+import { Client, TaskStatus } from '../types';
 import { AuthService } from './firebase';
 
 export type EngagementTier = 'inactive' | 'low' | 'medium' | 'high' | 'champion';
@@ -79,7 +79,7 @@ export class ClientEngagementService {
 
         // Task Activity Score (30% weight)
         // Based on: active tasks, completion rate, recent activity
-        const activeTasks = clientTasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'BLOCKED');
+        const activeTasks = clientTasks.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED);
         const completedTasks = clientTasks.filter(t => t.status === 'COMPLETED');
         const recentTasks = clientTasks.filter(t => {
             const taskDate = new Date(t.createdAt || t.dueDate);
@@ -110,9 +110,9 @@ export class ClientEngagementService {
         let billingScore = 50; // Base
         if (client.billingAmount && Number(client.billingAmount) > 0) {
             billingScore += 20;
-            if (client.paymentStatus === 'PAID') {
+            if (client.paymentStatus === 'Paid') {
                 billingScore += 30;
-            } else if (client.paymentStatus === 'PARTIAL') {
+            } else if (client.paymentStatus === 'Partial') {
                 billingScore += 15;
             }
         }

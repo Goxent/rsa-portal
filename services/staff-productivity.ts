@@ -1,7 +1,7 @@
 // Staff Productivity Metrics Service
 // Calculate and analyze staff productivity data
 
-import { Task, UserProfile, AttendanceRecord } from '../types';
+import { AttendanceRecord, Task, TaskStatus, UserProfile } from '../types';
 import { AuthService } from './firebase';
 
 export interface StaffMetrics {
@@ -86,9 +86,7 @@ export class StaffProductivityService {
 
         // Task counts
         const completedTasks = tasksInRange.filter(t => t.status === 'COMPLETED');
-        const activeTasks = tasksInRange.filter(t =>
-            t.status !== 'COMPLETED' && t.status !== 'BLOCKED'
-        );
+        const activeTasks = tasksInRange.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED);
         const overdueTasks = tasksInRange.filter(t =>
             t.status !== 'COMPLETED' && t.dueDate < todayStr
         );

@@ -147,6 +147,7 @@ export interface Task {
   tags?: string[]; // Custom status/category tags
   totalTimeSpent?: number; // Total minutes logged on this task
   auditPhase?: AuditPhase; // The specific audit phase this task is currently under
+  updatedAt?: string; // Added for engagement tracking
 }
 
 export interface TaskComment {
@@ -161,6 +162,7 @@ export interface TaskComment {
 export interface Client {
   id: string;
   name: string;
+  businessName?: string; // Added for engagement tracking
   code: string;
   pan?: string;       // New from previous refactor
   phone?: string;     // New from previous refactor
@@ -181,6 +183,9 @@ export interface Client {
   signingAuthorityId?: string; // UID of the signee (Partner/Manager)
   signingAuthority?: string; // Display Name (Partner/Manager)
   contactPerson?: string;
+  contactPersonName?: string; // Added for engagement tracking
+  contactPersonPhone?: string; // Added for engagement tracking
+  contactPersonPan?: string; // Added for engagement tracking
   contactPersonRole?: string;
 
   // Billing (New)

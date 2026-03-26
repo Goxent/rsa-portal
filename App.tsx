@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -128,9 +128,8 @@ const App: React.FC = () => {
         <ThemeProvider>
           <AuthProvider>
             <ModalProvider>
-              <HashRouter>
+              <BrowserRouter>
                 <Routes>
-                  {/* Public Routes */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
@@ -228,7 +227,7 @@ const App: React.FC = () => {
                 {/* Global Toast Notifications */}
                 <ThemedToaster />
                 <ModalManager />
-              </HashRouter>
+              </BrowserRouter>
             </ModalProvider>
           </AuthProvider>
         </ThemeProvider>

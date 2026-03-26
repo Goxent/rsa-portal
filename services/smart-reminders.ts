@@ -1,7 +1,7 @@
 // Smart Reminders & Scheduling Service
 // Intelligent notification scheduling based on user behavior and deadlines
 
-import { Task, UserProfile } from '../types';
+import { Task, TaskStatus, UserProfile, AppNotification } from '../types';
 import { AuthService } from './firebase';
 import { db } from './firebase';
 import { collection, addDoc, query, where, orderBy, getDocs, updateDoc, doc, deleteDoc, Timestamp } from 'firebase/firestore';
@@ -160,7 +160,7 @@ export class SmartRemindersService {
             const hoursAhead = DEFAULT_ADVANCE_NOTICE.task_due;
 
             for (const task of userTasks) {
-                if (task.status === 'COMPLETED' || task.status === 'BLOCKED') continue;
+                if (task.status === TaskStatus.COMPLETED || task.status === TaskStatus.ARCHIVED) continue;
 
                 const dueDate = new Date(task.dueDate);
                 const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);

@@ -87,6 +87,9 @@ export const db = initializeFirestore(app!, {
     })
 });
 
+import { getStorage } from 'firebase/storage';
+export const storage = getStorage(app!);
+
 // Action Code Settings for Email Verification
 const getActionCodeSettings = (): ActionCodeSettings => {
     // Get the current URL or use a default
