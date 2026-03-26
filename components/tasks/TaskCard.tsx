@@ -191,9 +191,6 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                     </div>
                 );
 
-                if (snap.isDragging) {
-                    return createPortal(child, document.body);
-                }
                 return child;
             }}
         </Draggable>

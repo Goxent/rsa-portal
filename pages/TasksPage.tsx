@@ -1094,11 +1094,11 @@ const TasksPage: React.FC = () => {
                 <AnimatePresence>
                     {showFilterPanel && (
                         <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
+                            initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                            animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
+                            exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
                             transition={{ duration: 0.15 }}
-                            className="overflow-hidden border-t border-white/[0.04]"
+                            className="border-t border-white/[0.04]"
                         >
                             <div className="px-4 py-3">
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-3xl">

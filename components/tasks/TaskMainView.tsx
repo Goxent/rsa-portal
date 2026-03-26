@@ -373,9 +373,9 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
 
                             return (
-                                <div key={phase} className={`flex flex-col flex-1 min-w-[280px] sm:min-w-[310px] rounded-xl overflow-hidden border ${pm.border} bg-[#06080a]/40 backdrop-blur-md`}>
+                                <div key={phase} className={`flex flex-col flex-1 min-w-[280px] sm:min-w-[310px] rounded-xl overflow-hidden border ${pm.border} bg-[#06080a]`}>
                                     {/* Phase header */}
-                                    <div className={`relative flex-shrink-0 ${pm.headerBg} backdrop-blur-sm px-4 py-3`}>
+                                    <div className={`relative flex-shrink-0 ${pm.headerBg} px-4 py-3`}>
                                         <div
                                             className="absolute top-0 left-0 right-0 h-[2px] opacity-60"
                                             style={{ background: `linear-gradient(90deg, ${pm.accentHex}, transparent)` }}

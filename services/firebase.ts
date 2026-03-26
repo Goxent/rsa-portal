@@ -281,6 +281,11 @@ export const AuthService = {
 
                 // ROLLBACK FOR DB ISSUES
                 console.error("Firestore profile creation failed. Rolling back Auth User.", firestoreError);
+                try {
+                    await deleteDoc(doc(db, 'users', uid));
+                } catch (e) {
+                    console.error("Failed to clean up isolated profile", e);
+                }
                 await userCredential.user.delete();
                 throw new Error("Registration failed due to system error. Please try again.");
             }
@@ -454,6 +459,15 @@ export const AuthService = {
 
     // Admin creating a placeholder user (profile only)
     createStaffUser: async (staffData: Partial<UserProfile>) => {
+        // Prevent duplicate staff records for the same email
+        if (staffData.email) {
+            const normalizedEmail = staffData.email.toLowerCase().trim();
+            const existingUsers = await getDocs(query(collection(db, 'users'), where('email', '==', normalizedEmail)));
+            if (!existingUsers.empty) {
+                throw new Error(`A system user with the email ${normalizedEmail} already exists.`);
+            }
+        }
+
         // We'll create a profile with a temporary ID if no UID exists
         const tempId = 'pending_' + Date.now();
         await setDoc(doc(db, 'users', tempId), {

@@ -208,13 +208,13 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         onClick={handleCloseAttempt}
                     />
 
-                    {/* Drawer */}
+                    {/* Centered Modal */}
                     <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
-                        className="absolute right-0 top-0 bottom-0 w-full max-w-[850px] bg-[#0c0c0f] shadow-2xl border-l border-white/[0.08] flex flex-col overflow-hidden z-50"
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="relative w-full max-w-[850px] max-h-[90vh] bg-[#0c0c0f] shadow-2xl border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden z-50"
                     >
                         {/* Status color bar */}
                         <div className={`h-0.5 w-full ${

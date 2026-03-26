@@ -29,7 +29,8 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow create: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
+      // Allow deletion by MASTER_ADMIN, or allow migration flow to clean up pending_ placeholders
+      allow delete: if isAuthenticated() && (getUserRole() == 'MASTER_ADMIN' || userId.matches('^pending_.*'));
     }
 
     // STAFF ALLOWLIST — Used before auth account is created
