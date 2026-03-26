@@ -421,17 +421,16 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             {/* Task cards */}
                                                             <div className="flex flex-col gap-1.5 min-h-[48px] px-2 pt-1.5">
                                                                 {colTasks.map((task, i) => (
-                                                                    <div key={task.id} className="rounded-xl">
-                                                                        <TaskCard
-                                                                            task={task}
-                                                                            index={i}
-                                                                            usersList={usersList}
-                                                                            selectedTaskIds={selectedTaskIds}
-                                                                            onToggleSelection={onToggleSelection}
-                                                                            onClick={handleOpenEdit}
-                                                                            onOpenClientDetail={onOpenClientDetail}
-                                                                        />
-                                                                    </div>
+                                                                    <TaskCard
+                                                                        key={task.id}
+                                                                        task={task}
+                                                                        index={i}
+                                                                        usersList={usersList}
+                                                                        selectedTaskIds={selectedTaskIds}
+                                                                        onToggleSelection={onToggleSelection}
+                                                                        onClick={handleOpenEdit}
+                                                                        onOpenClientDetail={onOpenClientDetail}
+                                                                    />
                                                                 ))}
                                                                 {prov.placeholder}
 

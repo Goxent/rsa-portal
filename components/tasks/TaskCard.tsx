@@ -36,7 +36,7 @@ export interface TaskCardProps {
     onOpenClientDetail?: (clientId: string) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTaskIds, onToggleSelection, onClick, onOpenClientDetail }) => {
+const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, selectedTaskIds, onToggleSelection, onClick, onOpenClientDetail }) => {
     const isSelected = selectedTaskIds.includes(task.id);
     const done = task.subtasks?.filter(s => s.isCompleted).length ?? 0;
     const total = task.subtasks?.length ?? 0;
@@ -198,6 +198,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, usersList, selectedTas
             }}
         </Draggable>
     );
-};
+}, (prevProps, nextProps) => {
+    return (
+        prevProps.task.id === nextProps.task.id &&
+        prevProps.task.status === nextProps.task.status &&
+        prevProps.task.auditPhase === nextProps.task.auditPhase &&
+        prevProps.task.title === nextProps.task.title &&
+        prevProps.task.dueDate === nextProps.task.dueDate &&
+        prevProps.task.priority === nextProps.task.priority &&
+        prevProps.task.assignedTo.length === nextProps.task.assignedTo.length &&
+        prevProps.task.clientName === nextProps.task.clientName &&
+        prevProps.task.subtasks?.length === nextProps.task.subtasks?.length &&
+        (prevProps.task.subtasks?.filter(s => s.isCompleted).length === nextProps.task.subtasks?.filter(s => s.isCompleted).length) &&
+        prevProps.index === nextProps.index &&
+        prevProps.selectedTaskIds.includes(prevProps.task.id) === nextProps.selectedTaskIds.includes(nextProps.task.id)
+    );
+});
 
 export default TaskCard;
