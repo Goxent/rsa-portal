@@ -31,7 +31,7 @@ const TemplatesPage: React.FC = () => {
     const { openModal } = useModal();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
-    const [activeTab, setActiveTab] = useState<ActiveTab>('templates');
+    const [activeTab, setActiveTab] = useState<ActiveTab>('knowledge');
 
     // ── Templates state ────────────────────────────────────────────────────────
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -251,13 +251,13 @@ const TemplatesPage: React.FC = () => {
                 </div>
                 {/* Stats strip */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                        <FileCode size={14} className="text-amber-400" />
-                        <span className="text-xs font-bold text-amber-300">{templates.length} Templates</span>
-                    </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
                         <BookOpen size={14} className="text-blue-400" />
                         <span className="text-xs font-bold text-blue-300">{resources.length} Documents</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <FileCode size={14} className="text-amber-400" />
+                        <span className="text-xs font-bold text-amber-300">{templates.length} Templates</span>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
                         <FolderOpen size={14} className="text-purple-400" />
@@ -269,17 +269,6 @@ const TemplatesPage: React.FC = () => {
             {/* ── Tab Switcher ── */}
             <div className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl w-fit">
                 <button
-                    onClick={() => setActiveTab('templates')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                        activeTab === 'templates'
-                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
-                        : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                    }`}
-                >
-                    <FileCode size={13} /> Templates
-                    {templates.length > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'templates' ? 'bg-black/20 text-black' : 'bg-white/10 text-gray-400'}`}>{templates.length}</span>}
-                </button>
-                <button
                     onClick={() => setActiveTab('knowledge')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
                         activeTab === 'knowledge'
@@ -289,6 +278,17 @@ const TemplatesPage: React.FC = () => {
                 >
                     <BookOpen size={13} /> Knowledge Base
                     {resources.length > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'knowledge' ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'}`}>{resources.length}</span>}
+                </button>
+                <button
+                    onClick={() => setActiveTab('templates')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        activeTab === 'templates'
+                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                    }`}
+                >
+                    <FileCode size={13} /> Templates
+                    {templates.length > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'templates' ? 'bg-black/20 text-black' : 'bg-white/10 text-gray-400'}`}>{templates.length}</span>}
                 </button>
                 <button
                     onClick={() => setActiveTab('library')}
