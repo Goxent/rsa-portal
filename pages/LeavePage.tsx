@@ -11,6 +11,21 @@ import { leaveSchema, LeaveFormValues } from '../utils/validationSchemas';
 
 const ARTICLESHIP_LEAVE_LIMIT = 120; // 3 Years Total
 
+// Helper to get current Nepali Year range (approx April 14th to April 13th)
+const getCurrentNepaliYearRange = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-indexed
+    const day = now.getDate();
+
+    // If it's before April 14, we're in the previous year's range (which ends this April)
+    // If it's April 14 or later, we're in the new BS year (which ends next April)
+    if (month < 3 || (month === 3 && day < 14)) {
+        return { start: `${year - 1}-04-14`, end: `${year}-04-13` };
+    }
+    return { start: `${year}-04-14`, end: `${year + 1}-04-13` };
+};
+
 const LeavePage: React.FC = () => {
     const { user } = useAuth();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
@@ -62,8 +77,18 @@ const LeavePage: React.FC = () => {
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Inclusive
     };
 
-    const totalDaysTaken = myApprovedLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
-    const balanceRemaining = ARTICLESHIP_LEAVE_LIMIT - totalDaysTaken;
+    const isArticleTrainee = user?.position === 'Article Trainee';
+    const { start: npStart, end: npEnd } = getCurrentNepaliYearRange();
+
+    const currentYearApprovedLeaves = myApprovedLeaves.filter(l => {
+        return l.startDate >= npStart && l.startDate <= npEnd;
+    });
+
+    const totalDaysTaken = isArticleTrainee
+        ? myApprovedLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0)
+        : currentYearApprovedLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
+
+    const balanceRemaining = isArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT - totalDaysTaken : null;
 
     // Breakdown by type
     const breakdown = {
@@ -149,7 +174,12 @@ const LeavePage: React.FC = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Leave Management</h1>
-                    <p className="text-sm text-gray-400">Articleship Leave Balance (3 Years)</p>
+                    <p className="text-sm text-gray-400">
+                        {user?.position === 'Article Trainee'
+                            ? `Articleship Leave Balance (120 Days / 3 Years)`
+                            : `Staff Leave Balances (Nepali Year ${new Date().getFullYear()}/${new Date().getFullYear() + 1})`
+                        }
+                    </p>
                 </div>
                 <div className="flex items-center gap-4">
                     {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
@@ -248,7 +278,7 @@ const LeavePage: React.FC = () => {
                         <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
                             <div>
                                 <h3 className="font-bold text-white">Staff Leave Balances</h3>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">Total Limit: {ARTICLESHIP_LEAVE_LIMIT} Days</p>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">Rule: 120d for Article Trainees • Yearly for others</p>
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -257,18 +287,26 @@ const LeavePage: React.FC = () => {
                                     <tr className="text-gray-400 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
                                         <th className="px-6 py-4">Employee</th>
                                         <th className="px-6 py-4">Position</th>
-                                        <th className="px-6 py-4">Leaves Taken</th>
+                                        <th className="px-6 py-4 font-bold text-gray-300">Total / Yearly Taken</th>
                                         <th className="px-6 py-4">Adjustment</th>
-                                        <th className="px-6 py-4">Net Balance</th>
+                                        <th className="px-6 py-4">Status / Balance</th>
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {allStaff.map(staffMember => {
+                                        const isStaffArticleTrainee = staffMember.position === 'Article Trainee';
                                         const staffLeaves = leaves.filter(l => l.userId === staffMember.uid && l.status === 'APPROVED');
-                                        const taken = staffLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
+
+                                        // For Article Trainees, count all leaves (lifetime limit)
+                                        // For others, count ONLY current Nepali Year
+                                        const taken = isStaffArticleTrainee
+                                            ? staffLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0)
+                                            : staffLeaves.filter(l => l.startDate >= npStart && l.startDate <= npEnd)
+                                                .reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
+
                                         const adj = staffMember.leaveAdjustment || 0;
-                                        const net = ARTICLESHIP_LEAVE_LIMIT - (taken + adj);
+                                        const net = isStaffArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT - (taken + adj) : null;
 
                                         return (
                                             <tr key={staffMember.uid} className="hover:bg-white/5 transition-colors group">
@@ -291,12 +329,16 @@ const LeavePage: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`font-bold font-mono ${net < 20 ? 'text-red-400' : 'text-emerald-400'}`}>{net}d</span>
-                                                        <div className="w-20 bg-white/5 rounded-full h-1 hidden md:block">
-                                                            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.max(0, (net / ARTICLESHIP_LEAVE_LIMIT) * 100)}%` }}></div>
+                                                    {isStaffArticleTrainee ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`font-bold font-mono ${net! < 20 ? 'text-red-400' : 'text-emerald-400'}`}>{net}d Balance</span>
+                                                            <div className="w-20 bg-white/5 rounded-full h-1 hidden md:block">
+                                                                <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.max(0, (net! / ARTICLESHIP_LEAVE_LIMIT) * 100)}%` }}></div>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    ) : (
+                                                        <span className="text-gray-500 text-xs italic">Yearly Total</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button
@@ -330,25 +372,40 @@ const LeavePage: React.FC = () => {
                             <div className="relative z-10 flex flex-col justify-between h-full">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="text-sm font-medium text-gray-400">Total Leaves Taken</p>
-                                        <h2 className="text-4xl font-bold text-white mt-1">{totalDaysTaken} <span className="text-lg text-gray-500 font-medium">/ {ARTICLESHIP_LEAVE_LIMIT} Days</span></h2>
+                                        <p className="text-sm font-medium text-gray-400">
+                                            {isArticleTrainee ? 'Lifetime Leaves Taken' : 'Leaves Taken (Current Year)'}
+                                        </p>
+                                        <h2 className="text-4xl font-bold text-white mt-1">
+                                            {totalDaysTaken}
+                                            {isArticleTrainee && <span className="text-lg text-gray-500 font-medium">/ {ARTICLESHIP_LEAVE_LIMIT} Days</span>}
+                                            {!isArticleTrainee && <span className="text-lg text-gray-500 font-medium ml-2 text-[15px]">Days Total</span>}
+                                        </h2>
                                     </div>
                                     <div className="p-2 bg-amber-500/20 text-amber-300 rounded-lg border border-amber-500/20"><CalendarDays size={20} /></div>
                                 </div>
 
                                 <div className="mt-6">
-                                    <div className="flex justify-between text-xs text-gray-400 mb-2">
-                                        <span>Utilization</span>
-                                        <span>{Math.round((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100)}%</span>
-                                    </div>
-                                    <div className="w-full bg-white/10 rounded-full h-2">
-                                        <div
-                                            className={`h-2 rounded-full shadow-[0_0_10px_currentColor] transition-all duration-1000 ${totalDaysTaken > 100 ? 'bg-red-500 text-red-500' :
-                                                totalDaysTaken > 60 ? 'bg-amber-500 text-amber-500' : 'bg-amber-500 text-amber-500'
-                                                }`}
-                                            style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
-                                        ></div>
-                                    </div>
+                                    {isArticleTrainee ? (
+                                        <>
+                                            <div className="flex justify-between text-xs text-gray-400 mb-2">
+                                                <span>Utilization</span>
+                                                <span>{Math.round((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100)}%</span>
+                                            </div>
+                                            <div className="w-full bg-white/10 rounded-full h-2">
+                                                <div
+                                                    className={`h-2 rounded-full shadow-[0_0_10px_currentColor] transition-all duration-1000 ${totalDaysTaken > 100 ? 'bg-red-500 text-red-500' :
+                                                        totalDaysTaken > 60 ? 'bg-amber-500 text-amber-500' : 'bg-amber-500 text-amber-500'
+                                                        }`}
+                                                    style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Tracking current year only</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
