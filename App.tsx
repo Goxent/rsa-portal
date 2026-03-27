@@ -23,7 +23,7 @@ const LeavePage = lazy(() => import('./pages/LeavePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
-const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
+
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage'));
 const StaffPage = lazy(() => import('./pages/StaffPage'));
@@ -189,7 +189,7 @@ const App: React.FC = () => {
                         <LazyPage><ResourcePlanningPage /></LazyPage>
                       </AdminRoute>
                     } />
-                    <Route path="resources" element={<LazyPage><ResourcesPage /></LazyPage>} />
+                    <Route path="resources" element={<Navigate to="/templates" replace />} />
 
                     <Route path="knowledge-base" element={<Navigate to="/templates" replace />} />
                     <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />

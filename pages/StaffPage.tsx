@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Briefcase, Calendar, Plus, Search, Grid, List, Shield, X, Edit, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Briefcase, Calendar, Plus, Search, Grid, List, Shield, X, Edit, Save, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { UserProfile, UserRole, StaffDirectoryProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
@@ -20,6 +20,7 @@ const StaffPage: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [formError, setFormError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     const [formData, setFormData] = useState<Partial<UserProfile>>({
         displayName: '',
@@ -114,11 +115,16 @@ const StaffPage: React.FC = () => {
                 if (formData.status === 'Inactive' && formData.email) {
                     await AuthService.deleteStaffUser(selectedUser.uid, formData.email);
                 }
+                setSuccessMessage('Staff profile updated successfully!');
             } else {
                 await AuthService.createStaffUser(formData);
+                setSuccessMessage('Staff member added to the directory!');
             }
             await fetchUsers();
-            setIsModalOpen(false);
+            setTimeout(() => {
+                setIsModalOpen(false);
+                setSuccessMessage('');
+            }, 1800);
         } catch (error: any) {
             setFormError(error.message);
         } finally {
@@ -349,6 +355,11 @@ const StaffPage: React.FC = () => {
                         </div>
 
                         <form onSubmit={handleSave} className="p-6 overflow-y-auto">
+                            {successMessage && (
+                                <div className="mb-4 bg-emerald-500/20 text-emerald-200 px-4 py-3 rounded-lg flex items-center text-sm border border-emerald-500/30 animate-in fade-in duration-300">
+                                    <CheckCircle2 size={16} className="mr-2 flex-shrink-0" /> {successMessage}
+                                </div>
+                            )}
                             {formError && (
                                 <div className="mb-4 bg-red-500/20 text-red-200 px-4 py-3 rounded-lg flex items-center text-sm border border-red-500/20">
                                     <AlertCircle size={16} className="mr-2" /> {formError}
@@ -428,9 +439,13 @@ const StaffPage: React.FC = () => {
                             </div>
 
                             <div className="pt-6 mt-4 border-t border-white/10 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 transition-colors text-sm">Cancel</button>
-                                <button type="submit" className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center">
-                                    <Save size={16} className="mr-2" /> Save Profile
+                                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 transition-colors text-sm disabled:opacity-50">Cancel</button>
+                                <button type="submit" disabled={isSaving} className="bg-brand-600 hover:bg-brand-500 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center min-w-[130px] justify-center transition-all">
+                                    {isSaving ? (
+                                        <><Loader2 size={16} className="mr-2 animate-spin" /> Saving...</>
+                                    ) : (
+                                        <><Save size={16} className="mr-2" /> Save Profile</>
+                                    )}
                                 </button>
                             </div>
                         </form>

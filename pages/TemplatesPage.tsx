@@ -13,6 +13,7 @@ import { StorageService } from '../services/storage';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
 import ResearchAssistant from '../components/ResearchAssistant';
+import LibraryTab from '../components/resources/LibraryTab';
 import toast from 'react-hot-toast';
 import { useModal } from '../context/ModalContext';
 
@@ -22,7 +23,7 @@ const DEFAULT_COLORS = [
     '#8B5CF6', '#EC4899', '#06B6D4', '#F97316',
 ];
 
-type ActiveTab = 'templates' | 'knowledge';
+type ActiveTab = 'templates' | 'knowledge' | 'library';
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 const TemplatesPage: React.FC = () => {
@@ -240,33 +241,64 @@ const TemplatesPage: React.FC = () => {
             {/* ── Page Header ── */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Library className="text-amber-400" size={20} />
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-2.5 font-heading">
+                        <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                            <Library className="text-amber-400" size={22} />
+                        </div>
                         Resources
                     </h1>
-                    <p className="text-[12px] text-slate-500 mt-0.5">Templates, SOPs, and firm knowledge — all in one place</p>
+                    <p className="text-[13px] text-slate-500 mt-1 ml-12">Templates, SOPs, and firm knowledge — all in one place</p>
+                </div>
+                {/* Stats strip */}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <FileCode size={14} className="text-amber-400" />
+                        <span className="text-xs font-bold text-amber-300">{templates.length} Templates</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                        <BookOpen size={14} className="text-blue-400" />
+                        <span className="text-xs font-bold text-blue-300">{resources.length} Documents</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                        <FolderOpen size={14} className="text-purple-400" />
+                        <span className="text-xs font-bold text-purple-300">Library</span>
+                    </div>
                 </div>
             </div>
 
             {/* ── Tab Switcher ── */}
-            <div className="flex items-center gap-0.5 p-0.5 bg-white/[0.03] border border-white/[0.06] rounded-lg w-fit">
+            <div className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl w-fit">
                 <button
                     onClick={() => setActiveTab('templates')}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${activeTab === 'templates'
-                        ? 'bg-amber-500 text-black shadow-sm shadow-amber-500/20'
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        activeTab === 'templates'
+                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
                         : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                        }`}
+                    }`}
                 >
                     <FileCode size={13} /> Templates
+                    {templates.length > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'templates' ? 'bg-black/20 text-black' : 'bg-white/10 text-gray-400'}`}>{templates.length}</span>}
                 </button>
                 <button
                     onClick={() => setActiveTab('knowledge')}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${activeTab === 'knowledge'
-                        ? 'bg-amber-500 text-black shadow-sm shadow-amber-500/20'
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        activeTab === 'knowledge'
+                        ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
                         : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                        }`}
+                    }`}
                 >
                     <BookOpen size={13} /> Knowledge Base
+                    {resources.length > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'knowledge' ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'}`}>{resources.length}</span>}
+                </button>
+                <button
+                    onClick={() => setActiveTab('library')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        activeTab === 'library'
+                        ? 'bg-purple-500 text-white shadow-md shadow-purple-500/30'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                    }`}
+                >
+                    <FolderOpen size={13} /> Library
                 </button>
             </div>
 
@@ -481,6 +513,13 @@ const TemplatesPage: React.FC = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* ════════════════════════════════════════════════════════ */}
+            {/*  LIBRARY TAB                                             */}
+            {/* ════════════════════════════════════════════════════════ */}
+            {activeTab === 'library' && (
+                <LibraryTab />
             )}
 
             {/* ── Template Create Modal ─────────────────────────────────────────── */}
