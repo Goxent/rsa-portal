@@ -577,6 +577,15 @@ export const AuthService = {
         }
     },
 
+    // Grant/revoke task-creation permission (Master Admin only)
+    grantTaskCreation: async (uid: string) => {
+        await updateDoc(doc(db, 'users', uid), { taskCreationAuthorized: true });
+    },
+
+    revokeTaskCreation: async (uid: string) => {
+        await updateDoc(doc(db, 'users', uid), { taskCreationAuthorized: false });
+    },
+
     seedDemoData: async () => {
         const demoClients: Partial<Client>[] = [
             { name: 'Apple Inc.', code: 'CL-001', serviceType: 'Audit' as any, status: 'Active' as any, category: 'A' as any, industry: 'Trading' as any },

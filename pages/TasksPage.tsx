@@ -176,10 +176,20 @@ const TasksPage: React.FC = () => {
     }, [searchParams]);
 
     // Permissions check
-    const canCreateTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+    const isAdminOrManager = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+    // Master Admin can grant task-creation rights to any user via System Settings
+    const canCreateTask = isAdminOrManager || user?.taskCreationAuthorized === true;
+    const canManageTask = isAdminOrManager;
 
-
-    const canManageTask = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+    // Returns true if the current user can open the edit modal for a given task.
+    // Authorized-but-non-admin users can only edit tasks they created or are assigned to.
+    const canEditTask = (task: Partial<Task>): boolean => {
+        if (!user) return false;
+        if (isAdminOrManager) return true;
+        if (task.createdBy === user.uid) return true;
+        if (task.assignedTo?.includes(user.uid)) return true;
+        return false;
+    };
 
 
 
@@ -256,9 +266,13 @@ const TasksPage: React.FC = () => {
     };
 
     const handleOpenEdit = (task: Task) => {
+        if (!canEditTask(task)) {
+            toast.error("You don't have permission to edit this task.");
+            return;
+        }
         setCurrentTask(task);
         setIsEditMode(true);
-        setIsModalOpen(true); // Revert to modal entry
+        setIsModalOpen(true);
         setSelectedTaskId(task.id);
         setNewSubtaskTitle('');
     };

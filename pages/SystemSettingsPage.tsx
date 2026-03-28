@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, Shield, Database, Trash2, Save, AlertCircle, CheckCircle2, Loader2, UserPlus, Search, ShieldCheck } from 'lucide-react';
+import {
+    Settings, Users, Database, Trash2, AlertCircle, CheckCircle2,
+    Loader2, Search, ShieldCheck, Key, ShieldOff
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { UserRole, UserProfile } from '../types';
@@ -12,8 +15,10 @@ const SystemSettingsPage: React.FC = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [authSearchTerm, setAuthSearchTerm] = useState('');
     const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
+    const [isAuthUpdating, setIsAuthUpdating] = useState<string | null>(null);
     const [isMigrating, setIsMigrating] = useState(false);
 
     useEffect(() => {
@@ -50,6 +55,34 @@ const SystemSettingsPage: React.FC = () => {
         }
     };
 
+    const handleGrantTaskCreation = async (uid: string) => {
+        setIsAuthUpdating(uid);
+        try {
+            await AuthService.grantTaskCreation(uid);
+            setUsers(prev => prev.map(u => u.uid === uid ? { ...u, taskCreationAuthorized: true } : u));
+            setStatusMessage({ type: 'success', text: 'Task creation access granted.' });
+            setTimeout(() => setStatusMessage(null), 3000);
+        } catch (error) {
+            setStatusMessage({ type: 'error', text: 'Failed to grant access.' });
+        } finally {
+            setIsAuthUpdating(null);
+        }
+    };
+
+    const handleRevokeTaskCreation = async (uid: string) => {
+        setIsAuthUpdating(uid);
+        try {
+            await AuthService.revokeTaskCreation(uid);
+            setUsers(prev => prev.map(u => u.uid === uid ? { ...u, taskCreationAuthorized: false } : u));
+            setStatusMessage({ type: 'success', text: 'Task creation access revoked.' });
+            setTimeout(() => setStatusMessage(null), 3000);
+        } catch (error) {
+            setStatusMessage({ type: 'error', text: 'Failed to revoke access.' });
+        } finally {
+            setIsAuthUpdating(null);
+        }
+    };
+
     const handleSeedData = async () => {
         setIsLoading(true);
         try {
@@ -82,6 +115,17 @@ const SystemSettingsPage: React.FC = () => {
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // Only show non-admin/manager users in the task authorization panel
+    const authEligibleUsers = users.filter(u =>
+        u.role !== UserRole.MASTER_ADMIN &&
+        u.role !== UserRole.ADMIN &&
+        u.uid !== user?.uid &&
+        (u.displayName.toLowerCase().includes(authSearchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(authSearchTerm.toLowerCase()))
+    );
+
+    const authorizedCount = users.filter(u => u.taskCreationAuthorized === true).length;
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-full">
@@ -103,16 +147,21 @@ const SystemSettingsPage: React.FC = () => {
             </div>
 
             {statusMessage && (
-                <div className={`p-4 rounded-xl flex items-center border animate-in slide-in-from-top ${statusMessage.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
-                    }`}>
-                    {statusMessage.type === 'success' ? <CheckCircle2 size={18} className="mr-2" /> : <AlertCircle size={18} className="mr-2" />}
+                <div className={`p-4 rounded-xl flex items-center border animate-in slide-in-from-top ${statusMessage.type === 'success'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                    {statusMessage.type === 'success'
+                        ? <CheckCircle2 size={18} className="mr-2" />
+                        : <AlertCircle size={18} className="mr-2" />}
                     {statusMessage.text}
                 </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* User Management Section */}
-                <div className="lg:col-span-2 space-y-4">
+                {/* Left column: Role Management + Task Authorization */}
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* ── User Role Management ── */}
                     <div className="glass-panel p-6 rounded-2xl border border-white/10">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                             <h3 className="text-lg font-bold text-white flex items-center">
@@ -137,7 +186,7 @@ const SystemSettingsPage: React.FC = () => {
                                     <tr>
                                         <th className="px-4 py-3">User</th>
                                         <th className="px-4 py-3">Current Role</th>
-                                        <th className="px-4 py-3">Action</th>
+                                        <th className="px-4 py-3">Change Role</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -155,11 +204,13 @@ const SystemSettingsPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${u.role === UserRole.MASTER_ADMIN ? 'bg-purple-500/20 text-purple-300 border-purple-500/20' :
-                                                    u.role === UserRole.ADMIN ? 'bg-brand-500/20 text-brand-300 border-brand-500/20' :
-                                                        u.role === UserRole.MANAGER ? 'bg-amber-500/20 text-amber-300 border-amber-500/20' :
-                                                            'bg-gray-500/20 text-gray-400 border-gray-500/20'
-                                                    }`}>
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${u.role === UserRole.MASTER_ADMIN
+                                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/20'
+                                                    : u.role === UserRole.ADMIN
+                                                        ? 'bg-brand-500/20 text-brand-300 border-brand-500/20'
+                                                        : u.role === UserRole.MANAGER
+                                                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/20'
+                                                            : 'bg-gray-500/20 text-gray-400 border-gray-500/20'}`}>
                                                     {u.role.replace('_', ' ')}
                                                 </span>
                                             </td>
@@ -174,7 +225,9 @@ const SystemSettingsPage: React.FC = () => {
                                                         <option key={role} value={role}>{role.replace('_', ' ')}</option>
                                                     ))}
                                                 </select>
-                                                {isUpdating === u.uid && <Loader2 className="animate-spin inline-block ml-2 text-brand-500" size={14} />}
+                                                {isUpdating === u.uid && (
+                                                    <Loader2 className="animate-spin inline-block ml-2 text-brand-500" size={14} />
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -182,9 +235,98 @@ const SystemSettingsPage: React.FC = () => {
                             </table>
                         </div>
                     </div>
+
+                    {/* ── Task Creation Authorization (Master Admin only) ── */}
+                    <div className="glass-panel p-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03]">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-white flex items-center">
+                                    <Key size={20} className="mr-2 text-amber-400" />
+                                    Task Creation Authorization
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Grant specific staff or team leaders the ability to <strong className="text-white">create new tasks</strong> without changing their system role.
+                                    Authorized users <span className="text-amber-300 font-semibold">cannot</span> edit tasks they are not assigned to or did not create.
+                                </p>
+                            </div>
+                            {authorizedCount > 0 && (
+                                <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap">
+                                    {authorizedCount} user{authorizedCount !== 1 ? 's' : ''} authorized
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="relative w-full mb-4 mt-4">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                            <input
+                                type="text"
+                                placeholder="Search staff..."
+                                value={authSearchTerm}
+                                onChange={(e) => setAuthSearchTerm(e.target.value)}
+                                className="w-full bg-navy-900/50 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-amber-500/50 outline-none"
+                            />
+                        </div>
+
+                        {authEligibleUsers.length === 0 ? (
+                            <p className="text-center text-gray-500 text-sm py-6">No eligible staff members found.</p>
+                        ) : (
+                            <div className="divide-y divide-white/5">
+                                {authEligibleUsers.map(u => (
+                                    <div
+                                        key={u.uid}
+                                        className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-white/[0.02] transition-colors"
+                                    >
+                                        {/* User info */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                                {u.displayName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-white text-sm flex items-center gap-2 flex-wrap">
+                                                    {u.displayName}
+                                                    {u.taskCreationAuthorized && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 tracking-wider">
+                                                            Authorized
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {u.position || u.role.replace('_', ' ')}
+                                                    {u.department ? ` · ${u.department}` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Grant / Revoke button */}
+                                        <div className="flex-shrink-0 ml-4">
+                                            {isAuthUpdating === u.uid ? (
+                                                <Loader2 className="animate-spin text-amber-400" size={18} />
+                                            ) : u.taskCreationAuthorized ? (
+                                                <button
+                                                    onClick={() => handleRevokeTaskCreation(u.uid)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
+                                                >
+                                                    <ShieldOff size={13} />
+                                                    Revoke
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleGrantTaskCreation(u.uid)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 transition-all"
+                                                >
+                                                    <Key size={13} />
+                                                    Grant Access
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* System Stats / Logs Sidebar */}
+                {/* Sidebar: Security Overview + Danger Zone */}
                 <div className="space-y-6">
                     <div className="glass-panel p-6 rounded-2xl border border-white/10">
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center">
@@ -203,6 +345,10 @@ const SystemSettingsPage: React.FC = () => {
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-400">Admins</span>
                                 <span className="text-brand-300 font-bold">{users.filter(u => u.role === UserRole.ADMIN).length}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-400">Task-Authorized Users</span>
+                                <span className="text-amber-300 font-bold">{authorizedCount}</span>
                             </div>
                         </div>
                         <div className="mt-6 pt-6 border-t border-white/5">

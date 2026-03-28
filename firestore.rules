@@ -17,6 +17,19 @@ service cloud.firestore {
       return isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
     }
 
+    // Returns true for admins, managers, or users granted explicit task-creation authorization
+    function canCreateTask() {
+      return isAuthenticated() && (
+        getUserRole() == 'ADMIN' ||
+        getUserRole() == 'MASTER_ADMIN' ||
+        getUserRole() == 'MANAGER' ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('taskCreationAuthorized', false) == true
+        )
+      );
+    }
+
     // AUDIT LOGS - Only admins can read, authenticated users can write (logging)
     match /auditLogs/{logId} {
       allow read: if isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
@@ -63,7 +76,7 @@ service cloud.firestore {
     // TASKS COLLECTION
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow create: if canCreateTask();
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
         resource.data.createdBy == request.auth.uid ||

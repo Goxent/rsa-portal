@@ -22,6 +22,7 @@ export interface UserProfile {
   status?: 'Active' | 'Inactive' | 'Pending Approval';
   gender?: 'Male' | 'Female' | 'Other';
   leaveAdjustment?: number; // Manual correction for leave balance
+  taskCreationAuthorized?: boolean; // Granted by Master Admin: allows creating new tasks
 }
 
 export interface StaffDirectoryProfile {
