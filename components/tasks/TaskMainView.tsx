@@ -419,7 +419,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             </div>
 
                                                             {/* Task cards */}
-                                                            <div className="flex flex-col gap-1.5 min-h-[48px] px-2 pt-1.5">
+                                                            <div className="flex flex-col min-h-[48px] px-2 pt-1.5">
                                                                 {colTasks.map((task, i) => (
                                                                     <TaskCard
                                                                         key={task.id}

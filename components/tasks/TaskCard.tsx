@@ -48,12 +48,14 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
 
     return (
         <Draggable draggableId={task.id} index={index}>
-            {(prov, snap) => {
-                const child = (
+            {(prov, snap) => (
+                <div
+                    ref={prov.innerRef}
+                    {...prov.draggableProps}
+                    style={prov.draggableProps.style}
+                    className="pb-2"
+                >
                     <div
-                        ref={prov.innerRef}
-                        {...prov.draggableProps}
-                        style={prov.draggableProps.style}
                         onClick={(e) => {
                             if (snap.isDragging) {
                                 e.preventDefault();
@@ -199,14 +201,8 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                             </div>
                         </div>
                     </div>
-                );
-
-                if (snap.isDragging) {
-                    return createPortal(child, document.body);
-                }
-
-                return child;
-            }}
+                </div>
+            )}
         </Draggable>
     );
 }, (prevProps, nextProps) => {
