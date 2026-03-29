@@ -14,6 +14,7 @@ import { useAttendanceHistory } from '../hooks/useAttendance';
 import { useQuery } from '@tanstack/react-query';
 import NepaliDate from 'nepali-date-converter';
 import GreetingsWidget from '../components/dashboard/widgets/GreetingsWidget';
+import FocusWidget from '../components/dashboard/widgets/FocusWidget';
 
 // Helper interface for the unified schedule list
 interface ScheduleItem {
@@ -202,7 +203,12 @@ const Dashboard: React.FC = () => {
 
                 {/* Left: Widget Grid */}
                 <div className="flex-1 min-w-0 flex flex-col gap-6">
-                    <AttendanceWidget />
+                    {/* Top Row: Attendance and Focus */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <AttendanceWidget />
+                        <FocusWidget />
+                    </div>
+                    
                     {user && (
                         <WidgetContainer
                             userId={user.uid}

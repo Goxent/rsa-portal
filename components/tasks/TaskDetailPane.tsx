@@ -278,6 +278,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                                     {/* ── Properties Grid ── */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 py-6 border-y border-white/[0.06]">
+                                        <Field label="Audit Phase" icon={<Sparkles size={11} className="text-gray-400" />} error={!!errors.auditPhase}>
+                                            <select className={selectClass} {...register('auditPhase')}>
+                                                {Object.values(AuditPhase).map(ph => <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>)}
+                                            </select>
+                                        </Field>
+
                                         <Field label="Status" icon={<Activity size={12} className="text-gray-400" />} error={!!errors.status}>
                                             <select className={selectClass} {...register('status')}>
                                                 {Object.values(TaskStatus).map(s => <option key={s} value={s} className="bg-[#1e293b]">{s.replace('_', ' ')}</option>)}
@@ -313,12 +319,6 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             <Controller name="clientId" control={control} render={({ field }) => (
                                                 <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
                                             )} />
-                                        </Field>
-
-                                        <Field label="Audit Phase" icon={<Sparkles size={11} className="text-gray-400" />} error={!!errors.auditPhase}>
-                                            <select className={selectClass} {...register('auditPhase')}>
-                                                {Object.values(AuditPhase).map(ph => <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>)}
-                                            </select>
                                         </Field>
 
                                         <Field label="Dates" icon={<Calendar size={12} className="text-gray-400" />} span2

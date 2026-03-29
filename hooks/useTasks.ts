@@ -89,6 +89,11 @@ export const useUpdateTask = () => {
 
         // ── Optimistic update: patch local cache immediately ─────────────────
         onMutate: async ({ id, updates }) => {
+            // Show instant optimistic toast
+            if (Object.keys(updates).length > 1 || !updates.status) {
+                toast.success('Task updated');
+            }
+
             await queryClient.cancelQueries({ queryKey: taskKeys.all });
             
             const previousAll = queryClient.getQueryData(taskKeys.all);
@@ -113,11 +118,8 @@ export const useUpdateTask = () => {
             return { previousAll, previousInfinite };
         },
 
-        onSuccess: (_data, { updates }) => {
-            // Only show toast for non-drag updates (status-only drags are silent)
-            if (Object.keys(updates).length > 1 || !updates.status) {
-                toast.success('Task updated');
-            }
+        onSuccess: () => {
+             // Handled optimistically to prevent delays
         },
 
         onError: (error: Error, _variables, context: any) => {

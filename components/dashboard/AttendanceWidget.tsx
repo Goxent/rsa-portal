@@ -252,9 +252,6 @@ const AttendanceWidget: React.FC = () => {
                             {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}
                         </span>
                     </div>
-                    <p className="text-gray-400 text-xs">
-                        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • <span className="text-brand-200">{new NepaliDate(new Date()).format('YYYY MMMM DD')} BS</span>
-                    </p>
                 </div>
 
                 {/* Right Side: Timer & Controls */}

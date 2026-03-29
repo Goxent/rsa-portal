@@ -68,7 +68,6 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         icon: 'Calendar',
         defaultSize: 'md',
     },
-    { type: 'focus', title: 'Focus Timer', description: 'Pomodoro timer for focused work', icon: 'Target', defaultSize: 'md' },
 ];
 
 import { UserRole } from '../../types';
@@ -88,7 +87,6 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
         case UserRole.MASTER_ADMIN:
         default:
             return [
-                { id: 'w_focus', type: 'focus', title: 'Focus Timer', position: 0, size: 'md', visible: true },
                 { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 1, size: 'md', visible: true },
                 { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 2, size: 'full', visible: true },
                 { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
