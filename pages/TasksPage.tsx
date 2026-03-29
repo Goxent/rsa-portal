@@ -1089,7 +1089,8 @@ const TasksPage: React.FC = () => {
 
                         <button
                             onClick={() => setIsTemplateModalOpen(true)}
-                            className="h-[30px] px-2.5 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-lg border border-white/[0.05] flex items-center gap-1.5 text-[10px] font-bold transition-all"
+                            disabled={!canCreateTask}
+                            className="h-[30px] px-2.5 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-lg border border-white/[0.05] flex items-center gap-1.5 text-[10px] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Sparkles size={11} className="text-amber-400" /> Templates
                         </button>
@@ -1120,7 +1121,7 @@ const TasksPage: React.FC = () => {
                                         <select
                                             value={filterStaff}
                                             onChange={(e) => setFilterStaff(e.target.value)}
-                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
                                         >
                                             <option value="ALL">Staff: All</option>
                                             {usersList.map(u => <option key={u.uid} value={u.uid}>{u.displayName}</option>)}
@@ -1131,7 +1132,7 @@ const TasksPage: React.FC = () => {
                                         <select
                                             value={filterPriority}
                                             onChange={(e) => setFilterPriority(e.target.value)}
-                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
                                         >
                                             <option value="ALL">Priority: All</option>
                                             {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
@@ -1142,7 +1143,7 @@ const TasksPage: React.FC = () => {
                                         <select
                                             value={filterAuditor}
                                             onChange={(e) => setFilterAuditor(e.target.value)}
-                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
                                         >
                                             <option value="ALL">Auditor: All</option>
                                             {SIGNING_AUTHORITIES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1153,7 +1154,7 @@ const TasksPage: React.FC = () => {
                                         <select
                                             value={filterStatus}
                                             onChange={(e) => setFilterStatus(e.target.value)}
-                                            className="appearance-none w-full h-[30px] bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
                                         >
                                             <option value="ALL">Status: All</option>
                                             {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}

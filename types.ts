@@ -23,6 +23,10 @@ export interface UserProfile {
   gender?: 'Male' | 'Female' | 'Other';
   leaveAdjustment?: number; // Manual correction for leave balance
   taskCreationAuthorized?: boolean; // Granted by Master Admin: allows creating new tasks
+  
+  // Session Security
+  currentSessionId?: string;
+  sessionCreatedAt?: number;
 }
 
 export interface StaffDirectoryProfile {

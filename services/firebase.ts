@@ -107,6 +107,35 @@ const docConverter = <T>(doc: any): T => {
     return { ...data, id: doc.id } as T;
 };
 
+// Helper to set up a new session on login
+const setupUserSession = async (uid: string, email: string, method: string) => {
+    // Generate new session (auto-invalidates any previous session across devices)
+    const sessionId = crypto.randomUUID();
+    const sessionCreatedAt = Date.now();
+    
+    // Store locally
+    localStorage.setItem('sessionId', sessionId);
+
+    // Store in Firestore
+    await updateDoc(doc(db, 'users', uid), {
+        currentSessionId: sessionId,
+        sessionCreatedAt
+    });
+
+    // Log login
+    await createAuditLog({
+        userId: uid,
+        userName: email,
+        action: AuditAction.LOGIN_SUCCESS,
+        targetType: 'system',
+        targetId: uid,
+        targetName: 'Auth',
+        details: { method, newSessionId: sessionId }
+    });
+
+    return { currentSessionId: sessionId, sessionCreatedAt };
+};
+
 export const AuthService = {
     // --- AUTHENTICATION ---
     isAdmin: (role?: UserRole): boolean => {
@@ -122,16 +151,8 @@ export const AuthService = {
             // Fetch Profile from Firestore
             const userDoc = await getDoc(doc(db, 'users', uid));
             if (userDoc.exists()) {
-                await createAuditLog({
-                    userId: uid,
-                    userName: email,
-                    action: AuditAction.LOGIN_SUCCESS,
-                    targetType: 'system',
-                    targetId: uid,
-                    targetName: 'Auth',
-                    details: { method: 'Email/Password' }
-                });
-                return { uid, ...userDoc.data() } as UserProfile;
+                const sessionData = await setupUserSession(uid, email, 'Email/Password');
+                return { uid, ...userDoc.data(), ...sessionData } as UserProfile;
             } else {
                 // Orphaned Auth Account recovery
                 // If the user's Auth account survived a deletion but an admin re-added them to the directory
@@ -259,6 +280,10 @@ export const AuthService = {
                     // Create new doc with real UID
                     await setDoc(doc(db, 'users', uid), newUser);
 
+                    // Set up session
+                    const sessionData = await setupUserSession(uid, email, 'Email/Password (Registration)');
+                    newUser = { ...newUser, ...sessionData };
+
                     // Migrate Tasks from Old ID (pending_...) to New UID
                     await AuthService.migrateUserTasks(existingUserDoc.id, uid);
 
@@ -350,7 +375,8 @@ export const AuthService = {
                     await signOut(auth);
                     throw new Error('Your account is Inactive. Please contact support.');
                 }
-                return { uid: user.uid, ...userData } as UserProfile;
+                const sessionData = await setupUserSession(user.uid, email, 'Google OAuth');
+                return { uid: user.uid, ...userData, ...sessionData } as UserProfile;
             }
 
             // 2. Not Registered yet? Check Staff Directory by Email
@@ -379,13 +405,15 @@ export const AuthService = {
                 // Save to new UID doc
                 await setDoc(userDocRef, newUser);
 
+                const sessionData = await setupUserSession(user.uid, email, 'Google OAuth (Registration)');
+                
                 // Migrate Tasks
                 await AuthService.migrateUserTasks(existingUserDoc.id, user.uid);
 
                 // Delete old placeholder
                 await deleteDoc(doc(db, 'users', existingUserDoc.id));
 
-                return newUser;
+                return { ...newUser, ...sessionData };
             } else {
                 // 3. NOT IN DIRECTORY -> ACCESS DENIED
                 await user.delete(); // Remove the auth user we just created
@@ -404,18 +432,31 @@ export const AuthService = {
 
     logout: async () => {
         if (auth.currentUser) {
-            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const uid = auth.currentUser.uid;
+            const userDoc = await getDoc(doc(db, 'users', uid));
             const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            
+            // Clear session data from Firestore explicitly to invalidate all clients
+            try {
+                await updateDoc(doc(db, 'users', uid), {
+                    currentSessionId: null,
+                    sessionCreatedAt: null
+                });
+            } catch (e) {
+                console.error("Failed to clear session from DB during logout", e);
+            }
+
             await createAuditLog({
-                userId: auth.currentUser.uid,
+                userId: uid,
                 userName: userName,
                 action: AuditAction.LOGOUT,
                 targetType: 'system',
-                targetId: auth.currentUser.uid,
+                targetId: uid,
                 targetName: 'Auth',
                 details: {}
             });
         }
+        localStorage.removeItem('sessionId');
         await signOut(auth);
     },
 

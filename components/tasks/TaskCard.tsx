@@ -54,7 +54,14 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                         ref={prov.innerRef}
                         {...prov.draggableProps}
                         style={prov.draggableProps.style}
-                        onClick={() => onClick(task)}
+                        onClick={(e) => {
+                            if (snap.isDragging) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                            }
+                            onClick(task);
+                        }}
                         className={[
                             'relative group/card rounded-xl cursor-pointer select-none overflow-hidden',
                             'bg-[#1a1d24] border border-white/[0.06] shadow-sm transition-[box-shadow,transform,background-color,border-color] duration-300 ease-out',
@@ -80,7 +87,10 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                                     {/* Checkbox */}
                                     <div
                                         className={`relative w-[15px] h-[15px] flex-shrink-0 transition-all duration-150 cursor-pointer ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover/card:opacity-100 group-hover/card:scale-100'}`}
-                                        onClick={e => { e.stopPropagation(); onToggleSelection(task.id); }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            if (!snap.isDragging) onToggleSelection(task.id);
+                                        }}
                                     >
                                         <div className={`w-full h-full rounded-[4px] border flex items-center justify-center transition-all ${isSelected ? 'bg-amber-500 border-amber-400' : 'border-slate-600 bg-transparent hover:border-slate-400'}`}>
                                             {isSelected && <Check size={9} className="text-black" strokeWidth={4} />}
@@ -114,8 +124,8 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                                 <div
                                     className="inline-flex items-center gap-1 mb-2 cursor-pointer group/client"
                                     onClick={(e) => {
-                                        if (onOpenClientDetail && task.clientIds?.[0]) {
-                                            e.stopPropagation();
+                                        e.stopPropagation();
+                                        if (!snap.isDragging && onOpenClientDetail && task.clientIds?.[0]) {
                                             onOpenClientDetail(task.clientIds[0]);
                                         }
                                     }}
@@ -190,6 +200,10 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                         </div>
                     </div>
                 );
+
+                if (snap.isDragging) {
+                    return createPortal(child, document.body);
+                }
 
                 return child;
             }}

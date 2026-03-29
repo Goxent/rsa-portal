@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { AppNotification } from '../types';
 import { useAutoLogout } from '../hooks/useAutoLogout';
+import { useSessionManager } from '../hooks/useSessionManager';
 import { getCurrentDateUTC } from '../utils/dates';
 
 // New Components
@@ -37,6 +38,7 @@ const Layout: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useAutoLogout();
+  useSessionManager();
 
   // Persist Sidebar State
   useEffect(() => {

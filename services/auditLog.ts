@@ -46,6 +46,9 @@ export enum AuditAction {
 
     // Notes
     CLIENT_NOTE_UPDATED = 'CLIENT_NOTE_UPDATED',
+
+    // Session Security
+    CONCURRENT_LOGIN_PREVENTED = 'CONCURRENT_LOGIN_PREVENTED',
 }
 
 export interface AuditLog {
