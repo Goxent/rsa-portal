@@ -62,6 +62,13 @@ export interface AttendanceRecord {
   workLogs?: WorkLog[]; // Detailed work breakdown
 }
 
+export interface AttendanceLogRequest extends Omit<AttendanceRecord, 'id'> {
+  id: string;
+  requestStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  adminNotes?: string;
+  requestedAt: string;
+}
+
 export interface WorkLog {
   id: string;
   clientId: string;

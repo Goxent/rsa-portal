@@ -4,6 +4,7 @@ import ClientSelect from '../ClientSelect';
 import StaffSelect from '../StaffSelect';
 import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
 import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface ManualAttendanceModalProps {
     isOpen: boolean;
@@ -77,8 +78,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
         }
         setIsSaving(true);
         try {
-            const finalRecord: AttendanceRecord = {
-                id: record?.id || `manual_${Date.now()}`,
+            const baseRecord = {
                 userId: activeUser.uid,
                 userName: activeUser.displayName,
                 date: selectedDate,
@@ -91,13 +91,28 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 clientId: formData.clientIds && formData.clientIds.length > 0 ? formData.clientIds[0] : undefined,
                 clientName: formData.clientIds && formData.clientIds.length > 0
                     ? clients.find(c => c.id === formData.clientIds![0])?.name
-                    : undefined
+                    : undefined,
+                workLogs: formData.workLogs
             };
 
-            await onSave(finalRecord);
+            if (isAdmin) {
+                const finalRecord: AttendanceRecord = {
+                    ...baseRecord,
+                    id: record?.id || `manual_${Date.now()}`
+                };
+                await onSave(finalRecord);
+            } else {
+                // Submit Request
+                const { id, ...requestData } = baseRecord as any;
+                await import('../../services/firebase').then(async ({ AuthService }) => {
+                    await AuthService.requestManualAttendance(requestData);
+                });
+                toast.success("Manual log request submitted for approval");
+            }
             onClose();
         } catch (error) {
             console.error(error);
+            toast.error("An error occurred. Please try again.");
         } finally {
             setIsSaving(false);
         }
@@ -152,7 +167,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     <div>
                         <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
                             <CheckCircle2 className="text-amber-500" size={20} />
-                            Log Attendance
+                            {isAdmin ? 'Log Attendance' : 'Request Attendance Log'}
                         </h2>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
                             {activeUser ? activeUser.displayName : 'Select Staff Member'} <span className="mx-1 text-gray-700">•</span> {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -336,7 +351,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                         >
                             {isSaving ? <span className="animate-spin italic font-serif">save</span> : <Save size={14} />}
-                            Confirm Log
+                            {isAdmin ? 'Confirm Log' : 'Submit Request for Approval'}
                         </button>
                     </div>
                 </form>

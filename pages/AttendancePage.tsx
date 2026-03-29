@@ -10,6 +10,7 @@ import { useLocation } from 'react-router-dom';
 import { getCurrentDateUTC } from '../utils/dates';
 import StaffSelect from '../components/StaffSelect';
 import ManualAttendanceModal from '../components/attendance/ManualAttendanceModal';
+import ReviewRequestsModal from '../components/attendance/ReviewRequestsModal';
 import { 
     FileText, Download, Filter, Search, Calendar as CalendarIcon, 
     Users, CheckCircle, XCircle, Clock, AlertTriangle, Briefcase, 
@@ -87,6 +88,7 @@ const AttendancePage: React.FC = () => {
     const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
     const [selectedDateForEdit, setSelectedDateForEdit] = useState<string>('');
     const [selectedUserForEdit, setSelectedUserForEdit] = useState<UserProfile | null>(null);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
     // Filtering State
     const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -720,18 +722,31 @@ const AttendancePage: React.FC = () => {
                             />
                         </div>
 
-                        <button 
-                            onClick={() => {
-                                setSelectedUserForEdit(null);
-                                setSelectedDateForEdit(getCurrentDateUTC());
-                                setSelectedRecord(null);
-                                setIsEditModalOpen(true);
-                            }}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/20 group shrink-0"
-                        >
-                            <Plus size={16} className="text-amber-500 group-hover:scale-110 transition-transform" /> 
-                            <span>Manual Log</span>
-                        </button>
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                            {isAdmin && (
+                                <button 
+                                    onClick={() => setIsReviewModalOpen(true)}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-amber-600/10 hover:bg-amber-600/20 text-amber-500 rounded-xl border border-amber-500/30 transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-amber-500/5 group relative"
+                                >
+                                    <Clock size={16} className="group-hover:rotate-12 transition-transform" /> 
+                                    <span>Review Requests</span>
+                                    {/* Optional: Add a notification dot here if pending requests > 0 */}
+                                </button>
+                            )}
+
+                            <button 
+                                onClick={() => {
+                                    setSelectedUserForEdit(null);
+                                    setSelectedDateForEdit(getCurrentDateUTC());
+                                    setSelectedRecord(null);
+                                    setIsEditModalOpen(true);
+                                }}
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/20 group shrink-0"
+                            >
+                                <Plus size={16} className="text-amber-500 group-hover:scale-110 transition-transform" /> 
+                                <span>{isAdmin ? 'Manual Log' : 'Request Manual Log'}</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Bottom Row: Filters */}
@@ -1097,6 +1112,14 @@ const AttendancePage: React.FC = () => {
                     toast.success('Attendance updated successfully');
                     loadData();
                 }}
+            />
+
+            <ReviewRequestsModal
+                isOpen={isReviewModalOpen}
+                onClose={() => setIsReviewModalOpen(false)}
+                adminId={user?.uid || ''}
+                adminName={user?.displayName || 'Admin'}
+                onDataChange={loadData}
             />
         </div>
     );

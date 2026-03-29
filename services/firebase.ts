@@ -1242,6 +1242,103 @@ export const AuthService = {
         }
     },
 
+    requestManualAttendance: async (requestData: Omit<AttendanceLogRequest, 'id' | 'requestStatus' | 'requestedAt'>) => {
+        const newRequest: Omit<AttendanceLogRequest, 'id'> = {
+            ...requestData,
+            requestStatus: 'PENDING',
+            requestedAt: new Date().toISOString()
+        };
+        const ref = await addDoc(collection(db, 'attendanceRequests'), newRequest);
+        
+        // Log the action
+        if (auth.currentUser) {
+            await createAuditLog({
+                userId: auth.currentUser.uid,
+                userName: auth.currentUser.displayName || 'User',
+                action: AuditAction.LEAVE_REQUESTED, // Reusing similar action or create new one?
+                targetType: 'attendance',
+                targetId: ref.id,
+                targetName: `Manual Log Request for ${requestData.date}`,
+                details: { request: newRequest }
+            });
+        }
+        return ref.id;
+    },
+
+    getPendingAttendanceRequests: async (): Promise<AttendanceLogRequest[]> => {
+        const q = query(
+            collection(db, 'attendanceRequests'),
+            where('requestStatus', '==', 'PENDING'),
+            orderBy('requestedAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => docConverter<AttendanceLogRequest>(d));
+    },
+
+    approveAttendanceRequest: async (requestId: string, adminId: string, adminName: string) => {
+        const reqRef = doc(db, 'attendanceRequests', requestId);
+        const reqSnap = await getDoc(reqRef);
+        
+        if (!reqSnap.exists()) throw new Error("Request not found");
+        
+        const reqData = reqSnap.data() as AttendanceLogRequest;
+        
+        // 1. Create or Update actual attendance record
+        const attendanceRecord: AttendanceRecord = {
+            id: '', // Will be handled by recordAttendance
+            userId: reqData.userId,
+            userName: reqData.userName,
+            date: reqData.date,
+            clockIn: reqData.clockIn,
+            clockOut: reqData.clockOut,
+            status: reqData.status,
+            notes: reqData.notes,
+            workHours: reqData.workHours,
+            workLogs: reqData.workLogs,
+            clientIds: reqData.clientIds,
+            clientId: reqData.clientId,
+            clientName: reqData.clientName
+        };
+        
+        await AuthService.recordAttendance(attendanceRecord);
+        
+        // 2. Update request status
+        await updateDoc(reqRef, {
+            requestStatus: 'APPROVED',
+            adminNotes: `Approved by ${adminName}`
+        });
+
+        // 3. Log Audit
+        await createAuditLog({
+            userId: adminId,
+            userName: adminName,
+            action: AuditAction.USER_UPDATED,
+            targetType: 'attendance',
+            targetId: requestId,
+            targetName: 'Manual Log Approval',
+            details: { approvedFor: reqData.userName, date: reqData.date }
+        });
+    },
+
+    rejectAttendanceRequest: async (requestId: string, adminId: string, adminName: string, reason: string) => {
+        const reqRef = doc(db, 'attendanceRequests', requestId);
+        await updateDoc(reqRef, {
+            requestStatus: 'REJECTED',
+            adminNotes: reason
+        });
+
+        // Log Audit
+        await createAuditLog({
+            userId: adminId,
+            userName: adminName,
+            action: AuditAction.USER_UPDATED,
+            targetType: 'attendance',
+            targetId: requestId,
+            targetName: 'Manual Log Rejection',
+            details: { reason }
+        });
+    },
+
     getLateCountLast30Days: async (userId: string): Promise<number> => {
         // Calculate date 30 days ago
         const date = new Date();
