@@ -176,25 +176,32 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                                 </div>
 
                                 <div className="flex -space-x-1.5 hover:space-x-0 transition-all duration-200">
-                                    {task.assignedTo.slice(0, 3).map((uid, i) => {
-                                        const u = usersList.find(x => x.uid === uid);
-                                        const initials = u?.displayName
-                                            ? u.displayName.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
-                                            : '?';
-                                        return (
-                                            <div
-                                                key={uid}
-                                                title={u?.displayName}
-                                                style={{ backgroundColor: avatarColor(i) }}
-                                                className="w-[20px] h-[20px] rounded-full ring-[1.5px] ring-[#0d1117] flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0 transition-transform hover:scale-110 hover:z-10"
-                                            >
-                                                {initials}
-                                            </div>
-                                        );
+                                    {task.assignedTo
+                                        .filter(uid => uid && typeof uid === 'string' && uid.trim() !== '')
+                                        .slice(0, 3)
+                                        .map((uid, i) => {
+                                            const u = usersList.find(x => x.uid === uid);
+                                            // Only render a bubble if user exists, or if we want to show a deleted user
+                                            if (!u) return null;
+                                            
+                                            const initials = u.displayName
+                                                ? u.displayName.split(' ').map((p: string) => p[0]).join('').substring(0, 2).toUpperCase()
+                                                : '?';
+                                                
+                                            return (
+                                                <div
+                                                    key={uid}
+                                                    title={u.displayName}
+                                                    style={{ backgroundColor: avatarColor(i) }}
+                                                    className="w-[20px] h-[20px] rounded-full ring-[1.5px] ring-[#0d1117] flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0 transition-transform hover:scale-110 hover:z-10"
+                                                >
+                                                    {initials}
+                                                </div>
+                                            );
                                     })}
-                                    {task.assignedTo.length > 3 && (
+                                    {task.assignedTo.filter(uid => uid && typeof uid === 'string' && uid.trim() !== '').length > 3 && (
                                         <div className="w-[20px] h-[20px] rounded-full bg-slate-800 ring-[1.5px] ring-[#0d1117] flex items-center justify-center text-[8px] font-semibold text-slate-400">
-                                            +{task.assignedTo.length - 3}
+                                            +{task.assignedTo.filter(uid => uid && typeof uid === 'string' && uid.trim() !== '').length - 3}
                                         </div>
                                     )}
                                 </div>

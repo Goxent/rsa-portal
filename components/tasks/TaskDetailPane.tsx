@@ -180,7 +180,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             status: data.status,
             startDate: data.startDate,
             dueDate: data.dueDate,
-            assignedTo: data.assignedTo,
+            assignedTo: data.assignedTo?.filter(id => id && id.trim() !== '') || [],
             teamLeaderId: data.teamLeaderId,
             totalTimeSpent: data.estimatedHours,
             clientIds: data.clientId ? [data.clientId] : [],
