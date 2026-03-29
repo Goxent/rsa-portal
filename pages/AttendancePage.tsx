@@ -736,7 +736,8 @@ const AttendancePage: React.FC = () => {
 
                             <button 
                                 onClick={() => {
-                                    setSelectedUserForEdit(null);
+                                    const currentUserProfile = !isAdmin ? usersList.find(u => u.uid === user?.uid) : null;
+                                    setSelectedUserForEdit(currentUserProfile || null);
                                     setSelectedDateForEdit(getCurrentDateUTC());
                                     setSelectedRecord(null);
                                     setIsEditModalOpen(true);
