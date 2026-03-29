@@ -49,13 +49,18 @@ export enum AuditAction {
 
     // Session Security
     CONCURRENT_LOGIN_PREVENTED = 'CONCURRENT_LOGIN_PREVENTED',
+
+    // Attendance Management
+    ATTENDANCE_REQUEST_CREATED = 'ATTENDANCE_REQUEST_CREATED',
+    ATTENDANCE_REQUEST_APPROVED = 'ATTENDANCE_REQUEST_APPROVED',
+    ATTENDANCE_REQUEST_REJECTED = 'ATTENDANCE_REQUEST_REJECTED',
 }
 
 export interface AuditLog {
     userId: string;
     userName: string; // Map to performedBy/adminName in UI
     action: AuditAction;
-    targetType: 'user' | 'client' | 'task' | 'leave' | 'resource' | 'system';
+    targetType: 'user' | 'client' | 'task' | 'leave' | 'resource' | 'system' | 'attendance';
     targetId: string;
     targetName?: string;
     details?: string | Record<string, any>;
@@ -165,6 +170,27 @@ export const logLeaveAction = async (
         targetType: 'leave',
         targetId: leaveId,
         targetName: leaveType,
+        details,
+    });
+};
+/**
+ * Helper function to log attendance operations
+ */
+export const logAttendanceAction = async (
+    action: AuditAction,
+    userId: string,
+    userName: string,
+    targetId: string,
+    targetName: string,
+    details?: string | Record<string, any>
+) => {
+    await createAuditLog({
+        userId,
+        userName,
+        action,
+        targetType: 'attendance',
+        targetId,
+        targetName,
         details,
     });
 };

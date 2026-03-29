@@ -35,7 +35,7 @@ import {
     arrayUnion,
     writeBatch
 } from 'firebase/firestore';
-import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification, RiskAreaDocument } from '../types';
+import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification, RiskAreaDocument, AttendanceLogRequest, AuditPhase } from '../types';
 import { getCurrentDateUTC } from '../utils/dates';
 import { EmailService } from './email';
 import { toast } from 'react-hot-toast';
@@ -913,7 +913,8 @@ export const AuthService = {
                         `${window.location.origin}/#/tasks`,
                         task.clientName || 'Internal',
                         task.dueDate,
-                        task.priority
+                        task.priority,
+                        task.description
                     );
 
                     if (!emailSent) {
@@ -1101,7 +1102,7 @@ export const AuthService = {
                 const userDoc = await getDoc(doc(db, 'users', uid));
                 if (userDoc.exists()) {
                     const userData = userDoc.data() as UserProfile;
-                    if (userData.email && newStatus === TaskStatus.COMPLETED) {
+                    if (userData.email && newStatus === TaskStatus.COMPLETED && task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) {
                         await EmailService.sendWorkflowStatusChange(
                             userData.email,
                             userData.displayName,

@@ -44,6 +44,11 @@ service cloud.firestore {
       allow create: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       // Allow deletion by MASTER_ADMIN, or allow migration flow to clean up pending_ placeholders
       allow delete: if isAuthenticated() && (getUserRole() == 'MASTER_ADMIN' || userId.matches('^pending_.*'));
+
+      // Allow users to manage their own settings (like dashboard layout)
+      match /settings/{settingId} {
+        allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      }
     }
 
     // STAFF ALLOWLIST — Used before auth account is created

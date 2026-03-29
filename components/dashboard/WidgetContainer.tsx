@@ -77,11 +77,49 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     setWidgets(fresh);
                     AuthService.saveWidgetConfig(userId, fresh);
                 } else {
-                    setWidgets(validConfig);
+                    // Auto-Add Logic for Essential Widgets (Task Stats & Calendar)
+                    const hasStats = validConfig.some((w: WidgetConfig) => w.type === 'task-stats');
+                    const hasCalendar = validConfig.some((w: WidgetConfig) => w.type === 'calendar');
+
+                    if (!hasStats || !hasCalendar) {
+                        const newWidgets = [...validConfig];
+                        
+                        // Add Calendar if missing
+                        if (!hasCalendar) {
+                            newWidgets.unshift({
+                                id: `w_cal_${Date.now()}`,
+                                type: 'calendar',
+                                title: 'Upcoming Schedule',
+                                position: 0,
+                                size: 'md',
+                                visible: true
+                            });
+                        }
+                        
+                        // Add Task Stats if missing (will be unshifted above calendar if both missing)
+                        if (!hasStats) {
+                            newWidgets.unshift({
+                                id: `w_tstat_${Date.now()}`,
+                                type: 'task-stats',
+                                title: 'Task Statistics',
+                                position: 0,
+                                size: 'md',
+                                visible: true
+                            });
+                        }
+
+                        // Re-sort positions and save
+                        const finalWidgets = newWidgets.map((w, i) => ({ ...w, position: i }));
+                        setWidgets(finalWidgets);
+                        AuthService.saveWidgetConfig(userId, finalWidgets);
+                    } else {
+                        setWidgets(validConfig);
+                    }
                 }
             } else {
                 const fresh = getDefaultWidgetConfig(userRole);
                 setWidgets(fresh);
+                AuthService.saveWidgetConfig(userId, fresh);
             }
         };
         loadWidgets();

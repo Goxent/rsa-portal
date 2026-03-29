@@ -16,265 +16,170 @@ export const EmailService = {
         }
     },
 
-    sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string): Promise<boolean> => {
-        const subject = `New Task Assigned: ${taskTitle}`;
+    /**
+     * Internal helper to wrap content in the premium RSA branding.
+     */
+    getTemplateWrapper: (contentHtml: string, headerSubTitle: string, actionLabel?: string, actionLink?: string): string => {
+        const actionButton = (actionLabel && actionLink) ? `
+            <div style="text-align: center; margin-top: 48px; margin-bottom: 8px;">
+                <a href="${actionLink}" style="background-color: #3b82f6; color: white; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 0.3px;">${actionLabel}</a>
+            </div>
+        ` : '';
 
-        let priorityBg = '#f3f4f6';
-        let priorityColor = '#374151';
-
-        if (priority === 'HIGH') {
-            priorityBg = '#fee2e2';
-            priorityColor = '#dc2626';
-        } else if (priority === 'URGENT') {
-            priorityBg = '#fef2f2';
-            priorityColor = '#b91c1c';
-        } else if (priority === 'MEDIUM') {
-            priorityBg = '#dbeafe';
-            priorityColor = '#1d4ed8';
-        } else if (priority === 'LOW') {
-            priorityBg = '#ecfdf5';
-            priorityColor = '#059669';
-        }
-
-        const html = `
+        return `
         <!DOCTYPE html>
         <html>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8;">
-            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);">
                 <!-- Header -->
-                <div style="background-color: #1e293b; padding: 40px 32px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 0.5px;">RSA System</h1>
-                    <p style="color: #94a3b8; margin: 12px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;">Task Assignment</p>
+                <div style="background-color: #1e293b; padding: 48px 32px; text-align: center; background-image: linear-gradient(to bottom right, #1e293b, #0f172a);">
+                    <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">RSA System</h1>
+                    <div style="height: 2px; width: 40px; background-color: #3b82f6; margin: 16px auto;"></div>
+                    <p style="color: #94a3b8; margin: 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">${headerSubTitle}</p>
                 </div>
 
-                <!-- Content -->
-                <div style="padding: 48px 40px 32px 40px;">
-                    <p style="color: #475569; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                    <p style="color: #475569; line-height: 1.6; font-size: 15px; margin-bottom: 32px;">You have been assigned a new task. Please log in to the portal to review the full details.</p>
+                <!-- Content Body -->
+                <div style="padding: 48px 40px; color: #334155;">
+                    ${contentHtml}
+                    ${actionButton}
 
-                    <!-- Task Card -->
-                    <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 24px; margin-bottom: 40px;">
-                        <h2 style="margin: 0 0 20px 0; color: #09090b; font-size: 20px; font-weight: 700;">${taskTitle}</h2>
-                        
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="padding: 8px 0; color: #64748b; font-size: 15px; width: 100px;">Client:</td>
-                                <td style="padding: 8px 0; color: #09090b; font-size: 15px; font-weight: 600;">${clientName}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Due Date:</td>
-                                <td style="padding: 8px 0; color: #09090b; font-size: 15px; font-weight: 600;">${dueDate}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Priority:</td>
-                                <td style="padding: 8px 0;">
-                                    <span style="background-color: ${priorityBg}; color: ${priorityColor}; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">${priority}</span>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    <!-- Action Button -->
-                    <div style="text-align: center; margin-bottom: 40px;">
-                        <a href="${taskLink}" style="background-color: #3b82f6; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.25); transition: background-color 0.2s;">View Task Details</a>
-                    </div>
-
-                    <!-- Sign-off -->
-                    <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
-                        <p style="color: #64748b; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 8px 0 0 0;">R. Sapkota & Associates</p>
+                    <!-- Brand Sign-off -->
+                    <div style="margin-top: 56px; padding-top: 32px; border-top: 1px solid #f1f5f9; text-align: left;">
+                        <p style="color: #64748b; font-size: 14px; margin: 0;">Warm regards,</p>
+                        <p style="color: #1e293b; font-weight: 800; font-size: 16px; margin: 8px 0 0 0; letter-spacing: -0.2px;">R. Sapkota & Associates</p>
                     </div>
                 </div>
 
                 <!-- Footer -->
-                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
+                <div style="background-color: #f8fafc; padding: 32px; text-align: center; border-top: 1px solid #f1f5f9;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0; line-height: 1.5;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates.<br/>All rights reserved.</p>
                 </div>
             </div>
         </body>
         </html>
         `;
+    },
+
+    sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string, taskDescription?: string): Promise<boolean> => {
+        const descSnippet = taskDescription ? ` - ${taskDescription.substring(0, 30)}${taskDescription.length > 30 ? '...' : ''}` : '';
+        const subject = `New Task: ${taskTitle} | ${clientName}${descSnippet}`;
+
+        let priorityColor = '#3b82f6';
+        if (priority === 'HIGH' || priority === 'URGENT') priorityColor = '#ef4444';
+        else if (priority === 'MEDIUM') priorityColor = '#f59e0b';
+
+        const content = `
+            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
+            <p style="line-height: 1.6; font-size: 16px; color: #475569;">You have been assigned to a new engagement. Below are the key details for your review:</p>
+
+            <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; margin-top: 32px; border: 1px solid #f1f5f9; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                <h2 style="margin: 0 0 24px 0; color: #1e293b; font-size: 22px; font-weight: 800; line-height: 1.3;">${taskTitle}</h2>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 10px 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; font-weight: 700; width: 110px;">Client</td>
+                        <td style="padding: 10px 0; color: #1e293b; font-size: 15px; font-weight: 600;">${clientName}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; font-weight: 700;">Due Date</td>
+                        <td style="padding: 10px 0; color: #1e293b; font-size: 15px; font-weight: 600;">${dueDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; font-weight: 700;">Priority</td>
+                        <td style="padding: 10px 0; color: ${priorityColor}; font-size: 14px; font-weight: 800;">● ${priority}</td>
+                    </tr>
+                </table>
+                ${taskDescription ? `
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                    <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">${taskDescription}</p>
+                </div>` : ''}
+            </div>
+        `;
+
+        const html = EmailService.getTemplateWrapper(content, clientName, 'View Task Details', taskLink);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendEventInvitation: async (toEmail: string, userName: string, eventTitle: string, eventDate: string, eventLink: string) => {
-        const subject = `Invitation: ${eventTitle}`;
-        const html = `
-        <!DOCTYPE html>
-        <html>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
-            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                <!-- Header -->
-                <div style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); padding: 32px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
-                    <p style="color: #ccfbf1; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Calendar Invitation</p>
+        const subject = `Event Invitation: ${eventTitle}`;
+        const content = `
+            <p style="font-size: 18px; margin-bottom: 24px;">Hi <strong>${userName}</strong>,</p>
+            <p style="line-height: 1.6; font-size: 16px; color: #475569;">You are invited to join an upcoming session. Please mark your calendar accordingly.</p>
+
+            <div style="background-color: #f8fafc; border-radius: 12px; padding: 32px; margin-top: 32px; border: 1px solid #f1f5f9; text-align: center;">
+                <div style="display: inline-block; background-color: #ffffff; padding: 12px 20px; border-radius: 8px; border: 1px solid #f1f5f9; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase;">Event Date</p>
+                    <p style="margin: 4px 0 0 0; color: #1e293b; font-size: 18px; font-weight: 800;">${eventDate}</p>
                 </div>
-
-                <!-- Content -->
-                <div style="padding: 40px;">
-                    <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                    <p style="color: #475569; line-height: 1.6;">You are invited to an upcoming event. Please mark your calendar accordingly.</p>
-
-                    <div style="background-color: #f8fafc; border-left: 4px solid #0d9488; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                        <h2 style="margin: 0 0 8px 0; color: #09090b; font-size: 20px;">${eventTitle}</h2>
-                        <p style="margin: 0; color: #0d9488; font-weight: 600; font-size: 16px;">📅 ${eventDate}</p>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 32px;">
-                        <a href="${eventLink}" style="background-color: #0d9488; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.2);">View Event Details</a>
-                    </div>
-
-                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                        <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
-                    </div>
-                </div>
-
-                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R.Sapkota & Associates. All rights reserved.</p>
-                </div>
+                <h2 style="margin: 0; color: #1e293b; font-size: 24px; font-weight: 800; line-height: 1.2;">${eventTitle}</h2>
             </div>
-        </body>
-        </html>
         `;
+
+        const html = EmailService.getTemplateWrapper(content, 'Calendar Invitation', 'Review Event Details', eventLink);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendDueDateReminder: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string) => {
-        const subject = `Reminder: Task Due Today - ${taskTitle}`;
-        const html = `
-        <!DOCTYPE html>
-        <html>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
-            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                <!-- Header -->
-                <div style="background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%); padding: 32px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
-                    <p style="color: #fecaca; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Due Date Reminder</p>
-                </div>
+        const subject = `Urgent Reminder: Task Due Today - ${taskTitle}`;
+        const content = `
+            <p style="font-size: 18px; margin-bottom: 24px;">Dear <strong>${userName}</strong>,</p>
+            <p style="line-height: 1.6; font-size: 16px; color: #475569;">This is a priority reminder that your task is <strong>due today</strong>. Please ensure all required documentation is submitted.</p>
 
-                <!-- Content -->
-                <div style="padding: 40px;">
-                    <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                    <p style="color: #475569; line-height: 1.6;">This is a reminder that the following task is <strong>due today</strong>.</p>
-
-                    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                        <h2 style="margin: 0 0 16px 0; color: #7f1d1d; font-size: 20px;">${taskTitle}</h2>
-                        <p style="margin: 0; color: #991b1b; font-size: 14px;">Client: <strong>${clientName}</strong></p>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 32px;">
-                        <a href="${taskLink}" style="background-color: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">View Task</a>
-                    </div>
-
-                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                        <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R.Sapkota & Associates</p>
-                    </div>
-                </div>
-
-                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R.Sapkota & Associates. All rights reserved.</p>
-                </div>
+            <div style="background-color: #fef2f2; border-radius: 12px; padding: 32px; margin-top: 32px; border: 1px solid #fee2e2; border-left: 4px solid #ef4444;">
+                <p style="margin: 0; color: #ef4444; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Deadline Today</p>
+                <h2 style="margin: 12px 0 8px 0; color: #1e293b; font-size: 24px; font-weight: 800; line-height: 1.2;">${taskTitle}</h2>
+                <p style="margin: 0; color: #64748b; font-size: 15px;">Client: <strong style="color: #475569;">${clientName}</strong></p>
             </div>
-        </body>
-        </html>
         `;
+
+        const html = EmailService.getTemplateWrapper(content, 'Due Date Reminder', 'Review Task Now', taskLink);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, clientName: string, commentText: string, taskLink: string) => {
-        const subject = `Mentioned in Comment: ${taskTitle}`;
-        const html = `
-        <!DOCTYPE html>
-        <html>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
-            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                <!-- Header -->
-                <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 32px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">RSA System</h1>
-                    <p style="color: #ddd6fe; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">New Mention</p>
-                </div>
+        const subject = `New Mention: ${authorName} in ${taskTitle}`;
+        const content = `
+            <p style="font-size: 18px; margin-bottom: 24px;">Hi <strong>${userName}</strong>,</p>
+            <p style="line-height: 1.6; font-size: 16px; color: #475569;"><strong>${authorName}</strong> mentioned you in a discussion regarding <strong>${taskTitle}</strong>.</p>
 
-                <!-- Content -->
-                <div style="padding: 40px;">
-                    <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                    <p style="color: #475569; line-height: 1.6;"><strong>${authorName}</strong> mentioned you in <strong>${taskTitle}</strong> and <strong>${clientName}</strong> along with the message:</p>
-
-                    <div style="background-color: #f5f3ff; border-left: 4px solid #8b5cf6; border-radius: 4px; padding: 24px; margin: 24px 0;">
-                        <p style="margin: 0; color: #4c1d95; font-style: italic; font-size: 15px;">"${commentText}"</p>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 32px;">
-                        <a href="${taskLink}" style="background-color: #7c3aed; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">Reply to Comment</a>
-                    </div>
-
-                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
-                        <p style="color: #475569; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 4px 0 0 0;">R. Sapkota & Associates</p>
-                    </div>
-                </div>
-
-                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
-                </div>
+            <div style="margin-top: 32px; padding: 24px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; position: relative;">
+                <p style="margin: 0; color: #64748b; font-size: 15px; line-height: 1.7; font-style: italic;">"${commentText}"</p>
             </div>
-        </body>
-        </html>
+
+            <p style="margin-top: 24px; font-size: 14px; color: #94a3b8;">Task: <span style="color: #64748b; font-weight: 600;">${taskTitle}</span> | Client: <span style="color: #64748b; font-weight: 600;">${clientName}</span></p>
         `;
+
+        const html = EmailService.getTemplateWrapper(content, 'New Mention', 'Reply to Comment', taskLink);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendWorkflowStatusChange: async (toEmail: string, userName: string, taskTitle: string, oldStatus: string, newStatus: string, taskLink: string) => {
-        const subject = `Task Status Update: ${taskTitle} is now ${newStatus.replace('_', ' ')}`;
-        const html = `
-        <!DOCTYPE html>
-        <html>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8;">
-            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                <!-- Header -->
-                <div style="background-color: #1e293b; padding: 40px 32px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 0.5px;">RSA System</h1>
-                    <p style="color: #94a3b8; margin: 12px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;">Workflow Update</p>
-                </div>
+        const subject = `Workflow Update: ${taskTitle} Status Changed`;
+        const content = `
+            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
+            <p style="line-height: 1.6; font-size: 16px; color: #475569;">The status of your engagement <strong>"${taskTitle}"</strong> has been updated.</p>
 
-                <!-- Content -->
-                <div style="padding: 48px 40px 32px 40px;">
-                    <p style="color: #475569; font-size: 16px; margin-top: 0;">Dear <strong>${userName}</strong>,</p>
-                    <p style="color: #475569; line-height: 1.6; font-size: 15px; margin-bottom: 32px;">The status of your task <strong>"${taskTitle}"</strong> has been updated.</p>
-
-                    <!-- Status Change Card -->
-                    <div style="background-color: #f8fafc; border-radius: 8px; padding: 24px; margin-bottom: 40px; text-align: center; border: 1px solid #e2e8f0;">
-                        <div style="display: inline-block; vertical-align: middle;">
-                            <span style="display: block; color: #64748b; font-size: 12px; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">From</span>
-                            <span style="background-color: #f1f5f9; color: #475569; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700;">${oldStatus.replace('_', ' ')}</span>
-                        </div>
-                        <div style="display: inline-block; vertical-align: middle; margin: 0 24px;">
-                            <span style="color: #94a3b8; font-size: 24px;">&rarr;</span>
-                        </div>
-                        <div style="display: inline-block; vertical-align: middle;">
-                            <span style="display: block; color: #3b82f6; font-size: 12px; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">To</span>
-                            <span style="background-color: #dbeafe; color: #1d4ed8; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700;">${newStatus.replace('_', ' ')}</span>
-                        </div>
+            <div style="margin-top: 32px; padding: 32px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+                    <div style="display: inline-block;">
+                        <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase;">Previous</p>
+                        <span style="background-color: #f1f5f9; color: #64748b; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; border: 1px solid #e2e8f0;">${oldStatus.replace('_', ' ')}</span>
                     </div>
+                    
+                    <div style="display: inline-block; margin: 0 16px; color: #cbd5e1; font-size: 24px;">&rarr;</div>
 
-                    <div style="text-align: center; margin-bottom: 40px;">
-                        <a href="${taskLink}" style="background-color: #3b82f6; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.25);">Review Task Progress</a>
+                    <div style="display: inline-block;">
+                        <p style="margin: 0 0 8px 0; color: #3b82f6; font-size: 11px; font-weight: 800; text-transform: uppercase;">Current</p>
+                        <span style="background-color: #dbeafe; color: #1d4ed8; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; border: 1px solid #bfdbfe;">${newStatus.replace('_', ' ')}</span>
                     </div>
-
-                    <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
-                        <p style="color: #64748b; font-size: 15px; margin: 0;">Best regards,</p>
-                        <p style="color: #09090b; font-weight: 700; font-size: 16px; margin: 8px 0 0 0;">R. Sapkota & Associates</p>
-                    </div>
-                </div>
-
-                <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates. All rights reserved.</p>
                 </div>
             </div>
-        </body>
-        </html>
         `;
+
+        const html = EmailService.getTemplateWrapper(content, 'Status Update', 'Review Task Progress', taskLink);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     }
 };

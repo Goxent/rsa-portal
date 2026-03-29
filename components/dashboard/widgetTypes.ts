@@ -75,21 +75,26 @@ import { UserRole } from '../../types';
 // Default widget layout for new users
 export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
     switch (role) {
-        case UserRole.STAFF:
+        case UserRole.ADMIN:
+        case UserRole.MASTER_ADMIN:
             return [
-                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 0, size: 'full', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
+                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 2, size: 'full', visible: true },
+                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 3, size: 'full', visible: true },
             ];
         case UserRole.MANAGER:
             return [
                 { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
+                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
             ];
-        case UserRole.ADMIN:
-        case UserRole.MASTER_ADMIN:
+        case UserRole.STAFF:
         default:
             return [
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 1, size: 'md', visible: true },
-                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 2, size: 'full', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 3, size: 'md', visible: true },
+                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
+                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
             ];
     }
 };

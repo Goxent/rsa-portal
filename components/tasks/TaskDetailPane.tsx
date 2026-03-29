@@ -278,6 +278,18 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                                     {/* ── Properties Grid ── */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 py-6 border-y border-white/[0.06]">
+                                        <Field label="Client" icon={<Briefcase size={11} className="text-gray-400" />} error={!!errors.clientId}
+                                            extra={watch('clientId') && onOpenClientDetail ? (
+                                                <button onClick={(e) => { e.preventDefault(); onOpenClientDetail(watch('clientId')!); }} className="text-[9px] font-bold text-emerald-400 hover:underline">
+                                                    View
+                                                </button>
+                                            ) : undefined}
+                                        >
+                                            <Controller name="clientId" control={control} render={({ field }) => (
+                                                <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
+                                            )} />
+                                        </Field>
+
                                         <Field label="Audit Phase" icon={<Sparkles size={11} className="text-gray-400" />} error={!!errors.auditPhase}>
                                             <select className={selectClass} {...register('auditPhase')}>
                                                 {Object.values(AuditPhase).map(ph => <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>)}
@@ -307,18 +319,6 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <option value="" className="bg-[#1e293b] text-gray-500">— Unassigned —</option>
                                                 {usersList.filter(u => currentAssignees.includes(u.uid)).map(u => <option key={u.uid} value={u.uid} className="bg-[#1e293b] text-white">{u.displayName}</option>)}
                                             </select>
-                                        </Field>
-
-                                        <Field label="Client" icon={<Briefcase size={11} className="text-gray-400" />} error={!!errors.clientId}
-                                            extra={watch('clientId') && onOpenClientDetail ? (
-                                                <button onClick={(e) => { e.preventDefault(); onOpenClientDetail(watch('clientId')!); }} className="text-[9px] font-bold text-emerald-400 hover:underline">
-                                                    View
-                                                </button>
-                                            ) : undefined}
-                                        >
-                                            <Controller name="clientId" control={control} render={({ field }) => (
-                                                <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
-                                            )} />
                                         </Field>
 
                                         <Field label="Dates" icon={<Calendar size={12} className="text-gray-400" />} span2
