@@ -705,22 +705,39 @@ const AttendancePage: React.FC = () => {
                 </div>
 
                 {/* ── Filter & Search Bar ── */}
-                <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 flex flex-col xl:flex-row items-center gap-4 shadow-xl">
-                    {/* Search */}
-                    <div className="relative w-full xl:w-80">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                        <input 
-                            type="text"
-                            placeholder="Search team member or status..."
-                            className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-600"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
+                    
+                    {/* Top Row: Search & Manual Log */}
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
+                        <div className="relative w-full sm:max-w-md">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                            <input 
+                                type="text"
+                                placeholder="Search team member or status..."
+                                className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-600"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        <button 
+                            onClick={() => {
+                                setSelectedUserForEdit(null);
+                                setSelectedDateForEdit(getCurrentDateUTC());
+                                setSelectedRecord(null);
+                                setIsEditModalOpen(true);
+                            }}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/20 group shrink-0"
+                        >
+                            <Plus size={16} className="text-amber-500 group-hover:scale-110 transition-transform" /> 
+                            <span>Manual Log</span>
+                        </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 flex-1 w-full">
+                    {/* Bottom Row: Filters */}
+                    <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 w-full border-t border-[#30363d] pt-4">
                         {isAdmin && (
-                            <div className="min-w-[180px] flex-1 lg:flex-none">
+                            <div className="w-full xl:w-56 shrink-0 z-20">
                                 <StaffSelect
                                     value={filterStaffId}
                                     onChange={(val) => setFilterStaffId(Array.isArray(val) ? val[0] : val)}
@@ -733,7 +750,7 @@ const AttendancePage: React.FC = () => {
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none hover:border-gray-600 transition-all flex-1 lg:flex-none"
+                            className="bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2 text-sm text-gray-300 outline-none hover:border-gray-600 transition-all w-full xl:w-48 shrink-0 h-[56px] appearance-none"
                         >
                             <option value="ALL">All Statuses</option>
                             <option value="PRESENT">Present Only</option>
@@ -742,27 +759,21 @@ const AttendancePage: React.FC = () => {
                             <option value="HOLIDAY">Firm Holidays</option>
                         </select>
 
-                        <div className="flex-1 lg:flex-none min-w-[320px] bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2 group hover:border-[#484f58] transition-all">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
+                        <div className="flex-1 w-full bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2 group hover:border-[#484f58] transition-all h-[56px]">
+                            <div className="flex items-center justify-between xl:mb-0 mb-1">
+                                <div className="flex items-center gap-2 xl:hidden">
                                     <CalendarDays size={14} className="text-amber-500" />
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Date Range</span>
                                 </div>
-                                <button 
-                                    onClick={() => setUseNepaliFrom(!useNepaliFrom)} 
-                                    className={`text-[9px] px-2 py-0.5 rounded font-black transition-all ${useNepaliFrom ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-400 bg-white/5 hover:text-gray-300'}`}
-                                >
-                                    BS
-                                </button>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1 relative">
-                                    <span className="absolute -top-3.5 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">FROM</span>
+                            <div className="flex items-center gap-4 h-full">
+                                <div className="flex-1 w-1/2 relative flex items-center h-full">
+                                    <span className="absolute -top-4 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">FROM</span>
                                     {useNepaliFrom ? (
                                         <NepaliDatePicker 
                                             value={filterStartDate} 
                                             onChange={setFilterStartDate} 
-                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-7 !text-white !text-xs !static" 
+                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-full !text-white !text-xs !static w-full" 
                                             placeholder="Start Date"
                                             showADDate={false}
                                         />
@@ -771,18 +782,18 @@ const AttendancePage: React.FC = () => {
                                             type="date" 
                                             value={filterStartDate} 
                                             onChange={(e) => setFilterStartDate(e.target.value)} 
-                                            className="w-full bg-transparent border-0 p-0 h-7 text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
+                                            className="w-full bg-transparent border-0 p-0 h-full text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
                                         />
                                     )}
                                 </div>
                                 <div className="w-px h-5 bg-[#30363d]" />
-                                <div className="flex-1 relative">
-                                    <span className="absolute -top-3.5 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">TO</span>
+                                <div className="flex-1 w-1/2 relative flex items-center h-full">
+                                    <span className="absolute -top-4 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">TO</span>
                                     {useNepaliFrom ? (
                                         <NepaliDatePicker 
                                             value={filterEndDate} 
                                             onChange={setFilterEndDate} 
-                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-7 !text-white !text-xs !static" 
+                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-full !text-white !text-xs !static w-full" 
                                             placeholder="End Date"
                                             showADDate={false}
                                         />
@@ -791,31 +802,25 @@ const AttendancePage: React.FC = () => {
                                             type="date" 
                                             value={filterEndDate} 
                                             onChange={(e) => setFilterEndDate(e.target.value)} 
-                                            className="w-full bg-transparent border-0 p-0 h-7 text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
+                                            className="w-full bg-transparent border-0 p-0 h-full text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
                                         />
                                     )}
+                                </div>
+                                <div className="hidden xl:flex items-center">
+                                    <button 
+                                        onClick={() => setUseNepaliFrom(!useNepaliFrom)} 
+                                        className={`text-[9px] px-2 py-0.5 rounded font-black transition-all ${useNepaliFrom ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-400 bg-white/5 hover:text-gray-300'}`}
+                                    >
+                                        BS
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <button onClick={loadData} className="w-full lg:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl transition-all font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-600/20">
+                        <button onClick={loadData} className="w-full xl:w-auto h-[56px] flex items-center justify-center px-6 bg-amber-600 hover:bg-amber-500 text-white rounded-xl transition-all font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-600/20 shrink-0">
                             Apply Filter
                         </button>
                     </div>
-
-                    {/* Manual Log Button - Always visible for now but with role-based label if needed */}
-                    <button 
-                        onClick={() => {
-                            setSelectedUserForEdit(null);
-                            setSelectedDateForEdit(getCurrentDateUTC());
-                            setSelectedRecord(null);
-                            setIsEditModalOpen(true);
-                        }}
-                        className="w-full xl:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/20 group"
-                    >
-                        <Plus size={16} className="text-amber-500 group-hover:scale-110 transition-transform" /> 
-                        <span>Manual Log</span>
-                    </button>
                 </div>
 
                 {/* ── Main Records Section ── */}
