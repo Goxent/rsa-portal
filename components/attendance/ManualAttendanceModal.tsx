@@ -85,14 +85,14 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 status: formData.status as any,
                 clockIn: formData.status === 'ABSENT' || formData.status === 'ON LEAVE' ? '' : formData.clockIn!,
                 clockOut: formData.status === 'ABSENT' || formData.status === 'ON LEAVE' ? '' : formData.clockOut,
-                workHours: calculateWorkHours(formData.clockIn, formData.clockOut, formData.status as any),
-                notes: formData.notes,
-                clientIds: formData.clientIds,
-                clientId: formData.clientIds && formData.clientIds.length > 0 ? formData.clientIds[0] : undefined,
-                clientName: formData.clientIds && formData.clientIds.length > 0
-                    ? clients.find(c => c.id === formData.clientIds![0])?.name
-                    : undefined,
-                workLogs: formData.workLogs
+                workHours: calculateWorkHours(formData.clockIn, formData.clockOut, formData.status as any) || 0,
+                notes: formData.notes || '',
+                clientIds: formData.clientIds || [],
+                clientId: (formData.clientIds && formData.clientIds.length > 0) ? formData.clientIds[0] : '',
+                clientName: (formData.clientIds && formData.clientIds.length > 0)
+                    ? clients.find(c => c.id === formData.clientIds![0])?.name || ''
+                    : '',
+                workLogs: formData.workLogs || []
             };
 
             if (isAdmin) {
