@@ -275,7 +275,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                                 {(formData.workLogs || []).map((log) => (
                                     <div key={log.id} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-3 space-y-3 relative group">
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-3">
                                             <div className="space-y-1">
                                                 <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Client</span>
                                                 <ClientSelect

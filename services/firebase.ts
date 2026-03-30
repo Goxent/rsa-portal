@@ -1287,11 +1287,12 @@ export const AuthService = {
     getPendingAttendanceRequests: async (): Promise<AttendanceLogRequest[]> => {
         const q = query(
             collection(db, 'attendanceRequests'),
-            where('requestStatus', '==', 'PENDING'),
-            orderBy('requestedAt', 'desc')
+            where('requestStatus', '==', 'PENDING')
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => docConverter<AttendanceLogRequest>(d));
+        const results = snapshot.docs.map(d => docConverter<AttendanceLogRequest>(d));
+        // Sort in-memory to avoid composite index requirement
+        return results.sort((a, b) => (b.requestedAt || '').localeCompare(a.requestedAt || ''));
     },
 
     approveAttendanceRequest: async (requestId: string, adminId: string, adminName: string) => {
