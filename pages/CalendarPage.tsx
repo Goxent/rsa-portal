@@ -609,8 +609,8 @@ const CalendarPage: React.FC = () => {
     };
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
-            <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500 pb-32">
+        <div className="min-h-full p-4 md:p-6 bg-transparent">
+            <div className="flex flex-col space-y-6 animate-in fade-in duration-500 pb-32">
                 {/* Header Section */}
                 <div className="flex flex-col xl:flex-row justify-between items-center gap-6 shrink-0">
                     <div>
@@ -657,9 +657,9 @@ const CalendarPage: React.FC = () => {
 
             {
                 viewMode === 'GRID' ? (
-                    <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden">
+                    <div className="flex flex-col lg:flex-row gap-6">
                         {/* Main Calendar Grid */}
-                        <div className="flex-1 glass-panel rounded-2xl p-4 lg:p-6 overflow-y-auto shadow-2xl">
+                        <div className="flex-1 glass-panel rounded-2xl p-4 lg:p-6 shadow-2xl">
                             {renderCalendarGrid()}
                         </div>
 
