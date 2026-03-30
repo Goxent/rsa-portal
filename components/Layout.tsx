@@ -149,7 +149,7 @@ const Layout: React.FC = () => {
           />
 
           {/* Page Content */}
-          <main className="flex-1 overflow-hidden mt-16 relative">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden mt-16 relative">
             {!isOnline && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
                     <AnimatePresence mode="wait">
