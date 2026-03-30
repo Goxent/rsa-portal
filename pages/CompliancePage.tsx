@@ -271,7 +271,8 @@ const CompliancePage: React.FC = () => {
     });
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
+            <div className="space-y-6 animate-in fade-in duration-500 pb-32 max-w-7xl mx-auto">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -755,6 +756,8 @@ const CompliancePage: React.FC = () => {
                     </div>
                 </div>
             )}
+        </div>
+        </div>
         </div>
     );
 };

@@ -244,7 +244,10 @@ const ResourcesPage: React.FC = () => {
 
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 h-full flex flex-col">
+        <div className="h-full flex flex-col overflow-hidden bg-transparent">
+            {/* Scrollable Container */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-32">
+                <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
                 <div>
@@ -722,6 +725,8 @@ const ResourcesPage: React.FC = () => {
             )}
 
             <DocumentViewer isOpen={!!viewDoc} onClose={() => setViewDoc(null)} url={viewDoc?.url || ''} type={viewDoc?.type || 'file'} title={viewDoc?.title || ''} downloadUrl={viewDoc?.downloadUrl} />
+                </div>
+            </div>
         </div>
     );
 };
