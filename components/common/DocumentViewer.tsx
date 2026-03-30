@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ExternalLink, Download, FileText, Bot } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, Bot, Maximize, Minimize } from 'lucide-react';
 import { AiDocumentAssistant } from './AiDocumentAssistant';
 
 interface DocumentViewerProps {
@@ -32,10 +32,11 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(downloadUrl || url)}&embedded=true`;
 
     const [isAiOpen, setIsAiOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className={`relative w-full ${isAiOpen ? 'max-w-[95vw]' : 'max-w-5xl'} h-[85vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300`}>
+            <div className={`relative w-full ${isFullscreen ? 'h-screen max-w-full rounded-none' : isAiOpen ? 'max-w-[95vw] h-[85vh] rounded-xl' : 'max-w-5xl h-[85vh] rounded-xl'} bg-white shadow-2xl flex flex-col overflow-hidden transition-all duration-300`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 flex-shrink-0">
                     <div className="flex items-center gap-3">
@@ -60,6 +61,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                             <span className="hidden sm:inline">Ask AI</span>
                         </button>
                         <div className="w-px h-8 bg-gray-200 mx-2"></div>
+
+                        <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors" title="Toggle Fullscreen">
+                            {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                        </button>
 
                         {downloadUrl && (
                             <a

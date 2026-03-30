@@ -5,13 +5,19 @@ import { UserProfile, UserRole, StaffDirectoryProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { userKeys } from '../hooks/useStaff';
+import { getAvatarColor, getInitials } from '../utils/userUtils';
+import toast from 'react-hot-toast';
 
 const StaffPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [users, setUsers] = useState<StaffDirectoryProfile[]>([]);
-    const [fullUsers, setFullUsers] = useState<UserProfile[]>([]); // Keep full data for admins who can edit
+
+    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+    const [fullUsers, setFullUsers] = useState<UserProfile[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDepartment, setSelectedDepartment] = useState('All');
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
 
     // Modal State
@@ -35,26 +41,11 @@ const StaffPage: React.FC = () => {
         gender: 'Male',
     });
 
-    useEffect(() => {
-        // Only Admin allowed
-        // Only Admin or Master Admin allowed
-        const allowed = [UserRole.ADMIN, UserRole.MASTER_ADMIN] as string[];
-        if (user && !allowed.includes(user.role)) {
-            navigate('/dashboard');
-            return;
-        }
-        fetchUsers();
-    }, [user]);
-
-    const fetchUsers = async () => {
-        const data = await AuthService.getAllUsers();
-        // If current user is Admin/Master, they get full access.
-        // But for the *Directory View*, we should conceptually use the safe profile.
-        // We'll store full data for editing purposes if admin.
-        setFullUsers(data);
-
-        // Sanitize for display
-        const safeProfiles: StaffDirectoryProfile[] = data.map(u => ({
+    // Fetch users using React Query (shared cache with Detail page)
+    const { data: users = [], isLoading, refetch } = useQuery({
+        queryKey: userKeys.all,
+        queryFn: AuthService.getAllUsers,
+        select: (data) => data.map(u => ({
             uid: u.uid,
             displayName: u.displayName,
             email: u.email,
@@ -66,9 +57,23 @@ const StaffPage: React.FC = () => {
             photoURL: u.photoURL,
             gender: u.gender,
             dateOfJoining: u.dateOfJoining
-        }));
-        setUsers(safeProfiles);
-    };
+        } as StaffDirectoryProfile))
+    });
+
+    useEffect(() => {
+        // Fetch full profiles for editing logic (only if admin)
+        if (isAdmin) {
+            AuthService.getAllUsers().then(setFullUsers);
+        }
+    }, [isAdmin]);
+
+    useEffect(() => {
+        const allowed = [UserRole.ADMIN, UserRole.MASTER_ADMIN] as string[];
+        if (user && !allowed.includes(user.role)) {
+            navigate('/dashboard');
+            return;
+        }
+    }, [user, navigate]);
 
     const handleOpenAdd = () => {
         setIsEditing(false);
@@ -104,41 +109,30 @@ const StaffPage: React.FC = () => {
         e.preventDefault();
         setFormError('');
 
-        if (isSaving) return; // Prevent duplicate submissions
+        if (isSaving) return;
         setIsSaving(true);
 
         try {
             if (isEditing && selectedUser) {
                 await AuthService.updateUserProfile(selectedUser.uid, formData);
-
-                // If admin marks user as inactive, remove their login ability
                 if (formData.status === 'Inactive' && formData.email) {
                     await AuthService.deleteStaffUser(selectedUser.uid, formData.email);
                 }
-                setSuccessMessage('Staff profile updated successfully!');
+                toast.success('Profile updated!');
             } else {
                 await AuthService.createStaffUser(formData);
-                setSuccessMessage('Staff member added to the directory!');
+                toast.success('Invitation email sent to ' + formData.email);
             }
-            await fetchUsers();
-            setTimeout(() => {
-                setIsModalOpen(false);
-                setSuccessMessage('');
-            }, 1800);
+            await refetch();
+            if (isAdmin) AuthService.getAllUsers().then(setFullUsers);
+            
+            setIsModalOpen(false);
         } catch (error: any) {
             setFormError(error.message);
+            toast.error(error.message);
         } finally {
             setIsSaving(false);
         }
-    };
-
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .substring(0, 2)
-            .toUpperCase();
     };
 
     // A–Z sort helper for role display
@@ -153,11 +147,15 @@ const StaffPage: React.FC = () => {
     };
 
     const filteredUsers = users
-        .filter(u =>
-            u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        .filter(u => {
+            const matchesSearch = u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                u.email.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesDept = selectedDepartment === 'All' || u.department === selectedDepartment;
+            return matchesSearch && matchesDept;
+        })
         .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+    const departments = ['All', 'Audit', 'Tax', 'Advisory', 'Admin'];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -169,14 +167,31 @@ const StaffPage: React.FC = () => {
                 </div>
                 <button
                     onClick={handleOpenAdd}
-                    className="bg-brand-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-brand-700 flex items-center shadow-lg shadow-brand-900/40 transition-all hover:-translate-y-0.5 border border-brand-500/30"
+                    className="bg-brand-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-brand-700 flex items-center shadow-lg shadow-brand-900/40 transition-all hover:-translate-y-0.5 border border-brand-500/30 group"
                 >
-                    <Plus size={18} className="mr-2" /> Add Staff Member
+                    <Plus size={18} className="mr-2 group-hover:rotate-90 transition-transform duration-300" /> Invite Staff Member
                 </button>
             </div>
 
+            {/* Department Filters */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-2 hide-scrollbar">
+                {departments.map(dept => (
+                    <button
+                        key={dept}
+                        onClick={() => setSelectedDepartment(dept)}
+                        className={`px-5 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap border ${
+                            selectedDepartment === dept
+                                ? 'bg-brand-500/20 text-brand-300 border-brand-500/30 shadow-lg shadow-brand-500/10'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                        }`}
+                    >
+                        {dept}
+                    </button>
+                ))}
+            </div>
+
             {/* Controls */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-4 rounded-xl">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-4 rounded-xl border border-white/5">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                     <input
@@ -201,18 +216,7 @@ const StaffPage: React.FC = () => {
             {viewMode === 'GRID' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredUsers.map((staff, index) => {
-                        // Deterministic color generation
-                        const colors = [
-                            'from-blue-600/20 to-yellow-400/10',
-                            'from-purple-600/20 to-pink-400/10',
-                            'from-emerald-600/20 to-teal-400/10',
-                            'from-orange-600/20 to-amber-400/10',
-                            'from-amber-600/20 to-yellow-400/10',
-                            'from-rose-600/20 to-red-400/10'
-                        ];
-                        const colorIndex = staff.uid.charCodeAt(0) % colors.length;
-                        const bgGradient = colors[colorIndex];
-                        const accentColor = bgGradient.split(' ')[0].replace('from-', 'text-').replace('-600/20', '-400');
+                        const avatarStyle = getAvatarColor(staff.uid);
 
                         return (
                             <div
@@ -221,14 +225,14 @@ const StaffPage: React.FC = () => {
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
                                 {/* Card Header with Fluid Gradient */}
-                                <div className={`p-6 bg-gradient-to-br ${bgGradient} relative overflow-hidden`}>
+                                <div className={`p-6 bg-gradient-to-br ${avatarStyle.from} ${avatarStyle.to} relative overflow-hidden`}>
                                     {/* Abstract Shapes */}
                                     <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
                                     <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-black/10 rounded-full blur-xl"></div>
 
                                     <div className="relative z-10 flex justify-between items-start">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md bg-white/10 text-white border border-white/20 group-hover:scale-110 transition-transform duration-500">
+                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md ${avatarStyle.bg} ${avatarStyle.text} border ${avatarStyle.border} group-hover:scale-110 transition-transform duration-500`}>
                                                 {getInitials(staff.displayName)}
                                             </div>
                                             <div>
@@ -236,15 +240,15 @@ const StaffPage: React.FC = () => {
                                                     {staff.displayName}
                                                 </h3>
                                                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-white/70 font-mono border border-white/10 backdrop-blur-sm">
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-bold border border-brand-500/30 backdrop-blur-sm uppercase tracking-wider">
                                                         {getRoleLabel(staff.role)}
                                                     </span>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border backdrop-blur-sm font-bold uppercase tracking-wider ${staff.status === 'Active'
-                                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                                        : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                                                        }`}>
-                                                        {staff.status}
-                                                    </span>
+                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/20 border border-white/5 backdrop-blur-sm">
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${staff.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${staff.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {staff.status}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -264,8 +268,15 @@ const StaffPage: React.FC = () => {
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Position</p>
                                             <div className="flex items-center text-sm font-medium text-gray-200">
-                                                <Shield size={14} className={`mr-2 ${accentColor}`} />
+                                                <Shield size={14} className={`mr-2 ${avatarStyle.text}`} />
                                                 <span className="truncate">{staff.position || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Department</p>
+                                            <div className="flex items-center text-sm font-medium text-gray-200">
+                                                <Briefcase size={14} className={`mr-2 ${avatarStyle.text}`} />
+                                                <span className="truncate">{staff.department || 'General'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -306,40 +317,45 @@ const StaffPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {filteredUsers.map((staff) => (
-                                <tr key={staff.uid} className="hover:bg-white/5 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-white flex items-center">
-                                        <div className="w-8 h-8 rounded-full bg-navy-700 flex items-center justify-center mr-3 text-xs font-bold border border-white/10">
-                                            {getInitials(staff.displayName)}
-                                        </div>
-                                        {staff.displayName}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-white">{staff.position || getRoleLabel(staff.role)}</div>
-                                        <div className="text-xs text-gray-500">{getRoleLabel(staff.role)}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-xs">
-                                        <div>{staff.email}</div>
-                                        <div className="text-gray-500">{staff.phoneNumber}</div>
-                                    </td>
-
-                                    <td className="px-6 py-4">{staff.gender || '-'}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${staff.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                            {staff.status || 'Active'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <button
-                                            onClick={() => handleOpenEdit(staff)}
-                                            className={`text-amber-400 hover:text-white transition-colors ${staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            disabled={staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN}
-                                        >
-                                            <Edit size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {filteredUsers.map((staff) => {
+                                const avatarStyle = getAvatarColor(staff.uid);
+                                return (
+                                    <tr key={staff.uid} className="hover:bg-white/5 transition-colors border-b border-white/5">
+                                        <td className="px-6 py-4 font-medium text-white flex items-center">
+                                            <div className={`w-9 h-9 rounded-xl ${avatarStyle.bg} ${avatarStyle.text} flex items-center justify-center mr-3 text-xs font-black border ${avatarStyle.border}`}>
+                                                {getInitials(staff.displayName)}
+                                            </div>
+                                            {staff.displayName}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-white">{staff.position || getRoleLabel(staff.role)}</div>
+                                            <div className="text-xs text-gray-500">{getRoleLabel(staff.role)}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs">
+                                            <div className="text-gray-200 font-medium">{staff.email}</div>
+                                            <div className="text-gray-500 mt-0.5">{staff.phoneNumber || 'No phone'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-400">{staff.gender || '-'}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${staff.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${staff.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {staff.status || 'Active'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => handleOpenEdit(staff)}
+                                                className={`text-amber-400 hover:text-white transition-colors ${staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                disabled={staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN}
+                                            >
+                                                <Edit size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -350,8 +366,8 @@ const StaffPage: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
                     <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/10">
                         <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="text-lg font-bold text-white font-heading">{isEditing ? 'Edit Staff Profile' : 'Add New Staff'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+                            <h3 className="text-lg font-bold text-white font-heading">{isEditing ? 'Edit Staff Profile' : 'Send Workspace Invitation'}</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors hover:rotate-90 duration-200"><X size={20} /></button>
                         </div>
 
                         <form onSubmit={handleSave} className="p-6 overflow-y-auto">
@@ -440,11 +456,11 @@ const StaffPage: React.FC = () => {
 
                             <div className="pt-6 mt-4 border-t border-white/10 flex justify-end space-x-3">
                                 <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 transition-colors text-sm disabled:opacity-50">Cancel</button>
-                                <button type="submit" disabled={isSaving} className="bg-brand-600 hover:bg-brand-500 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center min-w-[130px] justify-center transition-all">
+                                <button type="submit" disabled={isSaving} className="bg-brand-600 hover:bg-brand-500 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center min-w-[150px] justify-center transition-all">
                                     {isSaving ? (
-                                        <><Loader2 size={16} className="mr-2 animate-spin" /> Saving...</>
+                                        <><Loader2 size={16} className="mr-2 animate-spin" /> {isEditing ? 'Saving...' : 'Sending...'}</>
                                     ) : (
-                                        <><Save size={16} className="mr-2" /> Save Profile</>
+                                        <>{isEditing ? <Save size={16} className="mr-2" /> : <Mail size={16} className="mr-2" />} {isEditing ? 'Save Changes' : 'Send Invitation'}</>
                                     )}
                                 </button>
                             </div>

@@ -36,6 +36,7 @@ const ClientsPage: React.FC = () => {
     const [filterAuditorFirm, setFilterAuditorFirm] = useState('ALL');
     const [filterCategory, setFilterCategory] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeModalTab, setActiveModalTab] = useState<'BASIC' | 'CONTACT' | 'ASSIGNMENT'>('BASIC');
     const [isSaving, setIsSaving] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
 
@@ -160,6 +161,7 @@ const ClientsPage: React.FC = () => {
     const handleEdit = (client: Client) => {
         setFormData(client);
         setEditingId(client.id);
+        setActiveModalTab('BASIC');
         setIsModalOpen(true);
     };
 
@@ -382,16 +384,27 @@ const ClientsPage: React.FC = () => {
                         </div>
                     )}
                     {isAdmin && (
-                        <button
-                            onClick={() => {
-                                setEditingId(null);
-                                setFormData(initialFormState);
-                                setIsModalOpen(true);
-                            }}
-                            className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105"
-                        >
-                            <Plus size={18} className="mr-2" /> Add Client
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleSeedClients}
+                                disabled={isSeeding}
+                                className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-2.5 rounded-xl font-medium flex items-center transition-all"
+                            >
+                                {isSeeding ? <span className="animate-spin mr-2">⏳</span> : <Building2 size={18} className="mr-2 text-brand-400" />}
+                                Seed Data
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingId(null);
+                                    setFormData(initialFormState);
+                                    setActiveModalTab('BASIC');
+                                    setIsModalOpen(true);
+                                }}
+                                className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105"
+                            >
+                                <Plus size={18} className="mr-2" /> Add Client
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -560,81 +573,31 @@ const ClientsPage: React.FC = () => {
 
                             {/* Card Body */}
                             <div
-                                className="p-6 space-y-5 bg-navy-900/40 backdrop-blur-sm cursor-pointer hover:bg-navy-800/50 transition-colors"
+                                className="p-6 flex flex-col gap-4 bg-navy-900/40 backdrop-blur-sm cursor-pointer hover:bg-navy-800/50 transition-colors"
                                 onClick={() => navigate(`/clients/${client.id}`)}
                             >
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Service</p>
-                                        <div className="flex items-center text-sm font-medium text-gray-200">
-                                            <Briefcase size={14} className={`mr-2 ${accentColor}`} />
-                                            <span className="truncate" title={client.serviceType}>{client.serviceType}</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Sector</p>
-                                        <div className="flex items-center text-sm font-medium text-gray-200">
-                                            <Building2 size={14} className={`mr-2 ${accentColor}`} />
-                                            <span className="truncate" title={client.industry}>{client.industry || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Compliance Badges */}
-                                <div className="flex gap-2 flex-wrap">
-                                    {client.vatReturn && (
-                                        <span className="text-[10px] bg-emerald-500/5 text-emerald-400 px-2.5 py-1 rounded-md border border-emerald-500/20 font-bold flex items-center gap-1">
-                                            <CheckCircle2 size={10} /> VAT Return
-                                        </span>
-                                    )}
-                                    {client.itrReturn && (
-                                        <span className="text-[10px] bg-amber-500/5 text-amber-400 px-2.5 py-1 rounded-md border border-amber-500/20 font-bold flex items-center gap-1">
-                                            <FileText size={10} /> ITR Filing
-                                        </span>
-                                    )}
-                                    {!client.vatReturn && !client.itrReturn && (
-                                        <span className="text-[10px] text-gray-600 italic px-1">No services configured</span>
-                                    )}
-                                </div>
-
-                                {/* Divider */}
-                                <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-
-                                {/* Signing & Auditor Info */}
-                                <div className="space-y-3">
+                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
                                     <div className="flex items-start gap-3 group/item">
-                                        <div className="mt-0.5 p-1.5 rounded-full bg-white/5 text-gray-400 group-hover/item:text-white group-hover/item:bg-white/10 transition-colors">
-                                            <BadgeCheck size={12} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Auditor (Firm)</p>
-                                            <p className="text-xs text-gray-300 font-medium">{getSigningAuthorityName(client)}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-3 group/item">
-                                        <div className="mt-0.5 p-1.5 rounded-full bg-white/5 text-gray-400 group-hover/item:text-white group-hover/item:bg-white/10 transition-colors">
+                                        <div className="mt-0.5 p-1.5 rounded-full bg-white/5 text-gray-400">
                                             <User size={12} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Lead Auditor</p>
-                                            <p className="text-xs text-gray-300 font-medium">{getAuditorName(client.auditorId)}</p>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Focal Person</p>
+                                            <p className="text-sm text-gray-200 font-medium">{getAuditorName(client.auditorId)}</p>
                                         </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold">Last Activity</p>
+                                        <p className="text-sm text-gray-300 font-mono tracking-tight">{client.updatedAt ? new Date(client.updatedAt).toLocaleDateString() : 'New'}</p>
                                     </div>
                                 </div>
-
-                                {/* Hover Reveal details - Contact, PAN, etc can go here if we want more density, 
-                                    but let's keep it clean. Maybe tooltip or expand? 
-                                    For now, let's keep PAN if available.
-                                */}
-                                {client.pan && (
-                                    <div className="pt-2">
-                                        <div className="bg-black/20 rounded-lg px-3 py-2 flex items-center justify-between border border-white/5">
-                                            <span className="text-[10px] text-gray-500 font-mono">PAN</span>
-                                            <span className="text-xs text-brand-200 font-mono tracking-wider">{client.pan}</span>
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="flex items-center justify-between">
+                                     <div className="flex items-center text-sm font-medium text-gray-400">
+                                         <Briefcase size={14} className="mr-2" />
+                                         <span className="truncate max-w-[150px]">{client.serviceType}</span>
+                                     </div>
+                                     <span className="text-xs text-brand-400 font-bold hover:underline">View Details →</span>
+                                </div>
                             </div>
                         </div>
                     );
@@ -671,9 +634,23 @@ const ClientsPage: React.FC = () => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSave} className="p-6 space-y-6">
-                            {/* Basic Info */}
-                            <div className="space-y-4">
+                        {/* Tab Strip */}
+                        <div className="flex px-6 pt-4 gap-6 border-b border-white/10 shrink-0">
+                            {(['BASIC', 'CONTACT', 'ASSIGNMENT'] as const).map(tab => (
+                                <button
+                                    key={tab}
+                                    type="button"
+                                    onClick={() => setActiveModalTab(tab)}
+                                    className={`pb-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${activeModalTab === tab ? 'text-amber-400 border-amber-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
+                                >
+                                    {tab === 'BASIC' ? 'Basic Info' : tab === 'CONTACT' ? 'Contact & Tax' : 'Assignment'}
+                                </button>
+                            ))}
+                        </div>
+
+                        <form onSubmit={handleSave} className="p-6 space-y-6 flex-1 overflow-y-auto">
+                            {activeModalTab === 'BASIC' && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Basic Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
@@ -767,9 +744,10 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            )}
 
-                            {/* Contact & Tax Info */}
-                            <div className="space-y-4 pt-4 border-t border-white/5">
+                            {activeModalTab === 'CONTACT' && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -799,9 +777,11 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            )}
 
-                            {/* Assignment */}
-                            <div className="space-y-4 pt-4 border-t border-white/5">
+                            {activeModalTab === 'ASSIGNMENT' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="space-y-4">
                                 <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Internal Focal Person</h3>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Focal Person</label>
@@ -858,6 +838,8 @@ const ClientsPage: React.FC = () => {
                                     </label>
                                 </div>
                             </div>
+                            </div>
+                            )}
 
                             <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>

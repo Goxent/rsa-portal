@@ -181,5 +181,47 @@ export const EmailService = {
 
         const html = EmailService.getTemplateWrapper(content, 'Status Update', 'Review Task Progress', taskLink);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+    },
+
+    sendLeaveStatusChange: async (toEmail: string, userName: string, leaveType: string, start: string, end: string, status: string, reason?: string) => {
+        const subject = `Leave Request ${status}: ${leaveType} (${start})`;
+        const isApproved = status === 'APPROVED';
+        
+        const content = `
+            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
+            <p style="line-height: 1.6; font-size: 16px; color: #475569;">Your request for <strong>${leaveType}</strong> from <strong>${start}</strong> to <strong>${end}</strong> has been <strong>${status}</strong>.</p>
+
+            <div style="margin-top: 32px; padding: 32px; background-color: ${isApproved ? '#f0fdf4' : '#fef2f2'}; border-radius: 16px; border: 1px solid ${isApproved ? '#dcfce7' : '#fee2e2'}; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 16px;">${isApproved ? '✅' : '❌'}</div>
+                <h2 style="margin: 0; color: ${isApproved ? '#166534' : '#991b1b'}; font-size: 24px; font-weight: 800;">Request ${status}</h2>
+                ${reason ? `
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid ${isApproved ? '#dcfce7' : '#fee2e2'}; text-align: left;">
+                    <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase;">Admin Note</p>
+                    <p style="margin: 0; color: #475569; font-size: 15px; font-style: italic;">"${reason}"</p>
+                </div>` : ''}
+            </div>
+        `;
+
+        const html = EmailService.getTemplateWrapper(content, 'Leave Update', 'View My Leaves', `${window.location.origin}/#/leaves`);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+    },
+
+    sendStaffInvitation: async (toEmail: string, userName: string, inviterName: string): Promise<boolean> => {
+        const subject = `Invitation to join RSA Workspace`;
+        const signupLink = `${window.location.origin}/#/signup?email=${encodeURIComponent(toEmail)}`;
+        
+        const content = `
+            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
+            <p style="line-height: 1.6; font-size: 16px; color: #475569;"><strong>${inviterName}</strong> has invited you to join the official <strong>R. Sapkota & Associates (RSA)</strong> digital workspace.</p>
+            
+            <p style="line-height: 1.6; font-size: 16px; color: #475569; margin-top: 24px;">This platform will be used for your daily attendance, task management, and resource planning. Please complete your registration using the button below:</p>
+
+            <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; margin-top: 32px; border: 1px solid #f1f5f9; text-align: center;">
+                <p style="margin: 0; color: #64748b; font-size: 14px;">Registration is restricted to invited emails only. Ensure you use <strong>${toEmail}</strong> during signup.</p>
+            </div>
+        `;
+
+        const html = EmailService.getTemplateWrapper(content, 'Workspace Invitation', 'Accept Invitation & Sign Up', signupLink);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     }
 };

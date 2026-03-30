@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Folder, FileText, Search, ExternalLink, Grid, List, BookOpen, Shield, Calculator, FileCheck, Users, Eye, X, Mail, Sparkles, Send, Bot, Plus, ChevronRight, Home, PenTool, Save, Trash2, ArrowLeft, Download, File, Loader2 } from 'lucide-react';
+import { Folder, FileText, Search, ExternalLink, Grid, List, BookOpen, Shield, Calculator, FileCheck, Users, Eye, X, Mail, Sparkles, Send, Bot, Plus, ChevronRight, Home, PenTool, Save, Trash2, ArrowLeft, Download, File, Loader2, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AiService } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,8 @@ import { AuthService } from '../services/firebase';
 import { StorageService } from '../services/storage';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,24 +43,7 @@ const formatFileSize = (bytes?: number): string | null => {
 
 /** Basic markdown→HTML for article rendering */
 const renderMarkdown = (text: string): string => {
-    let html = text
-        // Escape HTML entities
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        // Headings (### → h3, ## → h2, # → h1)
-        .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold text-white mt-4 mb-2">$1</h3>')
-        .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-white mt-5 mb-2">$1</h2>')
-        .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-white mt-6 mb-3">$1</h1>')
-        // Bold and italic
-        .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        // Bullet lists
-        .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-gray-300">$1</li>')
-        // Line breaks
-        .replace(/\n\n/g, '</p><p class="mb-3 text-gray-300">')
-        .replace(/\n/g, '<br/>');
-    return `<p class="mb-3 text-gray-300">${html}</p>`;
+    return DOMPurify.sanitize(marked.parse(text) as string);
 };
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -70,11 +55,17 @@ const ResourcesPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 
+    const [recentIds, setRecentIds] = useState<string[]>([]);
+    useEffect(() => {
+        setRecentIds(JSON.parse(localStorage.getItem('recentResources') || '[]'));
+    }, []);
+
     // AI & Editor State
     const [previewResource, setPreviewResource] = useState<Resource | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editorMode, setEditorMode] = useState<'split' | 'edit' | 'preview'>('split');
     const [showAiPanel, setShowAiPanel] = useState(false);
+    const [isAiFloating, setIsAiFloating] = useState(false);
     const [aiQuery, setAiQuery] = useState('');
     const [aiResponse, setAiResponse] = useState('');
     const [isResearching, setIsResearching] = useState(false);
@@ -116,6 +107,14 @@ const ResourcesPage: React.FC = () => {
         return path;
     }, [currentFolderId, resources]);
 
+    // Sections
+    const pinnedResources = useMemo(() => resources.filter(r => r.isPinned), [resources]);
+    const recentlyViewed = useMemo(() => {
+        return recentIds
+            .map(id => resources.find(r => r.id === id))
+            .filter((r): r is Resource => !!r);
+    }, [recentIds, resources]);
+
     // Filtering
     const filteredResources = useMemo(() => {
         if (searchQuery.trim()) {
@@ -125,6 +124,12 @@ const ResourcesPage: React.FC = () => {
     }, [resources, currentFolderId, searchQuery]);
 
     const handleOpenResource = (res: Resource) => {
+        if (res.type !== 'folder') {
+            const updatedRecent = [res.id, ...recentIds.filter(id => id !== res.id)].slice(0, 5);
+            localStorage.setItem('recentResources', JSON.stringify(updatedRecent));
+            setRecentIds(updatedRecent);
+        }
+
         if (res.type === 'folder') {
             setCurrentFolderId(res.id);
             setSearchQuery('');
@@ -180,6 +185,8 @@ const ResourcesPage: React.FC = () => {
                 fileSize: newResource.fileSize,
                 createdBy: user?.uid,
                 createdByName: user?.displayName,
+                tags: newResource.tags || [],
+                isPinned: newResource.isPinned || false,
             };
             await AuthService.addResource(res);
             await loadResources();
@@ -208,6 +215,14 @@ const ResourcesPage: React.FC = () => {
         await AuthService.deleteResource(res.id);
         setResources(resources.filter(r => r.id !== res.id));
         toast.success(`"${res.title}" deleted`);
+    };
+
+    const togglePin = async (res: Resource, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const updated = { ...res, isPinned: !res.isPinned };
+        setResources(resources.map(r => r.id === res.id ? updated : r));
+        await AuthService.updateResource(updated);
+        toast.success(updated.isPinned ? 'Added to Pinned' : 'Removed from Pinned');
     };
 
     const getColorGradient = (id: string, type: string) => {
@@ -294,9 +309,52 @@ const ResourcesPage: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
-                {filteredResources.length > 0 ? (
-                    viewMode === 'grid' ? (
+            <div className="flex-1 overflow-y-auto custom-scrollbar pb-10 space-y-8">
+                {/* Pinned Section */}
+                {!searchQuery && !currentFolderId && pinnedResources.length > 0 && (
+                    <div className="space-y-4">
+                        <h2 className="text-sm font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                             <Sparkles size={14} /> Pinned Resources
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {pinnedResources.map(res => (
+                                <PinnedCard key={res.id} res={res} onOpen={() => handleOpenResource(res)} onPin={(e) => togglePin(res, e)} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Recently Viewed */}
+                {!searchQuery && recentlyViewed.length > 0 && (
+                    <div className="space-y-4">
+                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                             <Clock size={14} /> Recently Viewed
+                        </h2>
+                        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                            {recentlyViewed.map(res => (
+                                <button 
+                                    key={res.id}
+                                    onClick={() => handleOpenResource(res)}
+                                    className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-xl hover:bg-white/10 transition-all min-w-[200px] shrink-0"
+                                >
+                                    <div className="p-2 rounded-lg bg-navy-800">
+                                        <ResourceIcon type={res.type} size={18} />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-200 truncate">{res.title}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {!searchQuery && (
+                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">
+                            {currentFolderId ? 'Folder Contents' : 'Library Contents'}
+                        </h2>
+                    )}
+                    {filteredResources.length > 0 ? (
+                        viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {filteredResources.map((res, index) => {
                                 const bgGradient = getColorGradient(res.id, res.type);
@@ -314,18 +372,33 @@ const ResourcesPage: React.FC = () => {
                                                 <div className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-lg group-hover:scale-110 transition-transform duration-500">
                                                     <ResourceIcon type={res.type} size={28} className="text-white" />
                                                 </div>
-                                                {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(res); }}
-                                                        className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-all backdrop-blur-md"
+                                                <div className="flex gap-1">
+                                                    <button 
+                                                        onClick={(e) => togglePin(res, e)}
+                                                        className={`p-2 rounded-lg transition-all backdrop-blur-md ${res.isPinned ? 'text-amber-400 bg-amber-500/20' : 'text-white/40 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100'}`}
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Sparkles size={16} fill={res.isPinned ? "currentColor" : "none"} />
                                                     </button>
-                                                )}
+                                                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(res); }}
+                                                            className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-all backdrop-blur-md"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                             <h3 className="font-bold text-white text-lg mt-4 leading-tight tracking-tight line-clamp-2 min-h-[3.5rem]">
                                                 {res.title}
                                             </h3>
+                                            {res.tags && res.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {res.tags.map(t => (
+                                                        <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/10 text-white/60 border border-white/5 uppercase font-bold">{t}</span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="p-4 bg-navy-900/40 backdrop-blur-sm flex-1 flex flex-col justify-end gap-2">
                                             {/* Type badge + size */}
@@ -415,6 +488,7 @@ const ResourcesPage: React.FC = () => {
                     </div>
                 )}
             </div>
+        </div>
 
             {/* ── Add Resource Modal (Fix #5: <div> instead of <form>) ── */}
             {isAddModalOpen && (
@@ -444,6 +518,27 @@ const ResourcesPage: React.FC = () => {
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Category</label>
                                     <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newResource.category} onChange={e => setNewResource({ ...newResource, category: e.target.value })} placeholder="e.g. Audit, Tax" />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Tags (Comma separated)</label>
+                                <input 
+                                    className="w-full glass-input rounded-lg px-3 py-2 text-sm" 
+                                    value={newResource.tags?.join(', ')} 
+                                    onChange={e => setNewResource({ ...newResource, tags: e.target.value.split(',').map(s => s.trim()).filter(s => !!s) })} 
+                                    placeholder="NFRS, VAT, TDS..." 
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 py-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="pin" 
+                                    className="w-4 h-4 rounded bg-white/5 border-white/10 text-amber-500 focus:ring-amber-500"
+                                    checked={newResource.isPinned}
+                                    onChange={e => setNewResource({ ...newResource, isPinned: e.target.checked })}
+                                />
+                                <label htmlFor="pin" className="text-xs font-bold text-amber-400 uppercase cursor-pointer flex items-center gap-1">
+                                    <Sparkles size={12} fill="currentColor" /> Pin to Highlights
+                                </label>
                             </div>
                             {newResource.type !== 'folder' && newResource.type !== 'article' && (
                                 <div>
@@ -502,7 +597,12 @@ const ResourcesPage: React.FC = () => {
                                 <button onClick={() => setShowAiPanel(!showAiPanel)} className={`px-3 py-1.5 rounded-lg text-sm border flex items-center gap-2 ${showAiPanel ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-purple-300'}`}>
                                     <Sparkles size={14} /> AI
                                 </button>
-                                <button onClick={() => setPreviewResource(null)}><X size={24} className="text-gray-400 hover:text-white" /></button>
+                                {showAiPanel && (
+                                    <button onClick={() => setIsAiFloating(!isAiFloating)} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" title={isAiFloating ? "Dock AI Panel" : "Float AI Panel"}>
+                                        <ExternalLink size={16} />
+                                    </button>
+                                )}
+                                <button onClick={() => setPreviewResource(null)} className="p-1 text-gray-400 hover:text-white"><X size={24} /></button>
                             </div>
                         </div>
                         <div className="flex flex-1 overflow-hidden">
@@ -562,16 +662,26 @@ const ResourcesPage: React.FC = () => {
                                 )}
                             </div>
                             {showAiPanel && (
-                                <div className="w-96 border-l border-white/10 bg-navy-900 flex flex-col shadow-2xl relative z-10">
-                                    <div className="p-4 bg-purple-900/10 border-b border-white/10"><h4 className="text-purple-300 font-bold flex items-center gap-2"><Bot size={16} /> Research Assistant</h4></div>
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                        {aiResponse && <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm text-gray-200 whitespace-pre-wrap">{aiResponse}</div>}
-                                        {isResearching && <div className="text-center py-4 text-purple-400 text-xs animate-pulse">Analyzing content...</div>}
+                                <div className={`${isAiFloating ? 'fixed bottom-8 right-8 w-80 h-[500px] rounded-2xl shadow-emerald-500/20 border-purple-500/30' : 'w-96 border-l border-white/10'} bg-navy-900 flex flex-col shadow-2xl relative z-10 transition-all duration-500 overflow-hidden`}>
+                                    <div className="p-4 bg-purple-900/10 border-b border-white/10 flex justify-between items-center shrink-0">
+                                        <h4 className="text-purple-300 font-bold flex items-center gap-2"><Bot size={16} /> AI Assistant</h4>
+                                        {isAiFloating && (
+                                            <button onClick={() => setShowAiPanel(false)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+                                        )}
                                     </div>
-                                    <div className="p-4 border-t border-white/10">
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                                        {aiResponse && <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm text-gray-200 whitespace-pre-wrap animate-in fade-in duration-300">{aiResponse}</div>}
+                                        {isResearching && (
+                                            <div className="flex flex-col items-center justify-center py-10 space-y-3 opacity-50">
+                                                <Loader2 size={24} className="animate-spin text-purple-400" />
+                                                <p className="text-[10px] uppercase font-black text-purple-300 tracking-wider">Analyzing Article...</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-4 border-t border-white/10 bg-navy-950/50">
                                         <div className="relative">
-                                            <input className="w-full bg-navy-800 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-sm text-white focus:border-purple-500 outline-none" placeholder="Ask AI..." value={aiQuery} onChange={e => setAiQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAskAI()} />
-                                            <button onClick={handleAskAI} className="absolute right-2 top-2 p-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-500"><Send size={14} /></button>
+                                            <input className="w-full bg-navy-800 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-sm text-white focus:border-purple-500 outline-none transition-all" placeholder="Ask AI..." value={aiQuery} onChange={e => setAiQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAskAI()} />
+                                            <button onClick={handleAskAI} className="absolute right-2 top-2 p-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-500 scale-90 transition-transform active:scale-75"><Send size={14} /></button>
                                         </div>
                                     </div>
                                 </div>
@@ -615,5 +725,24 @@ const ResourcesPage: React.FC = () => {
         </div>
     );
 };
+
+const PinnedCard = ({ res, onOpen, onPin }: { res: Resource, onOpen: () => void, onPin: (e: React.MouseEvent) => void }) => (
+    <div 
+        onClick={onOpen}
+        className="glass-panel p-4 rounded-xl border border-amber-500/20 hover:border-amber-500/50 transition-all cursor-pointer group relative overflow-hidden"
+    >
+        <div className="absolute -right-4 -top-4 w-12 h-12 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all"></div>
+        <div className="flex items-start justify-between relative z-10">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                <ResourceIcon type={res.type} size={20} />
+            </div>
+            <button onClick={onPin} className="text-amber-500/40 hover:text-amber-500 p-1 transition-colors">
+                <Sparkles size={14} fill="currentColor" />
+            </button>
+        </div>
+        <h4 className="mt-3 font-bold text-white text-sm line-clamp-1">{res.title}</h4>
+        <p className="text-[10px] text-gray-500 uppercase mt-1">{res.category}</p>
+    </div>
+);
 
 export default ResourcesPage;

@@ -71,17 +71,10 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-3 md:gap-6">
 
                 {/* Real-time Clock (Desktop Only) */}
-                <div className="hidden xl:flex flex-col items-end mr-2 text-right font-mono">
+                <div className="hidden xl:flex items-center mr-2 font-mono">
                     <div className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
                         <Clock size={12} className="text-amber-400" />
                         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <div className="text-[10px] text-gray-400 group relative flex items-center justify-end cursor-help w-full mt-0.5">
-                        <span className="border-b border-dashed border-gray-600 hover:text-white transition-colors">{currentTime.toLocaleDateString()}</span>
-                        {/* Tooltip */}
-                        <div className="absolute top-full right-0 mt-2 px-3 py-1.5 bg-navy-900 text-white text-xs rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none drop-shadow-xl font-sans">
-                            {getNepaliDateStr()} BS
-                        </div>
                     </div>
                 </div>
 

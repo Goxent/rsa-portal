@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Clock as ClockIcon, CheckSquare, CalendarDays, ArrowRight } from 'lucide-react';
 import { AuthService } from '../services/firebase';
 import { UserProfile, Task, UserRole } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import WidgetContainer from '../components/dashboard/WidgetContainer';
 import AttendanceWidget from '../components/dashboard/AttendanceWidget';
+import CommandStrip from '../components/dashboard/CommandStrip';
 import { useTasks } from '../hooks/useTasks';
 import { useUsers } from '../hooks/useStaff';
 import { useEvents } from '../hooks/useEvents';
@@ -189,6 +189,13 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-col gap-6 h-full overflow-y-auto overflow-x-hidden p-2 md:p-4 lg:p-6 custom-scrollbar relative">
             {/* Top ambient glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-brand-500/10 blur-[100px] pointer-events-none" />
+
+            {/* ── COMMAND STRIP ── sticky at top */}
+            <CommandStrip
+                pendingTasksCount={myOpenTasks}
+                unreadNotifications={0}
+                clockedIn={false}
+            />
 
             {/* ── 1. UNIFIED HEADER (Greetings Widget) ── */}
             <div className="flex-none">

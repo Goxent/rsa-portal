@@ -1,8 +1,8 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X, Maximize2, Minimize2, Settings } from 'lucide-react';
-import { WidgetConfig, getWidgetSizeClasses } from './widgetTypes';
+import { GripVertical, X, Maximize2, Minimize2 } from 'lucide-react';
+import { WidgetConfig, getWidgetSizeClasses, WIDGET_REGISTRY, WIDGET_CATEGORY_COLORS } from './widgetTypes';
 
 interface WidgetWrapperProps {
     widget: WidgetConfig;
@@ -33,6 +33,11 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
         transition,
     };
 
+    // Resolve category from registry
+    const meta = WIDGET_REGISTRY.find(m => m.type === widget.type);
+    const category = meta?.category ?? 'tasks';
+    const categoryColors = WIDGET_CATEGORY_COLORS[category] ?? WIDGET_CATEGORY_COLORS.tasks;
+
     return (
         <div
             ref={setNodeRef}
@@ -48,12 +53,14 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
                 className={`
           relative w-full h-full rounded-2xl overflow-hidden
           glass-panel ${!isDragging ? 'hover-lift' : ''}
+          border-l-[3px] ${categoryColors.border}
           ${isDragging ? 'shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-2 ring-brand-500/50 scale-105 z-50 !bg-white/5 dark:!bg-black/40' : ''}
-          ${isEditing ? 'ring-2 ring-dashed ring-amber-500/30 !border-transparent' : ''}
+          ${isEditing ? 'ring-2 ring-dashed ring-brand-500/30 !border-l-4' : ''}
         `}
+                style={{ background: isDragging ? undefined : categoryColors.glow ? `linear-gradient(to right, ${categoryColors.glow}, transparent 40%)` : undefined }}
             >
-                {/* Subtle top glow line for premium feel */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent"></div>
+                {/* Subtle top glow line */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent" />
 
                 {/* Widget Header */}
                 <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200/50 dark:border-white/[0.05] bg-white/40 dark:bg-white/[0.01]">
@@ -67,6 +74,8 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
                                 <GripVertical size={16} className="text-slate-400 dark:text-gray-500" />
                             </button>
                         )}
+                        {/* Category dot */}
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${categoryColors.label.replace('text-', 'bg-')}`} />
                         <h3 className="text-[13px] font-bold tracking-wide text-slate-800 dark:text-gray-200 uppercase">{widget.title}</h3>
                     </div>
 

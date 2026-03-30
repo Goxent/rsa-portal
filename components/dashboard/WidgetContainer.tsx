@@ -191,7 +191,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
             case 'my-tasks':
                 return <MyTasksWidget {...props} />;
             case 'calendar':
-                return <CalendarWidget {...props} />;
+                return <CalendarWidget upcomingSchedule={dashboardData.upcomingSchedule} isLoading={dashboardData.isLoading} />;
             default:
                 return <div className="text-gray-400 text-sm">Unknown widget type</div>;
         }
@@ -209,7 +209,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     <>
                         <button
                             onClick={() => setShowWidgetPicker(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 hover:-translate-y-0.5"
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-900/30 hover:-translate-y-0.5"
                         >
                             <Plus size={14} /> Add Widget
                         </button>
@@ -240,7 +240,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     items={widgets.map((w) => w.id)}
                     strategy={rectSortingStrategy}
                 >
-                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-200 ${isEditing ? 'border-2 border-dashed border-amber-500/20 rounded-2xl p-2' : ''}`}>
+                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-200 ${isEditing ? 'border-2 border-dashed border-brand-500/20 rounded-2xl p-2' : ''}`}>
                         {widgets.map((widget) => (
                             <WidgetWrapper
                                 key={widget.id}

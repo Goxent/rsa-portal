@@ -21,6 +21,7 @@ const TasksPage = lazy(() => import('./pages/TasksPage'));
 const ClientsPage = lazy(() => import('./pages/ClientsPage'));
 const LeavePage = lazy(() => import('./pages/LeavePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 
@@ -131,6 +132,7 @@ const App: React.FC = () => {
               <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
                   {/* Profile Setup - Protected but doesn't require isSetupComplete */}

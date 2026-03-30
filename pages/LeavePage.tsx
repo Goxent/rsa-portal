@@ -8,8 +8,52 @@ import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { leaveSchema, LeaveFormValues } from '../utils/validationSchemas';
+import LeaveCalendar from '../components/leave/LeaveCalendar';
 
 const ARTICLESHIP_LEAVE_LIMIT = 120; // 3 Years Total
+
+const CircularProgress: React.FC<{ 
+    value: number, 
+    max: number, 
+    color: string, 
+    label: string, 
+    size?: number 
+}> = ({ value, max, color, label, size = 80 }) => {
+    const percentage = Math.min((value / max) * 100, 100);
+    const radius = 36;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percentage / 100) * circumference;
+
+    return (
+        <div className="flex flex-col items-center gap-2 group cursor-help">
+            <div className="relative" style={{ width: size, height: size }}>
+                <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                        cx="50%" cy="50%" r={radius}
+                        className="stroke-white/5 fill-none"
+                        strokeWidth="6"
+                    />
+                    <circle
+                         cx="50%" cy="50%" r={radius}
+                         className={`fill-none transition-all duration-1000 ease-out`}
+                         style={{ 
+                            stroke: color,
+                            strokeDasharray: circumference,
+                            strokeDashoffset: offset,
+                            strokeLinecap: 'round'
+                         }}
+                         strokeWidth="6"
+                    />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[14px] font-black text-white leading-none">{value}</span>
+                    <span className="text-[8px] text-gray-500 font-bold uppercase mt-0.5 tracking-tighter">/ {max}</span>
+                </div>
+            </div>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center group-hover:text-white transition-colors">{label}</span>
+        </div>
+    );
+};
 
 // Helper to get current Nepali Year range (approx April 14th to April 13th)
 const getCurrentNepaliYearRange = () => {
@@ -32,8 +76,10 @@ const LeavePage: React.FC = () => {
     const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
     const [allStaff, setAllStaff] = useState<UserProfile[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'my' | 'admin'>(isAdmin ? 'admin' : 'my');
+    const [activeTab, setActiveTab] = useState<'my' | 'admin' | 'calendar'>(isAdmin ? 'admin' : 'my');
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+    const [rejectionTarget, setRejectionTarget] = useState<LeaveRequest | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
     const [adjustmentData, setAdjustmentData] = useState({ uid: '', name: '', amount: 0 });
 
     // Form Setup
@@ -136,9 +182,34 @@ const LeavePage: React.FC = () => {
     };
 
     const handleStatusUpdate = async (id: string, status: 'APPROVED' | 'REJECTED') => {
+        if (status === 'REJECTED') {
+            const leave = leaves.find(l => l.id === id);
+            if (leave) {
+                setRejectionTarget(leave);
+                setRejectionReason('');
+            }
+            return;
+        }
+
         if (window.confirm(`Are you sure you want to ${status} this request?`)) {
             await AuthService.updateLeaveStatus(id, status);
             loadLeaves();
+            toast.success(`Leave request ${status.toLowerCase()}ed`);
+        }
+    };
+
+    const confirmRejection = async () => {
+        if (!rejectionTarget || !rejectionReason.trim()) return;
+        setIsSaving(true);
+        try {
+            await AuthService.updateLeaveStatus(rejectionTarget.id, 'REJECTED', rejectionReason);
+            toast.success('Leave request rejected with reason');
+            setRejectionTarget(null);
+            loadLeaves();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to reject leave');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -163,15 +234,33 @@ const LeavePage: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'APPROVED': return <span className="flex items-center text-green-300 text-xs font-bold bg-green-500/20 border border-green-500/30 px-2 py-1 rounded-full w-fit"><CheckCircle size={12} className="mr-1" /> APPROVED</span>;
-            case 'REJECTED': return <span className="flex items-center text-red-300 text-xs font-bold bg-red-500/20 border border-red-500/30 px-2 py-1 rounded-full w-fit"><XCircle size={12} className="mr-1" /> REJECTED</span>;
-            default: return <span className="flex items-center text-amber-300 text-xs font-bold bg-amber-500/20 border border-amber-500/30 px-2 py-1 rounded-full w-fit"><Clock size={12} className="mr-1" /> PENDING</span>;
+            case 'APPROVED': 
+                return (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                        <div className="w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                        Approved
+                    </div>
+                );
+            case 'REJECTED': 
+                return (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-wider">
+                        <div className="w-1 h-1 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+                        Rejected
+                    </div>
+                );
+            default: 
+                return (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                        <div className="w-1 h-1 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                        Pending
+                    </div>
+                );
         }
     };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Leave Management</h1>
                     <p className="text-sm text-gray-400">
@@ -181,23 +270,29 @@ const LeavePage: React.FC = () => {
                         }
                     </p>
                 </div>
-                <div className="flex items-center gap-4">
-                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && (
-                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-2">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 shrink-0">
+                        <button
+                            onClick={() => setActiveTab('my')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'my' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            My History
+                        </button>
+                        {isAdmin && (
                             <button
                                 onClick={() => setActiveTab('admin')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'admin' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                             >
-                                Staff Balances
+                                Admin Panel
                             </button>
-                            <button
-                                onClick={() => setActiveTab('my')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'my' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                My Leaves
-                            </button>
-                        </div>
-                    )}
+                        )}
+                        <button
+                            onClick={() => setActiveTab('calendar')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'calendar' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            Team Calendar
+                        </button>
+                    </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
                         className="bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-700 shadow-lg shadow-amber-900/40 flex items-center border border-amber-500/30 transition-all hover:-translate-y-0.5"
@@ -360,76 +455,116 @@ const LeavePage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            ) : activeTab === 'calendar' ? (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <LeaveCalendar leaves={leaves} staff={allStaff} />
+                </div>
             ) : (
                 <>
-                    {/* Balance Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        {/* Total Balance Card */}
-                        <div className="glass-panel p-6 rounded-xl relative overflow-hidden md:col-span-2 group hover:bg-white/5 transition-all">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <CalendarDays size={100} />
+                    {/* Balance Cards (Modernized) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+                        {/* Primary Balance Widget */}
+                        <div className="lg:col-span-5 glass-panel p-6 rounded-2xl relative overflow-hidden group hover:bg-white/5 transition-all border-l-4 border-l-brand-600">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <CalendarDays size={120} />
                             </div>
-                            <div className="relative z-10 flex flex-col justify-between h-full">
-                                <div className="flex justify-between items-start">
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-6">
                                     <div>
-                                        <p className="text-sm font-medium text-gray-400">
-                                            {isArticleTrainee ? 'Lifetime Leaves Taken' : 'Leaves Taken (Current Year)'}
-                                        </p>
-                                        <h2 className="text-4xl font-bold text-white mt-1">
+                                        <p className="text-[10px] font-black text-brand-400 uppercase tracking-[2px]">Utilization Overview</p>
+                                        <h2 className="text-3xl font-black text-white mt-1">
                                             {totalDaysTaken}
-                                            {isArticleTrainee && <span className="text-lg text-gray-500 font-medium">/ {ARTICLESHIP_LEAVE_LIMIT} Days</span>}
-                                            {!isArticleTrainee && <span className="text-lg text-gray-500 font-medium ml-2 text-[15px]">Days Total</span>}
+                                            <span className="text-gray-500 ml-2 text-sm font-bold uppercase tracking-widest">
+                                                / {isArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT : 'Annual'} Days
+                                            </span>
                                         </h2>
                                     </div>
-                                    <div className="p-2 bg-amber-500/20 text-amber-300 rounded-lg border border-amber-500/20"><CalendarDays size={20} /></div>
+                                    <div className="p-3 bg-brand-500/20 text-brand-400 rounded-xl border border-brand-500/20 shadow-lg shadow-brand-500/10">
+                                        <CalendarDays size={20} />
+                                    </div>
                                 </div>
 
-                                <div className="mt-6">
+                                <div className="space-y-4">
                                     {isArticleTrainee ? (
-                                        <>
-                                            <div className="flex justify-between text-xs text-gray-400 mb-2">
-                                                <span>Utilization</span>
-                                                <span>{Math.round((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100)}%</span>
+                                        <div className="p-4 bg-white/3 rounded-xl border border-white/5">
+                                            <div className="flex justify-between text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-wide">
+                                                <span>Articleship Quota Progress</span>
+                                                <span className={`${totalDaysTaken > 100 ? 'text-red-400' : 'text-brand-400'}`}>
+                                                    {balanceRemaining} Days Left
+                                                </span>
                                             </div>
-                                            <div className="w-full bg-white/10 rounded-full h-2">
+                                            <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden p-0.5 border border-white/5">
                                                 <div
-                                                    className={`h-2 rounded-full shadow-[0_0_10px_currentColor] transition-all duration-1000 ${totalDaysTaken > 100 ? 'bg-red-500 text-red-500' :
-                                                        totalDaysTaken > 60 ? 'bg-amber-500 text-amber-500' : 'bg-amber-500 text-amber-500'
-                                                        }`}
+                                                    className={`h-full rounded-full transition-all duration-[1500ms] ease-out ${
+                                                        totalDaysTaken > 100 ? 'bg-gradient-to-r from-red-600 to-rose-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 
+                                                        'bg-gradient-to-r from-brand-600 to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                                    }`}
                                                     style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
-                                                ></div>
+                                                />
                                             </div>
-                                        </>
+                                            <p className="text-[9px] text-gray-500 mt-2 italic font-medium">Standard 3-year allowance as per ICAI/ICAN guidelines.</p>
+                                        </div>
                                     ) : (
-                                        <div className="bg-white/5 border border-white/10 rounded-lg p-2 flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Tracking current year only</span>
+                                        <div className="flex items-center gap-3 p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                                                <CheckCircle size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-white font-bold">Standard Staff Balance</p>
+                                                <p className="text-[10px] text-emerald-400/70 font-medium">Tracking current fiscal year: {npStart} to {npEnd}</p>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Breakdown Card */}
-                        <div className="glass-panel p-6 rounded-xl md:col-span-2 flex flex-col justify-center space-y-3">
-                            <h3 className="text-sm font-medium text-gray-400 mb-1 border-b border-white/5 pb-2">Breakdown</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-300 flex items-center"><div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div> Exam</span>
-                                    <span className="font-bold text-white">{breakdown.Exam}</span>
+                        {/* Radial Breakdown Widget */}
+                        <div className="lg:col-span-7 glass-panel p-6 rounded-2xl flex flex-col justify-between border border-white/5">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[2px]">Type Breakdown</h3>
+                                <span className="text-[10px] bg-white/5 px-2 py-1 rounded-md text-gray-400 border border-white/5 font-bold">Approved Only</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <CircularProgress 
+                                    value={breakdown.Sick} 
+                                    max={12} 
+                                    color="#ef4444" 
+                                    label="Sick" 
+                                />
+                                <CircularProgress 
+                                    value={breakdown.Casual} 
+                                    max={6} 
+                                    color="#f59e0b" 
+                                    label="Casual" 
+                                />
+                                <CircularProgress 
+                                    value={breakdown.Exam} 
+                                    max={isArticleTrainee ? 40 : 5} 
+                                    color="#a855f7" 
+                                    label="Exam" 
+                                />
+                                <CircularProgress 
+                                    value={breakdown.Home + breakdown.Other} 
+                                    max={15} 
+                                    color="#3b82f6" 
+                                    label="Other" 
+                                />
+                            </div>
+                            
+                            <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
+                                <div className="flex gap-4">
+                                   <div className="flex items-center gap-1.5">
+                                       <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                                       <span className="text-[9px] text-gray-500 font-bold uppercase">Total Approved</span>
+                                   </div>
+                                    <div className="flex items-center gap-1.5">
+                                       <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                                       <span className="text-[9px] text-gray-500 font-bold uppercase">Quota Limit</span>
+                                   </div>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-300 flex items-center"><div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div> Sick</span>
-                                    <span className="font-bold text-white">{breakdown.Sick}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-300 flex items-center"><div className="w-2 h-2 rounded-full bg-orange-500 mr-2"></div> Home</span>
-                                    <span className="font-bold text-white">{breakdown.Home}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-300 flex items-center"><div className="w-2 h-2 rounded-full bg-amber-500 mr-2"></div> Casual</span>
-                                    <span className="font-bold text-white">{breakdown.Casual}</span>
-                                </div>
+                                <span className="text-[10px] text-brand-400 font-black cursor-pointer hover:underline uppercase">View Full Policy</span>
                             </div>
                         </div>
                     </div>
@@ -591,6 +726,50 @@ const LeavePage: React.FC = () => {
                         </div>
                     )}
                 </>
+            )}
+
+            {/* Admin Rejection Modal */}
+            {rejectionTarget && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
+                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-white/10">
+                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <h3 className="text-lg font-bold text-white">Reject Request</h3>
+                            <button onClick={() => setRejectionTarget(null)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-gray-400 mb-4 italic">Please provide a reason for rejecting <span className="text-white font-bold">{rejectionTarget.userName}</span>'s request.</p>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">Rejection Reason</label>
+                                    <textarea
+                                        className="w-full rounded-xl px-4 py-3 bg-white/5 border border-white/10 text-white focus:border-red-500 outline-none text-sm min-h-[100px] transition-all"
+                                        placeholder="Enter reason for rejection..."
+                                        value={rejectionReason}
+                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setRejectionTarget(null)}
+                                        className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-gray-400 text-xs font-bold hover:bg-white/5 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmRejection}
+                                        disabled={isSaving || !rejectionReason.trim()}
+                                        className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-lg hover:shadow-red-500/20 disabled:opacity-50"
+                                    >
+                                        {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Confirm Reject'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Adjust Balance Modal — rendered at top level so it works from any tab */}

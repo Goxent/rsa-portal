@@ -277,6 +277,7 @@ export interface LeaveRequest {
   endDate: string;
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string;
   createdAt: string;
 }
 
@@ -370,6 +371,8 @@ export interface Resource {
   createdBy?: string; // UID of the uploader
   createdByName?: string; // Display name of the uploader
   reviewDate?: string; // NEW: Expiry date for SOP verification
+  tags?: string[]; // Custom tagging system (NFRS, VAT, etc.)
+  isPinned?: boolean; // Pinned / Favourites section
 }
 
 export interface TaskTemplate {

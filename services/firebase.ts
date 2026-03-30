@@ -523,14 +523,32 @@ export const AuthService = {
         });
 
         if (staffData.email) {
-            await setDoc(doc(db, 'staffAllowlist', staffData.email.toLowerCase().trim()), {
-                email: staffData.email.toLowerCase().trim(),
+            const normalizedEmail = staffData.email.toLowerCase().trim();
+            await setDoc(doc(db, 'staffAllowlist', normalizedEmail), {
+                email: normalizedEmail,
                 addedBy: auth.currentUser?.uid || 'admin',
                 addedAt: new Date().toISOString(),
                 displayName: staffData.displayName || '',
                 role: staffData.role || UserRole.STAFF,
                 department: staffData.department || 'General',
             });
+
+            // Send Invitation Email
+            try {
+                const adminDoc = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
+                const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
+                
+                await EmailService.sendStaffInvitation(
+                    normalizedEmail,
+                    staffData.displayName || 'Team Member',
+                    adminName
+                );
+            } catch (emailError) {
+                console.error("Failed to send invitation email:", emailError);
+                // We don't throw here to avoid rolling back the allowlist creation
+                // but we could toast a warning if this was client-side.
+            }
+
             if (auth.currentUser) {
                 const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
                 const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
@@ -1692,10 +1710,38 @@ export const AuthService = {
         }
     },
 
-    updateLeaveStatus: async (id: string, status: 'APPROVED' | 'REJECTED') => {
+    updateLeaveStatus: async (id: string, status: 'APPROVED' | 'REJECTED', reason?: string) => {
         const leaveDoc = doc(db, 'leaves', id);
-        const leaveData = (await getDoc(leaveDoc)).data() as LeaveRequest;
-        await updateDoc(leaveDoc, { status });
+        const leaveSnap = await getDoc(leaveDoc);
+        if (!leaveSnap.exists()) throw new Error("Leave request not found");
+        
+        const leaveData = leaveSnap.data() as LeaveRequest;
+        
+        await updateDoc(leaveDoc, { 
+            status,
+            rejectionReason: reason || null
+        });
+
+        // Notify User
+        try {
+            const userDoc = await getDoc(doc(db, 'users', leaveData.userId));
+            if (userDoc.exists()) {
+                const userData = userDoc.data() as UserProfile;
+                if (userData.email) {
+                    await EmailService.sendLeaveStatusChange(
+                        userData.email,
+                        userData.displayName,
+                        leaveData.type,
+                        leaveData.startDate,
+                        leaveData.endDate,
+                        status,
+                        reason
+                    );
+                }
+            }
+        } catch (err) {
+            console.error("Failed to send leave notification email:", err);
+        }
 
         if (auth.currentUser) {
             const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));

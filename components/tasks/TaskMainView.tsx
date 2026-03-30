@@ -365,6 +365,13 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     return (
         <DragDropContext onDragEnd={onDragEnd}>
             <div className="h-full flex flex-col min-h-0 overflow-hidden">
+                {/* Mobile scroll affordance */}
+                <div className="flex lg:hidden items-center justify-center gap-1.5 py-1.5 text-[10px] text-slate-600 font-medium">
+                    <span>←</span>
+                    <span>Scroll to see all phases</span>
+                    <span>→</span>
+                </div>
+
                 <div className="relative flex-1 min-h-0">
                     {/* Horizontal scroll container — 3 phase columns side by side */}
                     <div className="h-full flex items-start gap-4 overflow-x-auto overflow-y-auto px-4 md:px-6 py-4 kanban-scroll custom-scrollbar">
@@ -407,19 +414,31 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                             ref={prov.innerRef}
                                                             {...prov.droppableProps}
                                                             className={[
-                                                                `pb-2 transition-all duration-300 flex flex-col`,
-                                                                snap.isDraggingOver ? `ring-1 ring-inset ${cfg.ring} bg-white/[0.02]` : '',
+                                                                `pb-2 transition-all duration-200 flex flex-col`,
+                                                                snap.isDraggingOver
+                                                                    ? `ring-1 ring-inset ${cfg.ring}`
+                                                                    : '',
                                                             ].filter(Boolean).join(' ')}
+                                                            style={snap.isDraggingOver ? { background: cfg.dropGlow.includes('amber') ? 'rgba(245,158,11,0.06)' : cfg.dropGlow.includes('blue') ? 'rgba(99,102,241,0.06)' : cfg.dropGlow.includes('emerald') ? 'rgba(16,185,129,0.06)' : cfg.dropGlow.includes('red') ? 'rgba(244,63,94,0.06)' : 'rgba(255,255,255,0.02)' } : {}}
                                                         >
-                                                            {/* Status section header */}
-                                                            <div className={`flex items-center gap-2 px-3 py-2 sticky top-0 z-[5] ${cfg.headerBg} border-b border-white/[0.03] transition-colors duration-300 ${snap.isDraggingOver ? 'bg-opacity-80' : ''}`} style={{ backdropFilter: 'blur(12px)' }}>
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot} transition-transform duration-300 ${snap.isDraggingOver ? 'scale-125' : ''}`} style={{ boxShadow: `0 0 6px ${cfg.dotColor}40` }} />
+                                                            {/* Status section header with count badge */}
+                                                            <div
+                                                                className={`flex items-center gap-2 px-3 py-1.5 sticky top-0 z-[5] border-b border-white/[0.03] transition-all duration-200 ${cfg.headerBg} ${snap.isDraggingOver ? 'opacity-90' : ''}`}
+                                                                style={{ backdropFilter: 'blur(12px)' }}
+                                                            >
+                                                                <div
+                                                                    className={`w-1.5 h-1.5 rounded-full ${cfg.dot} transition-all duration-200 ${snap.isDraggingOver ? 'scale-125 ring-2 ring-offset-1 ring-offset-transparent' : ''}`}
+                                                                    style={{ boxShadow: snap.isDraggingOver ? `0 0 8px ${cfg.dotColor}60` : `0 0 4px ${cfg.dotColor}30` }}
+                                                                />
                                                                 <span className="text-[9px] font-bold uppercase tracking-[0.12em] flex-1 text-slate-400">{cfg.label}</span>
-                                                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${cfg.countBg}`}>{colTasks.length}</span>
+                                                                {/* Count badge — always visible, highlighted when active drop target */}
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md tabular-nums transition-all duration-200 ${snap.isDraggingOver ? cfg.countBg + ' scale-110' : cfg.countBg}`}>
+                                                                    {colTasks.length}
+                                                                </span>
                                                             </div>
 
                                                             {/* Task cards */}
-                                                            <div className="flex flex-col min-h-[48px] px-2 pt-1.5">
+                                                            <div className="flex flex-col min-h-[40px] px-2 pt-1">
                                                                 {colTasks.map((task, i) => (
                                                                     <TaskCard
                                                                         key={task.id}
@@ -434,70 +453,79 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                 ))}
                                                                 {prov.placeholder}
 
+                                                                {/* Drop zone hint when empty */}
                                                                 {colTasks.length === 0 && (
-                                                                    <div className="flex items-center justify-center min-h-[36px] rounded-lg border border-dashed border-white/[0.06] text-[9px] font-medium uppercase tracking-wider text-slate-700 mb-1 transition-colors hover:border-white/[0.1] hover:text-slate-600">
-                                                                        Drop here
+                                                                    <div
+                                                                        className={`flex items-center justify-center min-h-[44px] rounded-lg border border-dashed text-[9px] font-medium uppercase tracking-wider mb-1 transition-all duration-200 ${
+                                                                            snap.isDraggingOver
+                                                                                ? `${cfg.ring.replace('ring-', 'border-')} text-slate-400 bg-white/[0.03]`
+                                                                                : 'border-white/[0.06] text-slate-700 hover:border-white/[0.1] hover:text-slate-600'
+                                                                        }`}
+                                                                    >
+                                                                        {snap.isDraggingOver ? '↓ Drop here' : 'Empty'}
                                                                     </div>
                                                                 )}
+
+                                                                {/* Inline quick-add per status column */}
+                                                                <AnimatePresence mode="wait">
+                                                                    {quickAddStatus === droppableId ? (
+                                                                        <motion.div
+                                                                            key="input"
+                                                                            initial={{ opacity: 0, y: 4 }}
+                                                                            animate={{ opacity: 1, y: 0 }}
+                                                                            exit={{ opacity: 0, y: 4 }}
+                                                                            transition={{ duration: 0.1 }}
+                                                                            className="bg-[#0d1117] border border-brand-500/20 rounded-xl p-3 shadow-xl mb-1"
+                                                                        >
+                                                                            <input
+                                                                                autoFocus
+                                                                                type="text"
+                                                                                placeholder="Task title..."
+                                                                                value={quickAddTitle}
+                                                                                onChange={e => setQuickAddTitle(e.target.value)}
+                                                                                onKeyDown={e => {
+                                                                                    if (e.key === 'Enter') submitQuickAdd(status);
+                                                                                    if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
+                                                                                }}
+                                                                                className="w-full bg-transparent text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none mb-2 font-medium"
+                                                                            />
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span className="text-[9px] text-slate-600 font-medium">↵ save · Esc cancel</span>
+                                                                                <div className="flex gap-1.5">
+                                                                                    <button
+                                                                                        onClick={() => { setQuickAddStatus(null); setQuickAddTitle(''); }}
+                                                                                        className="w-6 h-6 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors"
+                                                                                    >
+                                                                                        <X size={12} />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => submitQuickAdd(status)}
+                                                                                        className="px-2.5 h-6 bg-brand-600 hover:bg-brand-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1"
+                                                                                    >
+                                                                                        <Plus size={10} /> Add
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </motion.div>
+                                                                    ) : (
+                                                                        <motion.button
+                                                                            key="btn"
+                                                                            initial={{ opacity: 0 }}
+                                                                            animate={{ opacity: 1 }}
+                                                                            exit={{ opacity: 0 }}
+                                                                            onClick={() => setQuickAddStatus(droppableId)}
+                                                                            className="w-full py-1.5 rounded-lg border border-dashed border-white/[0.05] text-slate-700 hover:text-slate-400 hover:border-white/[0.10] hover:bg-white/[0.02] transition-all text-[9px] font-semibold flex items-center justify-center gap-1 group mb-1"
+                                                                        >
+                                                                            <Plus size={10} className="group-hover:scale-110 transition-transform" /> Add task
+                                                                        </motion.button>
+                                                                    )}
+                                                                </AnimatePresence>
                                                             </div>
                                                         </div>
                                                     )}
                                                 </Droppable>
                                             );
                                         })}
-
-                                        {/* Quick add at bottom of column */}
-                                        <div className="px-2 pb-2.5 pt-1">
-                                            <AnimatePresence mode="wait">
-                                                {quickAddStatus === `${phase}::ADD` ? (
-                                                    <motion.div
-                                                        key="input"
-                                                        initial={{ opacity: 0, y: 4 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: 4 }}
-                                                        transition={{ duration: 0.1 }}
-                                                        className="bg-[#0d1117] border border-white/[0.08] rounded-xl p-3 shadow-xl"
-                                                    >
-                                                        <input
-                                                            autoFocus
-                                                            type="text"
-                                                            placeholder="Task title..."
-                                                            value={quickAddTitle}
-                                                            onChange={e => setQuickAddTitle(e.target.value)}
-                                                            onKeyDown={e => {
-                                                                if (e.key === 'Enter') submitQuickAdd(TaskStatus.NOT_STARTED);
-                                                                if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
-                                                            }}
-                                                            className="w-full bg-transparent text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none mb-2 font-medium"
-                                                        />
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-[9px] text-slate-600 font-medium">↵ save · Esc cancel</span>
-                                                            <div className="flex gap-1.5">
-                                                                <button onClick={() => { setQuickAddStatus(null); setQuickAddTitle(''); }}
-                                                                    className="w-6 h-6 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors">
-                                                                    <X size={12} />
-                                                                </button>
-                                                                <button onClick={() => submitQuickAdd(TaskStatus.NOT_STARTED)}
-                                                                    className="px-2.5 h-6 bg-amber-600 hover:bg-amber-500 text-white rounded-md text-[10px] font-bold transition-colors flex items-center gap-1">
-                                                                    <Plus size={10} /> Add
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </motion.div>
-                                                ) : (
-                                                    <motion.button
-                                                        key="btn"
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        onClick={() => setQuickAddStatus(`${phase}::ADD`)}
-                                                        className="w-full py-2 rounded-lg border border-dashed border-white/[0.06] text-slate-700 hover:text-slate-400 hover:border-white/[0.12] hover:bg-white/[0.02] transition-all text-[10px] font-semibold flex items-center justify-center gap-1.5 group"
-                                                    >
-                                                        <Plus size={11} className="group-hover:scale-110 transition-transform" /> Add task
-                                                    </motion.button>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
                                     </div>
                                 </div>
                             );

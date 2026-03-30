@@ -291,9 +291,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </Field>
 
                                         <Field label="Audit Phase" icon={<Sparkles size={11} className="text-gray-400" />} error={!!errors.auditPhase}>
-                                            <select className={selectClass} {...register('auditPhase')}>
-                                                {Object.values(AuditPhase).map(ph => <option key={ph} value={ph} className="bg-[#1e293b]">{ph.replace(/_/g, ' ')}</option>)}
-                                            </select>
+                                            <div className="relative">
+                                                <select className={`${selectClass} appearance-none pl-9`} {...register('auditPhase')}>
+                                                    <option value={AuditPhase.ONBOARDING} className="bg-[#1e293b]">🌱 Onboarding</option>
+                                                    <option value={AuditPhase.PLANNING_AND_EXECUTION} className="bg-[#1e293b]">⚙️ Planning & Execution</option>
+                                                    <option value={AuditPhase.REVIEW_AND_CONCLUSION} className="bg-[#1e293b]">✅ Review & Conclusion</option>
+                                                </select>
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                    {watch('auditPhase') === AuditPhase.ONBOARDING && <Sparkles size={14} className="text-emerald-400" />}
+                                                    {watch('auditPhase') === AuditPhase.PLANNING_AND_EXECUTION && <Activity size={14} className="text-amber-400" />}
+                                                    {watch('auditPhase') === AuditPhase.REVIEW_AND_CONCLUSION && <CheckCircle2 size={14} className="text-brand-400" />}
+                                                    {!watch('auditPhase') && <Sparkles size={14} />}
+                                                </div>
+                                            </div>
                                         </Field>
 
                                         <Field label="Status" icon={<Activity size={12} className="text-gray-400" />} error={!!errors.status}>
@@ -350,7 +360,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     {/* ── Subtasks ── */}
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between">
-                                            <span>Subtasks ({task.subtasks?.length || 0})</span>
+                                            <div className="flex items-center gap-3 w-full">
+                                                <span>Subtasks ({task.subtasks?.length || 0})</span>
+                                                {task.subtasks && task.subtasks.length > 0 && (
+                                                    <div className="flex items-center gap-2 flex-1 max-w-[150px]">
+                                                        <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-emerald-500 transition-all rounded-full" style={{ width: `${(task.subtasks.filter(s => s.isCompleted).length / task.subtasks.length) * 100}%` }} />
+                                                        </div>
+                                                        <span className="text-[9px] font-mono text-gray-500">
+                                                            {task.subtasks.filter(s => s.isCompleted).length}/{task.subtasks.length}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </label>
                                         <div className="flex gap-2 items-center mb-1 group/add px-3 py-2 -ml-2 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-white/[0.05] transition-all">
                                             <Plus size={14} className="text-gray-500 group-hover/add:text-gray-300 transition-colors" />
@@ -410,6 +432,20 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                    
+                                    {/* ── Attachments Drag and Drop ── */}
+                                    <div className="space-y-3 mt-6 border-t border-white/[0.06] pt-6">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Tag size={12} /> Attachments
+                                        </label>
+                                        <div className="w-full border-2 border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-white/[0.02] hover:border-brand-500/30 transition-all cursor-pointer group">
+                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-brand-500/20 transition-all">
+                                                <Plus size={18} className="text-gray-400 group-hover:text-brand-400 transition-colors" />
+                                            </div>
+                                            <h4 className="text-sm font-bold text-gray-300 mb-1">Upload Files</h4>
+                                            <p className="text-[11px] text-gray-500 max-w-[200px]">Drag and drop files here, or click to browse (Max 5MB)</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

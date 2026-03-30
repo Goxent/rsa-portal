@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import {
     ArrowLeft, Building2, Briefcase, BadgeCheck, Phone, Mail, MapPin,
     Calendar as CalIcon, FileText, CheckCircle2,
-    Clock, User, Plus, ArrowRight, Trash2, ExternalLink
+    Clock, User, Plus, ArrowRight, Trash2, ExternalLink, Copy
 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { Client, Task, UserProfile } from '../types';
 import { AuthService, auth, getAttendanceByClientId } from '../services/firebase';
 import { PageLoader } from '../components/ui/LoadingSkeleton';
@@ -70,6 +71,22 @@ const ClientDetailPage: React.FC = () => {
 
 
     const overdueTasks = useMemo(() => clientTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'COMPLETED'), [clientTasks]);
+
+    const taskStats = useMemo(() => {
+        const statuses = { NOT_STARTED: 0, IN_PROGRESS: 0, IN_REVIEW: 0, COMPLETED: 0, BLOCKED: 0 };
+        clientTasks.forEach(t => {
+             if (statuses[t.status as keyof typeof statuses] !== undefined) {
+                 statuses[t.status as keyof typeof statuses]++;
+             }
+        });
+        return [
+            { name: 'To Do', value: statuses.NOT_STARTED, color: '#64748b' },
+            { name: 'In Progress', value: statuses.IN_PROGRESS, color: '#3b82f6' },
+            { name: 'Review', value: statuses.IN_REVIEW, color: '#f59e0b' },
+            { name: 'Completed', value: statuses.COMPLETED, color: '#10b981' },
+            { name: 'Blocked', value: statuses.BLOCKED, color: '#ef4444' }
+        ].filter(s => s.value > 0);
+    }, [clientTasks]);
 
 
 
@@ -177,7 +194,18 @@ const ClientDetailPage: React.FC = () => {
                             </div>
                             <div className="flex gap-4 mt-2 text-sm font-medium text-gray-400">
                                 {client.pan && (
-                                    <span className="flex items-center"><BadgeCheck size={14} className="mr-1.5 text-brand-400" /> PAN: {client.pan}</span>
+                                    <span className="flex items-center group"><BadgeCheck size={14} className="mr-1.5 text-brand-400" /> PAN: {client.pan}
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(client.pan!);
+                                                toast.success('PAN copied to clipboard');
+                                            }}
+                                            className="ml-2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400 hover:text-white"
+                                            title="Copy PAN"
+                                        >
+                                            <Copy size={12} />
+                                        </button>
+                                    </span>
                                 )}
                                 <span className="flex items-center"><Briefcase size={14} className="mr-1.5 text-amber-400" /> {client.serviceType}</span>
                                 <span className="flex items-center"><Building2 size={14} className="mr-1.5 text-purple-400" /> {client.industry || 'General Sector'}</span>
@@ -226,6 +254,49 @@ const ClientDetailPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Mini Task Chart */}
+                    <div className="w-full md:w-64 shrink-0 flex flex-col items-center justify-center p-4 bg-black/20 rounded-xl border border-white/5">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider w-full mb-2">Task Distribution</p>
+                        {taskStats.length > 0 ? (
+                            <div className="h-28 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={taskStats}
+                                            innerRadius={25}
+                                            outerRadius={40}
+                                            paddingAngle={2}
+                                            dataKey="value"
+                                            stroke="none"
+                                        >
+                                            {taskStats.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip 
+                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', fontSize: '12px', padding: '4px 8px' }}
+                                            itemStyle={{ color: '#e2e8f0' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : (
+                            <div className="h-28 w-full flex items-center justify-center text-xs text-gray-500 italic">
+                                No tasks assigned
+                            </div>
+                        )}
+                        {taskStats.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                                {taskStats.map(s => (
+                                    <div key={s.name} className="flex items-center gap-1 text-[9px] text-gray-400">
+                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }}></span>
+                                        {s.name} ({s.value})
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

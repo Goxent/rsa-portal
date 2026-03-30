@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, UserCircle2, MessageSquare, AtSign } from 'lucide-react';
 import { TaskComment, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
 interface TaskCommentsProps {
     comments?: TaskComment[];
@@ -123,7 +123,9 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
                                 <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
                                     <div className="flex items-baseline gap-2 mb-1 px-1">
                                         <span className="text-[11px] font-bold text-slate-300">{comment.userName}</span>
-                                        <span className="text-[9px] font-medium text-slate-500">{format(new Date(comment.createdAt), 'MMM d, h:mm a')}</span>
+                                        <span className="text-[9px] font-medium text-slate-500">
+                                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                        </span>
                                     </div>
                                     <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm
                                         ${isMe

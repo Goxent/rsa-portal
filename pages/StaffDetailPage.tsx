@@ -14,6 +14,7 @@ import { PageLoader } from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/common/EmptyState';
 import NepaliDate from 'nepali-date-converter';
 import { Task } from '../types';
+import { getAvatarColor, getInitials } from '../utils/userUtils';
 
 type StaffTab = 'OVERVIEW' | 'TASKS' | 'ATTENDANCE' | 'LEAVE' | 'CLIENTS' | 'ACTIVITY';
 
@@ -108,6 +109,8 @@ const StaffDetailPage: React.FC = () => {
         );
     };
 
+    const avatarStyle = getAvatarColor(staff.uid);
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-20">
             {/* Nav */}
@@ -117,24 +120,25 @@ const StaffDetailPage: React.FC = () => {
 
             {/* Header Card */}
             <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className={`absolute top-0 right-0 w-64 h-64 ${avatarStyle.bg} rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-20`}></div>
                 <div className="relative z-10 flex flex-col md:flex-row gap-6 md:items-center">
                     {/* Avatar */}
-                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-3xl font-black text-white shadow-xl shadow-brand-500/20 shrink-0 border border-white/20">
-                        {staff.displayName.substring(0, 2).toUpperCase()}
+                    <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${avatarStyle.from} ${avatarStyle.to} flex items-center justify-center text-3xl font-black ${avatarStyle.text} shadow-xl border ${avatarStyle.border} shrink-0`}>
+                        {getInitials(staff.displayName)}
                     </div>
                     
                     <div className="flex-1">
                         <div className="flex items-center gap-3 flex-wrap">
                             <h1 className="text-3xl font-bold text-white tracking-tight">{staff.displayName}</h1>
                             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-500/20 text-brand-300 border border-brand-500/30">
-                                {staff.role.replace('_', ' ')}
+                                {staff.role.replace(/_/g, ' ')}
                             </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border backdrop-blur-sm ${
-                                staff.status === 'Active' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                            }`}>
-                                {staff.status}
-                            </span>
+                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/20 border border-white/5 backdrop-blur-sm">
+                                <span className={`w-2 h-2 rounded-full ${staff.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                                <span className={`text-xs font-bold uppercase tracking-wider ${staff.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {staff.status}
+                                </span>
+                            </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 mt-4 text-sm text-gray-300">
