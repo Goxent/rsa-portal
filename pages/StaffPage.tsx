@@ -158,7 +158,8 @@ const StaffPage: React.FC = () => {
     const departments = ['All', 'Audit', 'Tax', 'Advisory', 'Admin'];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
+            <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
@@ -468,6 +469,7 @@ const StaffPage: React.FC = () => {
                     </div>
                 </div>
             )}
+        </div>
         </div>
     );
 };

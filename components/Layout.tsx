@@ -149,20 +149,22 @@ const Layout: React.FC = () => {
           />
 
           {/* Page Content */}
-          <main className="flex-1 overflow-auto p-4 md:p-6 mt-16 pb-24 md:pb-6 scroll-smooth custom-scrollbar relative">
-            <AnimatePresence mode="wait">
-              {!isOnline && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-2 rounded-lg mb-4 flex items-center justify-center"
-                >
-                  <WifiOff size={18} className="mr-2" />
-                  <span className="text-sm font-medium">You are currently offline. Changes will sync when connection is restored.</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <main className="flex-1 overflow-hidden mt-16 relative">
+            {!isOnline && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="bg-red-500/90 backdrop-blur-md text-white px-4 py-2 rounded-lg shadow-2xl flex items-center justify-center pointer-events-auto border border-white/20"
+                        >
+                            <WifiOff size={18} className="mr-2" />
+                            <span className="text-sm font-medium">Offline Mode: Sync pending</span>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            )}
 
             <Outlet />
           </main>

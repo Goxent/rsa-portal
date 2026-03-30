@@ -157,8 +157,8 @@ const ClientDetailPage: React.FC = () => {
     const focalPerson = staffList.find(s => s.uid === client.auditorId);
 
     return (
-        <>
-            <div className="space-y-6 animate-in fade-in duration-500 pb-20 max-w-7xl mx-auto">
+        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
+            <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
             {/* Back Button */}
             <button
                 onClick={() => navigate('/clients')}
@@ -606,7 +606,7 @@ const ClientDetailPage: React.FC = () => {
             )}
         </AnimatePresence>
 
-        </>
+        </div>
     );
 };
 

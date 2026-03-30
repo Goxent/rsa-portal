@@ -652,8 +652,8 @@ const AttendancePage: React.FC = () => {
     };
 
     return (
-        <div className="bg-[#0d1117] min-h-screen text-[#c9d1d9] pb-12">
-            <div className="max-w-[1600px] mx-auto space-y-8 px-4 sm:px-6 lg:px-8 pt-6">
+        <div className="h-full overflow-y-auto custom-scrollbar bg-[#0d1117] text-[#c9d1d9] relative pb-20">
+            <div className="max-w-[1600px] mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-6 animate-in fade-in duration-500">
                 
                 {/* ── Top Bar (Navigation & Actions) ── */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
