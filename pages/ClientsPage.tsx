@@ -355,7 +355,7 @@ const ClientsPage: React.FC = () => {
     );
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
+        <div className="min-h-full p-4 md:p-6 bg-transparent">
             <div className="space-y-6 animate-in fade-in duration-500 pb-32 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -849,11 +849,12 @@ const ClientsPage: React.FC = () => {
                                     {editingId ? 'Update Client' : 'Create Client'}
                                 </button>
                             </div>
-                        </form >
-                    </div >
-                </div >
+                        </form>
+                    </div>
+                </div>
             )}
-        </div >
+        </div>
+        </div>
     );
 };
 
