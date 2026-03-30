@@ -259,8 +259,9 @@ const LeavePage: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
+            <div className="space-y-6 animate-in fade-in duration-500 pb-32 max-w-7xl mx-auto">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Leave Management</h1>
                     <p className="text-sm text-gray-400">
@@ -811,6 +812,7 @@ const LeavePage: React.FC = () => {
                     </div>
                 </div>
             )}
+        </div>
         </div>
     );
 };

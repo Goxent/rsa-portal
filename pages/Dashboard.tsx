@@ -186,7 +186,7 @@ const Dashboard: React.FC = () => {
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
-        <div className="flex flex-col gap-6 h-full overflow-y-auto overflow-x-hidden p-2 md:p-4 lg:p-6 custom-scrollbar relative">
+        <div className="flex flex-col gap-6 h-full overflow-y-auto overflow-x-hidden p-2 md:p-4 lg:p-6 pb-24 custom-scrollbar relative">
             {/* Top ambient glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-brand-500/10 blur-[100px] pointer-events-none" />
 

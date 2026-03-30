@@ -609,14 +609,15 @@ const CalendarPage: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500 pb-10">
-            {/* Header Section */}
-            <div className="flex flex-col xl:flex-row justify-between items-center gap-6 shrink-0">
-                <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <CalendarIcon className="text-amber-400" />
-                        Firm Calendar
-                    </h1>
+        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
+            <div className="flex flex-col h-full space-y-6 animate-in fade-in duration-500 pb-32">
+                {/* Header Section */}
+                <div className="flex flex-col xl:flex-row justify-between items-center gap-6 shrink-0">
+                    <div>
+                        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                            <CalendarIcon className="text-amber-400" />
+                            Firm Calendar
+                        </h1>
                     <p className="text-sm text-gray-400">Track task deadlines, meetings, and important firm events.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4">
@@ -652,6 +653,7 @@ const CalendarPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
 
             {
                 viewMode === 'GRID' ? (
@@ -837,7 +839,8 @@ const CalendarPage: React.FC = () => {
                 user={user!}
                 allUsers={allUsers}
             />
-        </div >
+        </div>
+        </div>
     );
 };
 
