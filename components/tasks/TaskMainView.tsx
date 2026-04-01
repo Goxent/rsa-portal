@@ -533,15 +533,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                     </div>
                 </div>
 
-                {tasks.length === 0 && (
-                    <div className="py-32 flex flex-col items-center justify-center text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-slate-800/30 border border-white/[0.06] flex items-center justify-center mb-4">
-                            <ListIcon size={22} className="text-slate-600" />
-                        </div>
-                        <p className="text-slate-400 font-medium mb-1">No tasks found</p>
-                        <p className="text-sm text-slate-600">Adjust your filters or create a new task.</p>
-                    </div>
-                )}
+
             </div>
         </DragDropContext>
     );

@@ -386,14 +386,7 @@ const ClientsPage: React.FC = () => {
                     )}
                     {isAdmin && (
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleSeedClients}
-                                disabled={isSeeding}
-                                className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-2.5 rounded-xl font-medium flex items-center transition-all"
-                            >
-                                {isSeeding ? <span className="animate-spin mr-2">⏳</span> : <Building2 size={18} className="mr-2 text-brand-400" />}
-                                Seed Data
-                            </button>
+
                             <button
                                 onClick={() => {
                                     setEditingId(null);

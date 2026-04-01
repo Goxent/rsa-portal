@@ -18,16 +18,7 @@ const getNepaliDate = () => {
   }
 };
 
-const DotGrid: React.FC = () => (
-  <svg className="absolute inset-0 w-full h-full opacity-[0.07] pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <pattern id="dots2" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-        <circle cx="2" cy="2" r="1.5" fill="white" />
-      </pattern>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#dots2)" />
-  </svg>
-);
+
 
 const SignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -91,56 +82,7 @@ const SignupPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── LEFT PANEL (60%) ── */}
-      <div className="hidden lg:flex lg:w-[60%] relative flex-col items-center justify-center overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #1e1b4b 0%, #0f0e23 60%, #09090b 100%)' }}>
 
-        <div className="absolute top-[-15%] left-[-10%] w-[55%] h-[55%] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%)' }} />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%)' }} />
-
-        <DotGrid />
-
-        <div className="relative z-10 flex flex-col items-center text-center px-16 max-w-lg">
-          <div className="mb-10 flex items-center justify-center w-24 h-24 rounded-3xl shadow-2xl"
-            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', boxShadow: '0 0 60px rgba(99,102,241,0.35)' }}>
-            <ShieldCheck size={46} className="text-white" strokeWidth={1.5} />
-          </div>
-
-          <h1 className="text-5xl font-black tracking-tight text-white mb-4 leading-tight">
-            Join RSA<br />
-            <span className="bg-clip-text text-transparent"
-              style={{ backgroundImage: 'linear-gradient(90deg, #818cf8, #c084fc)' }}>
-              Workspace
-            </span>
-          </h1>
-
-          <p className="text-lg text-indigo-200/70 font-medium leading-relaxed mb-12">
-            Registration is invite-only.<br />
-            Your email must be pre-approved by an admin.
-          </p>
-
-          {[
-            { icon: '✅', label: 'Must be on the Staff Directory' },
-            { icon: '🔒', label: 'Admin-approved accounts only' },
-            { icon: '📧', label: 'Verify your email after signup' },
-          ].map((f) => (
-            <div key={f.label}
-              className="w-full flex items-center gap-4 mb-3 px-5 py-3.5 rounded-2xl text-left"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <span className="text-xl">{f.icon}</span>
-              <span className="text-sm font-medium text-indigo-100/70">{f.label}</span>
-            </div>
-          ))}
-
-          <p className="mt-12 text-xs text-indigo-300/30 font-medium tracking-widest uppercase">
-            Rajesh Suman & Associates
-          </p>
-        </div>
-      </div>
-
-      {/* ── RIGHT PANEL (40%) ── */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 relative overflow-y-auto">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none"
           style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%)' }} />
@@ -150,7 +92,7 @@ const SignupPage: React.FC = () => {
           style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(24px)' }}
         >
           {/* Mobile logo */}
-          <div className="lg:hidden flex flex-col items-center mb-8">
+          <div className="flex flex-col items-center mb-8">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
               style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
               <ShieldCheck size={28} className="text-white" />
@@ -288,6 +230,9 @@ const SignupPage: React.FC = () => {
             <Link to="/login" className="text-brand-400 hover:text-brand-300 font-semibold transition-colors">
               Sign in
             </Link>
+          </p>
+          <p className="mt-6 text-center text-[10px] text-gray-600 uppercase tracking-widest">
+            R. Sapkota & Associates
           </p>
         </div>
       </div>

@@ -47,6 +47,12 @@ const Dashboard: React.FC = () => {
     const isLoading = tasksLoading || usersLoading || eventsLoading;
 
     // ── Derived Attendance State (for command strip) ───────────────────────
+    const todayAttendance = attendanceHistory?.find((a: any) => a.date === new Date().toLocaleDateString('en-CA'));
+    let currentAttendanceStatus: 'Not Clocked In' | 'Clocked In' | 'Shift Completed' = 'Not Clocked In';
+    if (todayAttendance) {
+        if (todayAttendance.checkOut) currentAttendanceStatus = 'Shift Completed';
+        else if (todayAttendance.checkIn) currentAttendanceStatus = 'Clocked In';
+    }
 
     // ── Computed Dashboard Data ────────────────────────────────────────────
     const {
@@ -194,15 +200,16 @@ const Dashboard: React.FC = () => {
             <CommandStrip
                 pendingTasksCount={myOpenTasks}
                 unreadNotifications={0}
-                clockedIn={false}
+                attendanceStatus={currentAttendanceStatus}
             />
 
-            {/* ── 1. UNIFIED HEADER (Greetings Widget) ── */}
-            <div className="flex-none">
+            {/* Top Row: Greetings & Focus */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-none z-10 relative">
                 <GreetingsWidget 
                     pendingCount={myOpenTasks} 
                     completedToday={completedToday} 
                 />
+                <FocusWidget />
             </div>
 
             {/* ── 2. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
@@ -210,11 +217,8 @@ const Dashboard: React.FC = () => {
 
                 {/* Left: Widget Grid */}
                 <div className="flex-1 min-w-0 flex flex-col gap-6">
-                    {/* Top Row: Attendance and Focus */}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        <AttendanceWidget />
-                        <FocusWidget />
-                    </div>
+                    {/* Secondary Row: Attendance */}
+                    <AttendanceWidget />
                     
                     {user && (
                         <WidgetContainer

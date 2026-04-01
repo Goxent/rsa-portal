@@ -43,6 +43,7 @@ const CompliancePage: React.FC = () => {
     const [useNepali, setUseNepali] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statutoryFilter, setStatutoryFilter] = useState<'ALL' | 'VAT' | 'ITR'>('ALL');
+    const [activeTab, setActiveTab] = useState<'calendar' | 'clients'>('calendar');
     const [newEvent, setNewEvent] = useState({
         title: '',
         description: '',
@@ -233,7 +234,7 @@ const CompliancePage: React.FC = () => {
     // VAT Filing Restriction & Countdown Logic
     const npNow = new NepaliDate();
     const currentNPDay = npNow.getDate();
-    const isSyncDay = currentNPDay === 25;
+    const isSyncDay = currentNPDay === 24 || currentNPDay === 25;
 
     const getNextVatDeadline = () => {
         const now = new NepaliDate();
@@ -293,7 +294,7 @@ const CompliancePage: React.FC = () => {
                             Sync Compliance
                         </button>
                         {!isSyncDay && (
-                            <span className="text-[9px] text-amber-500/60 font-bold mt-1 uppercase tracking-tighter">Available on 25th BS Only</span>
+                            <span className="text-[9px] text-amber-500/60 font-bold mt-1 uppercase tracking-tighter">Available on 24th & 25th BS Only</span>
                         )}
                     </div>
                     {canEdit && (
@@ -317,103 +318,267 @@ const CompliancePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* VAT Filing Countdown Panel */}
-            <div className="glass-panel p-8 rounded-2xl border-l-4 border-l-emerald-500 relative overflow-hidden bg-gradient-to-r from-emerald-900/20 to-navy-900/40">
-                <div className="absolute right-0 top-0 opacity-10">
-                    <ShieldCheck size={180} className="text-white" />
-                </div>
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
-                                VAT Filing Deadline
-                            </span>
-                            <span className="text-gray-400 text-xs font-medium">Monthly Requirement</span>
-                        </div>
-                        <h3 className="text-3xl font-bold text-white mb-2">Monthly VAT Submission</h3>
-                        <p className="text-gray-300 text-lg">
-                            Due Date: <span className="text-white font-semibold">{vatDeadline.bsStr}</span>
-                        </p>
-                    </div>
-
-                    <div className="flex gap-4">
-                        {(() => {
-                            const diff = vatDeadline.ad.getTime() - new Date().getTime();
-                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-                            return [
-                                { val: days, label: 'Days' },
-                                { val: hours, label: 'Hours' },
-                                { val: mins, label: 'Mins' }
-                            ].map((item, idx) => (
-                                <div key={idx} className="text-center group">
-                                    <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-1 group-hover:scale-110 transition-transform duration-300">
-                                        {Math.max(0, item.val)}
-                                    </div>
-                                    <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest">{item.label}</div>
-                                </div>
-                            ));
-                        })()}
-                    </div>
-                </div>
+            {/* Tabs */}
+            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
+                <button
+                    onClick={() => setActiveTab('calendar')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'calendar' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                    Calendar & Events
+                </button>
+                {canEdit && (
+                    <button
+                        onClick={() => setActiveTab('clients')}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'clients' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        Client Statutory Status
+                    </button>
+                )}
             </div>
 
-            {/* Next Deadline Timer (Other Compliance Events) */}
-            {(() => {
-                const upcomingEvents = events.filter(e => e.status === 'UPCOMING' || e.status === 'DUE_SOON');
-                if (upcomingEvents.length === 0) return null;
-
-                const nearestEvent = upcomingEvents.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
-                const dueDate = new Date(nearestEvent.dueDate);
-                const now = new Date();
-                const diffTime = dueDate.getTime() - now.getTime();
-
-                const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-
-                return (
-                    <div className="glass-panel p-8 rounded-2xl border-l-4 border-l-brand-500 relative overflow-hidden bg-gradient-to-r from-brand-900/40 to-navy-900/40">
+            {/* Main Content */}
+            {activeTab === 'calendar' ? (
+                <>
+                    {/* VAT Filing Countdown Panel */}
+                    <div className="glass-panel p-8 rounded-2xl border-l-4 border-l-emerald-500 relative overflow-hidden bg-gradient-to-r from-emerald-900/20 to-navy-900/40">
                         <div className="absolute right-0 top-0 opacity-10">
-                            <CalIcon size={180} className="text-white" />
+                            <ShieldCheck size={180} className="text-white" />
                         </div>
                         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase tracking-wider">
-                                        Next Deadline
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                                        VAT Filing Deadline
                                     </span>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getCategoryColor(nearestEvent.category)}`}>
-                                        {nearestEvent.category}
-                                    </span>
+                                    <span className="text-gray-400 text-xs font-medium">Monthly Requirement</span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white mb-2">{nearestEvent.title}</h3>
+                                <h3 className="text-3xl font-bold text-white mb-2">Monthly VAT Submission</h3>
                                 <p className="text-gray-300 text-lg">
-                                    Due: <span className="text-white font-semibold">{formatDateWithBS(nearestEvent.dueDate)}</span>
+                                    Due Date: <span className="text-white font-semibold">{vatDeadline.bsStr}</span>
                                 </p>
                             </div>
 
                             <div className="flex gap-4">
-                                {[{ val: days, label: 'Days' }, { val: hours, label: 'Hours' }, { val: minutes, label: 'Mins' }].map((item, idx) => (
-                                    <div key={idx} className="text-center group">
-                                        <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-1 group-hover:scale-110 transition-transform duration-300">
-                                            {Math.max(0, item.val)}
+                                {(() => {
+                                    const diff = vatDeadline.ad.getTime() - new Date().getTime();
+                                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                                    return [
+                                        { val: days, label: 'Days' },
+                                        { val: hours, label: 'Hours' },
+                                        { val: mins, label: 'Mins' }
+                                    ].map((item, idx) => (
+                                        <div key={idx} className="text-center group">
+                                            <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-1 group-hover:scale-110 transition-transform duration-300">
+                                                {Math.max(0, item.val)}
+                                            </div>
+                                            <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest">{item.label}</div>
                                         </div>
-                                        <div className="text-[10px] uppercase font-bold text-brand-400 tracking-widest">{item.label}</div>
-                                    </div>
-                                ))}
+                                    ));
+                                })()}
                             </div>
                         </div>
                     </div>
-                );
-            })()}
 
-            {/* Client Statutory Compliance Section */}
-            {canEdit && (
-                <div className="glass-panel p-6 rounded-2xl border border-white/5 bg-navy-900/40 space-y-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    {/* Next Deadline Timer (Other Compliance Events) */}
+                    {(() => {
+                        const upcomingEvents = events.filter(e => e.status === 'UPCOMING' || e.status === 'DUE_SOON');
+                        if (upcomingEvents.length === 0) return null;
+
+                        const nearestEvent = upcomingEvents.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
+                        const dueDate = new Date(nearestEvent.dueDate);
+                        const now = new Date();
+                        const diffTime = dueDate.getTime() - now.getTime();
+
+                        const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+
+                        return (
+                            <div className="glass-panel p-8 rounded-2xl border-l-4 border-l-brand-500 relative overflow-hidden bg-gradient-to-r from-brand-900/40 to-navy-900/40">
+                                <div className="absolute right-0 top-0 opacity-10">
+                                    <CalIcon size={180} className="text-white" />
+                                </div>
+                                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase tracking-wider">
+                                                Next Deadline
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getCategoryColor(nearestEvent.category)}`}>
+                                                {nearestEvent.category}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-3xl font-bold text-white mb-2">{nearestEvent.title}</h3>
+                                        <p className="text-gray-300 text-lg">
+                                            Due: <span className="text-white font-semibold">{formatDateWithBS(nearestEvent.dueDate)}</span>
+                                        </p>
+                                    </div>
+
+                                    <div className="flex gap-4">
+                                        {[{ val: days, label: 'Days' }, { val: hours, label: 'Hours' }, { val: minutes, label: 'Mins' }].map((item, idx) => (
+                                            <div key={idx} className="text-center group">
+                                                <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-1 group-hover:scale-110 transition-transform duration-300">
+                                                    {Math.max(0, item.val)}
+                                                </div>
+                                                <div className="text-[10px] uppercase font-bold text-brand-400 tracking-widest">{item.label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Upcoming', count: upcomingCount, icon: CalIcon, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+                            { label: 'Due Soon', count: dueSoonCount, icon: Bell, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+                            { label: 'Overdue', count: overdueCount, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
+                            { label: 'Completed', count: events.filter(e => e.status === 'COMPLETED').length, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
+                        ].map((stat, idx) => (
+                            <div key={idx} className="glass-card p-5 rounded-xl flex items-center justify-between group hover:border-brand-500/30 transition-all">
+                                <div>
+                                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">{stat.label}</p>
+                                    <h3 className={`text-3xl font-bold mt-1 ${stat.color} group-hover:scale-105 transition-transform`}>{stat.count}</h3>
+                                </div>
+                                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+                                    <stat.icon size={24} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Controls */}
+                    <div className="glass-panel p-2 rounded-xl flex overflow-x-auto gap-2">
+                        {['ALL', 'UPCOMING', 'DUE_SOON', 'OVERDUE', 'COMPLETED'].map((f) => (
+                            <button
+                                key={f}
+                                onClick={() => setFilter(f)}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filter === f
+                                    ? 'bg-amber-600 text-white shadow-lg shadow-blue-900/20'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                {f.replace('_', ' ')}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Events List */}
+                    <div className="space-y-3">
+                        {filteredEvents.map((event) => (
+                            <div
+                                key={event.id}
+                                className="glass-panel p-6 rounded-xl hover:border-brand-500/30 transition-all group relative overflow-hidden"
+                            >
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-white/10 to-transparent group-hover:from-brand-500 group-hover:to-brand-600 transition-colors"></div>
+                                <div className="flex flex-col md:flex-row items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                            <h3 className="text-lg font-bold text-white">{event.title}</h3>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getCategoryColor(event.category)}`}>
+                                                {event.category}
+                                            </span>
+                                            {event.priority === 'CRITICAL' && (
+                                                <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/20">
+                                                    <AlertTriangle size={10} /> CRITICAL
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-gray-400 text-sm mb-3 max-w-2xl">{event.description}</p>
+                                        <div className="flex items-center gap-6 text-xs text-gray-500 font-medium">
+                                            <span className="flex items-center gap-1.5">
+                                                <CalIcon size={14} className="text-brand-400" />
+                                                Due: <span className="text-gray-300">{formatDateWithBS(event.dueDate)}</span>
+                                            </span>
+                                            {event.clientName && (
+                                                <span className="flex items-center gap-1.5">
+                                                    <Filter size={14} className="text-purple-400" />
+                                                    Client: <span className="text-gray-300">{event.clientName}</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        {event.status !== 'COMPLETED' && (
+                                            <>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!user) return;
+                                                        const taskTitle = `Compliance: ${event.title}`;
+                                                        const existingTasks = await AuthService.getAllTasks();
+                                                        if (existingTasks.some(t => t.title === taskTitle)) {
+                                                            toast.error('Task already exists for this event');
+                                                            return;
+                                                        }
+                                                        const newTask: Task = {
+                                                            id: `t_evt_${Date.now()}`,
+                                                            title: taskTitle,
+                                                            description: event.description || `Ensure compliance for ${event.title}.`,
+                                                            status: TaskStatus.NOT_STARTED,
+                                                            priority: event.priority as TaskPriority || TaskPriority.MEDIUM,
+                                                            dueDate: event.dueDate,
+                                                            assignedTo: [user.uid],
+                                                            assignedToNames: [user.displayName || ''],
+                                                            createdAt: new Date().toISOString(),
+                                                            createdBy: user.uid,
+                                                            subtasks: []
+                                                        };
+                                                        await AuthService.saveTask(newTask, true);
+                                                        toast.success('Task created successfully from this event!');
+                                                    }}
+                                                    className="bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 px-4 py-2 rounded-lg text-sm font-medium border border-brand-500/20 transition-all flex items-center gap-2"
+                                                >
+                                                    <Plus size={16} /> Create Task
+                                                </button>
+                                                <button
+                                                    onClick={() => handleComplete(event.id)}
+                                                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-lg text-sm font-medium border border-emerald-500/20 transition-all flex items-center gap-2"
+                                                >
+                                                    <CheckCircle size={16} /> Mark Complete
+                                                </button>
+                                            </>
+                                        )}
+                                        {canEdit && (
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(event)}
+                                                    className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(event.id)}
+                                                    className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {filteredEvents.length === 0 && (
+                            <div className="glass-panel p-16 rounded-xl">
+                                <EmptyState
+                                    icon={CalIcon}
+                                    title="No events found"
+                                    description="Try adjusting your filters or create a new event."
+                                    className="p-0"
+                                />
+                            </div>
+                        )}
+                    </div>
+                </>
+            ) : canEdit ? (
+                <div className="glass-panel rounded-xl overflow-hidden border border-white/5 bg-navy-900/40 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 p-6 bg-white/5">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
                                 <ShieldCheck size={20} />
@@ -435,7 +600,7 @@ const CompliancePage: React.FC = () => {
                                     className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
                                 />
                             </div>
-                            <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
+                            <div className="flex bg-white/5 rounded-xl p-1 border border-white/10 shrink-0">
                                 {(['ALL', 'VAT', 'ITR'] as const).map((t) => (
                                     <button
                                         key={t}
@@ -449,73 +614,68 @@ const CompliancePage: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {filteredClients.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-gray-300">
+                            <thead>
+                                <tr className="text-gray-400 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
+                                    <th className="px-6 py-4">Client</th>
+                                    <th className="px-6 py-4">PAN / Code</th>
+                                    <th className="px-6 py-4">Focal Person</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
                                 {filteredClients.map((client) => (
-                                    <div key={client.id} className="glass-card p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all group">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-3 overflow-hidden">
-                                                <div className="w-10 h-10 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-amber-400 font-bold text-xs">
-                                                    {client.code?.substring(0, 3) || 'CL'}
-                                                </div>
-                                                <div className="overflow-hidden">
-                                                    <h4 className="font-bold text-white text-xs group-hover:text-brand-300 transition-colors uppercase truncate">{client.name}</h4>
-                                                    <p className="text-[10px] text-gray-500 font-medium truncate">PAN: {client.pan || 'N/A'}</p>
-                                                </div>
+                                    <tr key={client.id} className="hover:bg-white/5 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-white uppercase text-xs">{client.name}</td>
+                                        <td className="px-6 py-4 text-xs">
+                                            <div className="flex gap-1 items-center font-mono">
+                                                <span className="text-gray-500 font-bold uppercase text-[10px]">PAN:</span>
+                                                <span className="text-gray-300">{client.pan || 'N/A'}</span>
                                             </div>
-                                            <div className="flex flex-col items-end gap-1 shrink-0">
-                                                {client.vatReturn && (
-                                                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">VAT</span>
-                                                )}
-                                                {client.itrReturn && (
-                                                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR</span>
-                                                )}
+                                            <div className="text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 rounded w-fit mt-1 uppercase font-bold tracking-wider">{client.code || 'N/A'}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <select
+                                                value={client.auditorId || ''}
+                                                onChange={async (e) => {
+                                                    const newAuditorId = e.target.value;
+                                                    try {
+                                                        await AuthService.updateClient({ ...client, auditorId: newAuditorId });
+                                                        setClients(clients.map(c => c.id === client.id ? { ...c, auditorId: newAuditorId } : c));
+                                                        toast.success(`Assigned ${staffList.find(s => s.uid === newAuditorId)?.displayName || 'Focal Person'} to ${client.name}`);
+                                                    } catch (error) {
+                                                        toast.error('Failed to update assignee');
+                                                    }
+                                                }}
+                                                className="bg-navy-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-brand-300 cursor-pointer outline-none w-full max-w-[200px]"
+                                            >
+                                                <option value="" className="text-gray-400">Unassigned Focal</option>
+                                                {staffList.map(staff => (
+                                                    <option key={staff.uid} value={staff.uid}>{staff.displayName}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-2">
+                                                {client.vatReturn && <span className="text-[10px] font-black px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">VAT Return</span>}
+                                                {client.itrReturn && <span className="text-[10px] font-black px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR Return</span>}
                                             </div>
-                                        </div>
-
-                                        <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-3">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 overflow-hidden flex-1">
-                                                    <div className="w-5 h-5 shrink-0 rounded-full bg-navy-800 flex items-center justify-center text-[7px] font-bold text-gray-300 uppercase">
-                                                        {staffList.find(s => s.uid === client.auditorId)?.displayName?.substring(0, 2) || '??'}
-                                                    </div>
-                                                    <select
-                                                        value={client.auditorId || ''}
-                                                        onChange={async (e) => {
-                                                            const newAuditorId = e.target.value;
-                                                            try {
-                                                                await AuthService.updateClient({ ...client, auditorId: newAuditorId });
-                                                                setClients(clients.map(c => c.id === client.id ? { ...c, auditorId: newAuditorId } : c));
-                                                                toast.success(`Assigned ${staffList.find(s => s.uid === newAuditorId)?.displayName || 'Focal Person'} to ${client.name}`);
-                                                            } catch (error) {
-                                                                toast.error('Failed to update assignee');
-                                                            }
-                                                        }}
-                                                        className="bg-transparent text-[10px] text-gray-400 hover:text-white transition-colors cursor-pointer outline-none w-full truncate appearance-none"
-                                                    >
-                                                        <option value="" className="bg-navy-900 text-gray-400">Unassigned Focal</option>
-                                                        {staffList.map(staff => (
-                                                            <option key={staff.uid} value={staff.uid} className="bg-navy-900 text-white">
-                                                                {staff.displayName}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        toast(`Viewing tasks for ${client.name}`, { icon: '🔍', duration: 1000 });
-                                                    }}
-                                                    className="text-[9px] font-bold text-brand-400 hover:text-brand-300 transition-colors shrink-0 ml-2"
-                                                >
-                                                    VIEW TASKS
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => toast(`Viewing tasks for ${client.name}`, { icon: '🔍' })}
+                                                className="text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg transition-colors border border-white/10"
+                                            >
+                                                VIEW TASKS
+                                            </button>
+                                        </td>
+                                    </tr>
                                 ))}
-                            </div>
-                        ) : (
+                            </tbody>
+                        </table>
+                        {filteredClients.length === 0 && (
                             <EmptyState
                                 icon={ShieldCheck}
                                 title="No clients found"
@@ -526,120 +686,7 @@ const CompliancePage: React.FC = () => {
                         )}
                     </div>
                 </div>
-            )}
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'Upcoming', count: upcomingCount, icon: CalIcon, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                    { label: 'Due Soon', count: dueSoonCount, icon: Bell, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                    { label: 'Overdue', count: overdueCount, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
-                    { label: 'Completed', count: events.filter(e => e.status === 'COMPLETED').length, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
-                ].map((stat, idx) => (
-                    <div key={idx} className="glass-card p-5 rounded-xl flex items-center justify-between group hover:border-brand-500/30 transition-all">
-                        <div>
-                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">{stat.label}</p>
-                            <h3 className={`text-3xl font-bold mt-1 ${stat.color} group-hover:scale-105 transition-transform`}>{stat.count}</h3>
-                        </div>
-                        <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-                            <stat.icon size={24} />
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Controls */}
-            <div className="glass-panel p-2 rounded-xl flex overflow-x-auto gap-2">
-                {['ALL', 'UPCOMING', 'DUE_SOON', 'OVERDUE', 'COMPLETED'].map((f) => (
-                    <button
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filter === f
-                            ? 'bg-amber-600 text-white shadow-lg shadow-blue-900/20'
-                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                            }`}
-                    >
-                        {f.replace('_', ' ')}
-                    </button>
-                ))}
-            </div>
-
-            {/* Events List */}
-            <div className="space-y-3">
-                {filteredEvents.map((event) => (
-                    <div
-                        key={event.id}
-                        className="glass-panel p-6 rounded-xl hover:border-brand-500/30 transition-all group relative overflow-hidden"
-                    >
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-white/10 to-transparent group-hover:from-brand-500 group-hover:to-brand-600 transition-colors"></div>
-                        <div className="flex flex-col md:flex-row items-start justify-between gap-4">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                    <h3 className="text-lg font-bold text-white">{event.title}</h3>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getCategoryColor(event.category)}`}>
-                                        {event.category}
-                                    </span>
-                                    {event.priority === 'CRITICAL' && (
-                                        <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/20">
-                                            <AlertTriangle size={10} /> CRITICAL
-                                        </span>
-                                    )}
-                                </div>
-                                <p className="text-gray-400 text-sm mb-3 max-w-2xl">{event.description}</p>
-                                <div className="flex items-center gap-6 text-xs text-gray-500 font-medium">
-                                    <span className="flex items-center gap-1.5">
-                                        <CalIcon size={14} className="text-brand-400" />
-                                        Due: <span className="text-gray-300">{formatDateWithBS(event.dueDate)}</span>
-                                    </span>
-                                    {event.clientName && (
-                                        <span className="flex items-center gap-1.5">
-                                            <Filter size={14} className="text-purple-400" />
-                                            Client: <span className="text-gray-300">{event.clientName}</span>
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                {event.status !== 'COMPLETED' && (
-                                    <button
-                                        onClick={() => handleComplete(event.id)}
-                                        className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-lg text-sm font-medium border border-emerald-500/20 transition-all flex items-center gap-2"
-                                    >
-                                        <CheckCircle size={16} /> Mark Complete
-                                    </button>
-                                )}
-                                {canEdit && (
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => handleEdit(event)}
-                                            className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(event.id)}
-                                            className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ))}
-                {filteredEvents.length === 0 && (
-                    <div className="glass-panel p-16 rounded-xl">
-                        <EmptyState
-                            icon={CalIcon}
-                            title="No events found"
-                            description="Try adjusting your filters or create a new event."
-                            className="p-0"
-                        />
-                    </div>
-                )}
-            </div>
+            ) : null}
 
             {/* Create/Edit Modal - Premium Style */}
             {isModalOpen && (

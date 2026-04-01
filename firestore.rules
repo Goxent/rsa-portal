@@ -17,6 +17,11 @@ service cloud.firestore {
       return isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
     }
 
+    // Security & Validation Helpers
+    function isString(val) { return val is string; }
+    function isSafeString(val, maxLen) { return isString(val) && val.size() <= maxLen; }
+    function checkKeys(requiredKeys) { return request.resource.data.keys().hasAll(requiredKeys); }
+
     // Returns true for admins, managers, or users granted explicit task-creation authorization
     function canCreateTask() {
       return isAuthenticated() && (
@@ -66,7 +71,11 @@ service cloud.firestore {
     // ATTENDANCE COLLECTION
     match /attendance/{attendanceId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isAdmin());
+      // Enforce schema on create
+      allow create: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isAdmin())
+                    && checkKeys(['userId', 'date', 'status'])
+                    && isSafeString(request.resource.data.userId, 128);
+      allow update: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isAdmin());
       allow delete: if isAdmin();
     }
 
@@ -88,13 +97,15 @@ service cloud.firestore {
     // TASKS COLLECTION
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
-      allow create: if canCreateTask();
+      allow create: if canCreateTask() 
+                    && checkKeys(['title', 'status', 'priority'])
+                    && isSafeString(request.resource.data.title, 500);
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
         resource.data.createdBy == request.auth.uid ||
         isAdmin() ||
         getUserRole() == 'MANAGER'
-      );
+      ) && (!request.resource.data.keys().hasAll(['title']) || isSafeString(request.resource.data.title, 500));
       allow delete: if isAdmin();
     }
 

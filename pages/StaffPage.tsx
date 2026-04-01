@@ -17,7 +17,7 @@ const StaffPage: React.FC = () => {
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
     const [fullUsers, setFullUsers] = useState<UserProfile[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedDepartment, setSelectedDepartment] = useState('All');
+    const [selectedTab, setSelectedTab] = useState('All');
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
 
     // Modal State
@@ -149,13 +149,17 @@ const StaffPage: React.FC = () => {
     const filteredUsers = users
         .filter(u => {
             const matchesSearch = u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                u.email.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesDept = selectedDepartment === 'All' || u.department === selectedDepartment;
-            return matchesSearch && matchesDept;
+                                u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (u.position || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesTab = selectedTab === 'All' || 
+                               u.position === selectedTab || 
+                               (selectedTab === 'Staffs' && u.position === 'Staff') ||
+                               (!u.position && selectedTab === 'Staffs'); // Default empty positions to Staff
+            return matchesSearch && matchesTab;
         })
         .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
-    const departments = ['All', 'Audit', 'Tax', 'Advisory', 'Admin'];
+    const filterTabs = ['All', 'Staffs', 'Article Trainee', 'Manager', 'Admin', 'Principal'];
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
@@ -174,19 +178,19 @@ const StaffPage: React.FC = () => {
                 </button>
             </div>
 
-            {/* Department Filters */}
+            {/* Position Filters */}
             <div className="flex items-center gap-1 overflow-x-auto pb-2 hide-scrollbar">
-                {departments.map(dept => (
+                {filterTabs.map(tab => (
                     <button
-                        key={dept}
-                        onClick={() => setSelectedDepartment(dept)}
+                        key={tab}
+                        onClick={() => setSelectedTab(tab)}
                         className={`px-5 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap border ${
-                            selectedDepartment === dept
+                            selectedTab === tab
                                 ? 'bg-brand-500/20 text-brand-300 border-brand-500/30 shadow-lg shadow-brand-500/10'
                                 : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
                         }`}
                     >
-                        {dept}
+                        {tab}
                     </button>
                 ))}
             </div>
@@ -198,7 +202,7 @@ const StaffPage: React.FC = () => {
                     <input
                         type="text"
                         className="block w-full pl-10 pr-3 py-2 border border-white/10 rounded-lg bg-navy-800/50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm text-gray-100"
-                        placeholder="Search staff by name, email or department..."
+                        placeholder="Search staff by name, email or position..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />

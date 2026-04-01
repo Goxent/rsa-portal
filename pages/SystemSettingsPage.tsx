@@ -83,19 +83,6 @@ const SystemSettingsPage: React.FC = () => {
         }
     };
 
-    const handleSeedData = async () => {
-        setIsLoading(true);
-        try {
-            await AuthService.seedDemoData();
-            setStatusMessage({ type: 'success', text: "Demo data seeded successfully!" });
-            setTimeout(() => setStatusMessage(null), 3000);
-        } catch (error) {
-            setStatusMessage({ type: 'error', text: "Failed to seed demo data." });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const handleMigrateAllowlist = async () => {
         if (!window.confirm("This will copy all existing active staff emails into the new Staff Allowlist. Proceed?")) return;
         setIsMigrating(true);
@@ -371,12 +358,6 @@ const SystemSettingsPage: React.FC = () => {
                             >
                                 {isMigrating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
                                 Migrate Staff to Allowlist
-                            </button>
-                            <button
-                                onClick={handleSeedData}
-                                className="w-full bg-brand-600/20 hover:bg-brand-600 text-brand-200 py-2.5 rounded-xl text-sm font-bold transition-all border border-brand-500/30 mb-2"
-                            >
-                                Seed Demo Clients
                             </button>
                             <button className="w-full bg-red-600/20 hover:bg-red-600 text-red-200 py-2.5 rounded-xl text-sm font-bold transition-all border border-red-500/30">
                                 Clear System Cache

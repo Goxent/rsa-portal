@@ -7,7 +7,7 @@ import NepaliDate from 'nepali-date-converter';
 interface CommandStripProps {
     pendingTasksCount: number;
     unreadNotifications: number;
-    clockedIn?: boolean;
+    attendanceStatus?: 'Not Clocked In' | 'Clocked In' | 'Shift Completed';
     onNotificationsClick?: () => void;
 }
 
@@ -23,7 +23,7 @@ const toBS = (date: Date): string => {
 const CommandStrip: React.FC<CommandStripProps> = ({
     pendingTasksCount,
     unreadNotifications,
-    clockedIn = false,
+    attendanceStatus = 'Not Clocked In',
     onNotificationsClick,
 }) => {
     const navigate = useNavigate();
@@ -52,10 +52,10 @@ const CommandStrip: React.FC<CommandStripProps> = ({
             accent: 'text-sky-400',
         },
         {
-            icon: <Wifi size={13} className={clockedIn ? 'text-emerald-400' : 'text-gray-600'} />,
+            icon: <Wifi size={13} className={attendanceStatus === 'Clocked In' ? 'text-emerald-400' : attendanceStatus === 'Shift Completed' ? 'text-brand-400' : 'text-gray-600'} />,
             label: 'Status',
-            value: clockedIn ? 'Clocked In' : 'Not Clocked In',
-            accent: clockedIn ? 'text-emerald-400' : 'text-gray-500',
+            value: attendanceStatus,
+            accent: attendanceStatus === 'Clocked In' ? 'text-emerald-400' : attendanceStatus === 'Shift Completed' ? 'text-brand-400' : 'text-gray-500',
             onClick: () => navigate('/attendance'),
         },
         {

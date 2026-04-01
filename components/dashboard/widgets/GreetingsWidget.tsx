@@ -55,16 +55,12 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
             : 'Wrap up any remaining work. Tomorrow is a fresh start.';
     }, [hour, pendingCount, completedToday]);
 
-    const timeStr = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const adDateStr = currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    let bsDateStr = '';
-    try { bsDateStr = toBS(currentTime); } catch { bsDateStr = ''; }
 
     const firstName = user?.displayName?.split(' ')[0] ?? '';
 
     return (
         <div
-            className="relative rounded-2xl overflow-hidden glass-panel hover-lift h-full min-h-[140px]"
+            className="relative rounded-2xl overflow-hidden glass-panel hover-lift"
             style={{
                 background: 'linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(17,24,48,0.95) 100%)',
             }}
@@ -86,7 +82,7 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
             />
 
             {/* Content */}
-            <div className="relative z-10 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 h-full">
+            <div className="relative z-10 p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
 
                 {/* Left: greeting text */}
                 <div className="flex-1 min-w-0">
@@ -118,38 +114,7 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
                     </motion.p>
                 </div>
 
-                {/* Right: compact clock + date pills */}
-                <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.4 }}
-                    className="flex flex-wrap items-center gap-2 flex-shrink-0"
-                >
-                    {/* Clock pill */}
-                    <div className="flex items-center gap-2 glass-panel hover-lift rounded-xl px-4 py-2 hover:bg-white/5 transition-colors">
-                        <div className="p-1 bg-amber-500/20 rounded-md text-amber-400">
-                            <Clock size={16} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest leading-none mb-1">Time</p>
-                            <p className="text-sm text-white font-mono font-bold leading-none tracking-tight">{timeStr}</p>
-                        </div>
-                    </div>
 
-                    {/* Date pill */}
-                    <div className="flex items-center gap-2 glass-panel hover-lift rounded-xl px-4 py-2 hover:bg-white/5 transition-colors">
-                        <div className="p-1 bg-emerald-500/20 rounded-md text-emerald-400">
-                            <CalendarDays size={16} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest leading-none mb-1">Date</p>
-                            <p className="text-sm text-white font-medium leading-none tracking-tight">{adDateStr}</p>
-                            {bsDateStr && (
-                                <p className="text-[11px] text-amber-400 font-medium leading-none mt-1.5">{bsDateStr} BS</p>
-                            )}
-                        </div>
-                    </div>
-                </motion.div>
             </div>
         </div>
     );

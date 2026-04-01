@@ -16,8 +16,18 @@ export default defineConfig(({ mode }) => {
         'react-is': path.resolve(__dirname, 'node_modules/react-is/index.js'),
       }
     },
+    esbuild: {
+      drop: ['console', 'debugger'],
+    },
     build: {
-      sourcemap: false, // Disable source maps in production — prevents readable code in F12
+      sourcemap: false, // Prevents readable code in F12
+      rollupOptions: {
+        output: {
+          entryFileNames: `assets/[name]-[hash].js`,
+          chunkFileNames: `assets/[name]-[hash].js`,
+          assetFileNames: `assets/[name]-[hash].[ext]`,
+        },
+      },
     },
     optimizeDeps: {
       include: ['react-is']

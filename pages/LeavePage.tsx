@@ -267,7 +267,7 @@ const LeavePage: React.FC = () => {
                     <p className="text-sm text-gray-400">
                         {user?.position === 'Article Trainee'
                             ? `Articleship Leave Balance (120 Days / 3 Years)`
-                            : `Staff Leave Balances (Nepali Year ${new Date().getFullYear()}/${new Date().getFullYear() + 1})`
+                            : `Staff Leave Balances`
                         }
                     </p>
                 </div>
@@ -287,12 +287,6 @@ const LeavePage: React.FC = () => {
                                 Admin Panel
                             </button>
                         )}
-                        <button
-                            onClick={() => setActiveTab('calendar')}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'calendar' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            Team Calendar
-                        </button>
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
@@ -456,10 +450,6 @@ const LeavePage: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            ) : activeTab === 'calendar' ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <LeaveCalendar leaves={leaves} staff={allStaff} />
-                </div>
             ) : (
                 <>
                     {/* Balance Cards (Modernized) */}
@@ -565,7 +555,7 @@ const LeavePage: React.FC = () => {
                                        <span className="text-[9px] text-gray-500 font-bold uppercase">Quota Limit</span>
                                    </div>
                                 </div>
-                                <span className="text-[10px] text-brand-400 font-black cursor-pointer hover:underline uppercase">View Full Policy</span>
+
                             </div>
                         </div>
                     </div>
