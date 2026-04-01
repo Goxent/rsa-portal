@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Menu, Clock } from 'lucide-react';
+import { Bell, Clock, Sun, Moon } from 'lucide-react';
 import Breadcrumbs from './Breadcrumbs';
 import HeaderSearch from './HeaderSearch';
 import { useAuth } from '../../context/AuthContext';
-import { useLocation } from 'react-router-dom';
-import { getCurrentDateUTC } from '../../utils/dates';
+import { useTheme } from '../../context/ThemeContext';
 // @ts-ignore
 import NepaliDate from 'nepali-date-converter';
 
@@ -22,6 +21,7 @@ const Header: React.FC<HeaderProps> = ({
     isSidebarCollapsed
 }) => {
     const { user } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -49,7 +49,10 @@ const Header: React.FC<HeaderProps> = ({
     };
 
     return (
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-[#0a0a0c]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
+        <header
+            style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+            className={`fixed top-0 right-0 z-20 h-16 backdrop-blur-md border-b flex items-center justify-between px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}
+        >
 
             {/* Left: Mobile Toggle & Breadcrumbs */}
             <div className="flex items-center gap-4">
@@ -79,6 +82,18 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
 
 
+
+                {/* Theme Toggle */}
+                <button
+                    onClick={toggleTheme}
+                    style={{ color: 'var(--text-body)' }}
+                    className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all duration-200 hover:scale-110"
+                    title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                >
+                    {theme === 'dark'
+                        ? <Sun size={18} className="text-amber-400" />
+                        : <Moon size={18} className="text-brand-700" style={{ color: 'var(--accent)' }} />}
+                </button>
 
                 {/* Notifications */}
                 <button

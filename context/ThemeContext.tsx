@@ -53,22 +53,29 @@ export const ThemedToaster: React.FC = () => {
             toastOptions={{
                 className: '',
                 style: {
-                    background: theme === 'dark' ? 'rgba(30, 41, 59, 0.95)' : '#ffffff',
-                    color: theme === 'dark' ? '#fff' : '#09090b',
-                    backdropFilter: 'blur(8px)',
-                    border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    // Carbon Ledger dark / Parchment Office light
+                    background: theme === 'dark' ? '#1c1c1f' : '#ffffff',
+                    color: theme === 'dark' ? '#e8e4dc' : '#1a1917',
+                    backdropFilter: 'blur(12px)',
+                    border: theme === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.06)'
+                        : '1px solid rgba(0, 0, 0, 0.08)',
+                    boxShadow: theme === 'dark'
+                        ? '0 8px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
+                    fontFamily: "'Geist', 'DM Sans', sans-serif",
+                    fontSize: '0.875rem',
                 },
                 success: {
                     iconTheme: {
-                        primary: '#10B981',
-                        secondary: 'white',
+                        primary: theme === 'dark' ? '#2e8a61' : '#1a6e4d',
+                        secondary: theme === 'dark' ? '#0c0c0e' : '#ffffff',
                     },
                 },
                 error: {
                     iconTheme: {
-                        primary: '#EF4444',
-                        secondary: 'white',
+                        primary: theme === 'dark' ? '#c94f5e' : '#b83248',
+                        secondary: theme === 'dark' ? '#0c0c0e' : '#ffffff',
                     },
                 },
             }}

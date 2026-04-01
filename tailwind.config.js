@@ -11,44 +11,51 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        heading: ['Montserrat', 'sans-serif'],
+        sans: ['Geist', 'DM Sans', 'system-ui', 'sans-serif'],
+        heading: ['DM Sans', 'system-ui', 'sans-serif'],
+        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
-        navy: {
-          950: '#09090b',
-          900: '#121214',
+        // Carbon Ledger — dark surfaces
+        carbon: {
+          950: '#0c0c0e',
+          900: '#141416',
           800: '#1c1c1f',
-          700: '#27272a',
-          600: '#3f3f46',
+          700: '#242427',
+          600: '#2e2e32',
         },
+        // Forest green accent (Carbon Ledger & Parchment Office)
         brand: {
-          50: '#f5f7ff',
-          100: '#ebf0fe',
-          200: '#d9e2fd',
-          300: '#b7cafb',
-          400: '#8ba6f7',
-          500: '#6382f1', // Main Royal Indigo
-          600: '#4f66e5',
-          700: '#4351ca',
-          800: '#373ea3',
-          900: '#313581',
-          950: '#1e204b',
+          50:  '#f0faf5',
+          100: '#d6f2e5',
+          200: '#aee4cb',
+          300: '#7dcfaf',
+          400: '#4db090',
+          500: '#2e8a61', // Dark mode accent
+          600: '#237050',
+          700: '#1a6e4d', // Light mode accent
+          800: '#155c3f',
+          900: '#0f4530',
+          950: '#082a1d',
         },
-        midnight: {
-          950: '#0a0a0c',
-          900: '#121214',
-          800: '#1a1a1c',
+        // Parchment — light mode surfaces
+        parchment: {
+          50:  '#fdfcf9',
+          100: '#f7f5f0',
+          200: '#f0ede6',
+          300: '#e6e2d8',
+          400: '#d4cfc2',
+          500: '#b8b3a6',
         },
-        base: '#0a0a0c',
-        surface: '#121214',
-        card: '#1a1a1c',
+        base: '#0c0c0e',
+        surface: '#141416',
+        card: '#1c1c1f',
         accent: {
-          cyan: '#06b6d4',
-          purple: '#8b5cf6',
-          pink: '#ec4899',
-          gold: '#f59e0b',
-          indigo: '#6366f1',
+          green:  '#2e8a61',
+          amber:  '#d4903a',
+          rose:   '#c94f5e',
+          sky:    '#4f8ed4',
+          neutral: '#6b6966',
         }
       },
       animation: {

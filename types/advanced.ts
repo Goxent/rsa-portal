@@ -114,11 +114,22 @@ export interface ComplianceEvent {
     completedAt?: string;
 }
 
+export interface TemplateFolder {
+    id: string;
+    name: string;
+    description?: string;
+    createdBy: string;
+    createdAt: string;
+    updatedAt?: string;
+}
+
 // Template Types
 export interface Template {
     id: string;
     name: string;
     description: string;
+    folderId?: string; // Links to TemplateFolder
+    folderName?: string;
     category: 'TASK' | 'CHECKLIST' | 'DOCUMENT' | 'WORKFLOW';
     type: string; // Specific type within category
     content: any; // Template structure (depends on category)

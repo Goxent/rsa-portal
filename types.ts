@@ -125,6 +125,7 @@ export interface SubTask {
   createdBy: string; // Name of user who added it
   createdAt: string;
   assignedTo?: string; // NEW: Specific staff member assigned to this checklist item
+  phase?: AuditPhase; // NEW: Associate subtask directly to a phase
 }
 
 export interface Task {
@@ -375,10 +376,23 @@ export interface Resource {
   isPinned?: boolean; // Pinned / Favourites section
 }
 
+export interface TemplateFolder {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string; // For UI display
+  icon?: string;  // For UI display
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface TaskTemplate {
   id: string;
   name: string;
   description: string;
+  folderId?: string; // NEW: Associate with a folder
+  folderName?: string;
   priority: TaskPriority;
   category: string;
   subtasks: string[]; // Deprecated: Use subtaskDetails instead if available

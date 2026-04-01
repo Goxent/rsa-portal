@@ -5,8 +5,9 @@ import {
     Trash2, Save, Loader2, CheckCircle2, Check, Eye,
     Sparkles, Book
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder } from '../../types';
 import { KnowledgeService } from '../../services/knowledge';
+import { TemplateService } from '../../services/templates';
 import StaffSelect from '../StaffSelect';
 import ClientSelect from '../ClientSelect';
 import TaskComments from '../TaskComments';
@@ -84,6 +85,18 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const initialTaskRef = useRef<Partial<Task> | null>(null);
     const [showDiscardBanner, setShowDiscardBanner] = useState(false);
     const [suggestedResources, setSuggestedResources] = useState<Resource[]>([]);
+    
+    // Subtask & Template Import State
+    const [templates, setTemplates] = useState<Template[]>([]);
+    const [templateFolders, setTemplateFolders] = useState<TemplateFolder[]>([]);
+    const [importPhase, setImportPhase] = useState<AuditPhase | null>(null);
+    const [localSubtaskTitles, setLocalSubtaskTitles] = useState<Record<AuditPhase | 'UNCATEGORIZED', string>>({
+        [AuditPhase.ONBOARDING]: '',
+        [AuditPhase.PLANNING_AND_EXECUTION]: '',
+        [AuditPhase.REVIEW_AND_CONCLUSION]: '',
+        UNCATEGORIZED: ''
+    });
+
     const descRef = useRef<HTMLTextAreaElement | null>(null);
 
     // Auto-resize description textarea
@@ -104,6 +117,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 ).slice(0, 3);
                 setSuggestedResources(matches);
             });
+            
+            TemplateService.getAllTemplates('CHECKLIST').then(setTemplates).catch(() => {});
+            TemplateService.getFolders().then(setTemplateFolders).catch(() => {});
         }
     }, [isOpen, task.title]);
 
@@ -190,6 +206,51 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         onSave(fullSaveData);
         initialTaskRef.current = JSON.parse(JSON.stringify(fullSaveData));
         setShowDiscardBanner(false);
+    };
+
+    const handleAddPhaseSubtask = (phase: AuditPhase | 'UNCATEGORIZED') => {
+        const title = localSubtaskTitles[phase]?.trim();
+        if (!title) return;
+        
+        const newSubtask: SubTask = {
+            id: Math.random().toString(36).substring(2, 9),
+            title,
+            isCompleted: false,
+            createdAt: new Date().toISOString(),
+            createdBy: 'unknown',
+            phase: phase !== 'UNCATEGORIZED' ? phase : undefined
+        };
+        
+        onChange({ subtasks: [...(task.subtasks || []), newSubtask] });
+        setLocalSubtaskTitles(prev => ({ ...prev, [phase]: '' }));
+    };
+
+    const handleImportTemplate = (template: Template) => {
+        if (!importPhase) return;
+        
+        // Parse the template content (assuming it's a newline-separated list or JSON array of strings)
+        let items: string[] = [];
+        try {
+            if (template.content.trim().startsWith('[')) {
+                items = JSON.parse(template.content);
+            } else {
+                items = template.content.split('\n').map((line: string) => line.trim().replace(/^[-*]\s*/, '')).filter(Boolean);
+            }
+        } catch {
+            items = [template.content];
+        }
+
+        const newSubtasks: SubTask[] = items.map(item => ({
+            id: Math.random().toString(36).substring(2, 9),
+            title: item,
+            isCompleted: false,
+            createdAt: new Date().toISOString(),
+            createdBy: 'unknown',
+            phase: importPhase
+        }));
+
+        onChange({ subtasks: [...(task.subtasks || []), ...newSubtasks] });
+        setImportPhase(null);
     };
 
     const selectClass = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 transition-all text-sm text-left text-gray-200 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer";
@@ -357,81 +418,113 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </Field>
                                     </div>
 
-                                    {/* ── Subtasks ── */}
-                                    <div className="space-y-3">
+                                    {/* ── Subtasks (Phase-Wise) ── */}
+                                    <div className="space-y-6">
                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-between">
-                                            <div className="flex items-center gap-3 w-full">
-                                                <span>Subtasks ({task.subtasks?.length || 0})</span>
-                                                {task.subtasks && task.subtasks.length > 0 && (
-                                                    <div className="flex items-center gap-2 flex-1 max-w-[150px]">
-                                                        <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-emerald-500 transition-all rounded-full" style={{ width: `${(task.subtasks.filter(s => s.isCompleted).length / task.subtasks.length) * 100}%` }} />
-                                                        </div>
-                                                        <span className="text-[9px] font-mono text-gray-500">
-                                                            {task.subtasks.filter(s => s.isCompleted).length}/{task.subtasks.length}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <span>Subtasks ({task.subtasks?.length || 0})</span>
                                         </label>
-                                        <div className="flex gap-2 items-center mb-1 group/add px-3 py-2 -ml-2 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-white/[0.05] transition-all">
-                                            <Plus size={14} className="text-gray-500 group-hover/add:text-gray-300 transition-colors" />
-                                            <input
-                                                type="text"
-                                                value={newSubtaskTitle}
-                                                onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                                placeholder="Add a subtask... (Press Enter to save)"
-                                                className="flex-1 bg-transparent text-[12.5px] text-gray-300 placeholder:text-gray-600 outline-none"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        onAddSubtask();
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        {task.subtasks?.map((st, i) => (
-                                            <div key={st.id} className="flex flex-col gap-2 p-2 hover:bg-white/[0.02] rounded-lg group transition-colors -mx-2 px-2">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-start gap-3 flex-1">
-                                                        <div
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const updated = [...(task.subtasks || [])];
-                                                                updated[i] = { ...updated[i], isCompleted: !updated[i].isCompleted };
-                                                                onChange({ subtasks: updated });
-                                                            }}
-                                                            className={`w-4 h-4 rounded-full border flex items-center justify-center cursor-pointer transition-all flex-shrink-0 mt-0.5
-                                                                ${st.isCompleted ? 'bg-emerald-500 border-emerald-500' : 'border-slate-500 bg-transparent hover:border-emerald-400'}`}
-                                                        >
-                                                            {st.isCompleted && <Check size={10} className="text-white" strokeWidth={3} />}
-                                                        </div>
-                                                        <div className="flex flex-col justify-center flex-1">
-                                                            <span className={`text-[12px] ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-300'} transition-all`}>
-                                                                {st.title}
+
+                                        {(['UNCATEGORIZED', AuditPhase.ONBOARDING, AuditPhase.PLANNING_AND_EXECUTION, AuditPhase.REVIEW_AND_CONCLUSION] as const).map(phase => {
+                                            const isUncategorized = phase === 'UNCATEGORIZED';
+                                            const phaseSubtasks = task.subtasks?.filter(s => isUncategorized ? !s.phase : s.phase === phase) || [];
+                                            
+                                            if (isUncategorized && phaseSubtasks.length === 0) return null;
+
+                                            return (
+                                                <div key={phase} className="bg-white/[0.02] border border-white/[0.05] rounded-xl overflow-hidden">
+                                                    {/* Phase Header */}
+                                                    <div className="bg-black/20 px-4 py-2.5 border-b border-white/[0.05] flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            {phase === AuditPhase.ONBOARDING && <Sparkles size={13} className="text-emerald-400" />}
+                                                            {phase === AuditPhase.PLANNING_AND_EXECUTION && <Activity size={13} className="text-amber-400" />}
+                                                            {phase === AuditPhase.REVIEW_AND_CONCLUSION && <CheckCircle2 size={13} className="text-brand-400" />}
+                                                            {isUncategorized && <AlertTriangle size={13} className="text-gray-400" />}
+                                                            <h4 className={`text-xs font-bold ${isUncategorized ? 'text-gray-400' : 'text-white'}`}>
+                                                                {isUncategorized ? 'General' : phase.replace(/_/g, ' ')}
+                                                            </h4>
+                                                            <span className="text-[10px] bg-white/10 text-gray-400 px-1.5 py-0.5 rounded-full font-mono">
+                                                                {phaseSubtasks.length}
                                                             </span>
                                                         </div>
+                                                        
+                                                        {!isUncategorized && (
+                                                            <button 
+                                                                onClick={(e) => { e.preventDefault(); setImportPhase(phase); }}
+                                                                className="text-[10px] font-bold tracking-wider uppercase text-purple-400 hover:text-purple-300 hover:bg-purple-400/10 px-2 py-1 flex items-center gap-1.5 rounded transition-colors"
+                                                            >
+                                                                <Book size={10} /> Import Template
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <select
-                                                            className="bg-white/[0.05] rounded pl-1 pr-4 py-0.5 text-[9px] text-gray-400 focus:outline-none cursor-pointer max-w-[80px] truncate"
-                                                            value={st.assignedTo || ''}
-                                                            onChange={(e) => {
-                                                                const updated = [...(task.subtasks || [])];
-                                                                updated[i].assignedTo = e.target.value;
-                                                                onChange({ subtasks: updated });
-                                                            }}
-                                                        >
-                                                            <option value="" className="bg-[#1e293b]">Unassigned</option>
-                                                            {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-[#1e293b]">{u.displayName}</option>)}
-                                                        </select>
-                                                        <button onClick={() => onRemoveSubtask(st.id)} className="text-gray-500 hover:text-rose-400">
-                                                            <Trash2 size={12} />
-                                                        </button>
+
+                                                    {/* Subtasks List */}
+                                                    <div className="p-2 space-y-1">
+                                                        {phaseSubtasks.map((st) => (
+                                                            <div key={st.id} className="flex items-center justify-between p-2 hover:bg-white/[0.03] rounded-lg group transition-colors">
+                                                                <div className="flex items-start gap-3 flex-1">
+                                                                    <div
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const updated = [...(task.subtasks || [])];
+                                                                            const idx = updated.findIndex(u => u.id === st.id);
+                                                                            if (idx > -1) {
+                                                                                updated[idx] = { ...updated[idx], isCompleted: !updated[idx].isCompleted };
+                                                                                onChange({ subtasks: updated });
+                                                                            }
+                                                                        }}
+                                                                        className={`w-4 h-4 rounded-full border flex items-center justify-center cursor-pointer transition-all flex-shrink-0 mt-0.5
+                                                                            ${st.isCompleted ? 'bg-emerald-500 border-emerald-500' : 'border-slate-500 bg-transparent hover:border-emerald-400'}`}
+                                                                    >
+                                                                        {st.isCompleted && <Check size={10} className="text-white" strokeWidth={3} />}
+                                                                    </div>
+                                                                    <span className={`text-[12px] pt-0.5 ${st.isCompleted ? 'line-through text-gray-600' : 'text-gray-300'} transition-all`}>
+                                                                        {st.title}
+                                                                    </span>
+                                                                </div>
+                                                                <div className={`flex items-center gap-2 transition-opacity ${st.assignedTo ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                                    <select
+                                                                        className="bg-white/[0.05] rounded pl-1 pr-4 py-0.5 text-[9px] text-gray-400 focus:outline-none cursor-pointer max-w-[80px] truncate"
+                                                                        value={st.assignedTo || ''}
+                                                                        onChange={(e) => {
+                                                                            const updated = [...(task.subtasks || [])];
+                                                                            const idx = updated.findIndex(u => u.id === st.id);
+                                                                            if (idx > -1) {
+                                                                                updated[idx].assignedTo = e.target.value;
+                                                                                onChange({ subtasks: updated });
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <option value="" className="bg-[#1e293b]">Unassigned</option>
+                                                                        {usersList.map((u) => <option key={u.uid} value={u.uid} className="bg-[#1e293b]">{u.displayName}</option>)}
+                                                                    </select>
+                                                                    <button onClick={() => onRemoveSubtask(st.id)} className="text-gray-500 hover:text-rose-400 focus:opacity-100">
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+
+                                                        {/* Quick Add Input for this Phase */}
+                                                        <div className="flex gap-2 items-center group/add px-2 py-1.5 rounded-lg hover:bg-white/[0.03] transition-colors mt-1">
+                                                            <Plus size={14} className="text-gray-500 group-hover/add:text-gray-400 ml-1" />
+                                                            <input
+                                                                type="text"
+                                                                value={localSubtaskTitles[phase]}
+                                                                onChange={(e) => setLocalSubtaskTitles(prev => ({ ...prev, [phase]: e.target.value }))}
+                                                                placeholder={`Add a subtask to ${isUncategorized ? 'General' : phase.replace(/_/g, ' ')}...`}
+                                                                className="flex-1 bg-transparent text-[12px] text-gray-400 focus:text-gray-200 placeholder:text-gray-600 outline-none"
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault();
+                                                                        handleAddPhaseSubtask(phase);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                     
                                     {/* ── Attachments Drag and Drop ── */}
@@ -514,6 +607,85 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             )}
                         </AnimatePresence>
                     </motion.div>
+                </div>
+            )}
+            
+            {/* ── Subtask Template Import Modal ── */}
+            {importPhase && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="glass-modal rounded-2xl w-full max-w-xl border border-white/10 shadow-2xl flex flex-col max-h-[85vh]">
+                        <div className="px-5 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-white flex items-center">
+                                <Book size={16} className="mr-2 text-purple-400" />
+                                Import into {importPhase.replace(/_/g, ' ')}
+                            </h3>
+                            <button onClick={() => setImportPhase(null)} className="text-gray-400 hover:text-white"><X size={18} /></button>
+                        </div>
+                        <div className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-[#080a0c]">
+                            {templateFolders.length > 0 ? (
+                                <div className="space-y-6">
+                                    {templateFolders.map(folder => {
+                                        const folderTemplates = templates.filter(t => t.folderId === folder.id);
+                                        if (folderTemplates.length === 0) return null;
+                                        return (
+                                            <div key={folder.id} className="space-y-2">
+                                                <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2">{folder.name}</h4>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {folderTemplates.map(template => (
+                                                        <button 
+                                                            key={template.id} 
+                                                            onClick={(() => handleImportTemplate(template))}
+                                                            className="flex items-center gap-3 w-full text-left p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-purple-500/10 hover:border-purple-500/30 transition-all group"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-500/20 transition-colors">
+                                                                <CheckCircle2 size={14} className="text-gray-400 group-hover:text-purple-400" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-semibold text-gray-200 group-hover:text-white">{template.name}</p>
+                                                                {template.description && <p className="text-[11px] text-gray-500 line-clamp-1">{template.description}</p>}
+                                                            </div>
+                                                            <div className="text-[10px] font-bold text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity bg-purple-500/10 px-2 py-1 rounded">
+                                                                INSERT
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    
+                                    {/* Uncategorized Templates */}
+                                    {templates.filter(t => !t.folderId).length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2">Other Templates</h4>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {templates.filter(t => !t.folderId).map(template => (
+                                                    <button 
+                                                        key={template.id} 
+                                                        onClick={(() => handleImportTemplate(template))}
+                                                        className="flex items-center gap-3 w-full text-left p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-purple-500/10 hover:border-purple-500/30 transition-all group"
+                                                    >
+                                                        <div className="w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center flex-shrink-0">
+                                                            <CheckCircle2 size={14} className="text-gray-400" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-semibold text-gray-200">{template.name}</p>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 text-gray-500">
+                                    <Book size={32} className="mx-auto mb-3 opacity-20" />
+                                    <p className="font-medium">No templates found</p>
+                                    <p className="text-xs mt-1">Create checklist templates in the Resources hub.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </AnimatePresence>

@@ -6,14 +6,14 @@ import {
     FolderOpen, FileJson, FileType, Loader2, Palette, Check, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Template, UserRole, Resource, Category } from '../types';
+import { Template, UserRole, Resource, Category, TemplateFolder } from '../types';
 import { TemplateService } from '../services/templates';
 import { KnowledgeService } from '../services/knowledge';
 import { StorageService } from '../services/storage';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
 import ResearchAssistant from '../components/ResearchAssistant';
-import LibraryTab from '../components/resources/LibraryTab';
+import ResearchAssistant from '../components/ResearchAssistant';
 import toast from 'react-hot-toast';
 import { useModal } from '../context/ModalContext';
 
@@ -23,7 +23,7 @@ const DEFAULT_COLORS = [
     '#8B5CF6', '#EC4899', '#06B6D4', '#F97316',
 ];
 
-type ActiveTab = 'templates' | 'knowledge' | 'library';
+type ActiveTab = 'templates' | 'knowledge';
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 const TemplatesPage: React.FC = () => {
@@ -40,9 +40,14 @@ const TemplatesPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isResearchOpen, setIsResearchOpen] = useState(false);
     const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+    const [folders, setFolders] = useState<TemplateFolder[]>([]);
+    const [activeFolderId, setActiveFolderId] = useState('ALL');
+    const [isTemplateFolderModalOpen, setIsTemplateFolderModalOpen] = useState(false);
+    const [currentTemplateFolder, setCurrentTemplateFolder] = useState<Partial<TemplateFolder>>({ name: '', color: '#F59E0B', icon: 'FolderOpen' });
+    
     const [newTemplate, setNewTemplate] = useState({
         name: '', description: '', category: 'TASK', type: '', content: '',
-        tags: [] as string[], attachments: [] as any[]
+        tags: [] as string[], attachments: [] as any[], folderId: '', folderName: ''
     });
 
     // ── Knowledge Base state ───────────────────────────────────────────────────
@@ -60,7 +65,7 @@ const TemplatesPage: React.FC = () => {
     const [isUploadMode, setIsUploadMode] = useState(false);
 
     // ── Load data ──────────────────────────────────────────────────────────────
-    useEffect(() => { loadTemplates(); }, [categoryFilter]);
+    useEffect(() => { loadTemplates(); loadFolders(); }, [categoryFilter]);
 
     useEffect(() => {
         if (activeTab === 'knowledge' && resources.length === 0 && !kbLoading) {
@@ -73,6 +78,13 @@ const TemplatesPage: React.FC = () => {
             const data = await TemplateService.getAllTemplates(categoryFilter === 'ALL' ? undefined : categoryFilter);
             setTemplates(data);
         } catch { toast.error('Failed to load templates'); }
+    };
+
+    const loadFolders = async () => {
+        try {
+            const data = await TemplateService.getFolders();
+            setFolders(data);
+        } catch { toast.error('Failed to load folders'); }
     };
 
     const loadKbData = async () => {
@@ -93,11 +105,42 @@ const TemplatesPage: React.FC = () => {
         if (!user || !newTemplate.name) return;
         try {
             await TemplateService.createTemplate({ ...newTemplate, createdBy: user.uid } as any);
-            setNewTemplate({ name: '', description: '', category: 'TASK', type: '', content: '', tags: [], attachments: [] });
+            setNewTemplate({ name: '', description: '', category: 'TASK', type: '', content: '', tags: [], attachments: [], folderId: '', folderName: '' });
             setIsModalOpen(false);
             toast.success('Template created successfully');
             await loadTemplates();
         } catch { toast.error('Failed to create template'); }
+    };
+
+    const handleCreateTemplateFolder = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!currentTemplateFolder.name || !user) return;
+        setIsSubmitting(true);
+        try {
+            const id = await TemplateService.createFolder({ name: currentTemplateFolder.name, color: currentTemplateFolder.color || '#F59E0B', icon: currentTemplateFolder.icon || 'FolderOpen', createdBy: user.uid });
+            setFolders(prev => [...prev, { ...currentTemplateFolder, id, createdBy: user.uid, createdAt: new Date().toISOString() } as TemplateFolder]);
+            toast.success('Folder created');
+            setIsTemplateFolderModalOpen(false);
+            setCurrentTemplateFolder({ name: '', color: '#F59E0B', icon: 'FolderOpen' });
+        } catch { toast.error('Failed to create folder'); }
+        finally { setIsSubmitting(false); }
+    };
+
+    const handleDeleteTemplateFolder = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        openModal('CONFIRMATION', {
+            title: 'Delete Folder',
+            message: 'Templates in this folder will not be deleted but will lose their folder association.',
+            confirmLabel: 'Delete', variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await TemplateService.deleteFolder(id);
+                    setFolders(prev => prev.filter(f => f.id !== id));
+                    if (activeFolderId === id) setActiveFolderId('ALL');
+                    toast.success('Folder deleted');
+                } catch { toast.error('Failed to delete folder'); }
+            }
+        });
     };
 
     const handleUseTemplate = async (template: Template) => {
@@ -207,10 +250,11 @@ const TemplatesPage: React.FC = () => {
     };
 
     // ── Helpers ────────────────────────────────────────────────────────────────
-    const filteredTemplates = templates.filter(t =>
-        t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTemplates = templates.filter(t => {
+        const matchesFolder = activeFolderId === 'ALL' || t.folderId === activeFolderId;
+        const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) || t.description.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesFolder && matchesSearch;
+    });
 
     const filteredResources = resources.filter(r => {
         const matchesCat = activeKbCategory === 'ALL' || r.category === activeKbCategory;
@@ -259,9 +303,9 @@ const TemplatesPage: React.FC = () => {
                         <FileCode size={14} className="text-amber-400" />
                         <span className="text-xs font-bold text-amber-300">{templates.length} Templates</span>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                        <FolderOpen size={14} className="text-purple-400" />
-                        <span className="text-xs font-bold text-purple-300">Library</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <FileCode size={14} className="text-amber-400" />
+                        <span className="text-xs font-bold text-amber-300">{templates.length} Templates</span>
                     </div>
                 </div>
             </div>
@@ -290,15 +334,6 @@ const TemplatesPage: React.FC = () => {
                     <FileCode size={13} /> Templates
                     {templates.length > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'templates' ? 'bg-black/20 text-black' : 'bg-white/10 text-gray-400'}`}>{templates.length}</span>}
                 </button>
-                <button
-                    onClick={() => setActiveTab('library')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                        activeTab === 'library'
-                        ? 'bg-purple-500 text-white shadow-md shadow-purple-500/30'
-                        : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                    }`}
-                >
-                    <FolderOpen size={13} /> Library
                 </button>
             </div>
 
@@ -309,40 +344,54 @@ const TemplatesPage: React.FC = () => {
                 <>
                     {/* Toolbar */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                        <div className="glass-panel p-2 rounded-xl flex flex-col md:flex-row gap-3 items-center w-full">
-                            <div className="relative flex-1 w-full">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <input
-                                    type="text" placeholder="Search templates..."
-                                    className="w-full bg-transparent border-none text-white focus:ring-0 pl-9 pr-4 py-2 text-sm"
-                                    value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                            <div className="flex gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 px-1 no-scrollbar">
-                                {['ALL', 'TASK', 'CHECKLIST', 'DOCUMENT', 'WORKFLOW'].map(cat => (
-                                    <button key={cat} onClick={() => setCategoryFilter(cat)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${categoryFilter === cat ? 'bg-amber-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-                                        {cat}
-                                    </button>
-                                ))}
-                            </div>
+                        <div className="relative flex-1 w-full md:max-w-xs">
+                            <Search size={15} className="absolute left-3 top-2.5 text-gray-500" />
+                            <input type="text" placeholder="Search templates..."
+                                className="w-full glass-input rounded-xl pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-amber-500"
+                                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </div>
                         {isAdmin && (
                             <div className="flex gap-2 flex-shrink-0">
-                                <button onClick={() => setIsResearchOpen(true)}
-                                    className="bg-purple-600/20 text-purple-300 border border-purple-500/30 px-3 py-2 rounded-xl text-sm font-medium hover:bg-purple-600/30 flex items-center transition-all">
-                                    <Sparkles size={14} className="mr-2" /> AI Research
+                                <button onClick={() => setIsTemplateFolderModalOpen(true)}
+                                    className="bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-xl text-sm font-bold flex items-center transition-all">
+                                    <Plus size={14} className="mr-2" /> Folder
                                 </button>
                                 <button onClick={() => setIsModalOpen(true)}
-                                    className="bg-amber-600 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-amber-700 flex items-center transition-all">
-                                    <Plus size={14} className="mr-2" /> New Template
+                                    className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-xl text-sm font-bold flex items-center transition-all">
+                                    <Plus size={14} className="mr-2" /> Template
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Templates Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex flex-col lg:flex-row gap-5 overflow-hidden">
+                        {/* Folder sidebar */}
+                        <div className="w-full lg:w-56 flex-shrink-0 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2">
+                            <button onClick={() => setActiveFolderId('ALL')}
+                                className={`flex items-center w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeFolderId === 'ALL' ? 'bg-amber-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
+                                <FolderOpen size={16} className="mr-2.5" /> All Templates
+                            </button>
+                            
+                            {folders.map(folder => (
+                                <div key={folder.id} className="relative group flex-shrink-0 lg:flex-shrink w-full">
+                                    <button onClick={() => setActiveFolderId(folder.id)}
+                                        className={`flex items-center w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeFolderId === folder.id ? 'bg-white/10 text-white border border-white/10' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                        style={{ borderLeft: activeFolderId === folder.id ? `3px solid ${folder.color || '#F59E0B'}` : 'none' }}>
+                                        <FolderOpen size={16} className="mr-2.5" style={{ color: folder.color || '#9CA3AF' }} />
+                                        {folder.name}
+                                    </button>
+                                    {isAdmin && (
+                                        <button onClick={e => handleDeleteTemplateFolder(folder.id, e)}
+                                            className="absolute right-2 top-3 p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Trash2 size={13} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Templates Grid */}
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 auto-rows-max">
                         {filteredTemplates.map((template, index) => (
                             <div key={template.id}
                                 className="bg-[#0d1117]/80 backdrop-blur-sm border border-white/[0.06] p-4 rounded-xl hover:border-white/[0.12] transition-all group relative overflow-hidden flex flex-col h-full hover:shadow-lg hover:shadow-black/20 hover:-translate-y-[1px]"
@@ -400,6 +449,7 @@ const TemplatesPage: React.FC = () => {
                                 <p className="text-sm">Try a different search or {isAdmin ? 'create a new template' : 'check back later'}</p>
                             </div>
                         )}
+                        </div>
                     </div>
                 </>
             )}
@@ -516,11 +566,6 @@ const TemplatesPage: React.FC = () => {
             )}
 
             {/* ════════════════════════════════════════════════════════ */}
-            {/*  LIBRARY TAB                                             */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {activeTab === 'library' && (
-                <LibraryTab />
-            )}
 
             {/* ── Template Create Modal ─────────────────────────────────────────── */}
             {isModalOpen && (
@@ -537,6 +582,17 @@ const TemplatesPage: React.FC = () => {
                                     <input type="text" className="w-full glass-input rounded-lg px-3 py-2 text-sm"
                                         value={newTemplate.name} onChange={e => setNewTemplate({ ...newTemplate, name: e.target.value })}
                                         placeholder="e.g. Audit Checklist 2024" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Folder</label>
+                                    <select className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                        value={newTemplate.folderId} onChange={e => {
+                                            const f = folders.find(folder => folder.id === e.target.value);
+                                            setNewTemplate({ ...newTemplate, folderId: e.target.value, folderName: f?.name });
+                                        }}>
+                                        <option value="">No Folder (Root)</option>
+                                        {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Category</label>
@@ -773,6 +829,45 @@ const TemplatesPage: React.FC = () => {
                             <div className="pt-3 flex justify-end space-x-3">
                                 <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 text-sm">Cancel</button>
                                 <button type="submit" disabled={isSubmitting} className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center">
+                                    {isSubmitting ? <Loader2 size={14} className="animate-spin mr-2" /> : <Plus size={14} className="mr-2" />}
+                                    Create Folder
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── New Template Folder Modal ───────────────────────────────────────── */}
+            {isTemplateFolderModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200">
+                    <div className="glass-modal rounded-xl w-full max-w-md flex flex-col shadow-2xl border border-white/10">
+                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <h3 className="text-lg font-bold text-white">New Template Folder</h3>
+                            <button onClick={() => setIsTemplateFolderModalOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleCreateTemplateFolder} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">Folder Name <span className="text-red-400">*</span></label>
+                                <input required className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                    value={currentTemplateFolder.name || ''} onChange={e => setCurrentTemplateFolder({ ...currentTemplateFolder, name: e.target.value })}
+                                    placeholder="e.g. Onboarding Templates" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Folder Color</label>
+                                <div className="flex flex-wrap gap-3">
+                                    {DEFAULT_COLORS.map(color => (
+                                        <button key={color} type="button" onClick={() => setCurrentTemplateFolder({ ...currentTemplateFolder, color })}
+                                            className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center ${currentTemplateFolder.color === color ? 'border-white ring-2 ring-white/20' : 'border-transparent'}`}
+                                            style={{ backgroundColor: color }}>
+                                            {currentTemplateFolder.color === color && <Check size={13} className="text-white" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="pt-3 flex justify-end space-x-3">
+                                <button type="button" onClick={() => setIsTemplateFolderModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 text-sm">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="bg-amber-600 hover:bg-amber-500 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center shadow-lg transition-all">
                                     {isSubmitting ? <Loader2 size={14} className="animate-spin mr-2" /> : <Plus size={14} className="mr-2" />}
                                     Create Folder
                                 </button>
