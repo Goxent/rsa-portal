@@ -6,9 +6,6 @@ import NepaliDate from 'nepali-date-converter';
 
 interface CommandStripProps {
     pendingTasksCount: number;
-    unreadNotifications: number;
-    attendanceStatus?: 'Not Clocked In' | 'Clocked In' | 'Shift Completed';
-    onNotificationsClick?: () => void;
 }
 
 const toBS = (date: Date): string => {
@@ -22,9 +19,6 @@ const toBS = (date: Date): string => {
 
 const CommandStrip: React.FC<CommandStripProps> = ({
     pendingTasksCount,
-    unreadNotifications,
-    attendanceStatus = 'Not Clocked In',
-    onNotificationsClick,
 }) => {
     const navigate = useNavigate();
     const [now, setNow] = useState(new Date());
@@ -52,25 +46,11 @@ const CommandStrip: React.FC<CommandStripProps> = ({
             accent: 'text-sky-400',
         },
         {
-            icon: <Wifi size={13} className={attendanceStatus === 'Clocked In' ? 'text-emerald-400' : attendanceStatus === 'Shift Completed' ? 'text-brand-400' : 'text-gray-600'} />,
-            label: 'Status',
-            value: attendanceStatus,
-            accent: attendanceStatus === 'Clocked In' ? 'text-emerald-400' : attendanceStatus === 'Shift Completed' ? 'text-brand-400' : 'text-gray-500',
-            onClick: () => navigate('/attendance'),
-        },
-        {
             icon: <CheckSquare size={13} />,
-            label: 'Open Tasks',
+            label: 'My Tasks',
             value: pendingTasksCount,
-            accent: pendingTasksCount > 5 ? 'text-rose-400' : pendingTasksCount > 0 ? 'text-amber-400' : 'text-emerald-400',
+            accent: pendingTasksCount > 5 ? 'text-rose-400' : pendingTasksCount > 0 ? 'text-brand-400' : 'text-emerald-400',
             onClick: () => navigate('/tasks'),
-        },
-        {
-            icon: <Bell size={13} />,
-            label: 'Notifications',
-            value: unreadNotifications > 0 ? unreadNotifications : '—',
-            accent: unreadNotifications > 0 ? 'text-amber-400' : 'text-gray-500',
-            onClick: onNotificationsClick,
         },
     ];
 
@@ -78,22 +58,22 @@ const CommandStrip: React.FC<CommandStripProps> = ({
         <div
             className="sticky top-0 z-30 flex items-center gap-2 flex-wrap px-4 py-2.5 rounded-xl overflow-hidden"
             style={{
-                background: 'rgba(17,17,19,0.85)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(10,10,12,0.8)',
+                border: '1px solid rgba(255,255,255,0.04)',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
             }}
         >
             {/* Subtle top rule */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-500/30 to-transparent" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent" />
 
             {chips.map((chip, i) => (
                 <React.Fragment key={chip.label}>
-                    {i > 0 && <div className="w-px h-5 bg-white/10 flex-shrink-0 hidden sm:block" />}
+                    {i > 0 && <div className="w-px h-5 bg-white/5 flex-shrink-0 hidden sm:block" />}
                     <button
                         onClick={chip.onClick}
                         disabled={!chip.onClick}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-all duration-150 select-none flex-shrink-0
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-150 select-none flex-shrink-0
                             ${chip.onClick
                                 ? 'hover:bg-white/5 cursor-pointer active:scale-95'
                                 : 'cursor-default'
@@ -105,23 +85,6 @@ const CommandStrip: React.FC<CommandStripProps> = ({
                     </button>
                 </React.Fragment>
             ))}
-
-            {/* Right spacer: workday progress dot */}
-            <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-                <TrendingUp size={12} className="text-gray-700" />
-                <div className="w-20 h-1 rounded-full bg-white/10 overflow-hidden">
-                    <div
-                        className="h-full rounded-full transition-all duration-1000"
-                        style={{
-                            width: `${Math.min(Math.max(((now.getHours() - 9) / 8) * 100, 0), 100)}%`,
-                            background: 'linear-gradient(90deg, #6366f1, #818cf8)',
-                        }}
-                    />
-                </div>
-                <span className="text-[10px] text-gray-600 font-mono hidden sm:inline">
-                    {Math.min(Math.max(Math.round(((now.getHours() - 9) / 8) * 100), 0), 100)}%
-                </span>
-            </div>
         </div>
     );
 };

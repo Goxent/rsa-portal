@@ -59,33 +59,33 @@
 
     /* Dark Theme (Default) — Obsidian & Indigo */
     :root {
-        --bg-main: #09090b;
-        --bg-secondary: #111113;
-        --text-main: #a1a1aa;
-        --text-heading: #fafafa;
+        --bg-main: #0a0a0c;
+        --bg-secondary: #121214;
+        --text-main: #94a3b8;
+        --text-heading: #f8fafc;
 
-        --glass-bg: rgba(28, 28, 31, 0.4);
-        --glass-border: rgba(99, 102, 241, 0.1);
+        --glass-bg: rgba(18, 18, 20, 0.4);
+        --glass-border: rgba(99, 130, 241, 0.1);
 
         --color-success: #10b981;
         --color-warning: #f59e0b;
         --color-danger: #f43f5e;
-        --color-info: #6366f1;
-        --color-neutral: #71717a;
+        --color-info: #6382f1;
+        --color-neutral: #64748b;
 
-        --accent-primary: #6366f1;
-        --accent-secondary: #4f46e5;
+        --accent-primary: #6382f1;
+        --accent-secondary: #4f66e5;
     }
 
     /* Light Theme - Cool Slate */
     .light {
-        --bg-main: #f8fafc;
-        --bg-secondary: #f1f5f9;
+        --bg-main: #f9fafb;
+        --bg-secondary: #ffffff;
         --text-main: #475569;
         --text-heading: #0f172a;
 
         --glass-bg: rgba(255, 255, 255, 0.9);
-        --glass-border: rgba(226, 232, 240, 0.8);
+        --glass-border: #e2e8f0;
 
         --color-success: #059669;
         --color-warning: #d97706;
@@ -157,9 +157,9 @@
 
     .glass-card {
         @apply backdrop-blur-lg border rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
-        background: rgba(39, 39, 42, 0.3);
-        border-color: rgba(255, 255, 255, 0.05);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        background: rgba(26, 26, 28, 0.3);
+        border-color: rgba(255, 255, 255, 0.04);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
     .light .glass-card {
@@ -178,9 +178,9 @@
     input[type="number"],
     input[type="password"] {
         @apply rounded-lg px-4 py-2.5 text-sm transition-all duration-300 outline-none hover:border-white/20 focus:scale-[1.01];
-        background-color: rgba(24, 24, 27, 0.6) !important;
-        border: 1px solid rgba(99, 102, 241, 0.15) !important;
-        color: #fafafa !important;
+        background-color: rgba(10, 10, 12, 0.8) !important;
+        border: 1px solid rgba(99, 130, 241, 0.1) !important;
+        color: #f8fafc !important;
     }
 
     .light .glass-input,

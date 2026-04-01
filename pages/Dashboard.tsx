@@ -199,8 +199,6 @@ const Dashboard: React.FC = () => {
             {/* ── COMMAND STRIP ── sticky at top */}
             <CommandStrip
                 pendingTasksCount={myOpenTasks}
-                unreadNotifications={0}
-                attendanceStatus={currentAttendanceStatus}
             />
 
             {/* Top Row: Greetings & Focus */}

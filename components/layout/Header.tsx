@@ -49,7 +49,7 @@ const Header: React.FC<HeaderProps> = ({
     };
 
     return (
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-[#0c0c0e]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-[#0a0a0c]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? 'left-0 md:left-20' : 'left-0 md:left-64'}`}>
 
             {/* Left: Mobile Toggle & Breadcrumbs */}
             <div className="flex items-center gap-4">
