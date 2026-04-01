@@ -18,6 +18,7 @@ export const taskSchema = z.object({
     teamLeaderId: z.string().optional(),
     description: z.string().optional(),
     auditPhase: z.enum(['ONBOARDING', 'PLANNING_AND_EXECUTION', 'REVIEW_AND_CONCLUSION']).optional(),
+    taskType: z.enum(['INTERNAL_AUDIT', 'STATUTORY_AUDIT', 'COMPLIANCE_AUDIT', 'CERTIFICATION_SERVICE', 'FINANCIAL_MANAGEMENT', 'INTERIM_REVIEW', 'FILE_STUDY_PLANNING']).optional(),
 });
 
 export const clientSchema = z.object({

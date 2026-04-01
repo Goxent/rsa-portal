@@ -72,7 +72,11 @@ const colorFor = (id: string, type: string) => {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const LibraryTab: React.FC = () => {
+interface LibraryTabProps {
+    categoryFilter?: string;
+}
+
+const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
     const { user } = useAuth();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
     const canAdd   = isAdmin || user?.role === UserRole.MANAGER;
@@ -94,7 +98,7 @@ const LibraryTab: React.FC = () => {
 
     // Add modal
     const [addOpen,       setAddOpen]       = useState(false);
-    const [newRes,        setNewRes]        = useState<Partial<Resource>>({ title: '', type: 'folder', category: 'General', link: '' });
+    const [newRes,        setNewRes]        = useState<Partial<Resource>>({ title: '', type: 'folder', category: categoryFilter || 'General', link: '' });
     const [uploadMode,    setUploadMode]    = useState(false);
     const [creating,      setCreating]      = useState(false);
     const [deleteTarget,  setDeleteTarget]  = useState<Resource | null>(null);
@@ -124,10 +128,14 @@ const LibraryTab: React.FC = () => {
     }, [currentFolder, resources]);
 
     const visible = useMemo(() => {
+        let items = resources;
+        if (categoryFilter) {
+            items = items.filter(r => r.category === categoryFilter);
+        }
         if (searchQuery.trim())
-            return resources.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
-        return resources.filter(r => currentFolder ? r.parentId === currentFolder : !r.parentId);
-    }, [resources, currentFolder, searchQuery]);
+            return items.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        return items.filter(r => currentFolder ? r.parentId === currentFolder : !r.parentId);
+    }, [resources, currentFolder, searchQuery, categoryFilter]);
 
     const openRes = (res: Resource) => {
         if (res.type === 'folder') { setCurrentFolder(res.id); setSearchQuery(''); }
@@ -151,7 +159,7 @@ const LibraryTab: React.FC = () => {
         setCreating(true);
         try {
             const item: Resource = {
-                id: '', title: newRes.title!, type: newRes.type as any,
+                id: '', title: newRes.title!, type: newRes.type as Resource['type'],
                 category: newRes.category || 'General', link: newRes.link || '',
                 fileId: newRes.fileId, downloadUrl: newRes.downloadUrl,
                 content: newRes.content || '', parentId: currentFolder,
@@ -164,7 +172,10 @@ const LibraryTab: React.FC = () => {
             setNewRes({ title: '', type: 'folder', category: 'General', link: '' });
             setUploadMode(false);
             toast.success('Resource created!');
-        } catch (e: any) { toast.error(e.message || 'Failed to create'); }
+        } catch (e: unknown) { 
+            const error = e as Error;
+            toast.error(error.message || 'Failed to create'); 
+        }
         finally { setCreating(false); }
     };
 

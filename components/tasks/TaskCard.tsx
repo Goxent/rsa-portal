@@ -1,8 +1,11 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { createPortal } from 'react-dom';
-import { Check, Tag, Calendar, CheckCircle2, AlertTriangle, GripVertical, ArrowRight } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile } from '../../types';
+import {
+    Check, Tag, Calendar, CheckCircle2, AlertTriangle, GripVertical, ArrowRight,
+    ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen, Activity as ActivityIcon
+} from 'lucide-react';
+import { Task, TaskStatus, TaskPriority, UserProfile, TaskType, TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../types';
 
 // ── Priority config — left-border accent + tighter badge ──────────────────────
 const P: Record<string, { accent: string; border: string; badge: string; label: string; glow: string }> = {
@@ -111,6 +114,18 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                             }`}>
                                 {task.title}
                             </h4>
+
+                            {/* Prompt B: Task Type Badge */}
+                            {task.taskType && (
+                                <div className="flex items-center gap-1.5 mb-2 px-1.5 py-0.5 w-fit rounded-full bg-white/[0.03] border border-white/[0.06] text-[9px] text-slate-400 font-bold group-hover/card:border-white/[0.12] transition-colors">
+                                    {{
+                                        ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
+                                    }[TASK_TYPE_ICONS[task.taskType]] ? React.createElement({
+                                        ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
+                                    }[TASK_TYPE_ICONS[task.taskType]] as any, { size: 10, className: 'text-brand-400' }) : <ActivityIcon size={10} />}
+                                    <span className="truncate max-w-[120px]">{TASK_TYPE_LABELS[task.taskType]}</span>
+                                </div>
+                            )}
 
                             {/* Row 3: Client context */}
                             {task.clientName && (

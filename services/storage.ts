@@ -11,43 +11,65 @@ export const StorageService = {
     /**
      * Upload a file and return its metadata including a viewable URL
      */
-    upload: async (file: File): Promise<StorageFile> => {
-        const fileId = await AppwriteService.uploadFile(file);
-        const viewUrl = AppwriteService.getFileView(fileId);
+    upload: async (file: File): Promise<{ success: boolean; data?: StorageFile; error?: string }> => {
+        try {
+            const fileId = await AppwriteService.uploadFile(file);
+            const viewUrl = AppwriteService.getFileView(fileId);
 
-        let type: StorageFile['type'] = 'other';
-        if (file.type.startsWith('image/')) type = 'image';
-        else if (file.type === 'application/pdf') type = 'pdf';
-        else if (file.type.includes('word') || file.type.includes('document')) type = 'doc';
+            let type: StorageFile['type'] = 'other';
+            if (file.type.startsWith('image/')) type = 'image';
+            else if (file.type === 'application/pdf') type = 'pdf';
+            else if (file.type.includes('word') || file.type.includes('document')) type = 'doc';
 
-        return {
-            id: fileId,
-            name: file.name,
-            url: viewUrl,
-            type
-        };
+            return {
+                success: true,
+                data: {
+                    id: fileId,
+                    name: file.name,
+                    url: viewUrl,
+                    type
+                }
+            };
+        } catch (error: any) {
+            console.error("Storage upload error:", error);
+            return { success: false, error: error.message || "Failed to upload file" };
+        }
     },
 
     /**
      * Get a URL for viewing a file
-     * For images/PDFs, returns a direct view link.
-     * For docs, returns a download link (or can be used with Google Docs Viewer).
      */
     getViewUrl: (fileId: string): string => {
-        return AppwriteService.getFileView(fileId);
+        try {
+            return AppwriteService.getFileView(fileId);
+        } catch (error) {
+            console.error("Storage getViewUrl error:", error);
+            return '';
+        }
     },
 
     /**
      * Get a URL for downloading a file
      */
     getDownloadUrl: (fileId: string): string => {
-        return AppwriteService.getFileDownload(fileId);
+        try {
+            return AppwriteService.getFileDownload(fileId);
+        } catch (error) {
+            console.error("Storage getDownloadUrl error:", error);
+            return '';
+        }
     },
 
     /**
      * Delete a file
      */
-    delete: async (fileId: string): Promise<void> => {
-        await AppwriteService.deleteFile(fileId);
+    delete: async (fileId: string): Promise<{ success: boolean; error?: string }> => {
+        try {
+            await AppwriteService.deleteFile(fileId);
+            return { success: true };
+        } catch (error: any) {
+            console.error("Storage delete error:", error);
+            return { success: false, error: error.message || "Failed to delete file" };
+        }
     }
 };

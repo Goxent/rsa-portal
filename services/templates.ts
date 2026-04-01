@@ -69,10 +69,13 @@ export const TemplateService = {
 
 
     useTemplate: async (id: string): Promise<void> => {
-        // Increment usage count
         const docRef = doc(db, 'task_templates', id);
-        // We need to get current count first or use increment() but for now simple update
-        // actually increment is better but let's just do a read-write for simplicity in this context
-        // or just skip it for now as it's a "nice to have" stats
+        try {
+            await updateDoc(docRef, {
+                usageCount: increment(1)
+            });
+        } catch (error) {
+            console.error("Error updating template usage:", error);
+        }
     }
 };

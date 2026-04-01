@@ -98,14 +98,15 @@ service cloud.firestore {
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
       allow create: if canCreateTask() 
-                    && checkKeys(['title', 'status', 'priority'])
+                    && checkKeys(['title', 'status', 'priority', 'taskType'])
                     && isSafeString(request.resource.data.title, 500);
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
         resource.data.createdBy == request.auth.uid ||
         isAdmin() ||
         getUserRole() == 'MANAGER'
-      ) && (!request.resource.data.keys().hasAll(['title']) || isSafeString(request.resource.data.title, 500));
+      ) && (!request.resource.data.keys().hasAll(['title']) || isSafeString(request.resource.data.title, 500))
+        && (!request.resource.data.keys().hasAll(['taskType']) || request.resource.data.taskType is string);
       allow delete: if isAdmin();
     }
 
@@ -182,8 +183,14 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // TEMPLATES (Corrected collection name)
+    // TEMPLATES
     match /task_templates/{templateId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // TEMPLATE FOLDERS
+    match /template_folders/{folderId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
