@@ -7,8 +7,8 @@ import {
     Trash2, Save, Loader2, CheckCircle2, Check, Eye,
     Sparkles, Book, ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../types';
-import { TASK_TYPE_CHECKLISTS } from '../../constants/taskTypeChecklists';
+import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType } from '../../types';
+import { TASK_TYPE_CHECKLISTS, TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../constants/taskTypeChecklists';
 import { KnowledgeService } from '../../services/knowledge';
 import { TemplateService } from '../../services/templates';
 import StaffSelect from '../StaffSelect';

@@ -5,7 +5,8 @@ import {
     Check, Tag, Calendar, CheckCircle2, AlertTriangle, GripVertical, ArrowRight,
     ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen, Activity as ActivityIcon
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, TaskType, TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserProfile, TaskType } from '../../types';
+import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../constants/taskTypeChecklists';
 
 // ── Priority config — left-border accent + tighter badge ──────────────────────
 const P: Record<string, { accent: string; border: string; badge: string; label: string; glow: string }> = {

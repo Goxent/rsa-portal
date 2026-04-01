@@ -120,25 +120,6 @@ export enum TaskType {
   FILE_STUDY_PLANNING = 'FILE_STUDY_PLANNING',
 }
 
-export const TASK_TYPE_LABELS: Record<TaskType, string> = {
-  [TaskType.INTERNAL_AUDIT]: 'Internal Audit',
-  [TaskType.STATUTORY_AUDIT]: 'Statutory Audit',
-  [TaskType.COMPLIANCE_AUDIT]: 'Compliance Audit',
-  [TaskType.CERTIFICATION_SERVICE]: 'Certification Service',
-  [TaskType.FINANCIAL_MANAGEMENT]: 'Financial Management and Accounting',
-  [TaskType.INTERIM_REVIEW]: 'Interim Review Engagement',
-  [TaskType.FILE_STUDY_PLANNING]: 'File Study, Planning at Office and Report Writing',
-};
-
-export const TASK_TYPE_ICONS: Record<TaskType, string> = {
-  [TaskType.INTERNAL_AUDIT]: 'ShieldCheck',
-  [TaskType.STATUTORY_AUDIT]: 'Scale',
-  [TaskType.COMPLIANCE_AUDIT]: 'ClipboardCheck',
-  [TaskType.CERTIFICATION_SERVICE]: 'Award',
-  [TaskType.FINANCIAL_MANAGEMENT]: 'BarChart2',
-  [TaskType.INTERIM_REVIEW]: 'FileSearch',
-  [TaskType.FILE_STUDY_PLANNING]: 'FolderOpen',
-};
 
 export interface Attachment {
   id: string;

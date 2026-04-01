@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
     FileText, Search, Plus, Star, Copy, Trash2, 
     File, FileSpreadsheet, FileCode, CheckSquare, Sparkles, 
@@ -8,8 +9,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { 
     Template, UserRole, Resource, Category, TemplateFolder, AuditPhase, 
-    TaskStatus, SubTask, TaskType, TASK_TYPE_LABELS, TASK_TYPE_ICONS 
+    TaskStatus, SubTask, TaskType 
 } from '../types';
+import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../constants/taskTypeChecklists';
 import { TemplateService } from '../services/templates';
 import { KnowledgeService } from '../services/knowledge';
 import { StorageService } from '../services/storage';
@@ -130,7 +132,7 @@ const TemplatesPage: React.FC = () => {
         try {
             // Flatten phase subtasks
             const subtaskDetails = Object.entries(phaseSubtasks).flatMap(([phase, tasks]) => 
-                tasks.filter(t => t.title).map(t => ({ ...t, phase: phase as AuditPhase }))
+                (tasks as any[]).filter(t => t.title).map(t => ({ ...t, phase: phase as AuditPhase }))
             );
 
             const payload = {

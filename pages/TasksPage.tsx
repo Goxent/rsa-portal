@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment, AuditPhase, TaskType } from '../types';
-import { TASK_TYPE_CHECKLISTS, TASK_TYPE_ICONS } from '../constants/taskTypeChecklists';
+import { TASK_TYPE_CHECKLISTS, TASK_TYPE_ICONS, TASK_TYPE_LABELS } from '../constants/taskTypeChecklists';
 import { ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext'; // Import ModalContext
@@ -420,12 +420,15 @@ const TasksPage: React.FC = () => {
         const templateSubtasks = nextTemplate.subtaskDetails || 
                                  nextTemplate.subtasks?.map(title => ({ title })) || [];
 
-        templateSubtasks.forEach((s) => {
+        const assignedSet = new Set<string>();
+
+        templateSubtasks.forEach((s: any) => {
             let assignedUserId: string | undefined = undefined;
             if (s.assigneeRole) {
                 const matchedUser = usersList.find(u => u.role === s.assigneeRole);
                 if (matchedUser) {
                     assignedUserId = matchedUser.uid;
+                    assignedSet.add(matchedUser.uid);
                 }
             }
 
