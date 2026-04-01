@@ -13,7 +13,6 @@ import { StorageService } from '../services/storage';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
 import ResearchAssistant from '../components/ResearchAssistant';
-import ResearchAssistant from '../components/ResearchAssistant';
 import toast from 'react-hot-toast';
 import { useModal } from '../context/ModalContext';
 
@@ -333,7 +332,6 @@ const TemplatesPage: React.FC = () => {
                 >
                     <FileCode size={13} /> Templates
                     {templates.length > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'templates' ? 'bg-black/20 text-black' : 'bg-white/10 text-gray-400'}`}>{templates.length}</span>}
-                </button>
                 </button>
             </div>
 
