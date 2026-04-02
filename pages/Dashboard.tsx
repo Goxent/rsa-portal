@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import NepaliDate from 'nepali-date-converter';
 import GreetingsWidget from '../components/dashboard/widgets/GreetingsWidget';
 import FocusWidget from '../components/dashboard/widgets/FocusWidget';
+import ReviewerActionCenter from '../components/dashboard/widgets/ReviewerActionCenter';
 
 // Helper interface for the unified schedule list
 interface ScheduleItem {
@@ -190,6 +191,10 @@ const Dashboard: React.FC = () => {
         relevantTasks,
     };
 
+    const handleViewTask = (task: Task) => {
+        navigate(`/tasks?taskId=${task.id}`);
+    };
+
     // ── Render ─────────────────────────────────────────────────────────────
     return (
         <div className="flex flex-col gap-6 min-h-full overflow-x-hidden p-2 md:p-4 lg:p-6 pb-24 custom-scrollbar relative">
@@ -199,6 +204,13 @@ const Dashboard: React.FC = () => {
             {/* ── COMMAND STRIP ── sticky at top */}
             <CommandStrip
                 pendingTasksCount={myOpenTasks}
+            />
+
+            {/* NEW: Reviewer's Action Center (High-Priority Sign-offs) */}
+            <ReviewerActionCenter 
+                tasks={allTasks} 
+                currentUser={user} 
+                onViewTask={handleViewTask} 
             />
 
             {/* Top Row: Greetings & Focus */}

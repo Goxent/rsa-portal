@@ -16,9 +16,26 @@ export const taskSchema = z.object({
     tags: z.array(z.string()).optional(),
     assignedTo: z.array(z.string()).optional(),
     teamLeaderId: z.string().optional(),
+    engagementReviewerId: z.string().optional(),
+    signingPartnerId: z.string().optional(),
+    teamLeadApprovedAt: z.string().optional(),
+    engagementReviewerApprovedAt: z.string().optional(),
+    signingPartnerApprovedAt: z.string().optional(),
     description: z.string().optional(),
     auditPhase: z.enum(['ONBOARDING', 'PLANNING_AND_EXECUTION', 'REVIEW_AND_CONCLUSION']).optional(),
     taskType: z.enum(['INTERNAL_AUDIT', 'STATUTORY_AUDIT', 'COMPLIANCE_AUDIT', 'CERTIFICATION_SERVICE', 'FINANCIAL_MANAGEMENT', 'INTERIM_REVIEW', 'FILE_STUDY_PLANNING']).optional(),
+});
+
+export const subtaskSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    isCompleted: z.boolean().default(false),
+    phase: z.string().optional(),
+    reference: z.string().optional(),
+    sopUrl: z.string().optional(),
+    isEvidenceMandatory: z.boolean().optional(),
+    queryStatus: z.enum(['OPEN', 'RESOLVED', 'CLEARED']).optional(),
+    queryComment: z.string().optional(),
+    queryReply: z.string().optional(),
 });
 
 export const clientSchema = z.object({

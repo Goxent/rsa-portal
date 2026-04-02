@@ -944,7 +944,16 @@ const TemplatesPage: React.FC = () => {
                                                                         value={item.title} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'title', e.target.value)} />
                                                                     <input type="text" placeholder="Min. requirement..."
                                                                         className="w-full bg-transparent border-none text-[11px] text-gray-500 focus:ring-0 p-0 placeholder:text-gray-700"
-                                                                        value={item.minimumRequirement} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'minimumRequirement', e.target.value)} />
+                                                                        value={item.minimumRequirement || ''} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'minimumRequirement', e.target.value)} />
+                                                                    <input type="text" placeholder="SOP Deep Link (Optional)"
+                                                                        className="w-full bg-transparent border-none text-[11px] text-brand-400 focus:ring-0 p-0 placeholder:text-gray-700 font-mono"
+                                                                        value={item.sopUrl || ''} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'sopUrl', e.target.value)} />
+                                                                    <label className="flex items-center gap-2 mt-2 select-none cursor-pointer">
+                                                                        <input type="checkbox"
+                                                                            className="rounded border-white/10 bg-black/20 text-brand-500 focus:ring-brand-500/20 w-3 h-3"
+                                                                            checked={!!item.isEvidenceMandatory} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'isEvidenceMandatory', e.target.checked)} />
+                                                                        <span className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Mandatory Evidence Required</span>
+                                                                    </label>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     <select className="bg-white/5 border-none rounded-lg text-[10px] text-gray-400 focus:ring-0 py-1"
@@ -1013,7 +1022,15 @@ const TemplatesPage: React.FC = () => {
                                                                                         <input type="text" placeholder="Inject subtask title..." className="w-full bg-transparent border-none text-xs text-white focus:ring-0 p-0 placeholder:text-gray-600 font-bold"
                                                                                             value={item.title} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'title', e.target.value)} />
                                                                                         <input type="text" placeholder="Requirement..." className="w-full bg-transparent border-none text-[10px] text-gray-500 focus:ring-0 p-0 placeholder:text-gray-700"
-                                                                                            value={item.minimumRequirement} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'minimumRequirement', e.target.value)} />
+                                                                                            value={item.minimumRequirement || ''} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'minimumRequirement', e.target.value)} />
+                                                                                        <input type="text" placeholder="SOP Link..." className="w-full bg-transparent border-none text-[10px] text-brand-400 font-mono focus:ring-0 p-0 placeholder:text-gray-700"
+                                                                                            value={item.sopUrl || ''} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'sopUrl', e.target.value)} />
+                                                                                        <label className="flex items-center gap-2 mt-1 select-none cursor-pointer">
+                                                                                            <input type="checkbox"
+                                                                                                className="rounded border-white/10 bg-black/20 text-brand-500 focus:ring-brand-500/20 w-3 h-3"
+                                                                                                checked={!!item.isEvidenceMandatory} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'isEvidenceMandatory', e.target.checked)} />
+                                                                                            <span className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Mandatory Evidence</span>
+                                                                                        </label>
                                                                                     </div>
                                                                                     <button type="button" onClick={() => removeStatusSubtask(status as TaskStatus, idx)} className="text-gray-600 hover:text-red-400 p-1">
                                                                                         <X size={12} />

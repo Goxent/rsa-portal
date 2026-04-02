@@ -7,3 +7,4 @@ export { default as PerformanceWidget } from './PerformanceWidget';
 export { default as TeamWorkloadWidget } from './TeamWorkloadWidget';
 export { default as PendingActionsWidget } from './PendingActionsWidget';
 export { default as RecentActivityWidget } from './RecentActivityWidget';
+export { default as ReviewerActionCenter } from './ReviewerActionCenter';

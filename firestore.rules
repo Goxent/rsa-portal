@@ -98,13 +98,34 @@ service cloud.firestore {
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
       allow create: if canCreateTask() 
-                    && checkKeys(['title', 'status', 'priority', 'taskType'])
+                    && checkKeys(['title', 'status', 'priority'])
+                    && (!request.resource.data.keys().hasAny(['taskType']) || request.resource.data.taskType is string)
                     && isSafeString(request.resource.data.title, 500);
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
         resource.data.createdBy == request.auth.uid ||
         isAdmin() ||
         getUserRole() == 'MANAGER'
+      ) && (
+        // Protect Team Lead Sign-off
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['teamLeadApprovedAt'])) ||
+        (request.auth.uid == resource.data.get('teamLeaderId', '') || isAdmin())
+      ) && (
+        // Protect Engagement Reviewer Sign-off
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['engagementReviewerApprovedAt'])) ||
+        (request.auth.uid == resource.data.get('engagementReviewerId', '') || isAdmin())
+      ) && (
+        // Protect Signing Partner Sign-off
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['signingPartnerApprovedAt'])) ||
+        (request.auth.uid == resource.data.get('signingPartnerId', '') || isAdmin())
+      ) && (
+        // Enforce COMPLETED status requires all 3 sign-offs
+        (request.resource.data.get('status', 'NOT_STARTED') != 'COMPLETED') ||
+        (
+          request.resource.data.get('teamLeadApprovedAt', '') != '' &&
+          request.resource.data.get('engagementReviewerApprovedAt', '') != '' &&
+          request.resource.data.get('signingPartnerApprovedAt', '') != ''
+        )
       ) && (!request.resource.data.keys().hasAll(['title']) || isSafeString(request.resource.data.title, 500))
         && (!request.resource.data.keys().hasAll(['taskType']) || request.resource.data.taskType is string);
       allow delete: if isAdmin();
