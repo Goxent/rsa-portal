@@ -74,17 +74,17 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
     return (
         <div className="space-y-3">
             {/* Summary pills */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 text-slate-700">
                 <button
                     onClick={() => setFilterStatus('active')}
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'active' ? 'bg-brand-500/20 border-brand-500/30 text-brand-300' : 'bg-white/5 border-white/10 text-gray-500 hover:text-gray-300'}`}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'active' ? 'bg-brand-500/20 border-brand-500/30 text-brand-700 dark:text-brand-300' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-500 hover:text-brand-700 dark:hover:text-gray-300'}`}
                 >
                     Active · {activeCount}
                 </button>
                 {overdueCount > 0 && (
                     <button
                         onClick={() => setFilterStatus('overdue')}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'overdue' ? 'bg-red-500/20 border-red-500/30 text-red-300' : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15'}`}
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'overdue' ? 'bg-red-500/20 border-red-500/30 text-red-700 dark:text-red-300' : 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/15'}`}
                     >
                         ⚠ Overdue · {overdueCount}
                     </button>
@@ -92,14 +92,14 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
                 {reviewCount > 0 && (
                     <button
                         onClick={() => setFilterStatus('review')}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'review' ? 'bg-purple-500/20 border-purple-500/30 text-purple-300' : 'bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/15'}`}
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'review' ? 'bg-purple-500/20 border-purple-500/30 text-purple-700 dark:text-purple-300' : 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/15'}`}
                     >
                         Review · {reviewCount}
                     </button>
                 )}
                 <button
                     onClick={() => setFilterStatus('all')}
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'all' ? 'bg-white/15 border-white/20 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:text-gray-300'}`}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'all' ? 'bg-slate-200 dark:bg-white/15 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-300'}`}
                 >
                     All · {recentTasks.length}
                 </button>
@@ -107,20 +107,20 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
 
             {/* Search */}
             <div className="relative">
-                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-gray-600" />
                 <input
                     type="text"
                     placeholder="Search tasks or clients..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full bg-white/4 border border-white/8 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/40 focus:bg-white/6 transition-all"
+                    className="w-full bg-slate-50 dark:bg-white/4 border border-slate-200 dark:border-white/8 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:border-brand-500/40 focus:bg-white/6 transition-all"
                 />
             </div>
 
             {/* Task list */}
-            <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-0.5">
+            <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-0.5 custom-scrollbar">
                 {filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-gray-600">
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-gray-600">
                         <CheckSquare size={24} className="mb-2 opacity-30" />
                         <p className="text-xs">No tasks match this filter</p>
                     </div>
@@ -148,7 +148,7 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
                                 key={task.id}
                                 className={`rounded-xl border transition-all duration-300 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg ${isOverdue
                                         ? 'border-red-500/30 bg-red-500/5 hover:border-red-500/50 hover:bg-red-500/10'
-                                        : 'border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1]'
+                                        : 'border-slate-200 dark:border-white/[0.05] bg-white/[0.02] hover:bg-slate-50 dark:hover:bg-white/[0.05] hover:border-slate-300 dark:hover:border-white/[0.1]'
                                     }`}
                             >
                                 <div
@@ -158,27 +158,27 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
                                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priority.dot}`} />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2">
-                                            <p className={`text-[12px] font-semibold truncate ${isOverdue ? 'text-red-200' : 'text-white'}`}>
+                                            <p className={`text-[12px] font-bold truncate ${isOverdue ? 'text-red-700 dark:text-red-200' : 'text-slate-900 dark:text-white'}`}>
                                                 {task.title}
                                             </p>
                                             <div className="flex items-center gap-1.5 flex-shrink-0">
                                                 {dueStr && (
-                                                    <span className={`text-[10px] font-medium ${isOverdue ? 'text-red-400' : daysUntilDue !== null && daysUntilDue <= 3 ? 'text-amber-400' : 'text-gray-600'}`}>
+                                                    <span className={`text-[10px] font-bold ${isOverdue ? 'text-red-600 dark:text-red-400' : daysUntilDue !== null && daysUntilDue <= 3 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-gray-600'}`}>
                                                         {isOverdue ? `${Math.abs(daysUntilDue!)}d ago` : dueStr}
                                                     </span>
                                                 )}
-                                                {isExpanded ? <ChevronUp size={11} className="text-gray-600" /> : <ChevronDown size={11} className="text-gray-700" />}
+                                                {isExpanded ? <ChevronUp size={11} className="text-slate-400 dark:text-gray-600" /> : <ChevronDown size={11} className="text-slate-400 dark:text-gray-700" />}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1.5 mt-0.5">
-                                            <span className="text-[10px] text-gray-500 truncate">{task.clientName || 'Internal'}</span>
-                                            <span className="text-[10px] text-gray-700">·</span>
-                                            <span className={`text-[10px] font-medium ${status.color}`}>{status.label}</span>
+                                            <span className="text-[10px] text-slate-500 dark:text-gray-500 truncate font-medium">{task.clientName || 'Internal'}</span>
+                                            <span className="text-[10px] text-slate-300 dark:text-gray-700">·</span>
+                                            <span className={`text-[10px] font-bold ${status.color}`}>{status.label}</span>
                                             {assigneeNames && (
                                                 <>
-                                                    <span className="text-[10px] text-gray-700">·</span>
-                                                    <User size={9} className="text-gray-600 flex-shrink-0" />
-                                                    <span className="text-[10px] text-gray-500 truncate">{assigneeNames}</span>
+                                                    <span className="text-[10px] text-slate-300 dark:text-gray-700">·</span>
+                                                    <User size={9} className="text-slate-400 dark:text-gray-600 flex-shrink-0" />
+                                                    <span className="text-[10px] text-slate-500 dark:text-gray-500 truncate">{assigneeNames}</span>
                                                 </>
                                             )}
                                         </div>
@@ -186,25 +186,25 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="px-3 pb-2.5 pt-0 border-t border-white/5 space-y-2">
+                                    <div className="px-3 pb-2.5 pt-0 border-t border-slate-100 dark:border-white/5 space-y-2">
                                         <div className="flex flex-wrap gap-1.5 pt-2">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-md border font-bold uppercase tracking-wide ${priority.text} bg-white/5 border-white/10`}>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-md border font-black uppercase tracking-wide ${priority.text} bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10`}>
                                                 {priority.label}
                                             </span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-md border font-medium ${status.bg} ${status.color}`}>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-md border font-bold ${status.bg} ${status.color}`}>
                                                 {status.label}
                                             </span>
                                             {task.subtasks && task.subtasks.length > 0 && (
-                                                <span className="text-[10px] px-2 py-0.5 rounded-md border bg-white/5 border-white/10 text-gray-400">
+                                                <span className="text-[10px] px-2 py-0.5 rounded-md border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400">
                                                     {task.subtasks.filter(s => s.isCompleted).length}/{task.subtasks.length} subtasks
                                                 </span>
                                             )}
                                         </div>
                                         {task.description && (
-                                            <p className="text-[11px] text-gray-500 line-clamp-2">{task.description}</p>
+                                            <p className="text-[11px] text-slate-600 dark:text-gray-500 line-clamp-2">{task.description}</p>
                                         )}
                                         {(task.assignedTo || []).length > 0 && (
-                                            <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+                                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-gray-500">
                                                 <User size={10} />
                                                 {(task.assignedTo || []).map(uid => userMap[uid]?.displayName || uid).join(', ')}
                                             </div>
@@ -218,12 +218,12 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
             </div>
 
             {filtered.length > 20 && (
-                <p className="text-[10px] text-gray-600 text-center">Showing 20 of {filtered.length} tasks</p>
+                <p className="text-[10px] text-slate-400 dark:text-gray-600 text-center">Showing 20 of {filtered.length} tasks</p>
             )}
 
             <button
                 onClick={() => navigate('/tasks')}
-                className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-brand-400 hover:text-brand-300 transition-colors font-medium border border-transparent hover:border-brand-500/15 rounded-xl hover:bg-brand-500/5"
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 text-xs text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 transition-colors font-bold border border-brand-200 dark:border-transparent hover:border-brand-500/25 rounded-xl hover:bg-brand-500/5 bg-brand-50 dark:bg-transparent"
             >
                 Manage all tasks <ArrowRight size={12} />
             </button>

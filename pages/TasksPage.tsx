@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
     LayoutGrid, List as ListIcon, UserCircle2, ChevronDown, Check, Sparkles, Plus, Filter, Search,
-    Trash2, X, FileSpreadsheet, FileText, Activity, ArrowRight, GanttChartSquare
+    Trash2, X, FileSpreadsheet, FileText, Activity, ArrowRight, GanttChartSquare, Layers
 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment, AuditPhase, TaskType } from '../types';
@@ -38,7 +38,26 @@ import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
-import { useMedia } from 'react-use';
+import { useMedia, useIntersection } from 'react-use';
+
+const PHASE_ORDER = {
+    [AuditPhase.ONBOARDING]: 1,
+    [AuditPhase.PLANNING_AND_EXECUTION]: 2,
+    [AuditPhase.REVIEW_AND_CONCLUSION]: 3
+};const STATUS_ORDER = {
+    [TaskStatus.NOT_STARTED]: 1,
+    [TaskStatus.IN_PROGRESS]: 2,
+    [TaskStatus.HALTED]: 2,
+    [TaskStatus.UNDER_REVIEW]: 3,
+    [TaskStatus.COMPLETED]: 4,
+    [TaskStatus.ARCHIVED]: 5
+};
+
+const PHASE_LABELS = {
+    [AuditPhase.ONBOARDING]: 'P1',
+    [AuditPhase.PLANNING_AND_EXECUTION]: 'P2',
+    [AuditPhase.REVIEW_AND_CONCLUSION]: 'P3'
+};
 
 const TasksPage: React.FC = () => {
 
@@ -84,6 +103,20 @@ const TasksPage: React.FC = () => {
 
 
     const isMobile = useMedia('(max-width: 768px)', false);
+    
+    // -- INFINITE SCROLL LOGIC --
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const intersection = useIntersection(sentinelRef, {
+        root: null,
+        rootMargin: '400px',
+        threshold: 0,
+    });
+
+    useEffect(() => {
+        if (intersection?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [intersection, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 
 
@@ -94,10 +127,26 @@ const TasksPage: React.FC = () => {
     // Bulk Actions State
     const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
     const [showBulkAssignMenu, setShowBulkAssignMenu] = useState(false);
+    const [showWorkflowMenu, setShowWorkflowMenu] = useState(false);
+    const workflowMenuRef = useRef<HTMLDivElement>(null);
+    const statusMenuRef = useRef<HTMLDivElement>(null);
+    const assignMenuRef = useRef<HTMLDivElement>(null);
 
     // Confirmation Modal State (replaces window.confirm)
-    const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({
-        open: false, title: '', message: '', onConfirm: () => { }
+    const [confirmModal, setConfirmModal] = useState<{ 
+        open: boolean; 
+        title: string; 
+        message: string; 
+        onConfirm?: () => void;
+        onSecondaryConfirm?: () => void;
+        onCancel?: () => void;
+        confirmLabel?: string;
+        secondaryLabel?: string;
+        cancelLabel?: string;
+        variant?: 'danger' | 'warning' | 'info' | 'success' | 'indigo';
+        showConfirm?: boolean;
+    }>({
+        open: false, title: '', message: '', variant: 'danger', showConfirm: true
     });
 
     // --- AUTO-INJECTION UTILITIES (PROMPT 3 & 4) ---
@@ -129,10 +178,10 @@ const TasksPage: React.FC = () => {
         const uniqueNew: SubTask[] = phaseSubtasks
             .filter(s => !existingTitles.has(s.title.trim().toLowerCase()))
             .map(s => {
-                let assignedTo = undefined;
+                let assignedTo: string[] = [];
                 if (s.assigneeRole) {
                     const matchedUser = usersList.find(u => u.role === s.assigneeRole);
-                    if (matchedUser) assignedTo = matchedUser.uid;
+                    if (matchedUser) assignedTo = [matchedUser.uid];
                 }
                 return {
                     id: `st-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -253,16 +302,8 @@ const TasksPage: React.FC = () => {
     const [savedFilterName, setSavedFilterName] = useState('');
     const savedFiltersRef = useRef<HTMLDivElement>(null);
 
-
-
     // Collapsible Filter Panel
     const [showFilterPanel, setShowFilterPanel] = useState(false);
-
-    // Dropdown Refs
-    const statusMenuRef = useRef<HTMLDivElement>(null);
-
-
-    const assignMenuRef = useRef<HTMLDivElement>(null);
 
 
 
@@ -384,12 +425,22 @@ const TasksPage: React.FC = () => {
     });
 
     const canUpdateTaskStatus = (task: Partial<Task>) => {
-
-
         if (!user || !task) return false;
-        if (user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN || user.role === UserRole.MANAGER) return true;
+        
+        const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN;
+        const isManager = user.role === UserRole.MANAGER;
+        
+        // --- 1. Completed Lockdown: Locked once in Phase 3 + Completed status ---
+        if (task.status === TaskStatus.COMPLETED && 
+            task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) {
+            return isAdmin;
+        }
+
+        // --- 2. Base permissions ---
+        if (isAdmin || isManager) return true;
         if (task.teamLeaderId === user.uid) return true;
         if (task.assignedTo?.includes(user.uid)) return true;
+        
         return false;
     };
 
@@ -479,7 +530,7 @@ const TasksPage: React.FC = () => {
                 isCompleted: false,
                 createdAt: new Date().toISOString(),
                 createdBy: user?.uid || 'system',
-                assignedTo: assignedUserId,
+                assignedTo: assignedUserId ? [assignedUserId] : [],
                 minimumRequirement: s.minimumRequirement,
                 phase: s.phase
             });
@@ -577,6 +628,8 @@ const TasksPage: React.FC = () => {
             open: true,
             title: 'Delete Task',
             message: 'Are you sure you want to delete this task? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            variant: 'danger',
             onConfirm: () => {
                 deleteTaskMutation.mutate(taskId);
                 setIsModalOpen(false);
@@ -596,6 +649,8 @@ const TasksPage: React.FC = () => {
             open: true,
             title: `Delete ${count} Tasks`,
             message: `Are you sure you want to delete ${count} task${count > 1 ? 's' : ''}? This action cannot be undone.`,
+            confirmLabel: 'Delete All',
+            variant: 'danger',
             onConfirm: () => {
                 selectedTaskIds.forEach(id => deleteTaskMutation.mutate(id));
                 toast.success(`Deleting ${count} tasks`);
@@ -963,6 +1018,29 @@ const TasksPage: React.FC = () => {
         }
     };
 
+    const handleComplianceDecision = (taskId: string, decision: 'REVIEW' | 'PROCEED', task: Task, templatesList: TaskTemplate[]) => {
+        const finalStatus = decision === 'REVIEW' ? TaskStatus.UNDER_REVIEW : TaskStatus.COMPLETED;
+        const updates: any = { status: finalStatus };
+
+        // Handle auto-injection logic identical to normal drag updates
+        const statusInjected = injectStatusSubtasks(task, finalStatus, templatesList);
+        if (statusInjected) {
+            updates.subtasks = [...(task.subtasks || []), ...statusInjected];
+            
+            const template = templatesList.find(t => t.id === task.templateId) || 
+                             templatesList.find(t => t.taskType === task.taskType && t.statusSubtasks?.[finalStatus]);
+            if (template && !task.templateId) {
+                updates.templateId = template.id;
+            }
+            showInjectionToast(taskId, task.subtasks || [], statusInjected.length, finalStatus.replace(/_/g, ' '));
+        }
+
+        updateTaskMutation.mutate({ id: taskId, updates });
+        if (finalStatus === TaskStatus.COMPLETED && task.status !== TaskStatus.COMPLETED) {
+            triggerNextTemplateIfNeeded(taskId, TaskStatus.COMPLETED);
+        }
+    };
+
     const onDragEnd = (result: DropResult) => {
         const { destination, draggableId } = result;
         if (!destination) return;
@@ -977,9 +1055,61 @@ const TasksPage: React.FC = () => {
         // Composite droppable IDs: "PHASE::STATUS"
         const parts = destination.droppableId.split('::');
         if (parts.length === 2) {
-            const [newPhase, newStatus] = parts;
+            let [newPhase, newStatus] = parts as [AuditPhase, TaskStatus];
+            
+            // --- WORKFLOW GOVERNANCE: LOCKDOWN & FORWARD-ONLY RULES ---
+            const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+            const isManager = user?.role === UserRole.MANAGER;
+            
+            // A. Lockdown Rule: Final phase + Completed status can only be moved by Admin
+            if (task.status === TaskStatus.COMPLETED && 
+                task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) {
+                if (!isAdmin) {
+                    toast.error('Governance Lockdown: Only Admins can reopen a fully completed assignment in the final phase.', { icon: '🔒' });
+                    return;
+                }
+            }
+
+            // B. Forward-Only Rule: Staff/Assignees (non-admin/non-manager) can only move FORWARD
+            if (!isAdmin && !isManager) {
+                const oldPhaseOrder = PHASE_ORDER[task.auditPhase as AuditPhase || AuditPhase.ONBOARDING];
+                const newPhaseOrder = PHASE_ORDER[newPhase];
+                const oldStatusOrder = STATUS_ORDER[task.status];
+                const newStatusOrder = STATUS_ORDER[newStatus];
+
+                // Check for backward movement
+                const isBackwardPhase = newPhaseOrder < oldPhaseOrder;
+                const isBackwardStatus = (newPhaseOrder === oldPhaseOrder) && (newStatusOrder < oldStatusOrder);
+
+                if (isBackwardPhase || isBackwardStatus) {
+                    toast.error('Workflow Governance: Users can only move tasks forward. Please contact Admin for backward moves.', { icon: '🚫' });
+                    return;
+                }
+            }
+            if (newPhase === AuditPhase.ONBOARDING && newStatus === TaskStatus.UNDER_REVIEW) {
+                newStatus = TaskStatus.IN_PROGRESS;
+            }
+
             const updates: any = {};
             if (task.auditPhase !== newPhase) {
+
+                // ── Compliance Gate: Check for Mandatory Evidence before allowing Phase change ──
+                const currentOrder = PHASE_ORDER[task.auditPhase as AuditPhase || AuditPhase.ONBOARDING];
+                const nextOrder = PHASE_ORDER[newPhase as AuditPhase];
+                
+                if (nextOrder > currentOrder) {
+                    const missingEvidence = (task.subtasks || []).filter(s => 
+                        s.phase === task.auditPhase && 
+                        s.isEvidenceMandatory && 
+                        !s.evidenceProvided
+                    );
+                    
+                    if (missingEvidence.length > 0) {
+                        toast.error(`Compliance Gate: Mandatory evidence missing for ${missingEvidence.length} item(s). Transition to ${PHASE_LABELS[newPhase as AuditPhase]} blocked.`, { icon: '🛑' });
+                        return; // Block the drag update
+                    }
+                }
+
                 updates.auditPhase = newPhase;
                 
                 // Prompt C: Handle Phase Transition Auto-Swap Checklist
@@ -1025,6 +1155,29 @@ const TasksPage: React.FC = () => {
                 }
             }
             if (task.status !== newStatus) {
+                // ── Compliance Gate: Interactive Decision Modal ──
+                if (newStatus === TaskStatus.COMPLETED) {
+                    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+                    const isTL = user?.uid === task.teamLeaderId;
+                    const signOffsComplete = task.teamLeadApprovedAt && task.engagementReviewerApprovedAt && task.signingPartnerApprovedAt;
+                    
+                    if (!signOffsComplete) {
+                        setConfirmModal({
+                            open: true,
+                            title: 'Compliance Gate Blocked',
+                            message: 'All 3 sign-offs (TL, Reviewer, Partner) are required to complete this assignment. Would you like to ask for an Engagement Review?',
+                            variant: 'indigo',
+                            cancelLabel: 'Keep as is',
+                            secondaryLabel: 'Move to Review',
+                            onSecondaryConfirm: () => handleComplianceDecision(draggableId, 'REVIEW', task, templates),
+                            showConfirm: isAdmin || isTL,
+                            confirmLabel: 'Force Complete',
+                            onConfirm: () => handleComplianceDecision(draggableId, 'PROCEED', task, templates)
+                        });
+                        return; // Block the update
+                    }
+                }
+
                 updates.status = newStatus;
                 
                 // PROMPT 4: Inject status subtasks on drag
@@ -1033,6 +1186,14 @@ const TasksPage: React.FC = () => {
                     // Note: If both phase and status changed, we need to merge both
                     const existingSubtasksAndPhase = updates.subtasks || task.subtasks || [];
                     updates.subtasks = [...existingSubtasksAndPhase, ...statusInjected];
+                    
+                    // Logic to find and persist the templateId if it's being used for this injection
+                    const template = templates.find(t => t.id === task.templateId) || 
+                                     templates.find(t => t.taskType === task.taskType && t.statusSubtasks?.[newStatus as TaskStatus]);
+                    if (template && !task.templateId) {
+                        updates.templateId = template.id;
+                    }
+                    
                     showInjectionToast(task.id, task.subtasks || [], statusInjected.length, newStatus.replace(/_/g, ' '));
                 }
             }
@@ -1145,378 +1306,397 @@ const TasksPage: React.FC = () => {
 
     return (
         <div className="relative h-full w-full flex flex-col overflow-hidden bg-transparent">
-            {/* --- COMPACT UNIFIED TOOLBAR --- */}
-            <header className="flex-none bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04] relative z-20">
-                {/* Single row toolbar */}
-                <div className="flex items-center gap-2 px-4 py-2">
-                    {/* LEFT: View Mode Toggle */}
-                    <div className="flex bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06] h-[30px] flex-shrink-0">
-                        <button
-                            onClick={() => setViewMode('LIST')}
-                            className={`px-2.5 flex items-center gap-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'LIST' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                        >
-                            <ListIcon size={11} /> List
-                        </button>
-                        {!isMobile && (
+            {/* --- REFINED UNIFIED TOOLBAR --- */}
+            <header className="flex-none bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.04] relative z-20 transition-colors duration-300">
+                <div className="flex flex-col border-b border-slate-100 dark:border-white/[0.02]">
+                    <div className="flex items-center gap-3 px-4 py-2.5">
+                        {/* LEFT: View Mode Toggle */}
+                        <div className="flex bg-slate-100 dark:bg-white/[0.03] rounded-xl p-1 border border-slate-200 dark:border-white/[0.05] h-[34px] flex-shrink-0 shadow-inner dark:shadow-black/20">
                             <button
-                                onClick={() => setViewMode('KANBAN')}
-                                className={`px-2.5 flex items-center gap-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'KANBAN' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                                onClick={() => setViewMode('LIST')}
+                                className={`px-3 flex items-center gap-1.5 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'LIST' ? 'bg-indigo-500/20 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.2)] border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300'}`}
                             >
-                                <LayoutGrid size={11} /> Board
+                                <ListIcon size={12} /> List
                             </button>
-                        )}
-                        {!isMobile && (
-                            <button
-                                onClick={() => setViewMode('TIMELINE')}
-                                className={`px-2.5 flex items-center gap-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'TIMELINE' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                <GanttChartSquare size={11} /> Timeline
-                            </button>
-                        )}
-                    </div>
-
-                    {/* CENTER: Search */}
-                    <div className="relative flex-1 max-w-xs group">
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-amber-500 transition-colors" size={12} />
-                        <input
-                            type="text"
-                            placeholder="Search tasks..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-[30px] bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] rounded-lg pl-7 pr-3 text-[11px] text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-500/40 transition-all"
-                        />
-                    </div>
-
-                    {/* Bulk Actions — floating contextual bar */}
-                    {selectedTaskIds.length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-shrink-0 bg-white/[0.04] border border-white/[0.08] rounded-lg px-1.5 py-0.5">
-                            <span className="text-[9px] font-bold text-amber-400 tabular-nums px-1.5 bg-amber-500/10 rounded-md py-0.5">{selectedTaskIds.length} selected</span>
-                            <div className="w-px h-4 bg-white/[0.06]" />
-                            <div className="relative" ref={statusMenuRef}>
+                            {!isMobile && (
                                 <button
-                                    onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
-                                    className="h-[26px] px-2 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                    onClick={() => setViewMode('KANBAN')}
+                                    className={`px-3 flex items-center gap-1.5 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'KANBAN' ? 'bg-indigo-500/20 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.2)] border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                    <Activity size={10} className="text-amber-400" /> Status
-                                    <ChevronDown size={9} className={`transition-transform ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
+                                    <LayoutGrid size={12} /> Board
                                 </button>
-                                <AnimatePresence>
-                                    {showBulkStatusMenu && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 4 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 4 }}
-                                            transition={{ duration: 0.1 }}
-                                            className="absolute top-full right-0 mt-1 w-40 bg-[#0d1117] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden py-1"
-                                        >
-                                            {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
-                                                <button
-                                                    key={status}
-                                                    onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
-                                                    className="w-full px-3 py-1.5 text-left text-[11px] font-medium text-gray-300 hover:bg-white/[0.05] hover:text-white transition-colors flex items-center justify-between group"
-                                                >
-                                                    {status.replace(/_/g, ' ')}
-                                                    <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-400" />
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                            <div className="relative" ref={assignMenuRef}>
+                            )}
+                            {!isMobile && (
                                 <button
-                                    onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
-                                    className="h-[26px] px-2 bg-white/[0.04] hover:bg-white/[0.08] text-cyan-400 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                    onClick={() => setViewMode('TIMELINE')}
+                                    className={`px-3 flex items-center gap-1.5 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'TIMELINE' ? 'bg-indigo-500/20 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.2)] border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                    <UserCircle2 size={10} /> Assign
-                                    <ChevronDown size={9} className={`transition-transform ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
+                                    <GanttChartSquare size={12} /> Timeline
                                 </button>
-                                <AnimatePresence>
-                                    {showBulkAssignMenu && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 4 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 4 }}
-                                            transition={{ duration: 0.1 }}
-                                            className="absolute top-full right-0 mt-1 w-48 bg-[#0d1117] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto custom-scrollbar py-1"
-                                        >
-                                            <div className="px-3 py-1.5 border-b border-white/[0.04]">
-                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Select Staff</p>
-                                            </div>
-                                            {usersList.map((st) => (
-                                                <button
-                                                    key={st.uid}
-                                                    onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
-                                                    className="w-full px-3 py-1.5 text-left text-[11px] font-medium text-gray-300 hover:bg-white/[0.05] hover:text-white transition-colors flex items-center gap-2"
-                                                >
-                                                    <div className="w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center text-[9px] font-semibold text-amber-400 flex-shrink-0">
-                                                        {getInitials(st.displayName)}
-                                                    </div>
-                                                    <span className="truncate">{st.displayName}</span>
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                            <button
-                                onClick={handleBulkDelete}
-                                className="h-[26px] px-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all"
-                            >
-                                <Trash2 size={10} />
-                            </button>
-                            <button
-                                onClick={() => setSelectedTaskIds([])}
-                                className="h-[26px] w-[26px] flex items-center justify-center text-slate-500 hover:text-slate-300 rounded-md hover:bg-white/[0.05] transition-colors"
-                            >
-                                <X size={11} />
-                            </button>
+                            )}
                         </div>
-                    )}
 
-                    {/* Prompt D: TaskType Filter Pills Row */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide max-w-2xl px-2">
-                        <button
-                            onClick={() => setFilterTaskType('ALL')}
-                            className={`flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
-                                filterTaskType === 'ALL'
-                                    ? 'bg-amber-500 text-white border-amber-400/50 shadow-lg shadow-amber-500/20'
-                                    : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:bg-white/[0.05]'
-                            }`}
-                        >
-                            All Types
-                        </button>
-                        {Object.values(TaskType).map((type) => {
-                            const isSelected = filterTaskType === type;
-                            const count = tasks.filter(t => t.taskType === type).length;
-                            const IconComponent = {
-                                ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
-                            }[TASK_TYPE_ICONS[type]] || Activity;
-
-                            // Short labels as per Prompt D
-                            const shortLabelMap: Record<TaskType, string> = {
-                                [TaskType.INTERNAL_AUDIT]: 'Internal Audit',
-                                [TaskType.STATUTORY_AUDIT]: 'Statutory',
-                                [TaskType.COMPLIANCE_AUDIT]: 'Compliance',
-                                [TaskType.CERTIFICATION_SERVICE]: 'Certification',
-                                [TaskType.FINANCIAL_MANAGEMENT]: 'Financial Mgmt',
-                                [TaskType.INTERIM_REVIEW]: 'Interim Review',
-                                [TaskType.FILE_STUDY_PLANNING]: 'File Study',
-                            };
-
-                            return (
+                        {/* CENTER: Search & Workflow Dropdown */}
+                        <div className="flex items-center gap-2 flex-1 max-w-xl">
+                            {/* NEW: Workflow Selector Dropdown */}
+                            <div className="relative" ref={workflowMenuRef}>
                                 <button
-                                    key={type}
-                                    onClick={() => setFilterTaskType(type)}
-                                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
-                                        isSelected
-                                            ? 'bg-indigo-600 text-white border-indigo-500/50 shadow-lg shadow-indigo-600/20'
-                                            : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:bg-white/[0.05]'
+                                    onClick={() => setShowWorkflowMenu(!showWorkflowMenu)}
+                                    className={`h-[34px] px-3.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${
+                                        filterTaskType !== 'ALL'
+                                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-lg shadow-indigo-500/5'
+                                            : 'bg-slate-100 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.1] text-slate-500 hover:text-slate-300'
                                     }`}
                                 >
-                                    <IconComponent size={12} className={isSelected ? 'text-white' : 'text-slate-500'} />
-                                    <span>{shortLabelMap[type]}</span>
-                                    {count > 0 && <span className={`ml-0.5 opacity-60 tabular-nums`}>({count})</span>}
+                                    <Layers size={13} className={filterTaskType !== 'ALL' ? 'text-indigo-400' : 'text-slate-400'} />
+                                    <span className="max-w-[120px] truncate">
+                                        {filterTaskType === 'ALL' ? 'All Workflows' : filterTaskType.replace(/_/g, ' ')}
+                                    </span>
+                                    <ChevronDown size={10} className={`transition-transform duration-200 ${showWorkflowMenu ? 'rotate-180' : ''}`} />
                                 </button>
-                            );
-                        })}
-                    </div>
 
-                    {/* RIGHT: Filter + Export + Templates + New Task */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
-                        {/* Unified Filters Button */}
-                        <button
-                            onClick={() => setShowFilterPanel(!showFilterPanel)}
-                            className={`h-[30px] flex items-center gap-1.5 px-2.5 rounded-lg border text-[10px] font-bold transition-all ${
-                                showFilterPanel || activeFilterCount > 0
-                                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
-                                    : 'bg-white/[0.03] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:border-white/[0.12]'
-                            }`}
-                        >
-                            <Filter size={11} />
-                            Filters
-                            {activeFilterCount > 0 && (
-                                <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center">
-                                    {activeFilterCount}
-                                </span>
-                            )}
-                        </button>
+                                <AnimatePresence>
+                                    {showWorkflowMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 8 }}
+                                            className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
+                                        >
+                                            <div className="p-2 space-y-0.5">
+                                                <button
+                                                    onClick={() => { setFilterTaskType('ALL'); setShowWorkflowMenu(false); }}
+                                                    className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${filterTaskType === 'ALL' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
+                                                >
+                                                    All Workflows
+                                                    {filterTaskType === 'ALL' && <Check size={12} />}
+                                                </button>
+                                                <div className="h-px bg-slate-100 dark:bg-white/[0.05] my-1 mx-2" />
+                                                {Object.values(TaskType).filter(t => t !== TaskType.OTHER).map((type, idx) => {
+                                                    const isSelected = filterTaskType === type;
+                                                    const count = tasks.filter(t => t.taskType === type).length;
+                                                    return (
+                                                        <button
+                                                            key={type || `type-${idx}`}
+                                                            onClick={() => { setFilterTaskType(type); setShowWorkflowMenu(false); }}
+                                                            className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${isSelected ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-400' : 'bg-slate-700'}`} />
+                                                                {type.replace(/_/g, ' ')}
+                                                            </div>
+                                                            {count > 0 && <span className="text-[9px] opacity-40">{count}</span>}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
-                        <div className="w-px h-4 bg-white/[0.06]" />
-
-                        <div className="flex items-center gap-0.5 bg-white/[0.02] p-0.5 rounded-lg border border-white/[0.05] h-[30px]">
-                            <button onClick={handleExportPDF} title="Export PDF" className="w-6 h-full flex items-center justify-center hover:bg-white/10 text-rose-400 rounded-md transition-all"><FileText size={12} /></button>
-                            <button onClick={() => handleExportExcel()} title="Export Excel" className="w-6 h-full flex items-center justify-center hover:bg-white/10 text-emerald-400 rounded-md transition-all"><FileSpreadsheet size={12} /></button>
+                            <div className="relative flex-1 group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-600 group-focus-within:text-amber-500 transition-colors" size={13} />
+                                <input
+                                    type="text"
+                                    placeholder="Search tasks, clients, or IDs..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full h-[34px] bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] hover:border-slate-400 dark:hover:border-white/[0.12] rounded-xl pl-9 pr-3 text-[11px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:border-amber-500/40 dark:focus:border-amber-500/40 focus:bg-white dark:focus:bg-white/5 transition-all shadow-sm"
+                                />
+                            </div>
                         </div>
 
-                        <button
-                            onClick={() => setIsTemplateModalOpen(true)}
-                            disabled={!canCreateTask}
-                            className="h-[30px] px-2.5 bg-white/[0.03] hover:bg-white/[0.08] text-white rounded-lg border border-white/[0.05] flex items-center gap-1.5 text-[10px] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Sparkles size={11} className="text-amber-400" /> Templates
-                        </button>
-
-                        <button
-                            onClick={handleOpenCreate}
-                            disabled={!canCreateTask}
-                            className="h-[30px] px-3 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm shadow-amber-500/20 flex-shrink-0 disabled:opacity-50 hover:shadow-amber-500/30"
-                        >
-                            <Plus size={12} strokeWidth={3} /> New Task
-                        </button>
-                    </div>
-                </div>
-
-                {/* Filter Popover Panel — slides down when Filters button is clicked */}
-                <AnimatePresence>
-                    {showFilterPanel && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                            animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
-                            exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                            transition={{ duration: 0.15 }}
-                            className="border-t border-white/[0.04]"
-                        >
-                            <div className="px-4 py-3">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-3xl">
-                                    <div className="relative">
-                                        <select
-                                            value={filterStaff}
-                                            onChange={(e) => setFilterStaff(e.target.value)}
-                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
-                                        >
-                                            <option value="ALL">Staff: All</option>
-                                            {usersList.map(u => <option key={u.uid} value={u.uid}>{u.displayName}</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            value={filterPriority}
-                                            onChange={(e) => setFilterPriority(e.target.value)}
-                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
-                                        >
-                                            <option value="ALL">Priority: All</option>
-                                            {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            value={filterAuditor}
-                                            onChange={(e) => setFilterAuditor(e.target.value)}
-                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
-                                        >
-                                            <option value="ALL">Auditor: All</option>
-                                            {SIGNING_AUTHORITIES.map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            value={filterStatus}
-                                            onChange={(e) => setFilterStatus(e.target.value)}
-                                            className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
-                                        >
-                                            <option value="ALL">Status: All</option>
-                                            {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
-                                    </div>
+                        {/* Bulk Actions — contextual bar */}
+                        {selectedTaskIds.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="flex items-center gap-2 flex-shrink-0 bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-2 py-1 shadow-lg shadow-indigo-500/10"
+                            >
+                                <span className="text-[10px] font-black text-indigo-400 tabular-nums px-2 py-0.5 bg-indigo-500/20 rounded-lg">{selectedTaskIds.length}</span>
+                                <div className="w-px h-4 bg-indigo-500/20" />
+                                <div className="relative" ref={statusMenuRef}>
+                                    <button
+                                        onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
+                                        className="h-[28px] px-2.5 hover:bg-white/5 text-indigo-300 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all"
+                                    >
+                                        Status <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    <AnimatePresence>
+                                        {showBulkStatusMenu && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 8 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 8 }}
+                                                className="absolute top-full left-0 mt-2 w-44 bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl"
+                                            >
+                                                {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
+                                                    <button
+                                                        key={status}
+                                                        onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
+                                                        className="w-full px-4 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-between group"
+                                                    >
+                                                        {status.replace(/_/g, ' ')}
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/40 group-hover:bg-indigo-400" />
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
+                                <div className="relative" ref={assignMenuRef}>
+                                    <button
+                                        onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
+                                        className="h-[28px] px-2.5 hover:bg-white/5 text-cyan-400 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all"
+                                    >
+                                        Assign <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    <AnimatePresence>
+                                        {showBulkAssignMenu && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 8 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 8 }}
+                                                className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
+                                            >
+                                                <div className="px-4 py-2.5 border-b border-slate-100 dark:border-white/[0.05] bg-slate-50 dark:bg-white/[0.02]">
+                                                    <p className="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest text-center">Assign to Team</p>
+                                                </div>
+                                                <div className="max-h-64 overflow-y-auto custom-scrollbar p-1">
+                                                    {usersList.map((st, idx) => (
+                                                        <button
+                                                            key={st.uid || `staff-${idx}`}
+                                                            onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
+                                                            className="w-full px-3 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-indigo-600 dark:hover:text-white transition-colors rounded-xl flex items-center gap-2.5"
+                                                        >
+                                                            <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center text-[9px] font-black text-indigo-400 border border-indigo-500/20">
+                                                                {getInitials(st.displayName)}
+                                                            </div>
+                                                            <span className="truncate">{st.displayName}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                                <div className="w-px h-4 bg-indigo-500/20" />
+                                <button
+                                    onClick={handleBulkDelete}
+                                    title="Delete selected tasks"
+                                    className="w-[28px] h-[28px] flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all"
+                                >
+                                    <Trash2 size={13} />
+                                </button>
+                                <button
+                                    onClick={() => setSelectedTaskIds([])}
+                                    title="Clear selection"
+                                    className="w-[28px] h-[28px] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </motion.div>
+                        )}
 
-                                {/* Status Stats Strip (for LIST view only) */}
-                                {viewMode === 'LIST' && (
-                                    <div className="flex items-center gap-1.5 flex-wrap mt-3 pt-3 border-t border-white/[0.04]">
-                                        {([
-                                            { key: 'ALL', label: 'All', count: statusStats.TOTAL, activeColor: 'bg-slate-500/20 border-slate-400/30 text-white', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-slate-400', dotGlow: '' },
-                                            { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-500/20 border-slate-400/30 text-white', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-slate-400', dotGlow: '' },
-                                            { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-500/15 border-blue-400/30 text-blue-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-blue-400', dotGlow: 'shadow-[0_0_6px_rgba(96,165,250,0.4)]' },
-                                            { key: 'UNDER_REVIEW', label: 'Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-500/15 border-amber-400/30 text-amber-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-amber-400', dotGlow: 'shadow-[0_0_6px_rgba(251,191,36,0.4)]' },
-                                            { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-500/15 border-rose-400/30 text-rose-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-rose-400', dotGlow: 'shadow-[0_0_6px_rgba(251,113,133,0.4)]' },
-                                            { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-emerald-400', dotGlow: 'shadow-[0_0_6px_rgba(52,211,153,0.4)]' },
-                                        ] as const).map(({ key, label, count, activeColor, inactiveColor, dot, dotGlow }) => {
-                                            const isActive = filterStatus === key;
-                                            return (
-                                                <button
-                                                    key={key}
-                                                    onClick={() => setFilterStatus(key)}
-                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-semibold transition-all ${isActive ? activeColor : inactiveColor + ' hover:bg-white/[0.04] hover:border-white/[0.1]'}`}
-                                                >
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? dot + ' ' + dotGlow : 'bg-slate-600'}`} />
-                                                    {label}
-                                                    <span className={`font-bold tabular-nums ${isActive ? '' : 'text-slate-600'}`}>{count}</span>
-                                                </button>
-                                            );
-                                        })}
+                        {/* RIGHT ACTIONS */}
+                        <div className="flex items-center gap-2 ml-auto">
+                            {/* Templates */}
+                            <button
+                                onClick={() => setIsTemplateModalOpen(true)}
+                                disabled={!canCreateTask}
+                                className="h-[34px] px-3.5 bg-slate-100 dark:bg-white/[0.02] hover:bg-slate-200 dark:hover:bg-white/[0.06] text-slate-600 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-white/[0.06] flex items-center gap-2 text-[10px] font-black transition-all disabled:opacity-50 shadow-sm"
+                            >
+                                <Sparkles size={13} className="text-amber-600 dark:text-amber-500" />
+                                <span className={isMobile ? 'sr-only' : ''}>TEMPLATES</span>
+                            </button>
+
+                            {/* Export Group */}
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/[0.02] p-1 rounded-xl border border-slate-200 dark:border-white/[0.06] h-[34px] shadow-sm">
+                                <button onClick={handleExportPDF} title="Export PDF" className="w-7 h-full flex items-center justify-center hover:bg-rose-500/10 text-rose-600 dark:text-rose-500/70 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-all"><FileText size={14} /></button>
+                                <button onClick={() => handleExportExcel()} title="Export Excel" className="w-7 h-full flex items-center justify-center hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500/70 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={14} /></button>
+                            </div>
+
+                            {/* Filters Button — Integrated into Main Bar */}
+                            <button
+                                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                                className={`h-[34px] px-3.5 flex items-center gap-2 rounded-xl border text-[10px] font-black transition-all ${
+                                    showFilterPanel || activeFilterCount > 0
+                                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-lg shadow-amber-500/5'
+                                        : 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] text-slate-500 hover:text-slate-300'
+                                }`}
+                            >
+                                <Filter size={13} className={activeFilterCount > 0 ? 'animate-pulse' : ''} />
+                                <span>FILTERS</span>
+                                {activeFilterCount > 0 && (
+                                    <div className="w-4 h-4 rounded-full bg-amber-500 text-black text-[9px] font-black flex items-center justify-center ml-1">
+                                        {activeFilterCount}
                                     </div>
                                 )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            </button>
 
-                {/* Active Filter Pills — slim conditional row */}
-                {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || (dateRange.start || dateRange.end)) && (
-                    <div className="flex items-center gap-1.5 px-4 py-1.5 border-t border-white/[0.03] overflow-x-auto scrollbar-none">
-                        {searchTerm && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
-                                🔍 {searchTerm}
-                                <button onClick={() => setSearchTerm('')} className="hover:text-white transition-colors"><X size={10} /></button>
-                            </div>
-                        )}
-                        {filterStatus !== 'ALL' && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
-                                {filterStatus.replace(/_/g, ' ')}
-                                <button onClick={() => setFilterStatus('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
-                            </div>
-                        )}
-                        {filterPriority !== 'ALL' && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded-full text-[9px] font-bold text-rose-400 flex-shrink-0">
-                                {filterPriority}
-                                <button onClick={() => setFilterPriority('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
-                            </div>
-                        )}
-                        {filterStaff !== 'ALL' && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[9px] font-bold text-cyan-400 flex-shrink-0">
-                                {usersList.find(u => u.uid === filterStaff)?.displayName || filterStaff}
-                                <button onClick={() => setFilterStaff('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
-                            </div>
-                        )}
-                        {filterClient !== 'ALL' && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
-                                {clientsList.find(c => c.id === filterClient)?.name || filterClient}
-                                <button onClick={() => setFilterClient('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
-                            </div>
-                        )}
-                        {filterAuditor !== 'ALL' && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 rounded-full text-[9px] font-bold text-violet-400 flex-shrink-0">
-                                {filterAuditor}
-                                <button onClick={() => setFilterAuditor('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
-                            </div>
-                        )}
-                        {(dateRange.start || dateRange.end) && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
-                                {dateRange.start || '…'} – {dateRange.end || '…'}
-                                <button onClick={() => setDateRange({ start: '', end: '' })} className="hover:text-white transition-colors"><X size={10} /></button>
-                            </div>
-                        )}
-                        <button
-                            onClick={() => {
-                                setSearchTerm('');
-                                setFilterStatus('ALL');
-                                setFilterPriority('ALL');
-                                setFilterStaff('ALL');
-                                setFilterAuditor('ALL');
-                                setDateRange({ start: '', end: '' });
-                            }}
-                            className="text-[9px] font-bold text-gray-600 hover:text-white transition-colors ml-1 underline underline-offset-2 flex-shrink-0"
-                        >
-                            Clear
-                        </button>
+                            <button
+                                onClick={handleOpenCreate}
+                                disabled={!canCreateTask}
+                                className="h-[34px] px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20 flex-shrink-0 disabled:opacity-50"
+                            >
+                                <Plus size={15} strokeWidth={3} />
+                                <span className={isMobile ? 'sr-only' : ''}>NEW TASK</span>
+                            </button>
+                        </div>
                     </div>
-                )}
+                </div>
             </header>
+
+            {/* Filter Popover Panel — slides down when Filters button is clicked */}
+            <AnimatePresence>
+                {showFilterPanel && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                        animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
+                        exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                        transition={{ duration: 0.15 }}
+                        className="border-t border-white/[0.04] bg-[#09090b]/50 backdrop-blur-md"
+                    >
+                        <div className="px-4 py-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 w-full">
+                                <div className="relative">
+                                    <select
+                                        value={filterStaff}
+                                        onChange={(e) => setFilterStaff(e.target.value)}
+                                        className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                    >
+                                        <option value="ALL">Staff: All</option>
+                                        {usersList.map((u, idx) => <option key={u.uid || `staff-${idx}`} value={u.uid}>{u.displayName}</option>)}
+                                    </select>
+                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        value={filterPriority}
+                                        onChange={(e) => setFilterPriority(e.target.value)}
+                                        className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                    >
+                                        <option value="ALL">Priority: All</option>
+                                        {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        value={filterAuditor}
+                                        onChange={(e) => setFilterAuditor(e.target.value)}
+                                        className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                    >
+                                        <option value="ALL">Auditor: All</option>
+                                        {SIGNING_AUTHORITIES.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
+                                    >
+                                        <option value="ALL">Status: All</option>
+                                        {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                                    </select>
+                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
+                                </div>
+                            </div>
+
+                            {/* Status Stats Strip (for LIST view only) */}
+                            {viewMode === 'LIST' && (
+                                <div className="flex items-center gap-1.5 flex-wrap mt-3 pt-3 border-t border-white/[0.04]">
+                                    {([
+                                        { key: 'ALL', label: 'All', count: statusStats.TOTAL, activeColor: 'bg-slate-500/20 border-slate-400/30 text-white', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-slate-400', dotGlow: '' },
+                                        { key: 'NOT_STARTED', label: 'Not Started', count: statusStats.NOT_STARTED, activeColor: 'bg-slate-500/20 border-slate-400/30 text-white', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-slate-400', dotGlow: '' },
+                                        { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-500/15 border-blue-400/30 text-blue-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-blue-400', dotGlow: 'shadow-[0_0_6px_rgba(96,165,250,0.4)]' },
+                                        { key: 'UNDER_REVIEW', label: 'Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-500/15 border-amber-400/30 text-amber-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-amber-400', dotGlow: 'shadow-[0_0_6px_rgba(251,191,36,0.4)]' },
+                                        { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-500/15 border-rose-400/30 text-rose-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-rose-400', dotGlow: 'shadow-[0_0_6px_rgba(251,113,133,0.4)]' },
+                                        { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-emerald-400', dotGlow: 'shadow-[0_0_6_rgba(52,211,153,0.4)]' },
+                                    ] as const).map(({ key, label, count, activeColor, inactiveColor, dot, dotGlow }) => {
+                                        const isActive = filterStatus === key;
+                                        return (
+                                            <button
+                                                key={key}
+                                                onClick={() => setFilterStatus(key)}
+                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-semibold transition-all ${isActive ? activeColor : inactiveColor + ' hover:bg-white/[0.04] hover:border-white/[0.1]'}`}
+                                            >
+                                                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? dot + ' ' + dotGlow : 'bg-slate-600'}`} />
+                                                {label}
+                                                <span className={`font-bold tabular-nums ${isActive ? '' : 'text-slate-600'}`}>{count}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Active Filter Pills — slim conditional row */}
+            {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || (dateRange.start || dateRange.end)) && (
+                <div className="flex items-center gap-1.5 px-4 py-1.5 border-t border-white/[0.03] overflow-x-auto scrollbar-none">
+                    {searchTerm && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                            🔍 {searchTerm}
+                            <button onClick={() => setSearchTerm('')} className="hover:text-white transition-colors"><X size={10} /></button>
+                        </div>
+                    )}
+                    {filterStatus !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                            {filterStatus.replace(/_/g, ' ')}
+                            <button onClick={() => setFilterStatus('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                        </div>
+                    )}
+                    {filterPriority !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded-full text-[9px] font-bold text-rose-400 flex-shrink-0">
+                            {filterPriority}
+                            <button onClick={() => setFilterPriority('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                        </div>
+                    )}
+                    {filterStaff !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[9px] font-bold text-cyan-400 flex-shrink-0">
+                            {usersList.find(u => u.uid === filterStaff)?.displayName || filterStaff}
+                            <button onClick={() => setFilterStaff('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                        </div>
+                    )}
+                    {filterClient !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                            {clientsList.find(c => c.id === filterClient)?.name || filterClient}
+                            <button onClick={() => setFilterClient('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                        </div>
+                    )}
+                    {filterAuditor !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 rounded-full text-[9px] font-bold text-violet-400 flex-shrink-0">
+                            {filterAuditor}
+                            <button onClick={() => setFilterAuditor('ALL')} className="hover:text-white transition-colors"><X size={10} /></button>
+                        </div>
+                    )}
+                    {(dateRange.start || dateRange.end) && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
+                            {dateRange.start || '…'} – {dateRange.end || '…'}
+                            <button onClick={() => setDateRange({ start: '', end: '' })} className="hover:text-white transition-colors"><X size={10} /></button>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => {
+                            setSearchTerm('');
+                            setFilterStatus('ALL');
+                            setFilterPriority('ALL');
+                            setFilterStaff('ALL');
+                            setFilterAuditor('ALL');
+                            setDateRange({ start: '', end: '' });
+                        }}
+                        className="text-[9px] font-bold text-gray-600 hover:text-white transition-colors ml-1 underline underline-offset-2 flex-shrink-0"
+                    >
+                        Clear
+                    </button>
+                </div>
+            )}
 
             {/* --- WORKSPACE AREA --- */}
             <main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden relative">
@@ -1530,68 +1710,57 @@ const TasksPage: React.FC = () => {
                     />
                 ) : (
                     <>
-                        <TaskMainView
-                            viewMode={viewMode as 'LIST' | 'KANBAN'}
-                            tasks={filteredTasks}
-                            onDragEnd={onDragEnd}
-                            handleOpenEdit={handleOpenEdit}
-                            onOpenClientDetail={handleOpenClientDetail}
-                            usersList={usersList}
-                            clientsList={clientsList}
-                            collapsedColumns={collapsedColumns}
-                            toggleColumnCollapse={(status) => setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
-                            selectedTaskId={selectedTaskId}
-                            selectedTaskIds={selectedTaskIds}
-                            onToggleSelection={toggleTaskSelection}
-                            onSelectAll={() => {
-                                if (selectedTaskIds.length === filteredTasks.length) {
-                                    setSelectedTaskIds([]); // Deselect all
-                                } else {
-                                    setSelectedTaskIds(filteredTasks.map(t => t.id)); // Select all filtered
-                                }
-                            }}
-                            groupBy={groupBy}
-                            onUpdateTaskStatus={(taskId, status) => {
-                                updateTaskStatusMutation.mutate({ id: taskId, status });
-                            }}
-                            onOpenReassign={(taskId) => {
-                                setSelectedTaskIds([taskId]);
-                                setShowBulkAssignMenu(true);
-                            }}
-                            onQuickAdd={async (status, title) => {
-                                try {
-                                    const newTask: any = {
-                                        title,
-                                        status,
-                                        priority: TaskPriority.MEDIUM,
-                                        assignedTo: [],
-                                        subtasks: [],
-                                        dueDate: getCurrentDateUTC(),
-                                        clientIds: [],
-                                        teamLeaderId: '',
-                                        comments: []
-                                    };
-                                    await createTaskMutation.mutateAsync(newTask);
-                                } catch (error) {
-                                    console.error(error);
-                                }
-                            }}
-                        />
-                        {hasNextPage && filteredTasks.length > 0 && (
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 py-2 px-5 bg-[#0d1117]/90 backdrop-blur-xl border border-white/[0.08] rounded-full shadow-2xl" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)' }}>
-                                <span className="text-[10px] font-semibold text-slate-400 tabular-nums">
-                                    {filteredTasks.length} of {tasks.length}
-                                </span>
-                                <div className="w-px h-3 bg-white/[0.08]" />
-                                <button
-                                    onClick={() => fetchNextPage()}
-                                    disabled={isFetchingNextPage}
-                                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                >
-                                    {isFetchingNextPage ? 'Loading...' : 'Load More'}
-                                </button>
-                            </div>
-                        )}
+                        <div className="flex-1 min-h-0 min-w-0">
+                            <TaskMainView
+                                viewMode={viewMode as 'LIST' | 'KANBAN'}
+                                tasks={filteredTasks}
+                                onDragEnd={onDragEnd}
+                                handleOpenEdit={handleOpenEdit}
+                                onOpenClientDetail={handleOpenClientDetail}
+                                usersList={usersList}
+                                clientsList={clientsList}
+                                collapsedColumns={collapsedColumns}
+                                toggleColumnCollapse={(status) => setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
+                                selectedTaskId={selectedTaskId}
+                                selectedTaskIds={selectedTaskIds}
+                                onToggleSelection={toggleTaskSelection}
+                                sentinelRef={sentinelRef}
+                                isFetchingNextPage={isFetchingNextPage}
+                                onSelectAll={() => {
+                                    if (selectedTaskIds.length === filteredTasks.length) {
+                                        setSelectedTaskIds([]); // Deselect all
+                                    } else {
+                                        setSelectedTaskIds(filteredTasks.map(t => t.id)); // Select all filtered
+                                    }
+                                }}
+                                groupBy={groupBy}
+                                onUpdateTaskStatus={(taskId, status) => {
+                                    updateTaskStatusMutation.mutate({ id: taskId, status });
+                                }}
+                                onOpenReassign={(taskId) => {
+                                    setSelectedTaskIds([taskId]);
+                                    setShowBulkAssignMenu(true);
+                                }}
+                                onQuickAdd={async (status, title) => {
+                                    try {
+                                        const newTask: any = {
+                                            title,
+                                            status,
+                                            priority: TaskPriority.MEDIUM,
+                                            assignedTo: [],
+                                            subtasks: [],
+                                            dueDate: getCurrentDateUTC(),
+                                            clientIds: [],
+                                            teamLeaderId: '',
+                                            comments: []
+                                        };
+                                        await createTaskMutation.mutateAsync(newTask);
+                                    } catch (error) {
+                                        console.error(error);
+                                    }
+                                }}
+                            />
+                        </div>
                     </>
                 )}
             </main>
@@ -1667,17 +1836,26 @@ const TasksPage: React.FC = () => {
                             className="bg-[#09090b] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4"
                             onClick={e => e.stopPropagation()}
                         >
-                            <ConfirmationModal
+                             <ConfirmationModal
                                 title={confirmModal.title}
                                 message={confirmModal.message}
-                                variant="danger"
-                                confirmLabel="Delete"
-                                cancelLabel="Cancel"
+                                variant={confirmModal.variant || 'danger'}
+                                confirmLabel={confirmModal.confirmLabel || 'Confirm'}
+                                secondaryLabel={confirmModal.secondaryLabel}
+                                cancelLabel={confirmModal.cancelLabel || 'Cancel'}
                                 onConfirm={() => {
-                                    confirmModal.onConfirm();
+                                    confirmModal.onConfirm?.();
                                     setConfirmModal(p => ({ ...p, open: false }));
                                 }}
-                                onClose={() => setConfirmModal(p => ({ ...p, open: false }))}
+                                onSecondaryConfirm={() => {
+                                    confirmModal.onSecondaryConfirm?.();
+                                    setConfirmModal(p => ({ ...p, open: false }));
+                                }}
+                                onClose={() => {
+                                    confirmModal.onCancel?.();
+                                    setConfirmModal(p => ({ ...p, open: false }));
+                                }}
+                                showConfirm={confirmModal.showConfirm}
                             />
                         </motion.div>
                     </motion.div>

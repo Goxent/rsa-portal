@@ -1,5 +1,5 @@
 import { db, storage } from './firebase';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { TaskTemplate, Attachment, TemplateFolder } from '../types';
 
@@ -45,8 +45,9 @@ export const TemplateService = {
     },
 
     createTemplate: async (template: Partial<TaskTemplate>): Promise<string> => {
+        const cleanTemplate = Object.fromEntries(Object.entries(template).filter(([_, v]) => v !== undefined));
         const docRef = await addDoc(collection(db, 'task_templates'), {
-            ...template,
+            ...cleanTemplate,
             usageCount: 0,
             createdAt: new Date().toISOString()
         });

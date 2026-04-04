@@ -18,11 +18,43 @@
         --s-12: 6rem;
     }
 
-    /* Smooth theme transitions on everything */
-    *, *::before, *::after {
-        transition-property: background-color, border-color, color, box-shadow;
-        transition-duration: 250ms;
-        transition-timing-function: ease;
+    body, 
+    main, 
+    header, 
+    aside, 
+    div,
+    span,
+    p,
+    li,
+    h1, h2, h3, h4, h5, h6,
+    label,
+    .glass-panel, 
+    .glass-card, 
+    .glass-modal,
+    .btn-secondary,
+    .btn-primary,
+    input, 
+    select, 
+    textarea,
+    .transition-theme {
+        transition-property: background-color, border-color, color, fill, stroke;
+        transition-duration: 600ms;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: background-color, color;
+    }
+
+    /* ── High-Fidelity View Transitions (Chrome 111+) ── */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0.6s;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    ::view-transition-old(root) {
+        opacity: 0;
+    }
+    ::view-transition-new(root) {
+        opacity: 1;
     }
 
     /* But don't animate transforms/dimensions */
@@ -65,6 +97,9 @@
         --bg-surface:   #1c1c1f;
         --bg-elevated:  #242428;
 
+        --bg-grad-1: rgba(46,138,97,0.05);
+        --bg-grad-2: rgba(46,138,97,0.03);
+
         --accent:       #2e8a61;
         --accent-dim:   rgba(46,138,97,0.15);
         --accent-glow:  rgba(46,138,97,0.25);
@@ -98,22 +133,25 @@
 
     /* ── Light Theme — Parchment Office ── */
     .light {
-        --bg-main:      #f7f5f0;
+        --bg-main:      #f0f0f2;
         --bg-secondary: #ffffff;
-        --bg-surface:   #f0ede6;
-        --bg-elevated:  #e8e4da;
+        --bg-surface:   #e5e7eb;
+        --bg-elevated:  #dadde0;
+
+        --bg-grad-1: rgba(26,110,77,0.06);
+        --bg-grad-2: rgba(26,110,77,0.04);
 
         --accent:       #1a6e4d;
-        --accent-dim:   rgba(26,110,77,0.10);
-        --accent-glow:  rgba(26,110,77,0.20);
+        --accent-dim:   rgba(26,110,77,0.12);
+        --accent-glow:  rgba(26,110,77,0.22);
 
-        --text-heading: #1a1917;
-        --text-body:    #4a4945;
-        --text-muted:   #9a9890;
+        --text-heading: #080706; /* Darker for high contrast */
+        --text-body:    #1a1918; /* Darker for high contrast */
+        --text-muted:   #44433e; /* Darker for high contrast */
 
-        --border:       rgba(0,0,0,0.08);
-        --border-mid:   rgba(0,0,0,0.14);
-        --border-accent:rgba(26,110,77,0.22);
+        --border:       rgba(0,0,0,0.15);
+        --border-mid:   rgba(0,0,0,0.22);
+        --border-accent:rgba(26,110,77,0.45);
 
         /* Legacy aliases */
         --text-main:    #4a4945;
@@ -141,8 +179,8 @@
         background-color: var(--bg-main);
         color: var(--text-body);
         background-image:
-            radial-gradient(circle at 15% 25%, rgba(46,138,97,0.05) 0%, transparent 50%),
-            radial-gradient(circle at 85% 75%, rgba(46,138,97,0.03) 0%, transparent 50%);
+            radial-gradient(circle at 15% 25%, var(--bg-grad-1) 0%, transparent 50%),
+            radial-gradient(circle at 85% 75%, var(--bg-grad-2) 0%, transparent 50%);
         background-attachment: fixed;
         overflow-x: hidden;
     }
@@ -150,10 +188,10 @@
     .light body,
     body.light {
         background-image:
-            radial-gradient(circle at 10% 20%, rgba(26,110,77,0.06) 0%, transparent 40%),
-            radial-gradient(circle at 90% 80%, rgba(26,110,77,0.04) 0%, transparent 40%),
+            radial-gradient(circle at 10% 20%, var(--bg-grad-1) 0%, transparent 40%),
+            radial-gradient(circle at 90% 80%, var(--bg-grad-2) 0%, transparent 40%),
             radial-gradient(circle at 50% 50%, rgba(247,245,240,1) 0%, transparent 100%);
-        background-color: #f7f5f0;
+        background-color: var(--bg-main);
     }
 
     /* ============================================================
@@ -329,7 +367,9 @@
     .light .text-slate-200,
     .light .text-zinc-50,
     .light .text-zinc-100,
-    .light .text-zinc-200 {
+    .light .text-zinc-200,
+    .light .text-red-200,
+    .light .text-brand-300 {
         color: var(--text-heading) !important;
     }
 
@@ -348,6 +388,13 @@
     .light .text-slate-600,
     .light .text-zinc-500,
     .light .text-zinc-600 {
+        color: var(--text-body) !important;
+    }
+
+    /* Specifically ensure strong visibility for muted elements in light mode */
+    .light .text-slate-400,
+    .light .text-gray-400,
+    .light .text-zinc-400 {
         color: var(--text-muted) !important;
     }
 
@@ -357,10 +404,35 @@
     .light .text-indigo-400,
     .light .text-indigo-500,
     .light .text-violet-400,
+    .light .text-blue-400,
     .light .text-brand-400,
+    .light .text-emerald-400 {
+        color: var(--accent) !important;
+    }
+
+    .light .text-red-400 {
+        color: #b83248 !important;
+    }
+
+    .light .text-amber-400,
+    .light .text-yellow-400 {
+        color: #92400e !important; /* Darker amber for contrast */
+    }
+
+    /* Primary brand theme colors in light mode */
     .light .text-brand-500,
     .light .text-brand-600 {
         color: var(--accent) !important;
+    }
+
+    .light .bg-brand-500,
+    .light .bg-brand-600 {
+        background-color: var(--accent) !important;
+    }
+
+    .light .border-brand-500\/30,
+    .light .border-brand-500\/20 {
+        border-color: var(--border-accent) !important;
     }
 
     /* Status colors — keep readable in light */
@@ -547,12 +619,6 @@
         background-color: var(--bg-elevated) !important;
     }
 
-    /* Hover states for hardcoded backgrounds */
-    .light [class*="hover:bg-[#0"],
-    .light [class*="hover:bg-[#1"],
-    .light [class*="hover:bg-[#2"] {
-        transition: background-color 0.2s ease !important;
-    }
     .light [class*="hover:bg-[#0"]:hover,
     .light [class*="hover:bg-[#1"]:hover,
     .light [class*="hover:bg-[#2"]:hover {

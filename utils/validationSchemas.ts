@@ -23,7 +23,8 @@ export const taskSchema = z.object({
     signingPartnerApprovedAt: z.string().optional(),
     description: z.string().optional(),
     auditPhase: z.enum(['ONBOARDING', 'PLANNING_AND_EXECUTION', 'REVIEW_AND_CONCLUSION']).optional(),
-    taskType: z.enum(['INTERNAL_AUDIT', 'STATUTORY_AUDIT', 'COMPLIANCE_AUDIT', 'CERTIFICATION_SERVICE', 'FINANCIAL_MANAGEMENT', 'INTERIM_REVIEW', 'FILE_STUDY_PLANNING']).optional(),
+    taskType: z.enum(['INTERNAL_AUDIT', 'STATUTORY_AUDIT', 'COMPLIANCE_AUDIT', 'CERTIFICATION_SERVICE', 'FINANCIAL_MANAGEMENT', 'GENERAL', 'OTHER']).optional(),
+    fiscalYear: z.string().optional(),
 });
 
 export const subtaskSchema = z.object({
@@ -66,8 +67,17 @@ export const signupSchema = loginSchema.extend({
     path: ["confirmPassword"],
 });
 
+export const resetPasswordSchema = z.object({
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(6, 'Please confirm your password'),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords must match",
+    path: ["confirmPassword"],
+});
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type SignupFormValues = z.infer<typeof signupSchema>;
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 export type TaskFormValues = z.infer<typeof taskSchema>;
 export type ClientFormValues = z.infer<typeof clientSchema>;
 export type LeaveFormValues = z.infer<typeof leaveSchema>;

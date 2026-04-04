@@ -11,6 +11,8 @@ import {
     sendEmailVerification,
     ActionCodeSettings,
     sendPasswordResetEmail,
+    verifyPasswordResetCode,
+    confirmPasswordReset,
     setPersistence,
     browserLocalPersistence
 } from 'firebase/auth';
@@ -36,6 +38,7 @@ import {
     writeBatch
 } from 'firebase/firestore';
 import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification, RiskAreaDocument, AttendanceLogRequest, AuditPhase } from '../types';
+import { getNepaliFiscalYear } from '../utils/nepaliDate';
 import { getCurrentDateUTC } from '../utils/dates';
 import { EmailService } from './email';
 import { toast } from 'react-hot-toast';
@@ -100,7 +103,6 @@ const getActionCodeSettings = (): ActionCodeSettings => {
     };
 };
 
-// Helper to convert Firestore doc to Typed Object
 // Helper to convert Firestore doc to Typed Object - Ensure doc.id is prioritized and not overwritten by data.id
 const docConverter = <T>(doc: any): T => {
     const data = doc.data();
@@ -355,6 +357,24 @@ export const AuthService = {
             }
         }
     },
+    
+    verifyResetCode: async (code: string) => {
+        try {
+            return await verifyPasswordResetCode(auth, code);
+        } catch (error: any) {
+            console.error("Reset Code Verification Error:", error);
+            throw new Error('Invalid or expired reset link. Please request a new one.');
+        }
+    },
+
+    confirmResetPassword: async (code: string, newPass: string) => {
+        try {
+            await confirmPasswordReset(auth, code, newPass);
+        } catch (error: any) {
+            console.error("Password Confirm Error:", error);
+            throw new Error('Failed to reset password. Please try again.');
+        }
+    },
 
     loginWithGoogle: async (): Promise<UserProfile> => {
         try {
@@ -501,6 +521,10 @@ export const AuthService = {
                 { updates: data }
             );
         }
+    },
+
+    updateTheme: async (uid: string, theme: 'light' | 'dark') => {
+        await updateDoc(doc(db, 'users', uid), { theme });
     },
 
     // Admin creating a placeholder user (profile only)
@@ -828,6 +852,10 @@ export const AuthService = {
         }
     },
 
+    updateAttendance: async (recordId: string, data: Partial<AttendanceRecord>) => {
+        await updateDoc(doc(db, 'attendance', recordId), data);
+    },
+
     getAllTasks: async (): Promise<Task[]> => {
         const q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
@@ -1061,6 +1089,32 @@ export const AuthService = {
             ...updates,
             updatedAt: new Date().toISOString()
         });
+
+        // --- AUTO-ARCHIVING LOGIC (NEW) ---
+        // If task is COMPLETED in Phase 3, check if it's past its Assigned Fiscal Year
+        try {
+            const finalTaskDoc = await getDoc(doc(db, 'tasks', taskId));
+            const task = finalTaskDoc.data() as Task;
+            
+            if (task.status === TaskStatus.COMPLETED && 
+                task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION && 
+                task.fiscalYear) {
+                
+                const currentFY = getNepaliFiscalYear(new Date());
+                // Simple string comparison: if currentFY > assigned FY, archive it.
+                // Multi-year comparison logic: "2080-81" < "2081-82" works as string comparison.
+                if (currentFY > task.fiscalYear) {
+                    await updateDoc(doc(db, 'tasks', taskId), {
+                        status: TaskStatus.ARCHIVED,
+                        archivedFiscalYear: task.fiscalYear,
+                        archivedAt: new Date().toISOString()
+                    });
+                    console.log(`Task ${taskId} auto-archived as it belongs to past fiscal year ${task.fiscalYear}`);
+                }
+            }
+        } catch (archErr) {
+            console.error("Auto-archiving check failed:", archErr);
+        }
 
         if (auth.currentUser) {
             const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -1796,11 +1850,19 @@ export const AuthService = {
         }
     },
 
+    // Soft-delete: move to trash (sets isDeleted + deletedAt, does NOT remove doc)
     deleteResource: async (id: string) => {
         const resourceDoc = await getDoc(doc(db, 'resources', id));
         const resourceData = resourceDoc.exists() ? resourceDoc.data() as Resource : null;
 
-        await deleteDoc(doc(db, 'resources', id));
+        const deletedAt = new Date().toISOString();
+        const deletedBy = auth.currentUser?.uid || '';
+
+        await updateDoc(doc(db, 'resources', id), {
+            isDeleted: true,
+            deletedAt,
+            deletedBy,
+        });
 
         if (auth.currentUser) {
             const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -1811,15 +1873,101 @@ export const AuthService = {
                 action: AuditAction.RESOURCE_DELETED,
                 targetType: 'resource',
                 targetId: id,
-                targetName: 'Resource',
-                details: {}
+                targetName: resourceData?.title || 'Resource',
+                details: { trashedAt: deletedAt }
             });
         }
+    },
+
+    // Restore a trashed resource back to the library
+    restoreResource: async (id: string) => {
+        await updateDoc(doc(db, 'resources', id), {
+            isDeleted: false,
+            deletedAt: null,
+            deletedBy: null,
+        });
+    },
+
+    // Permanently delete a single resource (for Master Admin "empty trash" or force-purge)
+    purgeResource: async (id: string) => {
+        await deleteDoc(doc(db, 'resources', id));
+    },
+
+    // Auto-purge resources that have been in trash for more than 30 days
+    purgeExpiredTrashResources: async () => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 30);
+        const cutoffISO = cutoff.toISOString();
+
+        const snapshot = await getDocs(collection(db, 'resources'));
+        const expired = snapshot.docs.filter(d => {
+            const data = d.data();
+            return data.isDeleted === true && data.deletedAt && data.deletedAt < cutoffISO;
+        });
+
+        await Promise.all(expired.map(d => deleteDoc(d.ref)));
+        return expired.length;
     },
 
     updateResource: async (resource: Resource) => {
         const { id, ...data } = resource;
         await updateDoc(doc(db, 'resources', id), data);
+    },
+
+    // --- TASK ARCHIVING ---
+    archiveTasksByFiscalYear: async (fiscalYear: string) => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+        
+        // Get all completed tasks
+        const q = query(collection(db, 'tasks'), where('status', '==', TaskStatus.COMPLETED));
+        const snapshot = await getDocs(q);
+        
+        const tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
+        
+        // Filter those that belong to the target fiscal year
+        const toArchive = tasks.filter(t => {
+            if (!t.completedAt) return false;
+            return getNepaliFiscalYear(t.completedAt) === fiscalYear;
+        });
+        
+        if (toArchive.length === 0) return 0;
+        
+        const batch = writeBatch(db);
+        toArchive.forEach(t => {
+            const ref = doc(db, 'tasks', t.id);
+            batch.update(ref, {
+                status: TaskStatus.ARCHIVED,
+                archivedFiscalYear: fiscalYear
+            });
+        });
+        
+        await batch.commit();
+        
+        // Log action
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        const userName = userDoc.exists() ? userDoc.data().displayName : 'Admin';
+        await createAuditLog({
+            userId: auth.currentUser.uid,
+            userName: userName,
+            action: AuditAction.TASK_UPDATED,
+            targetType: 'task',
+            targetId: 'multiple',
+            targetName: `FY ${fiscalYear} Archive`,
+            details: { action: 'archived_by_fy', count: toArchive.length, fiscalYear }
+        });
+        
+        return toArchive.length;
+    },
+
+    getArchivedTasks: async (fiscalYear: string): Promise<Task[]> => {
+        const q = query(
+            collection(db, 'tasks'), 
+            where('status', '==', TaskStatus.ARCHIVED),
+            where('archivedFiscalYear', '==', fiscalYear),
+            orderBy('completedAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
     },
 
     // --- NOTIFICATIONS ---

@@ -58,8 +58,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             clearInterval(interval);
             setProgress(100);
 
-            onUploadComplete(result);
-            toast.success('File uploaded successfully!');
+            if (result.success && result.data) {
+                onUploadComplete(result.data);
+                toast.success('File uploaded successfully!');
+            } else {
+                throw new Error(result.error || 'Upload failed');
+            }
         } catch (error: any) {
             console.error("Upload failed", error);
 

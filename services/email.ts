@@ -9,6 +9,11 @@ export const EmailService = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ to, subject, html }),
             });
+
+            if (!response.ok) {
+                console.error(`Email send failed with status ${response.status}`);
+            }
+
             return response.ok;
         } catch (error) {
             console.error('Email send failed:', error);

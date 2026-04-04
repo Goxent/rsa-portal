@@ -15,6 +15,7 @@ import { AuthService } from '../services/firebase';
 import { toast } from 'react-hot-toast';
 import StaffSelect from '../components/StaffSelect';
 import { ClientCardSkeleton } from '../components/ui/LoadingSkeleton';
+import { getAvatarColor, getInitials } from '../utils/userUtils';
 
 import { INITIAL_CLIENTS } from '../constants/initialClients';
 
@@ -459,24 +460,8 @@ const ClientsPage: React.FC = () => {
             {/* Client Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredClients.map((client, index) => {
-                    // Safe color generation
-                    const seedString = client.code || client.name || 'default';
-                    const colors = [
-                        'from-blue-500/20 to-yellow-500/5',
-                        'from-purple-500/20 to-pink-500/5',
-                        'from-emerald-500/20 to-teal-500/5',
-                        'from-orange-500/20 to-red-500/5',
-                        'from-indigo-500/20 to-violet-500/5'
-                    ];
-
-                    let colorIndex = 0;
-                    if (seedString && seedString.length > 0) {
-                        colorIndex = (seedString.charCodeAt(0) + seedString.charCodeAt(seedString.length - 1)) % colors.length;
-                    }
-
-                    const bgGradient = colors[colorIndex] || colors[0];
-                    const accentColor = bgGradient.split(' ')[0].replace('from-', 'text-').replace('/20', '-400');
-                    const borderColor = bgGradient.split(' ')[0].replace('from-', 'border-').replace('/20', '/30');
+                    const clientVisuals = getAvatarColor(client.id || client.name);
+                    const bgGradient = `${clientVisuals.from} ${clientVisuals.to}`;
 
                     // Compute task counts
                     const clientTaskCount = tasks.filter(t => t.clientIds?.includes(client.id)).length;
@@ -507,8 +492,8 @@ const ClientsPage: React.FC = () => {
 
                                 <div className="relative z-10 flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md bg-white/10 text-white border border-white/20`}>
-                                            {client.code.substring(0, 2).toUpperCase()}
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md ${clientVisuals.bg} ${clientVisuals.text} border ${clientVisuals.border} group-hover:scale-110 transition-transform duration-500`}>
+                                            {getInitials(client.name)}
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-white text-lg leading-tight tracking-tight group-hover:text-blue-200 transition-colors">

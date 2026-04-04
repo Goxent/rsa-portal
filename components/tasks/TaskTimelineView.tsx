@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Task, UserProfile, Client, TaskStatus, TaskPriority } from '../../types';
 import { format, subDays, addDays, startOfDay, endOfDay, eachDayOfInterval, isToday, isSameDay, differenceInDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Check } from 'lucide-react';
+import { getAvatarColor, getInitials } from '../../utils/userUtils';
 
 interface TaskTimelineViewProps {
     tasks: Task[];
@@ -77,7 +78,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                 const tc = clientsList.find(c => task.clientIds?.includes(c.id));
                 groupLabel = tc?.signingAuthority || 'Unassigned Auditor';
             } else {
-                groupLabel = task.clientName || 'Internal';
+                groupLabel = 'All Tasks';
             }
 
             if (!groups[groupLabel]) groups[groupLabel] = [];
@@ -104,55 +105,60 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
         // Sort groups alphabetically, then tasks by start date
         const sortedGroups = Object.keys(groups).sort().map(k => ({
             label: k,
-            items: groups[k].sort((a, b) => new Date(a.task.createdAt).getTime() - new Date(b.task.createdAt).getTime())
+            items: groups[k].sort((a, b) => {
+                if (groupBy === 'NONE') {
+                    return (a.task.title || '').localeCompare(b.task.title || '');
+                }
+                return new Date(a.task.createdAt).getTime() - new Date(b.task.createdAt).getTime();
+            })
         }));
 
         return sortedGroups;
     }, [tasks, groupBy, usersList, clientsList, startDate, endDate]);
 
     return (
-        <div className="h-full flex flex-col bg-transparent overflow-hidden">
+        <div className="h-full flex flex-col bg-slate-50/50 dark:bg-transparent overflow-hidden">
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-[#09090b]/50 z-20">
+            <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/[0.06] bg-white/80 dark:bg-[#09090b]/50 backdrop-blur-md z-20">
                 <div className="flex items-center gap-3">
-                    <button onClick={handleToday} className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.08] rounded-md text-[11px] font-bold tracking-widest uppercase text-slate-300 transition-colors border border-white/[0.08]">
+                    <button onClick={handleToday} className="px-3 py-1.5 bg-slate-100 dark:bg-white/[0.03] hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-white/[0.08] rounded-md text-[11px] font-black tracking-widest uppercase text-slate-500 dark:text-slate-300 transition-colors border border-slate-200 dark:border-white/[0.08] shadow-sm hover:shadow">
                         Today
                     </button>
-                    <div className="flex items-center gap-1 bg-black/20 rounded-md p-0.5 border border-white/[0.05]">
-                        <button onClick={handlePrev} className="p-1 hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-white"><ChevronLeft size={14} strokeWidth={2.5} /></button>
-                        <span className="text-[10px] font-bold text-slate-500 px-2 uppercase tracking-widest hidden sm:inline">Timeline</span>
-                        <button onClick={handleNext} className="p-1 hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-white"><ChevronRight size={14} strokeWidth={2.5} /></button>
+                    <div className="flex items-center gap-1 bg-white dark:bg-black/20 rounded-md p-0.5 border border-slate-200 dark:border-white/[0.05] shadow-sm">
+                        <button onClick={handlePrev} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-brand-600 dark:hover:text-white"><ChevronLeft size={14} strokeWidth={2.5} /></button>
+                        <span className="text-[10px] font-black text-slate-500 px-2 uppercase tracking-widest hidden sm:inline">Timeline</span>
+                        <button onClick={handleNext} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-brand-600 dark:hover:text-white"><ChevronRight size={14} strokeWidth={2.5} /></button>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-black/20 px-2 py-1.5 rounded-md border border-white/[0.05]">
+                    <div className="flex items-center gap-2 bg-white dark:bg-black/20 px-3 py-1.5 rounded-md border border-slate-200 dark:border-white/[0.05] shadow-sm">
                         <input
                             type="date"
                             value={startDateStr}
                             onChange={e => setStartDateStr(e.target.value)}
-                            className="bg-transparent text-[11px] text-amber-500 font-bold focus:outline-none cursor-pointer uppercase tracking-wider"
+                            className="bg-transparent text-[11px] text-brand-600 dark:text-amber-500 font-black focus:outline-none cursor-pointer uppercase tracking-wider"
                         />
-                        <span className="text-slate-600 text-[10px] font-bold">—</span>
+                        <span className="text-slate-400 text-[10px] font-black">—</span>
                         <input
                             type="date"
                             value={endDateStr}
                             onChange={e => setEndDateStr(e.target.value)}
-                            className="bg-transparent text-[11px] text-amber-500 font-bold focus:outline-none cursor-pointer uppercase tracking-wider"
+                            className="bg-transparent text-[11px] text-brand-600 dark:text-amber-500 font-black focus:outline-none cursor-pointer uppercase tracking-wider"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Timeline Area */}
-            <div className="flex-1 overflow-auto custom-scrollbar relative bg-[#09090b]">
+            <div className="flex-1 overflow-auto custom-scrollbar relative bg-white dark:bg-[#09090b]">
                 <div className="min-w-max pb-24" style={{ width: SIDEBAR_WIDTH + daysInterval.length * DAY_WIDTH }}>
                     
                     {/* Header Row (Dates) */}
-                    <div className="sticky top-0 z-30 flex bg-[#0a0f1e]/95 backdrop-blur-xl border-b border-white/[0.06] shadow-sm">
+                    <div className="sticky top-0 z-30 flex bg-slate-50/95 dark:bg-[#0a0f1e]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.06] shadow-sm">
                         <div 
-                            className="flex-shrink-0 border-r border-white/[0.06] px-5 py-3 flex items-end sticky left-0 z-40 bg-[#0a0f1e]/95 backdrop-blur-xl" 
+                            className="flex-shrink-0 border-r border-slate-200 dark:border-white/[0.06] px-5 py-3 flex items-end sticky left-0 z-40 bg-slate-50/95 dark:bg-[#0a0f1e]/95 backdrop-blur-xl" 
                             style={{ width: SIDEBAR_WIDTH }}
                         >
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Task Details</span>
+                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Task Details</span>
                         </div>
                         <div className="flex">
                             {daysInterval.map((day, i) => {
@@ -160,11 +166,11 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                 return (
                                     <div 
                                         key={day.toISOString()} 
-                                        className={`flex-shrink-0 flex flex-col items-center justify-end py-2.5 border-r border-white/[0.04] transition-colors ${today ? 'bg-amber-500/[0.05] shadow-[inset_0_-2px_0_theme(colors.amber.500)]' : ''}`}
+                                        className={`flex-shrink-0 flex flex-col items-center justify-end py-2.5 border-r border-slate-200 dark:border-white/[0.04] transition-colors ${today ? 'bg-brand-50 dark:bg-amber-500/[0.05] shadow-[inset_0_-2px_0_theme(colors.brand.500)] dark:shadow-[inset_0_-2px_0_theme(colors.amber.500)]' : ''}`}
                                         style={{ width: DAY_WIDTH }}
                                     >
-                                        <span className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${today ? 'text-amber-500' : 'text-slate-500'}`}>{format(day, 'EEE')}</span>
-                                        <span className={`text-[12px] font-black ${today ? 'text-amber-400' : 'text-slate-300'}`}>{format(day, 'd')}</span>
+                                        <span className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${today ? 'text-brand-600 dark:text-amber-500' : 'text-slate-400 dark:text-slate-500'}`}>{format(day, 'EEE')}</span>
+                                        <span className={`text-[12px] font-black ${today ? 'text-brand-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'}`}>{format(day, 'd')}</span>
                                     </div>
                                 );
                             })}
@@ -175,9 +181,9 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                     <div className="relative">
                         {/* Background Grid Lines (Absolute overlay just for the grid) */}
                         <div className="absolute inset-0 flex pointer-events-none z-0">
-                            <div className="flex-shrink-0 border-r border-white/[0.04]" style={{ width: SIDEBAR_WIDTH }} />
+                            <div className="flex-shrink-0 border-r border-slate-200 dark:border-white/[0.04]" style={{ width: SIDEBAR_WIDTH }} />
                             {daysInterval.map(day => (
-                                <div key={day.toISOString()} className={`flex-shrink-0 border-r border-white/[0.02] ${isToday(day) ? 'bg-amber-500/[0.02]' : ''}`} style={{ width: DAY_WIDTH }} />
+                                <div key={day.toISOString()} className={`flex-shrink-0 border-r border-slate-200/50 dark:border-white/[0.02] ${isToday(day) ? 'bg-brand-50/50 dark:bg-amber-500/[0.02]' : ''}`} style={{ width: DAY_WIDTH }} />
                             ))}
                         </div>
 
@@ -185,29 +191,31 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                         <div className="relative z-10 flex flex-col">
                             {groupedTasks.length === 0 ? (
                                 <div className="h-64 flex flex-col items-center justify-center text-center mt-8 sticky left-0 w-full">
-                                    <CalendarIcon size={40} className="mb-4 text-slate-700 opacity-50" />
-                                    <p className="font-bold text-slate-400">No tasks visible in this timeframe.</p>
-                                    <p className="text-[11px] mt-1 text-slate-500">Try zooming out the dates or adjusting filters.</p>
+                                    <CalendarIcon size={40} className="mb-4 text-slate-400 dark:text-slate-700 opacity-50" />
+                                    <p className="font-black text-slate-500 dark:text-slate-400">No tasks visible in this timeframe.</p>
+                                    <p className="text-[11px] mt-1 text-slate-400 font-medium">Try zooming out the dates or adjusting filters.</p>
                                 </div>
                             ) : (
                                 groupedTasks.map((group, groupIdx) => (
-                                    <div key={groupIdx} className="flex flex-col border-b border-white/[0.02]">
+                                    <div key={groupIdx} className="flex flex-col border-b border-slate-200 dark:border-white/[0.02]">
                                         
                                         {/* Group Header Row */}
-                                        <div className="flex w-full group hover:bg-white/[0.01]">
-                                            <div 
-                                                className="flex-shrink-0 px-5 py-3 border-r border-white/[0.04] sticky left-0 z-20 bg-[#09090b] group-hover:bg-[#0a0f1e] transition-colors"
-                                                style={{ width: SIDEBAR_WIDTH }}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                                                    <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider truncate">{group.label}</span>
-                                                    <span className="ml-auto text-[10px] font-bold text-slate-600 bg-slate-800 px-1.5 rounded">{group.items.length}</span>
+                                        {groupBy !== 'NONE' && (
+                                            <div className="flex w-full group hover:bg-slate-50 dark:hover:bg-white/[0.01]">
+                                                <div 
+                                                    className="flex-shrink-0 px-5 py-3 border-r border-slate-200 dark:border-white/[0.04] sticky left-0 z-20 bg-white dark:bg-[#09090b] group-hover:bg-slate-50 dark:group-hover:bg-[#0a0f1e] transition-colors"
+                                                    style={{ width: SIDEBAR_WIDTH }}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-500 dark:bg-slate-600" />
+                                                        <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider truncate">{group.label}</span>
+                                                        <span className="ml-auto text-[10px] font-black text-slate-500 dark:text-slate-600 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded shadow-sm border border-slate-200 dark:border-transparent">{group.items.length}</span>
+                                                    </div>
                                                 </div>
+                                                {/* Empty span for the rest of the row */}
+                                                <div className="flex-1" />
                                             </div>
-                                            {/* Empty span for the rest of the row */}
-                                            <div className="flex-1" />
-                                        </div>
+                                        )}
 
                                         {/* Task Rows */}
                                         {group.items.map((item: any, itemIdx: number) => {
@@ -223,24 +231,30 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                             const visibleDuration = Math.min(durationDays, maxAvailableDuration);
 
                                             return (
-                                                <div key={task.id} className="flex w-full relative group/row hover:bg-white/[0.02]">
+                                                <div key={task.id} className="flex w-full relative group/row hover:bg-emerald-50/50 dark:hover:bg-white/[0.02]">
                                                     {/* Sidebar Context */}
                                                     <div 
-                                                        className="flex-shrink-0 px-5 py-3 border-r border-white/[0.04] sticky left-0 z-20 bg-[#09090b] group-hover/row:bg-[#0c1322] transition-colors flex items-center gap-3 overflow-hidden cursor-pointer"
+                                                        className="flex-shrink-0 px-5 py-3 border-r border-slate-200 dark:border-white/[0.04] sticky left-0 z-20 bg-white dark:bg-[#09090b] group-hover/row:bg-emerald-50/50 dark:group-hover/row:bg-[#0c1322] transition-colors flex items-center gap-3 overflow-hidden cursor-pointer shadow-sm group-hover/row:shadow-md"
                                                         style={{ width: SIDEBAR_WIDTH }}
                                                         onClick={() => handleOpenEdit(task)}
                                                     >
-                                                        {isDone ? <Check size={14} className="text-emerald-500" strokeWidth={3} /> : <div className="w-3.5 h-3.5 rounded-[4px] border-[1.5px] border-slate-600 transition-colors group-hover/row:border-slate-400" />}
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className={`text-[12px] font-medium truncate transition-colors ${isDone ? 'text-slate-500 line-through' : 'text-slate-200 group-hover/row:text-white'}`}>{task.title}</div>
-                                                            <div className="text-[10px] text-slate-500 font-medium truncate mt-0.5">{task.clientName || 'Internal'}</div>
+                                                        {isDone ? <Check size={14} className="text-brand-500 dark:text-emerald-500 flex-shrink-0" strokeWidth={3} /> : <div className="w-3.5 h-3.5 rounded-[4px] border-[1.5px] border-slate-300 dark:border-slate-600 transition-colors group-hover/row:border-brand-400 dark:group-hover/row:border-slate-400 flex-shrink-0" />}
+                                                        <div className="min-w-0 flex-1 pl-1">
+                                                            <div className={`text-[12px] font-black truncate transition-colors ${isDone ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-200 group-hover/row:text-brand-700 dark:group-hover/row:text-white'}`}>{task.title}</div>
+                                                            <div className="text-[10px] text-slate-500 font-bold truncate mt-0.5">{task.clientName || 'Internal'}</div>
                                                         </div>
                                                         {/* Avatar summary */}
                                                         {task.assignedTo?.length > 0 && (
                                                             <div className="flex -space-x-1 flex-shrink-0 group-hover/row:space-x-0 transition-all duration-300">
-                                                                <div className="w-[22px] h-[22px] rounded-full bg-slate-800 ring-2 ring-[#09090b] group-hover/row:ring-[#0c1322] flex items-center justify-center text-[8px] font-black text-amber-500 shadow-sm transition-all duration-300">
-                                                                    {usersList.find(u => u.uid === task.assignedTo[0])?.displayName?.substring(0,2).toUpperCase() || '?'}
-                                                                </div>
+                                                                {task.assignedTo.slice(0,2).map((uid: string) => {
+                                                                    const u = usersList.find(x => x.uid === uid);
+                                                                    const av = getAvatarColor(uid);
+                                                                    return (
+                                                                        <div key={uid} className={`w-[24px] h-[24px] rounded-full ring-2 ring-white dark:ring-[#09090b] group-hover/row:ring-emerald-50 group-hover/row:dark:ring-[#0c1322] flex items-center justify-center text-[8px] font-black text-white shadow-sm transition-all duration-300 ${av.bg} ${av.text}`}>
+                                                                            {getInitials(u?.displayName || '?')}
+                                                                        </div>
+                                                                    );
+                                                                })}
                                                             </div>
                                                         )}
                                                     </div>
@@ -249,26 +263,27 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                                     <div className="relative py-2.5" style={{ width: daysInterval.length * DAY_WIDTH }}>
                                                         <div 
                                                             onClick={(e) => { e.stopPropagation(); handleOpenEdit(task); }}
-                                                            className={`absolute top-2 bottom-2 rounded-md flex items-center px-3 cursor-pointer transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-px z-10 hover:z-20 ${isDone ? 'opacity-60 saturate-50' : 'group-hover/row:brightness-125'}`}
+                                                            className={`absolute top-2 bottom-2 rounded-[5px] flex items-center px-1.5 cursor-pointer transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 z-10 hover:z-20 ${isDone ? 'opacity-50 saturate-50' : 'group-hover/row:opacity-100 opacity-90'}`}
                                                             style={{ 
                                                                 left: visibleOffset * DAY_WIDTH + 4,
                                                                 width: (visibleDuration * DAY_WIDTH) - 8,
-                                                                background: `linear-gradient(90deg, ${color}35 0%, ${color}15 100%)`,
+                                                                background: `linear-gradient(90deg, ${color}30 0%, ${color}15 100%)`,
                                                                 borderLeft: isCutStart ? 'none' : `3px solid ${color}`,
                                                                 borderRight: isCutEnd ? 'none' : `1px solid ${color}40`,
                                                                 borderTop: `1px solid ${color}40`,
                                                                 borderBottom: `1px solid ${color}40`,
-                                                                borderTopLeftRadius: isCutStart ? 0 : 6,
-                                                                borderBottomLeftRadius: isCutStart ? 0 : 6,
-                                                                borderTopRightRadius: isCutEnd ? 0 : 6,
-                                                                borderBottomRightRadius: isCutEnd ? 0 : 6,
-                                                                boxShadow: `inset 0 1px 0 ${color}20` /* Subtle inner top highlight */
+                                                                borderTopLeftRadius: isCutStart ? 0 : 5,
+                                                                borderBottomLeftRadius: isCutStart ? 0 : 5,
+                                                                borderTopRightRadius: isCutEnd ? 0 : 5,
+                                                                borderBottomRightRadius: isCutEnd ? 0 : 5,
                                                             }}
                                                         >
                                                             {/* Pill inner text */}
-                                                            <span className="text-[10px] font-bold truncate tracking-wide mix-blend-plus-lighter" style={{ color: color }}>
-                                                                {task.title}
-                                                            </span>
+                                                            <div className="min-w-0 flex-1 truncate">
+                                                                <span className="text-[10.5px] font-black truncate tracking-wide mix-blend-color-burn dark:mix-blend-normal" style={{ color: color }}>
+                                                                    {task.title}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>

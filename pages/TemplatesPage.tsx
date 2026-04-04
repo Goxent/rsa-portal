@@ -4,7 +4,7 @@ import {
     File, FileSpreadsheet, FileCode, CheckSquare, Sparkles, 
     ExternalLink, X, Library, BookOpen, Download, 
     FolderOpen, FileJson, FileType, Loader2, Palette, Check, AlertTriangle, ChevronDown, ChevronRight, ListTodo,
-    ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, Activity
+    ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, Activity, Edit2, Save, Book, ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -18,6 +18,8 @@ import { StorageService } from '../services/storage';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileUploader } from '../components/common/FileUploader';
 import { DocumentViewer } from '../components/common/DocumentViewer';
+import { useQueryClient } from '@tanstack/react-query';
+import { templateKeys } from '../hooks/useTemplates';
 import ResearchAssistant from '../components/ResearchAssistant';
 import toast from 'react-hot-toast';
 import { useModal } from '../context/ModalContext';
@@ -34,6 +36,7 @@ type ActiveTab = 'templates' | 'knowledge';
 const TemplatesPage: React.FC = () => {
     const { user } = useAuth();
     const { openModal } = useModal();
+    const queryClient = useQueryClient();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('knowledge');
@@ -51,10 +54,24 @@ const TemplatesPage: React.FC = () => {
     const [isTemplateFolderModalOpen, setIsTemplateFolderModalOpen] = useState(false);
     const [currentTemplateFolder, setCurrentTemplateFolder] = useState<Partial<TemplateFolder>>({ name: '', color: '#F59E0B', icon: 'FolderOpen' });
     
-    const [newTemplate, setNewTemplate] = useState({
+    const [newTemplate, setNewTemplate] = useState<{
+        id?: string;
+        name: string;
+        description: string;
+        category: 'TASK' | 'CHECKLIST' | 'DOCUMENT' | 'WORKFLOW';
+        type: string;
+        content: string;
+        priority: string;
+        expectedDays: number;
+        taskType?: TaskType;
+        tags: string[];
+        attachments: any[];
+        folderId: string;
+        folderName?: string;
+    }>({
         name: '', description: '', category: 'TASK', type: '', content: '',
-        priority: 'MEDIUM', expectedDays: 7, taskType: undefined as TaskType | undefined,
-        tags: [] as string[], attachments: [] as any[], folderId: '', folderName: ''
+        priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+        tags: [], attachments: [], folderId: '', folderName: ''
     });
 
     const [phaseSubtasks, setPhaseSubtasks] = useState<{ [key in AuditPhase]: any[] }>({
@@ -128,7 +145,8 @@ const TemplatesPage: React.FC = () => {
 
     // ── Template handlers ──────────────────────────────────────────────────────
     const handleCreateTemplate = async () => {
-        if (!user || !newTemplate.name) return;
+        if (!user || !newTemplate.name || isSubmitting) return;
+        setIsSubmitting(true);
         try {
             // Flatten phase subtasks
             const subtaskDetails = Object.entries(phaseSubtasks).flatMap(([phase, tasks]) => 
@@ -143,7 +161,14 @@ const TemplatesPage: React.FC = () => {
                 createdBy: user.uid
             };
 
-            await TemplateService.createTemplate(payload as any);
+            if (newTemplate.id) {
+                await TemplateService.updateTemplate(newTemplate.id, payload as any);
+                toast.success('Template updated successfully');
+            } else {
+                await TemplateService.createTemplate(payload as any);
+                toast.success('Template created successfully');
+            }
+
             // Reset everything
             setNewTemplate({ 
                 name: '', description: '', category: 'TASK', type: '', content: '',
@@ -164,44 +189,106 @@ const TemplatesPage: React.FC = () => {
             });
             setNextTemplateId('');
             setIsModalOpen(false);
-            toast.success('Template created successfully');
+            
+            // Intelligence: Invalidate templates query to sync with task creation workflow
+            queryClient.invalidateQueries({ queryKey: templateKeys.all });
+            
             await loadTemplates();
-        } catch { toast.error('Failed to create template'); }
+        } catch (error) { 
+            console.error(error);
+            toast.error(newTemplate.id ? 'Failed to update template' : 'Failed to create template'); 
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleEditTemplate = (template: Template) => {
+        setNewTemplate({
+            id: template.id,
+            name: template.name,
+            description: template.description || '',
+            category: (template.category as any) || 'TASK',
+            type: template.type || '',
+            content: template.content || '',
+            priority: template.priority || 'MEDIUM',
+            expectedDays: template.expectedDays || 7,
+            taskType: template.taskType,
+            tags: template.tags || [],
+            attachments: template.attachments || [],
+            folderId: template.folderId || '',
+            folderName: template.folderName
+        });
+
+        // Populate subtasks
+        const phaseMap: any = {
+            [AuditPhase.ONBOARDING]: [],
+            [AuditPhase.PLANNING_AND_EXECUTION]: [],
+            [AuditPhase.REVIEW_AND_CONCLUSION]: []
+        };
+        
+        if (template.subtaskDetails) {
+            template.subtaskDetails.forEach((st: any) => {
+                if (st.phase && phaseMap[st.phase]) {
+                    phaseMap[st.phase].push(st);
+                }
+            });
+        }
+        setPhaseSubtasks(phaseMap);
+
+        if (template.statusSubtasks) {
+            setStatusSubtaskMap(template.statusSubtasks);
+        }
+
+        setNextTemplateId(template.nextTemplateId || '');
+        setIsModalOpen(true);
+    };
+
+    const handleDuplicateTemplate = (template: Template) => {
+        handleEditTemplate(template);
+        setNewTemplate(prev => ({ ...prev, id: undefined, name: `${prev.name} (Copy)` }));
+        toast.success('Template duplicated - make changes and save');
     };
 
     const addPhaseSubtask = (phase: AuditPhase) => {
-        const newItem = { title: '', minimumRequirement: '', assigneeRole: '', daysOffset: 0 };
+        const newItem = { title: '' };
         setPhaseSubtasks(prev => ({ ...prev, [phase]: [...(prev[phase] || []), newItem] }));
+    };
+
+    const updatePhaseSubtaskField = (phase: AuditPhase, idx: number, field: string, value: any) => {
+        setPhaseSubtasks(prev => {
+            const newPhaseTasks = [...(prev[phase] || [])];
+            newPhaseTasks[idx] = { ...newPhaseTasks[idx], [field]: value };
+            return { ...prev, [phase]: newPhaseTasks };
+        });
     };
 
     const removePhaseSubtask = (phase: AuditPhase, index: number) => {
         setPhaseSubtasks(prev => ({ ...prev, [phase]: prev[phase].filter((_, i) => i !== index) }));
     };
 
-    const updatePhaseSubtaskField = (phase: AuditPhase, index: number, field: string, value: any) => {
-        setPhaseSubtasks(prev => ({
-            ...prev,
-            [phase]: prev[phase].map((item, i) => i === index ? { ...item, [field]: value } : item)
-        }));
-    };
-
     const addStatusSubtask = (status: TaskStatus) => {
-        const newItem = { title: '', minimumRequirement: '' };
-        setStatusSubtaskMap(prev => ({ ...prev, [status]: [...(prev[status] || []), newItem] }));
-    };
-
-    const removeStatusSubtask = (status: TaskStatus, index: number) => {
-        setStatusSubtaskMap(prev => ({ ...prev, [status]: prev[status].filter((_, i) => i !== index) }));
-    };
-
-    const updateStatusSubtaskField = (status: TaskStatus, index: number, field: string, value: any) => {
         setStatusSubtaskMap(prev => ({
             ...prev,
-            [status]: prev[status].map((item, i) => i === index ? { ...item, [field]: value } : item)
+            [status]: [...(prev[status] || []), { title: '' }]
         }));
     };
 
-    const toggleSection = (section: keyof typeof expandedSections) => {
+    const updateStatusSubtaskField = (status: TaskStatus, idx: number, field: string, value: any) => {
+        setStatusSubtaskMap(prev => {
+            const newStatusTasks = [...(prev[status] || [])];
+            newStatusTasks[idx] = { ...newStatusTasks[idx], [field]: value };
+            return { ...prev, [status]: newStatusTasks };
+        });
+    };
+
+    const removeStatusSubtask = (status: TaskStatus, idx: number) => {
+        setStatusSubtaskMap(prev => ({
+            ...prev,
+            [status]: prev[status].filter((_, i) => i !== idx)
+        }));
+    };
+
+    const toggleSection = (section: 'phases' | 'statuses' | 'workflow') => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
@@ -255,6 +342,7 @@ const TemplatesPage: React.FC = () => {
             try {
                 await TemplateService.deleteTemplate(id);
                 toast.success('Template deleted');
+                queryClient.invalidateQueries({ queryKey: templateKeys.all });
                 loadTemplates();
             } catch { toast.error('Delete failed'); }
         }
@@ -395,44 +483,46 @@ const TemplatesPage: React.FC = () => {
         onPreview: (t: Template) => void;
     }> = ({ template, index, isAdmin, onDelete, onPreview }) => (
         <div 
-            className="bg-[#0d1117]/80 backdrop-blur-sm border border-white/[0.06] p-4 rounded-xl hover:border-white/[0.12] transition-all group relative overflow-hidden flex flex-col h-full hover:shadow-lg hover:shadow-black/20 hover:-translate-y-[1px]"
+            className="group relative overflow-hidden flex flex-col h-full rounded-2xl bg-[#0d1117]/80 backdrop-blur-md border border-white/[0.05] hover:border-amber-500/30 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1"
             style={{ animationDelay: `${index * 50}ms` }}
         >
-            <div className="flex items-start justify-between mb-3">
-                <div className="p-2.5 bg-white/[0.04] rounded-lg border border-white/[0.06] group-hover:border-white/[0.12] transition-all">
-                    {template.category === 'CHECKLIST' ? <CheckSquare className="text-amber-400" size={18} /> : 
-                     template.category === 'TASK' ? <Activity className="text-indigo-400" size={18} /> :
-                     <FileText className="text-cyan-400" size={18} />}
+            {/* Visual Accent */}
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <div className="p-5 flex flex-col h-full">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-white/[0.03] rounded-xl border border-white/[0.06] group-hover:bg-amber-500/10 group-hover:border-amber-500/20 transition-all shadow-inner">
+                        {template.category === 'CHECKLIST' ? <ListTodo className="text-amber-400" size={20} /> : 
+                         template.category === 'TASK' ? <Activity className="text-indigo-400" size={20} /> :
+                         <FileText className="text-cyan-400" size={20} />}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {template.taskType && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-tighter">
+                                {(() => {
+                                    const Icon = {
+                                        ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
+                                    }[TASK_TYPE_ICONS[template.taskType]] || Activity;
+                                    return <Icon size={10} />;
+                                })()}
+                                {TASK_TYPE_LABELS[template.taskType]}
+                            </div>
+                        )}
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-wider ${
+                            template.category === 'TASK' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                            template.category === 'CHECKLIST' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                            template.category === 'DOCUMENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                        }`}>
+                            {template.category}
+                        </span>
+                    </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                    {template.taskType && (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                            {(() => {
-                                const Icon = {
-                                    ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
-                                }[TASK_TYPE_ICONS[template.taskType]] || Activity;
-                                return <Icon size={10} />;
-                            })()}
-                            {TASK_TYPE_LABELS[template.taskType]}
-                        </div>
-                    )}
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border ${
-                        template.category === 'TASK' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
-                        template.category === 'CHECKLIST' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        template.category === 'DOCUMENT' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                        'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                    }`}>
-                        {template.category}
-                    </span>
-                    {isAdmin && (
-                        <button onClick={() => onDelete(template.id!)} className="text-gray-600 hover:text-red-400 transition-colors p-0.5 rounded hover:bg-red-500/10">
-                            <Trash2 size={12} />
-                        </button>
-                    )}
+
+                <div className="flex-1">
+                    <h3 className="font-black text-white text-base mb-1.5 leading-none transition-colors group-hover:text-amber-400 uppercase tracking-tight">{template.name}</h3>
+                    <p className="text-[12px] text-gray-500 mb-4 line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">{template.description || 'No description provided.'}</p>
                 </div>
-            </div>
-            <h3 className="font-semibold text-white text-sm mb-1 leading-snug">{template.name}</h3>
-            <p className="text-[12px] text-slate-500 mb-3 line-clamp-2 flex-1">{template.description}</p>
 
             {template.attachments && template.attachments.length > 0 && (
                 <div className="mb-3 space-y-1">
@@ -448,15 +538,31 @@ const TemplatesPage: React.FC = () => {
                 </div>
             )}
 
-            <div className="pt-2.5 border-t border-white/[0.04] mt-auto flex items-center justify-between">
-                <div className="flex items-center space-x-1 text-[10px] text-slate-600">
-                    <Star size={10} className="text-amber-500/60" />
-                    <span>{template.usageCount || 0} uses</span>
+                <div className="pt-4 border-t border-white/[0.05] mt-auto flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                            <Star size={12} className="text-amber-500/60" />
+                            <span>{template.usageCount || 0} uses</span>
+                        </div>
+                        {isAdmin && (
+                            <div className="flex items-center gap-2 border-l border-white/10 pl-3">
+                                <button onClick={() => handleEditTemplate(template)} className="text-gray-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5" title="Edit Template">
+                                    <Edit2 size={13} />
+                                </button>
+                                <button onClick={() => handleDuplicateTemplate(template)} className="text-gray-500 hover:text-indigo-400 transition-colors p-1.5 rounded-lg hover:bg-indigo-500/10" title="Duplicate Template">
+                                    <Copy size={13} />
+                                </button>
+                                <button onClick={() => onDelete(template.id!)} className="text-gray-600 hover:text-rose-400 transition-colors p-1.5 rounded-lg hover:bg-rose-500/10" title="Delete Template">
+                                    <Trash2 size={13} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <button onClick={() => onPreview(template)}
+                        className="text-[11px] font-black text-amber-500 hover:text-amber-400 flex items-center transition-all group/btn uppercase tracking-widest">
+                        View Details <ChevronRight size={14} className="ml-0.5 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
                 </div>
-                <button onClick={() => onPreview(template)}
-                    className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center transition-colors">
-                    <ExternalLink size={11} className="mr-1" /> View & Use
-                </button>
             </div>
         </div>
     );
@@ -481,10 +587,6 @@ const TemplatesPage: React.FC = () => {
                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
                         <BookOpen size={14} className="text-blue-400" />
                         <span className="text-xs font-bold text-blue-300">{resources.length} Documents</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                        <FileCode size={14} className="text-amber-400" />
-                        <span className="text-xs font-bold text-amber-300">{templates.length} Templates</span>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                         <FileCode size={14} className="text-amber-400" />
@@ -783,8 +885,15 @@ const TemplatesPage: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
                     <div className="glass-modal rounded-2xl w-full max-w-2xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-white flex items-center"><Plus size={16} className="mr-2 text-amber-400" /> Create New Template</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={18} /></button>
+                            <h3 className="text-xl font-black text-white flex items-center uppercase tracking-tighter"><Plus size={20} className="mr-3 text-amber-400" /> {newTemplate.id ? 'Edit Template' : 'Create New Template'}</h3>
+                            <button onClick={() => {
+                                setIsModalOpen(false);
+                                setNewTemplate({ 
+                                    name: '', description: '', category: 'TASK', type: '', content: '',
+                                    priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+                                    tags: [], attachments: [], folderId: '', folderName: '' 
+                                });
+                            }} className="w-10 h-10 rounded-full hover:bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition-all"><X size={20} /></button>
                         </div>
                         <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-2 gap-4">
@@ -937,39 +1046,15 @@ const TemplatesPage: React.FC = () => {
 
                                                     <div className="space-y-2">
                                                         {phaseSubtasks[activePhaseTab].map((item, idx) => (
-                                                            <div key={idx} className="flex flex-col sm:flex-row gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] group">
-                                                                <div className="flex-1 space-y-2">
+                                                            <div key={idx} className="flex gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] group items-center">
+                                                                <div className="flex-1">
                                                                     <input type="text" placeholder="Subtask title (e.g. Verify Client ID)" required
-                                                                        className="w-full bg-transparent border-none text-sm text-white focus:ring-0 p-0 placeholder:text-gray-600"
+                                                                        className="w-full bg-transparent border-none text-sm text-white focus:ring-0 p-0 placeholder:text-gray-600 font-medium"
                                                                         value={item.title} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'title', e.target.value)} />
-                                                                    <input type="text" placeholder="Min. requirement..."
-                                                                        className="w-full bg-transparent border-none text-[11px] text-gray-500 focus:ring-0 p-0 placeholder:text-gray-700"
-                                                                        value={item.minimumRequirement || ''} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'minimumRequirement', e.target.value)} />
-                                                                    <input type="text" placeholder="SOP Deep Link (Optional)"
-                                                                        className="w-full bg-transparent border-none text-[11px] text-brand-400 focus:ring-0 p-0 placeholder:text-gray-700 font-mono"
-                                                                        value={item.sopUrl || ''} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'sopUrl', e.target.value)} />
-                                                                    <label className="flex items-center gap-2 mt-2 select-none cursor-pointer">
-                                                                        <input type="checkbox"
-                                                                            className="rounded border-white/10 bg-black/20 text-brand-500 focus:ring-brand-500/20 w-3 h-3"
-                                                                            checked={!!item.isEvidenceMandatory} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'isEvidenceMandatory', e.target.checked)} />
-                                                                        <span className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Mandatory Evidence Required</span>
-                                                                    </label>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <select className="bg-white/5 border-none rounded-lg text-[10px] text-gray-400 focus:ring-0 py-1"
-                                                                        value={item.assigneeRole} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'assigneeRole', e.target.value)}>
-                                                                        <option value="">— Any —</option>
-                                                                        {Object.values(UserRole).map(role => <option key={role} value={role}>{role}</option>)}
-                                                                    </select>
-                                                                    <div className="relative">
-                                                                        <input type="number" placeholder="Days" className="w-16 bg-white/5 border-none rounded-lg text-[10px] text-gray-400 focus:ring-0 py-1 pl-2 pr-6"
-                                                                            value={item.daysOffset} onChange={e => updatePhaseSubtaskField(activePhaseTab, idx, 'daysOffset', parseInt(e.target.value) || 0)} />
-                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-gray-600 font-bold uppercase pointer-events-none">Days</span>
-                                                                    </div>
-                                                                    <button type="button" onClick={() => removePhaseSubtask(activePhaseTab, idx)} className="p-1.5 rounded-lg text-gray-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all">
-                                                                        <Trash2 size={14} />
-                                                                    </button>
-                                                                </div>
+                                                                <button type="button" onClick={() => removePhaseSubtask(activePhaseTab, idx)} className="p-1.5 rounded-lg text-gray-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all">
+                                                                    <Trash2 size={14} />
+                                                                </button>
                                                             </div>
                                                         ))}
                                                         <button type="button" onClick={() => addPhaseSubtask(activePhaseTab)}
@@ -983,15 +1068,15 @@ const TemplatesPage: React.FC = () => {
                                     </AnimatePresence>
                                 </div>
 
-                                {/* SECTION 2: Auto-Subtasks by Status Transition */}
+                                {/* SECTION 2: Status-based Automation (Reviewer Checklists) */}
                                 <div className="col-span-2 border-t border-white/5 pt-4">
                                     <button type="button" onClick={() => toggleSection('statuses')}
                                         className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
-                                        <div className="flex items-center gap-2 text-purple-500">
-                                            <FileType size={18} />
-                                            <span className="text-sm font-black uppercase tracking-wider">Status-Change Rules</span>
+                                        <div className="flex items-center gap-2 text-purple-400">
+                                            <Sparkles size={18} />
+                                            <span className="text-sm font-black uppercase tracking-wider">Status-based Automation</span>
                                             <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
-                                                {Object.values(statusSubtaskMap).flat().length} transition items
+                                                {Object.values(statusSubtaskMap).flat().length} Hooks
                                             </span>
                                         </div>
                                         {expandedSections.statuses ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
@@ -1000,51 +1085,46 @@ const TemplatesPage: React.FC = () => {
                                     <AnimatePresence>
                                         {expandedSections.statuses && (
                                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                                <div className="p-4 space-y-2">
-                                                    {[TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED, TaskStatus.ARCHIVED].map(status => (
-                                                        <div key={status} className="border border-white/5 rounded-xl overflow-hidden">
+                                                <div className="p-4 space-y-3">
+                                                    <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3 mb-4">
+                                                        <p className="text-[10px] text-purple-300 font-medium leading-relaxed">
+                                                            Subtasks defined here will be <b>automatically injected</b> into the task when it enters the selected status (e.g. Under Review). Perfect for reviewer checklists.
+                                                        </p>
+                                                    </div>
+
+                                                    {[TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED].map(status => (
+                                                        <div key={status} className="border border-white/5 rounded-xl overflow-hidden bg-white/[0.01]">
                                                             <button type="button" onClick={() => toggleStatusAccordion(status)}
-                                                                className="flex items-center justify-between w-full px-4 py-2 bg-black/20 hover:bg-black/30 transition-all">
+                                                                className="w-full px-4 py-2 flex items-center justify-between hover:bg-white/[0.03] transition-colors">
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                                    Trigger: {status.replace(/_/g, ' ')}
+                                                                </span>
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className={`w-2 h-2 rounded-full ${status === TaskStatus.COMPLETED ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">On transition to {status.replace(/_/g, ' ')}</span>
-                                                                    <span className="text-[10px] text-gray-500 font-mono">({statusSubtaskMap[status]?.length || 0})</span>
+                                                                    <span className="text-[9px] font-bold text-gray-600">{(statusSubtaskMap[status] || []).length} items</span>
+                                                                    {openStatusAccordions.includes(status) ? <ChevronDown size={14} className="text-gray-600" /> : <ChevronRight size={14} className="text-gray-600" />}
                                                                 </div>
-                                                                {openStatusAccordions.includes(status) ? <ChevronDown size={12} className="text-gray-600" /> : <ChevronRight size={12} className="text-gray-600" />}
                                                             </button>
-                                                            <AnimatePresence>
-                                                                {openStatusAccordions.includes(status) && (
-                                                                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-white/[0.01]">
-                                                                        <div className="p-3 space-y-2">
-                                                                            {statusSubtaskMap[status]?.map((item, idx) => (
-                                                                                <div key={idx} className="flex gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] group">
-                                                                                    <div className="flex-1 space-y-1">
-                                                                                        <input type="text" placeholder="Inject subtask title..." className="w-full bg-transparent border-none text-xs text-white focus:ring-0 p-0 placeholder:text-gray-600 font-bold"
-                                                                                            value={item.title} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'title', e.target.value)} />
-                                                                                        <input type="text" placeholder="Requirement..." className="w-full bg-transparent border-none text-[10px] text-gray-500 focus:ring-0 p-0 placeholder:text-gray-700"
-                                                                                            value={item.minimumRequirement || ''} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'minimumRequirement', e.target.value)} />
-                                                                                        <input type="text" placeholder="SOP Link..." className="w-full bg-transparent border-none text-[10px] text-brand-400 font-mono focus:ring-0 p-0 placeholder:text-gray-700"
-                                                                                            value={item.sopUrl || ''} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'sopUrl', e.target.value)} />
-                                                                                        <label className="flex items-center gap-2 mt-1 select-none cursor-pointer">
-                                                                                            <input type="checkbox"
-                                                                                                className="rounded border-white/10 bg-black/20 text-brand-500 focus:ring-brand-500/20 w-3 h-3"
-                                                                                                checked={!!item.isEvidenceMandatory} onChange={e => updateStatusSubtaskField(status as TaskStatus, idx, 'isEvidenceMandatory', e.target.checked)} />
-                                                                                            <span className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Mandatory Evidence</span>
-                                                                                        </label>
-                                                                                    </div>
-                                                                                    <button type="button" onClick={() => removeStatusSubtask(status as TaskStatus, idx)} className="text-gray-600 hover:text-red-400 p-1">
-                                                                                        <X size={12} />
-                                                                                    </button>
-                                                                                </div>
-                                                                            ))}
-                                                                            <button type="button" onClick={() => addStatusSubtask(status as TaskStatus)}
-                                                                                className="text-[10px] font-bold text-amber-500 hover:text-amber-400 flex items-center gap-1 pl-2">
-                                                                                <Plus size={12} /> Add Rule for {status}
+                                                            
+                                                            {openStatusAccordions.includes(status) && (
+                                                                <div className="p-3 bg-black/10 space-y-2">
+                                                                    {(statusSubtaskMap[status] || []).map((item, idx) => (
+                                                                        <div key={idx} className="flex gap-2 items-center bg-white/[0.03] p-2 px-3 rounded-lg border border-white/5">
+                                                                            <div className="flex-1">
+                                                                                <input type="text" placeholder="Checklist item (e.g. Verify Sign-offs)"
+                                                                                    className="w-full bg-transparent border-none text-[11px] text-white focus:ring-0 p-0 placeholder:text-gray-600 font-medium"
+                                                                                    value={item.title} onChange={e => updateStatusSubtaskField(status, idx, 'title', e.target.value)} />
+                                                                            </div>
+                                                                            <button type="button" onClick={() => removeStatusSubtask(status, idx)} className="text-gray-600 hover:text-rose-500 p-1">
+                                                                                <Trash2 size={12} />
                                                                             </button>
                                                                         </div>
-                                                                    </motion.div>
-                                                                )}
-                                                            </AnimatePresence>
+                                                                    ))}
+                                                                    <button type="button" onClick={() => addStatusSubtask(status)}
+                                                                        className="w-full py-1.5 rounded-lg border border-dashed border-white/5 text-[9px] font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all">
+                                                                        + Add Hook Item
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1053,107 +1133,200 @@ const TemplatesPage: React.FC = () => {
                                     </AnimatePresence>
                                 </div>
 
-                                {/* SECTION 3: Workflow Chain */}
-                                <div className="col-span-2 border-t border-white/5 pt-4">
-                                    <button type="button" onClick={() => toggleSection('workflow')}
-                                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
-                                        <div className="flex items-center gap-2 text-emerald-500">
-                                            <Copy size={18} />
-                                            <span className="text-sm font-black uppercase tracking-wider">Workflow Chain</span>
-                                            {nextTemplateId && <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full ml-2">Active</span>}
-                                        </div>
-                                        {expandedSections.workflow ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {expandedSections.workflow && (
-                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                                <div className="p-4 space-y-3">
-                                                    <div>
-                                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Auto-trigger template on completion:</label>
-                                                        <div className="flex gap-2">
-                                                            <select className="flex-1 glass-input rounded-xl px-4 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-emerald-500"
-                                                                value={nextTemplateId} onChange={e => setNextTemplateId(e.target.value)}>
-                                                                <option value="">— None —</option>
-                                                                {templates.map(t => (
-                                                                    <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
-                                                                ))}
-                                                            </select>
-                                                            {nextTemplateId && (
-                                                                <button type="button" onClick={() => setNextTemplateId('')} className="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all">
-                                                                    <X size={18} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <p className="mt-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-[11px] text-emerald-300/70 leading-relaxed italic">
-                                                            <Sparkles size={12} className="inline mr-1" />
-                                                            When a task using this template is marked <strong>COMPLETED</strong>, the selected template's phase-1 subtasks will be automatically added to a new linked task.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
                             </div>
                         </div>
-                        <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end space-x-3">
-                            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
-                            <button onClick={handleCreateTemplate} className="bg-amber-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-amber-500 shadow-lg transition-all">
-                                Create Template
-                            </button>
+                        <div className="p-6 border-t border-white/10 bg-white/5 flex justify-between items-center">
+                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">{isSubmitting ? 'Processing request...' : 'Ready to save'}</div>
+                            <div className="flex space-x-3">
+                                <button onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-xs font-black text-gray-400 hover:text-white hover:bg-white/5 transition-all uppercase tracking-widest">Cancel</button>
+                                <button 
+                                    onClick={handleCreateTemplate} 
+                                    disabled={isSubmitting}
+                                    className="bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-black px-8 py-2.5 rounded-xl text-xs font-black hover:bg-amber-500 shadow-[0_10px_30px_rgba(245,158,11,0.2)] transition-all transform hover:-translate-y-0.5 active:scale-95 uppercase tracking-widest flex items-center"
+                                >
+                                    {isSubmitting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
+                                    {newTemplate.id ? 'Save Changes' : 'Create Template'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ── Template Preview Modal ────────────────────────────────────────── */}
             {previewTemplate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="glass-modal rounded-2xl w-full max-w-3xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
-                        <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white flex items-center"><FileText className="mr-2 text-amber-400" /> {previewTemplate.name}</h3>
-                            <button onClick={() => setPreviewTemplate(null)} className="text-gray-400 hover:text-white transition-colors"><X size={22} /></button>
-                        </div>
-                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-5">
-                            <div className="flex gap-2">
-                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">{previewTemplate.category}</span>
-                                {previewTemplate.type && <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">{previewTemplate.type}</span>}
-                            </div>
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Description</h4>
-                                <p className="text-gray-300 leading-relaxed text-sm">{previewTemplate.description}</p>
-                            </div>
-                            {previewTemplate.content && (
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Content Preview</h4>
-                                    <div className="bg-black/30 p-4 rounded-xl border border-white/10 font-mono text-sm text-gray-300 whitespace-pre-wrap max-h-56 overflow-y-auto">{previewTemplate.content}</div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-lg p-4 animate-in fade-in duration-300">
+                    <div className="glass-modal rounded-[32px] w-full max-w-4xl border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.8)] flex flex-col max-h-[90vh]">
+                        <div className="px-10 py-8 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-2xl font-black text-white flex items-center tracking-tighter uppercase">
+                                    <Book size={24} className="mr-4 text-amber-500" /> {previewTemplate.name}
+                                </h3>
+                                <div className="flex gap-3 mt-3">
+                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/20">{previewTemplate.category}</span>
+                                    {previewTemplate.taskType && (
+                                        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 flex items-center gap-1.5">
+                                            {(() => {
+                                                const Icon = {
+                                                    ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
+                                                }[TASK_TYPE_ICONS[previewTemplate.taskType]] || Activity;
+                                                return <Icon size={12} />;
+                                            })()}
+                                            {TASK_TYPE_LABELS[previewTemplate.taskType]}
+                                        </span>
+                                    )}
                                 </div>
-                            )}
-                            {previewTemplate.attachments && previewTemplate.attachments.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Attachments</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {previewTemplate.attachments.map((att: any, i: number) => (
-                                            <a key={i} href={att.url} target="_blank" rel="noreferrer"
-                                                className="flex items-center p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group">
-                                                <div className="mr-3 p-2 bg-white/5 rounded-lg text-amber-400">{getTemplateIcon(att.name)}</div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-200 truncate group-hover:text-amber-300 transition-colors">{att.name}</p>
-                                                    <p className="text-xs text-gray-500">Click to view</p>
-                                                </div>
-                                                <ExternalLink size={13} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </a>
-                                        ))}
+                            </div>
+                            <button onClick={() => setPreviewTemplate(null)} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all shadow-xl"><X size={24} /></button>
+                        </div>
+                        
+                        <div className="p-10 overflow-y-auto custom-scrollbar space-y-10 bg-[#080a0c]">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                                <div className="lg:col-span-2 space-y-8">
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                            <div className="w-1 h-3 bg-amber-500 rounded-full" /> Description
+                                        </h4>
+                                        <p className="text-gray-300 leading-relaxed text-sm font-medium">{previewTemplate.description || 'No description provided for this template.'}</p>
+                                    </div>
+
+                                    {previewTemplate.content && (
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <div className="w-1 h-3 bg-amber-500 rounded-full" /> Guidelines & Instructions
+                                            </h4>
+                                            <div className="bg-white/[0.02] p-6 rounded-[24px] border border-white/5 font-mono text-sm text-gray-400 whitespace-pre-wrap leading-relaxed shadow-inner">
+                                                {previewTemplate.content}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* PHASE-WISE SUBTASKS VIEW */}
+                                    {previewTemplate.subtaskDetails && previewTemplate.subtaskDetails.length > 0 && (
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <div className="w-1 h-3 bg-brand-500 rounded-full" /> SOP Protocol Details
+                                            </h4>
+                                            
+                                            <div className="space-y-8">
+                                                {Object.values(AuditPhase).map(phase => {
+                                                    const phaseTasks = (previewTemplate as any).subtaskDetails?.filter((st: any) => st.phase === phase);
+                                                    if (!phaseTasks || phaseTasks.length === 0) return null;
+
+                                                    return (
+                                                        <div key={phase} className="space-y-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                                                    {phase.replace(/_/g, ' ')}
+                                                                </div>
+                                                                <div className="h-px flex-1 bg-white/[0.05]" />
+                                                            </div>
+                                                            <div className="grid grid-cols-1 gap-3">
+                                                                {phaseTasks.map((st: any, i: number) => (
+                                                                    <div key={i} className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl flex items-start gap-4">
+                                                                        <div className="w-8 h-8 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400 text-xs font-black shadow-inner">
+                                                                            {i + 1}
+                                                                        </div>
+                                                                        <div className="flex-1">
+                                                                            <p className="text-sm font-bold text-white uppercase tracking-tight">{st.title}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-10">
+                                    {/* ATTACHMENTS */}
+                                    {previewTemplate.attachments && previewTemplate.attachments.length > 0 && (
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <div className="w-1 h-3 bg-amber-500 rounded-full" /> Reference Files
+                                            </h4>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {previewTemplate.attachments.map((att: any, i: number) => (
+                                                    <a key={i} href={att.url} target="_blank" rel="noreferrer"
+                                                        className="flex items-center p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-amber-500/30 transition-all group overflow-hidden relative shadow-sm">
+                                                        <div className="mr-4 p-3 bg-black/40 rounded-xl group-hover:bg-amber-500/20 transition-colors shadow-inner">{getTemplateIcon(att.name)}</div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs font-black text-gray-200 truncate group-hover:text-white uppercase tracking-tight transition-colors">{att.name}</p>
+                                                            <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mt-0.5">Click to preview</p>
+                                                        </div>
+                                                        <ExternalLink size={14} className="text-gray-600 group-hover:text-amber-400 transition-colors" />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* WORKFLOW STATUS MAPPING */}
+                                    {previewTemplate.statusSubtasks && Object.values(previewTemplate.statusSubtasks).some((tasks: any) => tasks.length > 0) && (
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <div className="w-1 h-3 bg-purple-500 rounded-full" /> Status Hooks
+                                            </h4>
+                                            <div className="space-y-3">
+                                                {Object.entries(previewTemplate.statusSubtasks).map(([status, tasks]: [string, any]) => {
+                                                    if (tasks.length === 0) return null;
+                                                    return (
+                                                        <div key={status} className="p-4 rounded-[20px] bg-white/[0.02] border border-white/[0.04]">
+                                                            <div className="text-[9px] font-black text-purple-400 uppercase tracking-[0.2em] mb-3">{status.replace(/_/g, ' ')}</div>
+                                                            <div className="space-y-2">
+                                                                {tasks.map((t: any, i: number) => (
+                                                                    <div key={i} className="flex items-center gap-3">
+                                                                        <div className="w-1 h-1 rounded-full bg-purple-500/40" />
+                                                                        <p className="text-[11px] font-medium text-gray-400">{t.title}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                            <div className="w-1 h-3 bg-gray-500 rounded-full" /> Details
+                                        </h4>
+                                        <div className="bg-white/[0.02] rounded-[24px] border border-white/5 p-6 space-y-6">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-600 font-bold uppercase">Priority</span>
+                                                <span className={`font-black uppercase tracking-widest ${
+                                                    previewTemplate.priority === 'HIGH' ? 'text-rose-400' :
+                                                    previewTemplate.priority === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'
+                                                }`}>{previewTemplate.priority}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-600 font-bold uppercase">Est. Duration</span>
+                                                <span className="text-gray-300 font-black uppercase tracking-widest">{previewTemplate.expectedDays} Days</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-600 font-bold uppercase">Usage Frequency</span>
+                                                <span className="text-amber-500 font-black flex items-center gap-2"><Star size={12} /> {previewTemplate.usageCount || 0} Uses</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
-                        <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end gap-3">
-                            <button onClick={() => setPreviewTemplate(null)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-colors">Close</button>
+
+                        <div className="p-8 border-t border-white/10 bg-white/5 flex justify-end gap-4">
+                            <button onClick={() => setPreviewTemplate(null)} className="px-8 py-3 rounded-2xl text-xs font-black text-gray-400 hover:text-white hover:bg-white/5 transition-all uppercase tracking-widest">Close Preview</button>
+                            {isAdmin && (
+                                <button onClick={() => { handleEditTemplate(previewTemplate); setPreviewTemplate(null); }}
+                                    className="bg-white/10 hover:bg-white/[0.15] text-white px-8 py-3 rounded-2xl text-xs font-black transition-all flex items-center uppercase tracking-widest border border-white/10">
+                                    <Edit2 size={16} className="mr-3" /> Edit Master
+                                </button>
+                            )}
                             <button onClick={() => { handleUseTemplate(previewTemplate); setPreviewTemplate(null); }}
-                                className="bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-500 shadow-lg flex items-center transition-all hover:-translate-y-0.5">
-                                <Copy size={14} className="mr-2" /> Use Template
+                                className="bg-amber-600 text-black px-10 py-3 rounded-2xl text-xs font-black hover:bg-amber-500 shadow-[0_15px_40px_rgba(245,158,11,0.25)] flex items-center transition-all transform hover:-translate-y-0.5 active:scale-95 uppercase tracking-widest">
+                                <Copy size={16} className="mr-3" /> Deploy Protocol
                             </button>
                         </div>
                     </div>

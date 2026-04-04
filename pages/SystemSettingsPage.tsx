@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import {
     Settings, Users, Database, Trash2, AlertCircle, CheckCircle2,
-    Loader2, Search, ShieldCheck, Key, ShieldOff
+    Loader2, Search, ShieldCheck, Key, ShieldOff, Archive
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
-import { UserRole, UserProfile } from '../types';
+import { UserRole, UserProfile, TaskStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { getNepaliFiscalYear, generateFiscalYearOptions } from '../utils/nepaliDate';
+import { toast } from 'react-hot-toast';
 
 const SystemSettingsPage: React.FC = () => {
     const { user } = useAuth();
@@ -20,6 +22,12 @@ const SystemSettingsPage: React.FC = () => {
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
     const [isAuthUpdating, setIsAuthUpdating] = useState<string | null>(null);
     const [isMigrating, setIsMigrating] = useState(false);
+    const [isArchiving, setIsArchiving] = useState(false);
+    const [archiveFY, setArchiveFY] = useState('');
+
+    useEffect(() => {
+        setArchiveFY(getNepaliFiscalYear(new Date()));
+    }, []);
 
     useEffect(() => {
         if (!user || user.role !== UserRole.MASTER_ADMIN) {
@@ -80,6 +88,24 @@ const SystemSettingsPage: React.FC = () => {
             setStatusMessage({ type: 'error', text: 'Failed to revoke access.' });
         } finally {
             setIsAuthUpdating(null);
+        }
+    };
+
+    const handleArchiveTasks = async () => {
+        if (!archiveFY) return;
+        const msg = `This will move all COMPLETED tasks from Fiscal Year ${archiveFY} to ARCHIVED status. They will no longer appear in the main Tasks page. Proceed?`;
+        if (!window.confirm(msg)) return;
+        
+        setIsArchiving(true);
+        try {
+            const count = await AuthService.archiveTasksByFiscalYear(archiveFY);
+            setStatusMessage({ type: 'success', text: `Successfully archived ${count} tasks for FY ${archiveFY}.` });
+            setTimeout(() => setStatusMessage(null), 5000);
+        } catch (error: any) {
+            console.error(error);
+            setStatusMessage({ type: 'error', text: "Archiving failed: " + error.message });
+        } finally {
+            setIsArchiving(false);
         }
     };
 
@@ -339,8 +365,49 @@ const SystemSettingsPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="mt-6 pt-6 border-t border-white/5">
-                            <button className="w-full bg-navy-800 hover:bg-navy-700 text-gray-300 py-2.5 rounded-xl text-sm font-semibold transition-colors border border-white/5 flex items-center justify-center">
-                                <Database size={16} className="mr-2" /> View Audit Logs
+                            <button 
+                                onClick={() => navigate('/audit-logs')}
+                                className="w-full bg-navy-800 hover:bg-navy-700 text-gray-300 py-2.5 rounded-xl text-sm font-semibold transition-colors border border-white/5 flex items-center justify-center mb-2"
+                            >
+                                <Database size={16} className="mr-2 text-indigo-400" /> View Audit Logs
+                            </button>
+                            <button 
+                                onClick={() => navigate('/archived-tasks')}
+                                className="w-full bg-navy-800 hover:bg-navy-700 text-gray-300 py-2.5 rounded-xl text-sm font-semibold transition-colors border border-white/5 flex items-center justify-center"
+                            >
+                                <Archive size={16} className="mr-2 text-amber-400" /> View Archived Tasks
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── Archive Management ── */}
+                    <div className="glass-panel p-6 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+                        <h3 className="text-lg font-bold text-amber-400 mb-2 flex items-center">
+                            <Archive size={20} className="mr-2" /> Archive Management
+                        </h3>
+                        <p className="text-xs text-gray-400 mb-4">Clean up your workspace by archiving old completed tasks by Nepali Fiscal Year.</p>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block">Select Fiscal Year</label>
+                                <select 
+                                    value={archiveFY}
+                                    onChange={(e) => setArchiveFY(e.target.value)}
+                                    className="w-full bg-navy-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-amber-400 font-bold focus:ring-1 focus:ring-amber-500 outline-none"
+                                >
+                                    {generateFiscalYearOptions(2080).reverse().map(fy => (
+                                        <option key={fy} value={fy}>{fy}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <button
+                                onClick={handleArchiveTasks}
+                                disabled={isArchiving}
+                                className="w-full bg-amber-600/20 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-bold transition-all border border-amber-500/30 flex items-center justify-center disabled:opacity-50"
+                            >
+                                {isArchiving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Archive size={16} className="mr-2" />}
+                                Archive FY {archiveFY} Tasks
                             </button>
                         </div>
                     </div>

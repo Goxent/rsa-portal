@@ -214,30 +214,30 @@ const FocusWidget: React.FC = () => {
     const atLimit        = goals.length >= MAX_GOALS;
 
     return (
-        <div className="relative glass-panel hover-lift rounded-2xl border border-white/[0.07] p-5 flex flex-col gap-3 h-full min-h-[140px]">
+        <div className="relative glass-panel hover-lift rounded-2xl border border-brand-100 dark:border-white/[0.07] p-5 flex flex-col gap-3 h-full min-h-[140px]">
 
             {/* ── Header ────────────────────────────────────────────── */}
             <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-lg flex-shrink-0 ${allCompleted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                <div className={`p-1.5 rounded-lg flex-shrink-0 ${allCompleted ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-brand-100 text-brand-600 dark:bg-amber-500/20 dark:text-amber-400'}`}>
                     {allCompleted ? <Trophy size={15} /> : <Target size={15} />}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-xs font-black text-gray-300 uppercase tracking-widest truncate">
+                        <h3 className="text-xs font-black text-slate-800 dark:text-gray-300 uppercase tracking-widest truncate">
                             Today's Focus
                         </h3>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="text-[10px] font-bold text-gray-500 tabular-nums">{completedCount}/{goals.length}</span>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-gray-500 tabular-nums">{completedCount}/{goals.length}</span>
                             <button
                                 onClick={() => setShowPomodoro(v => !v)}
-                                className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md transition-all ${showPomodoro ? 'bg-brand-500/20 text-brand-300' : 'text-gray-600 hover:text-gray-400 hover:bg-white/5'}`}
+                                className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md transition-all ${showPomodoro ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300' : 'text-slate-500 dark:text-gray-600 hover:text-brand-700 dark:hover:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                                 title="Toggle Pomodoro timer"
                             >
                                 <Timer size={10} /> Pomodoro
                             </button>
                         </div>
                     </div>
-                    <div className="mt-1.5 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="mt-1.5 h-1 rounded-full bg-slate-200 dark:bg-white/[0.06] overflow-hidden">
                         <div
                             className="h-full rounded-full transition-all duration-500"
                             style={{
@@ -268,16 +268,16 @@ const FocusWidget: React.FC = () => {
                     {/* Goal list */}
                     <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
                         {goals.map(goal => (
-                            <div key={goal.id} className="flex items-center gap-2.5 group/item rounded-lg px-1.5 py-1 hover:bg-white/[0.03] transition-colors">
+                            <div key={goal.id} className="flex items-center gap-2.5 group/item rounded-lg px-1.5 py-1 hover:bg-brand-50 dark:hover:bg-white/[0.03] transition-colors">
                                 <div
                                     onClick={() => toggleGoal(goal.id)}
-                                    className={`w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200 ${celebratingId === goal.id ? 'fw-pop' : ''} ${goal.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600 bg-transparent hover:border-indigo-400'}`}
+                                    className={`w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200 ${celebratingId === goal.id ? 'fw-pop' : ''} ${goal.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 dark:border-slate-600 bg-transparent hover:border-brand-400 dark:hover:border-indigo-400'}`}
                                 >
                                     {goal.completed && <Check size={11} className="text-white" strokeWidth={3} />}
                                 </div>
                                 <p
                                     onClick={() => toggleGoal(goal.id)}
-                                    className={`flex-1 text-sm cursor-pointer transition-all duration-200 truncate leading-none ${goal.completed ? 'text-gray-500 line-through decoration-gray-600' : 'text-gray-200 hover:text-white'}`}
+                                    className={`flex-1 text-sm cursor-pointer transition-all duration-200 truncate leading-none ${goal.completed ? 'text-slate-400 dark:text-gray-500 line-through decoration-slate-300 dark:decoration-gray-600' : 'text-slate-800 dark:text-gray-200 hover:text-brand-900 dark:hover:text-white font-medium'}`}
                                     title={goal.text}
                                 >
                                     {goal.text}
@@ -291,18 +291,18 @@ const FocusWidget: React.FC = () => {
                             </div>
                         ))}
                         {goals.length === 0 && !inputFocused && (
-                            <p className="text-xs text-gray-600 text-center py-3 italic">No focus items yet — add one below</p>
+                            <p className="text-xs text-slate-500 dark:text-gray-600 text-center py-3 italic">No focus items yet — add one below</p>
                         )}
                     </div>
 
                     {/* Inline add */}
-                    <div className="pt-1 border-t border-white/[0.05]">
+                    <div className="pt-1 border-t border-slate-100 dark:border-white/[0.05]">
                         {atLimit ? (
-                            <p className="text-[10px] text-gray-600 text-center py-1">5 max — complete or remove an item to add more</p>
+                            <p className="text-[10px] text-slate-500 dark:text-gray-600 text-center py-1">5 max — complete or remove an item to add more</p>
                         ) : (
                             <form onSubmit={handleAddGoal}>
-                                <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${inputFocused ? 'bg-white/[0.04] border border-brand-500/30' : 'border border-transparent hover:bg-white/[0.03]'}`}>
-                                    <Plus size={13} className={`flex-shrink-0 transition-colors ${inputFocused ? 'text-brand-400' : 'text-gray-600'}`} />
+                                <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${inputFocused ? 'bg-white dark:bg-white/[0.04] border border-brand-300 dark:border-brand-500/30 shadow-sm' : 'border border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03]'}`}>
+                                    <Plus size={13} className={`flex-shrink-0 transition-colors ${inputFocused ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-gray-600'}`} />
                                     <input
                                         ref={inputRef}
                                         type="text"
@@ -312,10 +312,10 @@ const FocusWidget: React.FC = () => {
                                         onBlur={() => setInputFocused(false)}
                                         onKeyDown={e => { if (e.key === 'Escape') { setInputValue(''); setInputFocused(false); e.currentTarget.blur(); } }}
                                         placeholder="+ Add focus item..."
-                                        className="flex-1 bg-transparent text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:placeholder-gray-500"
+                                        className="flex-1 bg-transparent text-xs text-slate-800 dark:text-gray-300 placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:placeholder-slate-300 dark:focus:placeholder-gray-500"
                                     />
                                     {inputValue.trim() && (
-                                        <button type="submit" className="text-[10px] font-bold text-brand-400 hover:text-brand-300 flex-shrink-0 transition-colors">
+                                        <button type="submit" className="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex-shrink-0 transition-colors">
                                             Add
                                         </button>
                                     )}

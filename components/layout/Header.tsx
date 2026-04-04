@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, Clock, Sun, Moon } from 'lucide-react';
+import React from 'react';
+import { Bell, Sun, Moon } from 'lucide-react';
 import Breadcrumbs from './Breadcrumbs';
-import HeaderSearch from './HeaderSearch';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-// @ts-ignore
-import NepaliDate from 'nepali-date-converter';
 
 interface HeaderProps {
     toggleMobileMenu: () => void;
@@ -22,12 +19,6 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
     const { user } = useAuth();
     const { theme, toggleTheme } = useTheme();
-    const [currentTime, setCurrentTime] = useState(new Date());
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
 
     const getInitials = (name: string) => {
         return name
@@ -36,16 +27,6 @@ const Header: React.FC<HeaderProps> = ({
             .join('')
             .substring(0, 2)
             .toUpperCase();
-    };
-
-    // Format Nepali Date
-    const getNepaliDateStr = () => {
-        try {
-            const npDate = new NepaliDate(currentTime);
-            return npDate.format('DD MMMM YYYY');
-        } catch (e) {
-            return '';
-        }
     };
 
     return (
@@ -67,19 +48,8 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
             </div>
 
-            {/* Center: Search Bar */}
-            <HeaderSearch />
-
             {/* Right: Actions */}
             <div className="flex items-center gap-3 md:gap-6">
-
-                {/* Real-time Clock (Desktop Only) */}
-                <div className="hidden xl:flex items-center mr-2 font-mono">
-                    <div className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                        <Clock size={12} className="text-amber-400" />
-                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                </div>
 
 
 

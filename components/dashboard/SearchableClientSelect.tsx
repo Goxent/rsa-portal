@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X, Check, ChevronDown } from 'lucide-react';
-import { Client } from '../types';
-import EmptyState from './common/EmptyState';
+import { Client } from '../../types';
+import EmptyState from '../common/EmptyState';
 
 interface SearchableClientSelectProps {
     clients: Client[];

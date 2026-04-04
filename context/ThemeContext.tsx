@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
+import { AuthService } from '../services/firebase';
 
 type Theme = 'light' | 'dark';
 
@@ -10,10 +12,18 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
     const [theme, setTheme] = useState<Theme>(() => {
         const saved = localStorage.getItem('theme');
         return (saved as Theme) || 'dark';
     });
+
+    // ── Sync with User Profile from Firestore ──
+    useEffect(() => {
+        if (user?.theme && user.theme !== theme) {
+            setTheme(user.theme);
+        }
+    }, [user?.uid, user?.theme]);
 
     useEffect(() => {
         localStorage.setItem('theme', theme);
@@ -23,7 +33,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [theme]);
 
     const toggleTheme = () => {
-        setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        
+        // --- PROPER SMOOTH TRANSITION: VIEW TRANSITIONS API ---
+        // @ts-ignore
+        if (!document.startViewTransition) {
+            setTheme(newTheme);
+            if (user?.uid) {
+                AuthService.updateTheme(user.uid, newTheme).catch(console.error);
+            }
+            return;
+        }
+
+        // Update Firestore if user is logged in
+        if (user?.uid) {
+            AuthService.updateTheme(user.uid, newTheme).catch(console.error);
+        }
+
+        // @ts-ignore
+        document.startViewTransition(() => {
+            setTheme(newTheme);
+        });
     };
 
     return (

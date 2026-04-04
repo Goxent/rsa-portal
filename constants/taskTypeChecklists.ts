@@ -141,48 +141,9 @@ export const TASK_TYPE_CHECKLISTS: Record<
     ],
   },
 
-  [TaskType.INTERIM_REVIEW]: {
-    [AuditPhase.ONBOARDING]: [
-      { title: 'Confirm period under review', daysOffset: 1 },
-      { title: 'Obtain interim financial statements from client', daysOffset: 2 },
-      { title: 'Review prior year audit findings', daysOffset: 1 },
-    ],
-    [AuditPhase.PLANNING_AND_EXECUTION]: [
-      { title: 'Perform analytical review of interim financials', daysOffset: 4 },
-      { title: 'Apply inquiry and review procedures', daysOffset: 4 },
-      { title: 'Check for significant accounting changes', daysOffset: 2 },
-      { title: 'Verify key balance sheet items', daysOffset: 4 },
-      { title: 'Assess going concern indicators', daysOffset: 2 },
-    ],
-    [AuditPhase.REVIEW_AND_CONCLUSION]: [
-      { title: 'Prepare interim review report', daysOffset: 3 },
-      { title: 'Partner sign-off on review conclusion', daysOffset: 1 },
-      { title: 'Issue limited assurance report to client', daysOffset: 1 },
-      { title: 'Archive working papers', daysOffset: 1 },
-    ],
-  },
+  [TaskType.GENERAL]: {},
+  [TaskType.OTHER]: {},
 
-  [TaskType.FILE_STUDY_PLANNING]: {
-    [AuditPhase.ONBOARDING]: [
-      { title: 'Obtain all prior year files from client', minimumRequirement: 'Last 3 years if available', daysOffset: 2 },
-      { title: 'Understand business background and operations', daysOffset: 2 },
-      { title: 'List all pending and historical tax assessments', daysOffset: 2 },
-    ],
-    [AuditPhase.PLANNING_AND_EXECUTION]: [
-      { title: 'Study and index prior year working papers', daysOffset: 5 },
-      { title: 'Identify open items and follow-up actions', daysOffset: 3 },
-      { title: 'Prepare current year planning notes', daysOffset: 3 },
-      { title: 'Draft office visit schedule', daysOffset: 2 },
-      { title: 'Coordinate with client for on-site document review', daysOffset: 2 },
-      { title: 'Write field visit / planning report', minimumRequirement: 'Submitted to partner', daysOffset: 4 },
-    ],
-    [AuditPhase.REVIEW_AND_CONCLUSION]: [
-      { title: 'Finalize planning report and recommendations', daysOffset: 2 },
-      { title: 'Update permanent file with current year info', daysOffset: 2 },
-      { title: 'Hand over planning notes for execution phase', daysOffset: 1 },
-      { title: 'Archive all documents', daysOffset: 1 },
-    ],
-  },
 };
 export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   [TaskType.INTERNAL_AUDIT]: 'Internal Audit',
@@ -190,8 +151,8 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   [TaskType.COMPLIANCE_AUDIT]: 'Compliance Audit',
   [TaskType.CERTIFICATION_SERVICE]: 'Certification Service',
   [TaskType.FINANCIAL_MANAGEMENT]: 'Financial Management and Accounting',
-  [TaskType.INTERIM_REVIEW]: 'Interim Review Engagement',
-  [TaskType.FILE_STUDY_PLANNING]: 'File Study, Planning at Office and Report Writing',
+  [TaskType.GENERAL]: 'General',
+  [TaskType.OTHER]: 'Other',
 };
 
 export const TASK_TYPE_ICONS: Record<TaskType, string> = {
@@ -200,6 +161,6 @@ export const TASK_TYPE_ICONS: Record<TaskType, string> = {
   [TaskType.COMPLIANCE_AUDIT]: 'ClipboardCheck',
   [TaskType.CERTIFICATION_SERVICE]: 'Award',
   [TaskType.FINANCIAL_MANAGEMENT]: 'BarChart2',
-  [TaskType.INTERIM_REVIEW]: 'FileSearch',
-  [TaskType.FILE_STUDY_PLANNING]: 'FolderOpen',
+  [TaskType.GENERAL]: 'Activity',
+  [TaskType.OTHER]: 'FolderOpen',
 };

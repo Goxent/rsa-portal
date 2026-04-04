@@ -3,8 +3,9 @@ import { AttendanceRecord, Client, UserProfile, WorkLog } from '../../types';
 import ClientSelect from '../ClientSelect';
 import StaffSelect from '../StaffSelect';
 import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
-import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users } from 'lucide-react';
+import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users, Calendar } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import NepaliDatePicker from '../NepaliDatePicker';
 
 interface ManualAttendanceModalProps {
     isOpen: boolean;
@@ -31,6 +32,8 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
 }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [localUser, setLocalUser] = useState<UserProfile | null>(selectedUser);
+    const [localDate, setLocalDate] = useState<string>(selectedDate);
+    const [useNepali, setUseNepali] = useState(false);
     const [formData, setFormData] = useState<Partial<AttendanceRecord>>({
         status: 'PRESENT',
         clockIn: '09:00',
@@ -43,6 +46,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             setLocalUser(selectedUser);
+            setLocalDate(selectedDate);
             if (record) {
                 setFormData({
                     ...record,
@@ -81,7 +85,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
             const baseRecord = {
                 userId: activeUser.uid,
                 userName: activeUser.displayName,
-                date: selectedDate,
+                date: localDate,
                 status: formData.status as any,
                 clockIn: formData.status === 'ABSENT' || formData.status === 'ON LEAVE' ? '' : formData.clockIn!,
                 clockOut: formData.status === 'ABSENT' || formData.status === 'ON LEAVE' ? '' : formData.clockOut,
@@ -170,7 +174,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             {isAdmin ? 'Log Attendance' : 'Request Attendance Log'}
                         </h2>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                            {activeUser ? activeUser.displayName : 'Select Staff Member'} <span className="mx-1 text-gray-700">•</span> {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {activeUser ? activeUser.displayName : 'Select Staff Member'}
                         </p>
                     </div>
                     <button onClick={onClose} className="text-gray-500 hover:text-white transition-all p-1.5 hover:bg-white/5 rounded-xl border border-transparent hover:border-white/5">
@@ -179,6 +183,37 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                    {/* Date Selection */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                <Calendar size={12} className="text-amber-500/50" /> Log Date
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setUseNepali(!useNepali)}
+                                className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${useNepali ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-500 hover:text-gray-400'}`}
+                            >
+                                {useNepali ? 'SELECT AD' : 'SELECT BS'}
+                            </button>
+                        </div>
+                        {useNepali ? (
+                            <NepaliDatePicker
+                                value={localDate}
+                                onChange={(ad) => setLocalDate(ad)}
+                                className="w-full"
+                            />
+                        ) : (
+                            <input
+                                type="date"
+                                required
+                                className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-white focus:border-amber-500/50 outline-none transition-all tabular-nums"
+                                value={localDate}
+                                onChange={(e) => setLocalDate(e.target.value)}
+                            />
+                        )}
+                    </div>
+
                     {/* Staff Selector - shown when no user is pre-selected (admin creating new log) */}
                     {!selectedUser && isAdmin && users.length > 0 && (
                         <div className="animate-in fade-in slide-in-from-top-2">

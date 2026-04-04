@@ -16,7 +16,8 @@ import {
     X,
     Users,
     Pin,
-    Activity
+    Activity,
+    Archive
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -39,6 +40,7 @@ const ALL_NAV_ITEMS = [
     { id: 'staff', to: '/staff', icon: Users, label: 'Staff Directory', adminOnly: true },
     { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true, managerAllowed: true },
     { id: 'templates', to: '/templates', icon: Library, label: 'Resources' },
+    { id: 'archived-tasks', to: '/archived-tasks', icon: Archive, label: 'Archived Tasks', adminOnly: true },
     { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', adminOnly: true },
     { id: 'settings', to: '/settings', icon: Settings, label: 'Settings', masterAdminOnly: true }
 ];
@@ -188,12 +190,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                     style={{ borderBottom: '1px solid var(--border)' }}
                 >
                     <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20">
+                        <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-700 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/20">
                             <span className="text-white font-bold text-lg leading-none">R</span>
                         </div>
                         {!isCollapsed && (
                             <div className="animate-in fade-in duration-300">
-                                <h1 className="font-bold text-white text-lg leading-none tracking-tight">RSA Portal</h1>
+                                <h1 className="font-bold text-slate-900 dark:text-white text-lg leading-none tracking-tight">RSA Portal</h1>
                             </div>
                         )}
                     </div>

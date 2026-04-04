@@ -3,7 +3,7 @@ import {
     Folder, FileText, Search, ExternalLink, Grid, List,
     BookOpen, FileCheck, Eye, X, Sparkles, Send, Bot,
     Plus, ChevronRight, Home, Save, Trash2, ArrowLeft,
-    Download, File, Loader2, PenTool
+    Download, File, Loader2, PenTool, RotateCcw, AlertTriangle, Flame
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AiService } from '../../services/ai';
@@ -78,8 +78,11 @@ interface LibraryTabProps {
 
 const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
     const { user } = useAuth();
-    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
-    const canAdd   = isAdmin || user?.role === UserRole.MANAGER;
+    const isAdmin   = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+    const canDelete  = user?.role === UserRole.MASTER_ADMIN;
+    const canAdd     = isAdmin || user?.role === UserRole.MANAGER;
+
+    const [showTrash,      setShowTrash]      = useState(false);
 
     const [resources,      setResources]      = useState<Resource[]>([]);
     const [loading,        setLoading]        = useState(true);
@@ -109,6 +112,8 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
     const load = async () => {
         setLoading(true);
         try {
+            // Auto-purge expired trash (30+ days) silently on every load
+            await AuthService.purgeExpiredTrashResources().catch(() => {});
             const data = await AuthService.getAllResources();
             setResources(data);
         } catch { toast.error('Failed to load library'); }
@@ -121,14 +126,15 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
         const seen = new Set<string>();
         while (curr && !seen.has(curr)) {
             seen.add(curr);
-            const f = resources.find(r => r.id === curr);
+            const f = resources.find(r => r.id === curr && !r.isDeleted);
             if (f) { path.unshift(f); curr = f.parentId || null; } else break;
         }
         return path;
     }, [currentFolder, resources]);
 
+    // Active (non-deleted) resources
     const visible = useMemo(() => {
-        let items = resources;
+        let items = resources.filter(r => !r.isDeleted);
         if (categoryFilter) {
             items = items.filter(r => r.category === categoryFilter);
         }
@@ -136,6 +142,20 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
             return items.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
         return items.filter(r => currentFolder ? r.parentId === currentFolder : !r.parentId);
     }, [resources, currentFolder, searchQuery, categoryFilter]);
+
+    // Trashed resources
+    const trashedItems = useMemo(() =>
+        resources.filter(r => r.isDeleted),
+        [resources]
+    );
+
+    // Days remaining before auto-purge
+    const daysLeft = (deletedAt?: string): number => {
+        if (!deletedAt) return 30;
+        const diff = Date.now() - new Date(deletedAt).getTime();
+        const daysElapsed = Math.floor(diff / (1000 * 60 * 60 * 24));
+        return Math.max(0, 30 - daysElapsed);
+    };
 
     const openRes = (res: Resource) => {
         if (res.type === 'folder') { setCurrentFolder(res.id); setSearchQuery(''); }
@@ -191,8 +211,32 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
     const deleteRes = async (res: Resource) => {
         if (previewRes?.id === res.id) setPreviewRes(null);
         await AuthService.deleteResource(res.id);
+        setResources(prev => prev.map(r => r.id === res.id
+            ? { ...r, isDeleted: true, deletedAt: new Date().toISOString() }
+            : r
+        ));
+        toast.success(`"${res.title}" moved to Trash`);
+    };
+
+    const restoreRes = async (res: Resource) => {
+        await AuthService.restoreResource(res.id);
+        setResources(prev => prev.map(r => r.id === res.id
+            ? { ...r, isDeleted: false, deletedAt: undefined }
+            : r
+        ));
+        toast.success(`"${res.title}" restored`);
+    };
+
+    const purgeRes = async (res: Resource) => {
+        await AuthService.purgeResource(res.id);
         setResources(prev => prev.filter(r => r.id !== res.id));
-        toast.success(`"${res.title}" deleted`);
+        toast.success(`"${res.title}" permanently deleted`);
+    };
+
+    const emptyTrash = async () => {
+        await Promise.all(trashedItems.map(r => AuthService.purgeResource(r.id)));
+        setResources(prev => prev.filter(r => !r.isDeleted));
+        toast.success('Trash emptied');
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -201,50 +245,146 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
         <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-3 justify-between items-center glass-panel p-3 rounded-xl">
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-1 overflow-x-auto max-w-full md:max-w-sm no-scrollbar">
-                    <button
-                        onClick={() => setCurrentFolder(null)}
-                        className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${!currentFolder ? 'text-white bg-white/10' : 'text-gray-400'}`}
-                    ><Home size={16} /></button>
-                    {breadcrumbs.map((crumb, idx) => (
-                        <div key={crumb.id} className="flex items-center">
-                            <ChevronRight size={12} className="text-gray-600 mx-0.5" />
-                            <button
-                                onClick={() => setCurrentFolder(crumb.id)}
-                                className={`px-2 py-1 rounded text-xs hover:bg-white/10 whitespace-nowrap transition-colors ${idx === breadcrumbs.length - 1 ? 'text-white font-bold' : 'text-gray-400'}`}
-                            >{crumb.title}</button>
-                        </div>
-                    ))}
-                </div>
+                {/* Breadcrumbs / Trash title */}
+                {showTrash ? (
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setShowTrash(false)} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400"><ArrowLeft size={16} /></button>
+                        <Trash2 size={16} className="text-red-400" />
+                        <span className="text-sm font-bold text-red-300">Recycle Bin</span>
+                        <span className="text-xs text-gray-500 ml-1">({trashedItems.length} item{trashedItems.length !== 1 ? 's' : ''})</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1 overflow-x-auto max-w-full md:max-w-sm no-scrollbar">
+                        <button
+                            onClick={() => setCurrentFolder(null)}
+                            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${!currentFolder ? 'text-white bg-white/10' : 'text-gray-400'}`}
+                        ><Home size={16} /></button>
+                        {breadcrumbs.map((crumb, idx) => (
+                            <div key={crumb.id} className="flex items-center">
+                                <ChevronRight size={12} className="text-gray-600 mx-0.5" />
+                                <button
+                                    onClick={() => setCurrentFolder(crumb.id)}
+                                    className={`px-2 py-1 rounded text-xs hover:bg-white/10 whitespace-nowrap transition-colors ${idx === breadcrumbs.length - 1 ? 'text-white font-bold' : 'text-gray-400'}`}
+                                >{crumb.title}</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-56">
-                        <Search className="absolute left-3 top-2.5 text-gray-400" size={14} />
-                        <input
-                            type="text" value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Search library..."
-                            className="w-full pl-9 pr-3 py-2 bg-transparent border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        />
-                    </div>
-                    <div className="flex items-center bg-white/5 p-1 rounded-lg border border-white/10">
-                        <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400'}`}><Grid size={15} /></button>
-                        <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400'}`}><List size={15} /></button>
-                    </div>
-                    {canAdd && (
+                    {!showTrash && (
+                        <div className="relative flex-1 md:w-56">
+                            <Search className="absolute left-3 top-2.5 text-gray-400" size={14} />
+                            <input
+                                type="text" value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                placeholder="Search library..."
+                                className="w-full pl-9 pr-3 py-2 bg-transparent border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                            />
+                        </div>
+                    )}
+                    {!showTrash && (
+                        <div className="flex items-center bg-white/5 p-1 rounded-lg border border-white/10">
+                            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400'}`}><Grid size={15} /></button>
+                            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400'}`}><List size={15} /></button>
+                        </div>
+                    )}
+                    {canAdd && !showTrash && (
                         <button
                             onClick={() => setAddOpen(true)}
                             className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all"
                         ><Plus size={14} /> Add</button>
                     )}
+                    {canDelete && !showTrash && (
+                        <button
+                            onClick={() => setShowTrash(true)}
+                            className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border border-white/10 bg-white/5 text-gray-400 hover:text-red-300 hover:border-red-500/30 transition-all"
+                        >
+                            <Trash2 size={14} />
+                            {trashedItems.length > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">{trashedItems.length}</span>
+                            )}
+                        </button>
+                    )}
+                    {canDelete && showTrash && trashedItems.length > 0 && (
+                        <button
+                            onClick={emptyTrash}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-red-600/20 border border-red-500/30 text-red-300 hover:bg-red-600/40 transition-all font-bold"
+                        >
+                            <Flame size={14} /> Empty Trash
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Content */}
-            {loading ? (
-                <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-purple-400" /></div>
-            ) : visible.length === 0 ? (
+            {/* ── TRASH VIEW (Master Admin only) ── */}
+            {showTrash ? (
+                <div className="glass-panel rounded-xl overflow-hidden animate-in fade-in duration-200">
+                    <div className="px-5 py-3 bg-red-900/10 border-b border-red-500/20 flex items-center gap-2">
+                        <AlertTriangle size={14} className="text-red-400" />
+                        <p className="text-xs text-red-300 font-medium">Items in the Recycle Bin are automatically permanently deleted after <strong>30 days</strong>.</p>
+                    </div>
+                    {trashedItems.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+                            <Trash2 size={48} className="mb-3 opacity-10" />
+                            <p className="font-medium text-gray-400">Recycle Bin is empty</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left text-sm text-gray-300">
+                            <thead className="bg-red-900/10 text-gray-400 border-b border-white/10">
+                                <tr>
+                                    <th className="px-5 py-3 font-semibold">Name</th>
+                                    <th className="px-5 py-3 font-semibold">Type</th>
+                                    <th className="px-5 py-3 font-semibold">Deleted</th>
+                                    <th className="px-5 py-3 font-semibold text-center">Auto-delete in</th>
+                                    <th className="px-5 py-3 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {trashedItems.map(res => {
+                                    const days = daysLeft(res.deletedAt);
+                                    return (
+                                        <tr key={res.id} className="hover:bg-white/5 transition-colors group">
+                                            <td className="px-5 py-3 flex items-center gap-3">
+                                                <div className="p-1.5 rounded-lg bg-white/5 opacity-50"><ResourceIcon type={res.type} size={16} /></div>
+                                                <span className="font-medium text-gray-400 line-through group-hover:no-underline">{res.title}</span>
+                                            </td>
+                                            <td className="px-5 py-3">
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase ${TYPE_BADGE[res.type] || ''}`}>{res.type}</span>
+                                            </td>
+                                            <td className="px-5 py-3 text-gray-500 text-xs">
+                                                {res.deletedAt ? new Date(res.deletedAt).toLocaleDateString() : '—'}
+                                            </td>
+                                            <td className="px-5 py-3 text-center">
+                                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                                                    days <= 3 ? 'bg-red-500/20 text-red-300' :
+                                                    days <= 10 ? 'bg-amber-500/20 text-amber-300' :
+                                                    'bg-white/10 text-gray-400'
+                                                }`}>{days}d</span>
+                                            </td>
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => restoreRes(res)}
+                                                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-brand-500/20 border border-brand-500/30 text-brand-300 hover:bg-brand-500/40 transition-all font-bold"
+                                                    ><RotateCcw size={12} /> Restore</button>
+                                                    <button
+                                                        onClick={() => { setDeleteTarget(res); }}
+                                                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-red-600/20 border border-red-500/30 text-red-300 hover:bg-red-600/40 transition-all font-bold"
+                                                    ><Trash2 size={12} /> Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            ) : (
+                loading ? (
+                    <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-purple-400" /></div>
+                ) : visible.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-gray-500">
                     <Folder size={52} className="mb-3 opacity-10" />
                     <p className="font-medium text-gray-400">Empty folder</p>
@@ -269,7 +409,7 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                                     <div className="p-3 rounded-xl bg-white/10 border border-white/20 group-hover:scale-110 transition-transform duration-300">
                                         <ResourceIcon type={res.type} size={26} />
                                     </div>
-                                    {isAdmin && (
+                                    {canDelete && (
                                         <button
                                             onClick={e => { e.stopPropagation(); setDeleteTarget(res); }}
                                             className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-all"
@@ -301,7 +441,7 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                                 <th className="px-5 py-3 font-semibold">Type</th>
                                 <th className="px-5 py-3 font-semibold">Size</th>
                                 <th className="px-5 py-3 font-semibold">Updated</th>
-                                {isAdmin && <th className="px-5 py-3 font-semibold text-right">Action</th>}
+                                {canDelete && <th className="px-5 py-3 font-semibold text-right">Action</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -315,7 +455,7 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                                     <td className="px-5 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase ${TYPE_BADGE[res.type] || ''}`}>{res.type}</span></td>
                                     <td className="px-5 py-3 text-gray-400 text-xs">{fmtSize(res.fileSize) || '—'}</td>
                                     <td className="px-5 py-3 text-gray-400 text-xs">{res.updatedAt}</td>
-                                    {isAdmin && (
+                                    {canDelete && (
                                         <td className="px-5 py-3 text-right">
                                             <button onClick={e => { e.stopPropagation(); setDeleteTarget(res); }} className="text-gray-500 hover:text-red-400 p-1.5 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={15} /></button>
                                         </td>
@@ -325,6 +465,7 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                         </tbody>
                     </table>
                 </div>
+            )
             )}
 
             {/* ── Add Modal ── */}

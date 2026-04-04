@@ -188,7 +188,7 @@ const Dashboard: React.FC = () => {
         activeStaffCount, taskData, recentTasks, upcomingSchedule,
         staffStats, userMap,
         recentCompletedTasks, isLoading, myOpenTasks, completedToday,
-        relevantTasks,
+        relevantTasks, allTasks,
     };
 
     const handleViewTask = (task: Task) => {

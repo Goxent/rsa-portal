@@ -6,6 +6,7 @@ export default {
     "./App.tsx",
     "./components/**/*.{js,ts,jsx,tsx}",
     "./pages/**/*.{js,ts,jsx,tsx}",
+    "./utils/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
   theme: {
@@ -56,6 +57,10 @@ export default {
           rose:   '#c94f5e',
           sky:    '#4f8ed4',
           neutral: '#6b6966',
+        },
+        navy: {
+          900: '#0c0c0e',
+          950: '#060608',
         }
       },
       animation: {

@@ -58,7 +58,7 @@ service cloud.firestore {
 
     // STAFF ALLOWLIST — Used before auth account is created
     match /staffAllowlist/{email} {
-      allow read: if true; // Public read — only contains emails, no sensitive data
+      allow read: if isAuthenticated(); // Restrict to authenticated users for discovery protection
       allow create, update, delete: if isAdmin();
     }
     
@@ -104,6 +104,7 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
         resource.data.createdBy == request.auth.uid ||
+        request.auth.uid == resource.data.get('teamLeaderId', '') ||
         isAdmin() ||
         getUserRole() == 'MANAGER'
       ) && (
@@ -119,12 +120,16 @@ service cloud.firestore {
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['signingPartnerApprovedAt'])) ||
         (request.auth.uid == resource.data.get('signingPartnerId', '') || isAdmin())
       ) && (
-        // Enforce COMPLETED status requires all 3 sign-offs
+        // Enforce COMPLETED status requires all 3 sign-offs (Admins can bypass)
         (request.resource.data.get('status', 'NOT_STARTED') != 'COMPLETED') ||
         (
-          request.resource.data.get('teamLeadApprovedAt', '') != '' &&
-          request.resource.data.get('engagementReviewerApprovedAt', '') != '' &&
-          request.resource.data.get('signingPartnerApprovedAt', '') != ''
+          isAdmin() ||
+          request.auth.uid == resource.data.get('teamLeaderId', '') ||
+          (
+            request.resource.data.get('teamLeadApprovedAt', '') != '' &&
+            request.resource.data.get('engagementReviewerApprovedAt', '') != '' &&
+            request.resource.data.get('signingPartnerApprovedAt', '') != ''
+          )
         )
       ) && (!request.resource.data.keys().hasAll(['title']) || isSafeString(request.resource.data.title, 500))
         && (!request.resource.data.keys().hasAll(['taskType']) || request.resource.data.taskType is string);

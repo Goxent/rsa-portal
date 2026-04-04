@@ -37,31 +37,30 @@ const CommandStrip: React.FC<CommandStripProps> = ({
             icon: <CalendarDays size={13} />,
             label: 'Today',
             value: `${adDate}${bsDate ? ` · ${bsDate} BS` : ''}`,
-            accent: 'text-brand-400',
+            accent: 'text-brand-600 dark:text-brand-400',
         },
         {
             icon: <Clock size={13} />,
             label: 'Time',
             value: timeStr,
-            accent: 'text-sky-400',
+            accent: 'text-sky-600 dark:text-sky-400',
         },
         {
             icon: <CheckSquare size={13} />,
             label: 'My Tasks',
             value: pendingTasksCount,
-            accent: pendingTasksCount > 5 ? 'text-rose-400' : pendingTasksCount > 0 ? 'text-brand-400' : 'text-emerald-400',
+            accent: pendingTasksCount > 5 ? 'text-rose-600 dark:text-rose-400' : pendingTasksCount > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-emerald-600 dark:text-emerald-400',
             onClick: () => navigate('/tasks'),
         },
     ];
 
     return (
         <div
-            className="sticky top-0 z-30 flex items-center gap-2 flex-wrap px-4 py-2.5 rounded-xl overflow-hidden"
+            className="sticky top-0 z-30 flex items-center gap-2 flex-wrap px-4 py-2.5 rounded-xl border backdrop-blur-2xl transition-all duration-500"
             style={{
-                background: 'rgba(10,10,12,0.8)',
-                border: '1px solid rgba(255,255,255,0.04)',
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+                background: 'var(--bg-secondary)',
+                borderColor: 'var(--border)',
+                boxShadow: 'var(--theme-shadow, 0 4px 24px rgba(0,0,0,0.4))',
             }}
         >
             {/* Subtle top rule */}
@@ -69,18 +68,18 @@ const CommandStrip: React.FC<CommandStripProps> = ({
 
             {chips.map((chip, i) => (
                 <React.Fragment key={chip.label}>
-                    {i > 0 && <div className="w-px h-5 bg-white/5 flex-shrink-0 hidden sm:block" />}
+                    {i > 0 && <div className="w-px h-5 bg-slate-200 dark:bg-white/5 flex-shrink-0 hidden sm:block" />}
                     <button
                         onClick={chip.onClick}
                         disabled={!chip.onClick}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-150 select-none flex-shrink-0
                             ${chip.onClick
-                                ? 'hover:bg-white/5 cursor-pointer active:scale-95'
+                                ? 'hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer active:scale-95'
                                 : 'cursor-default'
                             }`}
                     >
                         <span className={chip.accent}>{chip.icon}</span>
-                        <span className="text-gray-500 font-medium hidden md:inline">{chip.label}:</span>
+                        <span className="text-slate-500 dark:text-gray-500 font-medium hidden md:inline">{chip.label}:</span>
                         <span className={`font-bold tabular-nums ${chip.accent}`}>{chip.value}</span>
                     </button>
                 </React.Fragment>

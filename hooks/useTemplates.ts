@@ -9,6 +9,6 @@ export const useTemplates = () => {
     return useQuery({
         queryKey: templateKeys.all,
         queryFn: () => TemplateService.getAllTemplates(),
-        staleTime: 1000 * 60 * 30, // 30 minutes
+        staleTime: 1000 * 60, // 1 minute (Ensures Task Creation sees new Resource Library templates)
     });
 };

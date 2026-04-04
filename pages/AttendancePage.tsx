@@ -24,12 +24,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ── Components ──
 
 const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
-    <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4 flex items-start justify-between hover:border-[#8b949e] transition-all group">
+    <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-xl p-4 flex items-start justify-between hover:border-gray-300 dark:hover:border-[#8b949e] transition-all group">
         <div>
             <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                 <Icon size={12} className={color} /> {title}
             </p>
-            <h3 className="text-2xl font-black text-white tracking-tight">{value}</h3>
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{value}</h3>
             {trend && (
                 <div className="flex items-center gap-1 mt-1">
                     <TrendingUp size={10} className="text-emerald-500" />
@@ -54,12 +54,12 @@ const ClockWidget = () => {
     const np = new NepaliDate(time);
 
     return (
-        <div className="bg-gradient-to-br from-[#161b22] to-[#0d1117] border border-[#30363d] rounded-2xl p-5 flex flex-col items-center justify-center relative overflow-hidden group shadow-xl">
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-[#161b22] dark:to-[#0d1117] border border-gray-200 dark:border-[#30363d] rounded-2xl p-5 flex flex-col items-center justify-center relative overflow-hidden group shadow-xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-amber-500/10 transition-all duration-700" />
             <div className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Live Tracker
             </div>
-            <div className="text-4xl font-black text-white tracking-tighter tabular-nums mb-1">
+            <div className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter tabular-nums mb-1">
                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
             </div>
             <div className="flex items-center gap-3 text-gray-500 font-bold text-[11px]">
@@ -203,7 +203,6 @@ const AttendancePage: React.FC = () => {
                     return;
                 }
 
-                // 3. Check Holidays
                 const holiday = holidays.find(h => h.date === dateStr);
                 if (holiday) {
                     report.push({
@@ -211,8 +210,8 @@ const AttendancePage: React.FC = () => {
                         userId: u.uid,
                         userName: u.displayName,
                         date: dateStr,
-                        status: 'HOLIDAY',
-                        clientName: 'Firm Holiday',
+                        status: holiday.title ? holiday.title.toUpperCase() : 'HOLIDAY',
+                        clientName: 'Holiday',
                         notes: holiday.title,
                         type: 'HOLIDAY'
                     });
@@ -652,7 +651,7 @@ const AttendancePage: React.FC = () => {
     };
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar bg-[#0d1117] text-[#c9d1d9] relative pb-20">
+        <div className="h-full overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-[#0d1117] text-gray-900 dark:text-[#c9d1d9] relative pb-20">
             <div className="max-w-[1600px] mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-6 animate-in fade-in duration-500">
                 
                 {/* ── Top Bar (Navigation & Actions) ── */}
@@ -667,30 +666,30 @@ const AttendancePage: React.FC = () => {
                                 <ChevronRight size={10} />
                                 <span className="text-gray-400">Attendance</span>
                             </div>
-                            <h1 className="text-2xl font-black text-white tracking-tight mt-0.5">Firm Attendance</h1>
+                            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight mt-0.5">Firm Attendance</h1>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3 w-full lg:w-auto">
-                        <div className="flex bg-[#161b22] border border-[#30363d] p-1 rounded-xl shadow-inner">
+                        <div className="flex bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] p-1 rounded-xl shadow-inner">
                             <button 
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[#21262d] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-gray-100 dark:bg-[#21262d] text-gray-900 dark:text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <ListIcon size={18} />
                             </button>
                             <button 
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[#21262d] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-[#21262d] text-gray-900 dark:text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <LayoutGrid size={18} />
                             </button>
                         </div>
                         <div className="h-8 w-px bg-[#30363d]" />
-                        <button onClick={handleExportPDF} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] transition-all text-sm font-bold shadow-md">
+                        <button onClick={handleExportPDF} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#30363d] transition-all text-sm font-bold shadow-md">
                             <FileText size={16} className="text-rose-400" /> PDF
                         </button>
-                        <button onClick={handleExportExcel} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] transition-all text-sm font-bold shadow-md">
+                        <button onClick={handleExportExcel} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#30363d] transition-all text-sm font-bold shadow-md">
                             <Download size={16} className="text-emerald-400" /> Excel
                         </button>
                     </div>
@@ -707,7 +706,7 @@ const AttendancePage: React.FC = () => {
                 </div>
 
                 {/* ── Filter & Search Bar ── */}
-                <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
+                <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
                     
                     {/* Top Row: Search & Manual Log */}
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
@@ -716,7 +715,7 @@ const AttendancePage: React.FC = () => {
                             <input 
                                 type="text"
                                 placeholder="Search team member or status..."
-                                className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-600"
+                                className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-600 text-gray-900 dark:text-white"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -742,7 +741,7 @@ const AttendancePage: React.FC = () => {
                                     setSelectedRecord(null);
                                     setIsEditModalOpen(true);
                                 }}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl border border-[#30363d] hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/20 group shrink-0"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#30363d] hover:border-gray-300 dark:hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/5 dark:shadow-black/20 group shrink-0"
                             >
                                 <Plus size={16} className="text-amber-500 group-hover:scale-110 transition-transform" /> 
                                 <span>{isAdmin ? 'Manual Log' : 'Request Manual Log'}</span>
@@ -766,7 +765,7 @@ const AttendancePage: React.FC = () => {
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2 text-sm text-gray-300 outline-none hover:border-gray-600 transition-all w-full xl:w-48 shrink-0 h-[56px] appearance-none"
+                            className="bg-white dark:bg-[#21262d] border border-gray-200 dark:border-[#30363d] rounded-xl px-4 py-2 text-sm text-gray-700 dark:text-gray-300 outline-none hover:border-gray-400 dark:hover:border-gray-600 transition-all w-full xl:w-48 shrink-0 h-[56px] appearance-none"
                         >
                             <option value="ALL">All Statuses</option>
                             <option value="PRESENT">Present Only</option>
@@ -775,7 +774,7 @@ const AttendancePage: React.FC = () => {
                             <option value="HOLIDAY">Firm Holidays</option>
                         </select>
 
-                        <div className="flex-1 w-full bg-[#21262d] border border-[#30363d] rounded-xl px-4 py-2 group hover:border-[#484f58] transition-all h-[56px]">
+                        <div className="flex-1 w-full bg-white dark:bg-[#21262d] border border-gray-200 dark:border-[#30363d] rounded-xl px-4 py-2 group hover:border-gray-400 dark:hover:border-[#484f58] transition-all h-[56px]">
                             <div className="flex items-center justify-between xl:mb-0 mb-1">
                                 <div className="flex items-center gap-2 xl:hidden">
                                     <CalendarDays size={14} className="text-amber-500" />
@@ -784,7 +783,7 @@ const AttendancePage: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-4 h-full">
                                 <div className="flex-1 w-1/2 relative flex items-center h-full">
-                                    <span className="absolute -top-4 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">FROM</span>
+                                    <span className="absolute -top-4 left-0 bg-white dark:bg-[#21262d] px-1 text-[8px] font-bold text-gray-400 dark:text-gray-500 z-10 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">FROM</span>
                                     {useNepaliFrom ? (
                                         <NepaliDatePicker 
                                             value={filterStartDate} 
@@ -921,7 +920,8 @@ const AttendancePage: React.FC = () => {
                                                             record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                                                             record.status === 'ABSENT' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
                                                             record.status === 'ON LEAVE' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                                                            'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                            record.type === 'HOLIDAY' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                                                            'bg-gray-500/10 text-gray-400 border-gray-500/20'
                                                         }`}>
                                                             {record.status}
                                                         </span>
@@ -997,6 +997,7 @@ const AttendancePage: React.FC = () => {
                                             record.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                             record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                                             record.status === 'ABSENT' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                            record.type === 'HOLIDAY' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
                                             'bg-sky-500/10 text-sky-400 border-sky-500/20'
                                         }`}>
                                             {record.status}

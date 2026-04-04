@@ -26,6 +26,7 @@ import CalendarWidget from './widgets/CalendarWidget';
 import PendingActionsWidget from './widgets/PendingActionsWidget';
 import RecentActivityWidget from './widgets/RecentActivityWidget';
 import AllTasksWidget from './widgets/AllTasksWidget';
+import TasksOverviewWidget from './widgets/TasksOverviewWidget';
 
 // Newly Migrated from static layout
 import FocusWidget from './widgets/FocusWidget';
@@ -77,6 +78,23 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                     setWidgets(fresh);
                     AuthService.saveWidgetConfig(userId, fresh);
                 } else {
+                    // ── MIGRATION: Deduplicate Task Widgets ──────────────────
+                    // Since All Tasks and My Tasks are now merged into Tasks Overview,
+                    // we remove any duplicates for existing users.
+                    const taskWidgetTypes = ['tasks-overview', 'all-tasks', 'my-tasks'];
+                    const existingTaskWidgets = validConfig.filter(w => taskWidgetTypes.includes(w.type));
+                    
+                    if (existingTaskWidgets.length > 1) {
+                        const firstTaskWidgetId = existingTaskWidgets[0].id;
+                        const deduplicated = validConfig.filter(w => 
+                            !taskWidgetTypes.includes(w.type) || w.id === firstTaskWidgetId
+                        ).map(w => w.id === firstTaskWidgetId ? { ...w, type: 'tasks-overview' as const, title: 'Tasks Overview' } : w);
+                        
+                        setWidgets(deduplicated);
+                        AuthService.saveWidgetConfig(userId, deduplicated);
+                        return;
+                    }
+
                     // Auto-Add Logic for Essential Widgets (Task Stats & Calendar)
                     const hasStats = validConfig.some((w: WidgetConfig) => w.type === 'task-stats');
                     const hasCalendar = validConfig.some((w: WidgetConfig) => w.type === 'calendar');
@@ -184,12 +202,12 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
         switch (widget.type) {
             case 'focus':
                 return <FocusWidget />;
+            case 'tasks-overview':
             case 'all-tasks':
-                return <AllTasksWidget recentTasks={dashboardData.recentTasks} userMap={dashboardData.userMap} isLoading={dashboardData.isLoading} />;
+            case 'my-tasks':
+                return <TasksOverviewWidget recentTasks={dashboardData.allTasks} userMap={dashboardData.userMap} isLoading={dashboardData.isLoading} />;
             case 'task-stats':
                 return <TaskStatsWidget {...props} />;
-            case 'my-tasks':
-                return <MyTasksWidget {...props} />;
             case 'calendar':
                 return <CalendarWidget upcomingSchedule={dashboardData.upcomingSchedule} isLoading={dashboardData.isLoading} />;
             default:

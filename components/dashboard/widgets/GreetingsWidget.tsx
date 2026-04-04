@@ -59,24 +59,19 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
     const firstName = user?.displayName?.split(' ')[0] ?? '';
 
     return (
-        <div
-            className="relative rounded-2xl overflow-hidden glass-panel hover-lift"
-            style={{
-                background: 'linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(17,24,48,0.95) 100%)',
-            }}
-        >
-            {/* CSS-only radial glow — no external URL */}
+        <div className="relative rounded-2xl overflow-hidden glass-panel hover-lift border border-brand-100 dark:border-transparent bg-white/50 dark:bg-transparent">
+            {/* CSS-only radial glow */}
             <div
-                className="absolute inset-0 pointer-events-none"
+                className="absolute inset-0 pointer-events-none opacity-40 transition-opacity duration-500"
                 style={{
-                    backgroundImage: 'radial-gradient(circle at 70% 50%, rgba(99,102,241,0.12) 0%, transparent 60%)',
+                    backgroundImage: 'radial-gradient(circle at 70% 50%, var(--accent-glow) 0%, transparent 60%)',
                 }}
             />
-            {/* Subtle dot-grid pattern via CSS box-shadow trick */}
+            {/* Subtle dot-grid pattern */}
             <div
-                className="absolute inset-0 pointer-events-none opacity-[0.04]"
+                className="absolute inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.03]"
                 style={{
-                    backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
                     backgroundSize: '24px 24px',
                 }}
             />
@@ -93,11 +88,10 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
                         className="flex items-center gap-3 mb-2"
                     >
                         <span className="text-xl">{greetingEmoji}</span>
-                        <h1 className="text-2xl font-black text-white tracking-tight">
+                        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                             {greeting},{' '}
                             <span
-                                className="bg-clip-text text-transparent"
-                                style={{ backgroundImage: 'linear-gradient(90deg, #818cf8 0%, #c084fc 100%)' }}
+                                className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-500 dark:from-brand-400 dark:to-indigo-400"
                             >
                                 {firstName}
                             </span>
@@ -108,13 +102,11 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.3 }}
-                        className="text-gray-400 text-sm leading-relaxed max-w-md"
+                        className="text-slate-600 dark:text-slate-400 text-sm font-medium leading-relaxed max-w-md"
                     >
                         {subtitle}
                     </motion.p>
                 </div>
-
-
             </div>
         </div>
     );

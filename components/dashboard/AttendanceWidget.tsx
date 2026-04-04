@@ -107,6 +107,18 @@ const AttendanceWidget: React.FC = () => {
         return () => clearInterval(interval);
     }, [status]);
 
+    // Auto-save Work Logs when clocked in
+    useEffect(() => {
+        if (status === 'CLOCKED_IN' && currentRecordId) {
+            const timeoutId = setTimeout(() => {
+                AuthService.updateAttendance(currentRecordId, { workLogs }).catch(err => {
+                    console.error("Auto-save failed", err);
+                });
+            }, 1000); // 1s debounce
+            return () => clearTimeout(timeoutId);
+        }
+    }, [workLogs, status, currentRecordId]);
+
     const formatTime = (totalSeconds: number) => {
         const h = Math.floor(totalSeconds / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60);
@@ -185,29 +197,29 @@ const AttendanceWidget: React.FC = () => {
     if (isFloating) {
         return (
             <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-300">
-                <div className="bg-navy-800/90 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
+                <div className="bg-white/90 dark:bg-navy-800/90 backdrop-blur-md border border-brand-100 dark:border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
                     {/* Drag Handle / Status Icon */}
-                    <div className={`p-2 rounded-xl ${status === 'CLOCKED_IN' ? 'bg-green-500/20 text-green-400 animate-pulse' :
-                        status === 'COMPLETED' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+                    <div className={`p-2 rounded-xl ${status === 'CLOCKED_IN' ? 'bg-green-500/20 text-green-600 dark:text-green-400 animate-pulse' :
+                        status === 'COMPLETED' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-red-500/20 text-red-600 dark:text-red-400'
                         }`}>
                         <Clock size={20} />
                     </div>
 
                     <div className="flex-1">
                         <div className="flex items-center justify-between">
-                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                            <p className="text-xs text-slate-500 dark:text-gray-400 font-medium uppercase tracking-wider">
                                 {status === 'CLOCKED_IN' ? 'Active Session' : 'Attendance'}
                             </p>
-                            <button onClick={() => setIsFloating(false)} className="text-gray-500 hover:text-white transition-colors">
+                            <button onClick={() => setIsFloating(false)} className="text-slate-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-white transition-colors">
                                 <Maximize2 size={14} />
                             </button>
                         </div>
                         <div className="flex items-baseline gap-2 mt-0.5">
-                            <p className="text-xl font-bold text-white font-mono">
+                            <p className="text-xl font-bold text-slate-900 dark:text-white font-mono">
                                 {status === 'CLOCKED_IN' ? formatTime(sessionSeconds) : currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                             {status === 'CLOCKED_IN' && (
-                                <span className="text-xs text-green-400 font-medium">Recorded</span>
+                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">Recorded</span>
                             )}
                         </div>
                     </div>
@@ -216,7 +228,7 @@ const AttendanceWidget: React.FC = () => {
                     {status === 'CLOCKED_IN' && (
                         <button
                             onClick={() => setIsFloating(false)} // Expand to clock out effectively or add quick clock out here
-                            className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-300 transition-colors"
+                            className="p-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-600 dark:text-gray-300 transition-colors"
                             title="Expand to manage"
                         >
                             <ChevronUp size={18} />
@@ -227,11 +239,10 @@ const AttendanceWidget: React.FC = () => {
         );
     }
 
-    // Default Full Widget Render
     return (
-        <div className="relative w-full rounded-2xl glass-panel hover-lift z-[20]">
+        <div className="relative w-full rounded-2xl glass-panel hover-lift z-[20] border border-brand-100 dark:border-transparent bg-white/50 dark:bg-transparent">
             {/* Subtle top glow line for premium feel */}
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent"></div>
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-brand-200 dark:via-white/10 to-transparent"></div>
             
             {/* Subtle Accent Glow */}
             <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none -z-10">
@@ -241,13 +252,13 @@ const AttendanceWidget: React.FC = () => {
             <div className="p-6 pb-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <Clock className="text-brand-400" size={20} />
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <Clock className="text-brand-500 dark:text-brand-400" size={20} />
                             Attendance Center
                         </h2>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${status === 'CLOCKED_IN' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                            status === 'COMPLETED' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
-                                'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${status === 'CLOCKED_IN' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' :
+                            status === 'COMPLETED' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' :
+                                'bg-slate-100 border-slate-200 text-slate-600 dark:bg-gray-500/10 dark:border-gray-500/20 dark:text-gray-400'
                             }`}>
                             {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}
                         </span>
@@ -259,7 +270,7 @@ const AttendanceWidget: React.FC = () => {
                     {/* Minimize Button */}
                     <button
                         onClick={() => setIsFloating(true)}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all order-last md:order-first"
+                        className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-gray-400 hover:text-brand-700 dark:hover:text-white transition-all order-last md:order-first border border-slate-200 dark:border-transparent"
                         title="Minimize to floating widget"
                     >
                         <Minimize2 size={18} />
@@ -268,7 +279,7 @@ const AttendanceWidget: React.FC = () => {
 
 
                     {status === 'CLOCKED_IN' && (
-                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-sm dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]">
                             <p className="text-[10px] text-emerald-600 dark:text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Session Timer</p>
                             <p className="text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 leading-none drop-shadow-sm">
                                 {formatTime(sessionSeconds)}
@@ -283,16 +294,16 @@ const AttendanceWidget: React.FC = () => {
                 {/* Late Arrival Input */}
                 {isLate && status === 'CLOCKED_OUT' && (
                     <div className="mb-6 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
-                        <AlertTriangle className="text-amber-400 flex-shrink-0 mt-0.5" size={18} />
+                        <AlertTriangle className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={18} />
                         <div className="flex-1">
-                            <h3 className="text-amber-400 font-bold text-sm mb-1">Late Arrival Detected</h3>
-                            <p className="text-amber-200/70 text-xs mb-3">You are checking in after 10:15 AM. Please provide a reason.</p>
+                            <h3 className="text-amber-700 dark:text-amber-400 font-bold text-sm mb-1">Late Arrival Detected</h3>
+                            <p className="text-amber-600/70 dark:text-amber-200/70 text-xs mb-3">You are checking in after 10:15 AM. Please provide a reason.</p>
                             <input
                                 type="text"
                                 placeholder="Reason for late arrival..."
                                 value={lateReason}
                                 onChange={(e) => setLateReason(e.target.value)}
-                                className="w-full bg-black/20 border border-amber-500/30 rounded-lg px-3 py-2 text-sm text-white placeholder-amber-500/40 focus:outline-none focus:border-amber-400"
+                                className="w-full bg-amber-50 dark:bg-black/20 border border-amber-200 dark:border-amber-500/30 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-amber-500/40 focus:outline-none focus:border-amber-400"
                             />
                         </div>
                     </div>
@@ -313,12 +324,12 @@ const AttendanceWidget: React.FC = () => {
                         {/* Work Logs Section */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-white text-sm font-bold flex items-center gap-2">
-                                    <Briefcase size={16} className="text-brand-400" />
+                                <h3 className="text-slate-800 dark:text-white text-sm font-bold flex items-center gap-2">
+                                    <Briefcase size={16} className="text-brand-600 dark:text-brand-400" />
                                     Work Logs
                                 </h3>
                                 {status !== 'COMPLETED' && (
-                                    <button onClick={addLog} className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1 font-medium bg-brand-500/10 px-2 py-1 rounded-lg border border-brand-500/20">
+                                    <button onClick={addLog} className="text-xs text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex items-center gap-1 font-medium bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded-lg border border-brand-200 dark:border-brand-500/20">
                                         <Plus size={12} /> Add Task
                                     </button>
                                 )}
@@ -326,7 +337,7 @@ const AttendanceWidget: React.FC = () => {
 
                             <div className="space-y-2">
                                 {workLogs.map((log, index) => (
-                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-white/5 border border-white/5 rounded-xl p-3 flex flex-col xl:flex-row gap-3 group hover:border-white/10 transition-colors">
+                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-xl p-3 flex flex-col xl:flex-row gap-3 group hover:border-brand-300 dark:hover:border-white/10 transition-colors">
                                         {/* Client Select */}
                                         <div className="w-full xl:w-1/4 min-w-[140px]">
                                             <SearchableClientSelect
@@ -343,10 +354,10 @@ const AttendanceWidget: React.FC = () => {
                                                 value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
                                                 onChange={(e) => updateLog(log.id, 'natureOfAssignment', e.target.value)}
                                                 disabled={status === 'COMPLETED'}
-                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-white focus:outline-none focus:border-brand-500/50 focus:bg-brand-500/5 transition-all h-[38px] appearance-none"
+                                                className="w-full bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-brand-400 dark:focus:border-brand-500/50 focus:bg-brand-50 dark:focus:bg-brand-500/5 transition-all h-[38px] appearance-none"
                                             >
                                                 {NATURE_OF_ASSIGNMENTS.map(n => (
-                                                    <option key={n} value={n} className="bg-[#0d1526]">{n}</option>
+                                                    <option key={n} value={n} className="dark:bg-[#0d1526]">{n}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -359,7 +370,7 @@ const AttendanceWidget: React.FC = () => {
                                                 onChange={(e) => updateLog(log.id, 'description', e.target.value)}
                                                 placeholder="What did you do?"
                                                 disabled={status === 'COMPLETED'}
-                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/50 focus:bg-brand-500/5 transition-all h-[38px]"
+                                                className="w-full bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:border-brand-400 dark:focus:border-brand-500/50 focus:bg-brand-50 dark:focus:bg-brand-500/5 transition-all h-[38px]"
                                             />
                                         </div>
 

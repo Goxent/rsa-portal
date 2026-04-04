@@ -152,7 +152,11 @@ const LoginPage: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between items-center ml-1">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">password</label>
-              <Link to="/forgot-password" className="text-[10px] font-black text-brand-400 hover:text-brand-300 uppercase tracking-widest transition-colors">Recover</Link>
+              <div className="flex items-center gap-3">
+                <Link to="/forgot-password" className="text-[10px] font-black text-brand-400 hover:text-brand-300 uppercase tracking-widest transition-colors">Forgot Password?</Link>
+                <span className="w-1 h-1 rounded-full bg-gray-700"></span>
+                <Link to="/reset-password" className="text-[10px] font-black text-gray-500 hover:text-brand-400 uppercase tracking-widest transition-colors">Reset</Link>
+              </div>
             </div>
             <div className="relative group">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />

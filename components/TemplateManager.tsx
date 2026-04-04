@@ -16,7 +16,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         name: '',
         description: '',
         priority: TaskPriority.MEDIUM,
-        category: 'Audit',
+        category: 'TASK',
         subtasks: [],
         subtaskDetails: [],
         documentLink: '',
@@ -131,7 +131,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <button
                                 onClick={() => {
                                     setIsEditing(true);
-                                    setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'Audit', subtasks: [], subtaskDetails: [], autoApplyRules: {}, documentLink: '', nextTemplateId: '' });
+                                    setCurrentTemplate({ name: '', description: '', priority: TaskPriority.MEDIUM, category: 'TASK', subtasks: [], subtaskDetails: [], autoApplyRules: {}, documentLink: '', nextTemplateId: '' });
                                 }}
                                 className="w-full mb-4 py-3 border-2 border-dashed border-brand-500/30 rounded-xl text-brand-400 hover:border-brand-500/60 hover:bg-brand-500/5 transition-all flex items-center justify-center font-bold text-sm"
                             >
@@ -209,11 +209,13 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Category</label>
-                                        <select className="w-full glass-input" value={currentTemplate.category} onChange={e => setCurrentTemplate({ ...currentTemplate, category: e.target.value })} disabled={!isAdmin}>
-                                            <option value="Audit">Audit</option>
-                                            <option value="Tax">Tax</option>
-                                            <option value="Compliance">Compliance</option>
-                                            <option value="Consulting">Consulting</option>
+                                        <select className="w-full glass-input" value={currentTemplate.category} onChange={e => setCurrentTemplate({ ...currentTemplate, category: e.target.value as any })} disabled={!isAdmin}>
+                                            <option value="TASK">Task</option>
+                                            <option value="CHECKLIST">Checklist</option>
+                                            <option value="DOCUMENT">Document</option>
+                                            <option value="WORKFLOW">Workflow</option>
+                                            <option value="SOP">SOP</option>
+                                            <option value="TEMPLATE">Template</option>
                                         </select>
                                     </div>
                                     <div>

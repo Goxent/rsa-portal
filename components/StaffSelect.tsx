@@ -14,6 +14,7 @@ interface StaffSelectProps {
     className?: string;
     disabled?: boolean;
     showAllOption?: boolean;
+    compact?: boolean; // NEW: For tight spaces (checklists)
 }
 
 const StaffSelect: React.FC<StaffSelectProps> = ({
@@ -25,7 +26,8 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
     placeholder = "Select Staff...",
     className = "",
     disabled = false,
-    showAllOption = false
+    showAllOption = false,
+    compact = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -107,7 +109,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
             return (
                 <div className="flex flex-wrap gap-1.5">
                     {selectedItems.map(u => (
-                        <span key={u.uid} className="bg-brand-600/30 text-brand-200 px-2 py-0.5 rounded text-[11px] flex items-center border border-brand-500/30">
+                        <span key={u.uid} className="bg-brand-600/10 text-brand-500 px-2 py-0.5 rounded text-[11px] flex items-center border border-brand-500/20 font-bold">
                             {u.displayName}
                             {!disabled && (
                                 <X
@@ -129,19 +131,23 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         const selectedUser = users.find(u => u.uid === selectedId) || (showAllOption && selectedId === 'ALL' ? { displayName: 'All Staff Members' } : null);
 
         return selectedUser ? (
-            <span className="text-gray-200 flex items-center">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-[8px] font-bold mr-2 border border-white/10 shrink-0">
-                    {getInitials(selectedUser.displayName)}
-                </div>
+            <span className={`text-gray-200 flex items-center ${compact ? 'text-[11px]' : ''}`}>
+                {!compact && (
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-navy-700 to-navy-600 flex items-center justify-center text-[8px] font-bold mr-2 border border-white/10 shrink-0">
+                        {getInitials(selectedUser.displayName)}
+                    </div>
+                )}
                 <span className="truncate max-w-[180px]">{selectedUser.displayName}</span>
             </span>
-        ) : <span className="text-gray-500">{placeholder}</span>;
+        ) : <span className={`text-gray-500 ${compact ? 'text-[11px]' : ''}`}>{placeholder}</span>;
     };
 
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             <div
-                className={`w-full glass-input rounded-lg px-3 py-2 text-sm min-h-[42px] flex items-center justify-between cursor-pointer border border-white/10 hover:border-brand-500/50 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${isOpen ? 'ring-2 ring-brand-500/30 border-brand-500 shadow-xl' : ''}`}
+                className={`w-full glass-input rounded-lg border border-white/10 hover:border-brand-500/50 transition-all ${
+                    compact ? 'px-2 py-1 min-h-[32px]' : 'px-3 py-2 min-h-[42px]'
+                } flex items-center justify-between cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${isOpen ? 'ring-2 ring-brand-500/30 border-brand-500 shadow-xl' : ''}`}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
             >
                 <div className="flex-1 overflow-hidden">
@@ -182,12 +188,12 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
                                     return (
                                         <div
                                             key={user.uid}
-                                            className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-all mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-200' : 'text-gray-300 hover:bg-white/5'}`}
+                                            className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between group transition-all mb-0.5 ${isSelected ? 'bg-brand-600/20 text-brand-500' : 'text-gray-300 hover:bg-white/5'}`}
                                             onClick={(e) => handleSelect(user.uid, e)}
                                         >
                                             <div className="flex items-center">
                                                 {user.uid === 'ALL' ? (
-                                                    <div className="w-8 h-8 rounded-full bg-brand-600/20 flex items-center justify-center text-[10px] font-bold mr-3 border border-brand-500/20 text-brand-400">
+                                                    <div className="w-8 h-8 rounded-full bg-brand-600/20 flex items-center justify-center text-[10px] font-bold mr-3 border border-brand-500/20 text-brand-500">
                                                         ALL
                                                     </div>
                                                 ) : (

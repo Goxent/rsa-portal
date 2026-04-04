@@ -168,7 +168,7 @@ const NepaliDatePicker: React.FC<NepaliDatePickerProps> = ({
             </div>
 
             {isOpen && (
-                <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-navy-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 p-4">
+                <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-white dark:bg-carbon-950 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 p-4">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
                         <button

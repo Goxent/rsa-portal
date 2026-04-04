@@ -23,6 +23,7 @@ const LeavePage = lazy(() => import('./pages/LeavePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
@@ -36,6 +37,7 @@ const CompliancePage = lazy(() => import('./pages/CompliancePage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const ResourcePlanningPage = lazy(() => import('./pages/ResourcePlanningPage'));
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
+const ArchivedTasksPage = lazy(() => import('./pages/ArchivedTasksPage'));
 
 // Suspense wrapper for lazy-loaded components with Error Boundary
 const LazyPage = ({ children }: { children: React.ReactNode }) => {
@@ -126,14 +128,15 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        <ThemeProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <ThemeProvider>
             <ModalProvider>
               <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                   {/* Profile Setup - Protected but doesn't require isSetupComplete */}
                   <Route
@@ -185,6 +188,7 @@ const App: React.FC = () => {
                       </AdminRoute>
                     } />
                     <Route path="tasks" element={<LazyPage><TasksPage /></LazyPage>} />
+                    <Route path="archived-tasks" element={<AdminRoute><LazyPage><ArchivedTasksPage /></LazyPage></AdminRoute>} />
                     <Route path="calendar" element={<LazyPage><CalendarPage /></LazyPage>} />
                     <Route path="workload" element={
                       <AdminRoute>
@@ -231,8 +235,8 @@ const App: React.FC = () => {
                 <ModalManager />
               </BrowserRouter>
             </ModalProvider>
-          </AuthProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </ErrorBoundary>
       {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider >

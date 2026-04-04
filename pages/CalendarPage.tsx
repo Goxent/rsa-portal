@@ -49,11 +49,11 @@ const DraggableTask = ({ task, canDrag }: { task: Task, canDrag: boolean }) => {
             style={style}
             {...listeners}
             {...attributes}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
             onClick={(e) => { e.stopPropagation(); }}
         >
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></div>
-            <div className="text-[10px] text-blue-200 truncate font-medium leading-none">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            <div className="text-[10.5px] text-emerald-50 truncate font-bold leading-none">
                 {task.title}
             </div>
         </div>
@@ -345,7 +345,7 @@ const CalendarPage: React.FC = () => {
             >
                 <div className="grid grid-cols-7 gap-3 lg:gap-4 mb-2">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                        <div key={d} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${i === 6 ? 'text-rose-400' : 'text-amber-300/70'}`}>
+                        <div key={d} className={`text-center text-[11px] font-black uppercase tracking-[0.2em] py-2 ${i === 6 ? 'text-rose-500 drop-shadow-sm' : 'text-emerald-500'}`}>
                             {d}
                         </div>
                     ))}
@@ -388,9 +388,9 @@ const CalendarPage: React.FC = () => {
                                         <DraggableTask key={`task-${task.id}`} task={task} canDrag={user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER} />
                                     ))}
                                     {dayEvents.slice(0, Math.max(0, 3 - dayTasks.length)).map((ev, i) => (
-                                        <div key={`ev-${ev.id || i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ev.color || '#fff' }}></div>
-                                            <div className="text-[10px] text-gray-300 truncate font-medium leading-none">
+                                        <div key={`ev-${ev.id || i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/10 border border-white/20 hover:bg-white/20 transition-colors shadow-sm">
+                                            <div className="w-1.5 h-1.5 rounded-full shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.4)]" style={{ backgroundColor: ev.color || '#fff' }}></div>
+                                            <div className="text-[10.5px] text-white truncate font-bold leading-none">
                                                 {ev.title}
                                             </div>
                                         </div>

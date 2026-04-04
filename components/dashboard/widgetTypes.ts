@@ -1,6 +1,5 @@
-// Dashboard Widget Types and Configuration
-
 export type WidgetType =
+    | 'tasks-overview'
     | 'my-tasks'
     | 'all-tasks'
     | 'pending-actions'
@@ -49,9 +48,17 @@ export const WIDGET_CATEGORY_COLORS: Record<string, { border: string; label: str
 
 export const WIDGET_REGISTRY: WidgetMeta[] = [
     {
+        type: 'tasks-overview',
+        title: 'Tasks Overview',
+        description: 'Unified view for firm-wide and personal tasks with toggleable modes',
+        icon: 'LayoutGrid',
+        defaultSize: 'full',
+        category: 'tasks',
+    },
+    {
         type: 'my-tasks',
-        title: 'My Tasks',
-        description: 'Your personal task list with status updates',
+        title: 'Legacy: My Tasks',
+        description: 'Individual task list (Replaced by Tasks Overview)',
         icon: 'CheckSquare',
         defaultSize: 'md',
         category: 'tasks',
@@ -66,8 +73,8 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
     },
     {
         type: 'all-tasks',
-        title: 'All Tasks',
-        description: 'Firm-wide task list with urgency filters and assignee view',
+        title: 'Legacy: All Tasks',
+        description: 'Firm-wide task list (Replaced by Tasks Overview)',
         icon: 'CheckSquare',
         defaultSize: 'full',
         adminOnly: true,
@@ -93,21 +100,20 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
             return [
                 { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
                 { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-                { id: 'w_alltasks', type: 'all-tasks', title: 'All Tasks', position: 2, size: 'full', visible: true },
-                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 3, size: 'full', visible: true },
+                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 2, size: 'full', visible: true },
             ];
         case UserRole.MANAGER:
             return [
                 { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
                 { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
+                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 2, size: 'full', visible: true },
             ];
         case UserRole.STAFF:
         default:
             return [
                 { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
                 { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-                { id: 'w_mytask', type: 'my-tasks', title: 'My Tasks', position: 2, size: 'full', visible: true },
+                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 2, size: 'full', visible: true },
             ];
     }
 };
