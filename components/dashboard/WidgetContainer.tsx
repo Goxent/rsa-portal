@@ -95,38 +95,18 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                         return;
                     }
 
-                    // Auto-Add Logic for Essential Widgets (Task Stats & Calendar)
-                    const hasStats = validConfig.some((w: WidgetConfig) => w.type === 'task-stats');
+                    // Auto-Add Logic for Essential Widgets (Calendar)
                     const hasCalendar = validConfig.some((w: WidgetConfig) => w.type === 'calendar');
-
-                    if (!hasStats || !hasCalendar) {
+                    if (!hasCalendar) {
                         const newWidgets = [...validConfig];
-                        
-                        // Add Calendar if missing
-                        if (!hasCalendar) {
-                            newWidgets.unshift({
-                                id: `w_cal_${Date.now()}`,
-                                type: 'calendar',
-                                title: 'Upcoming Schedule',
-                                position: 0,
-                                size: 'md',
-                                visible: true
-                            });
-                        }
-                        
-                        // Add Task Stats if missing (will be unshifted above calendar if both missing)
-                        if (!hasStats) {
-                            newWidgets.unshift({
-                                id: `w_tstat_${Date.now()}`,
-                                type: 'task-stats',
-                                title: 'Task Statistics',
-                                position: 0,
-                                size: 'md',
-                                visible: true
-                            });
-                        }
-
-                        // Re-sort positions and save
+                        newWidgets.unshift({
+                            id: `w_cal_${Date.now()}`,
+                            type: 'calendar',
+                            title: 'Upcoming Schedule',
+                            position: 0,
+                            size: 'md',
+                            visible: true
+                        });
                         const finalWidgets = newWidgets.map((w, i) => ({ ...w, position: i }));
                         setWidgets(finalWidgets);
                         AuthService.saveWidgetConfig(userId, finalWidgets);
@@ -206,8 +186,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
             case 'all-tasks':
             case 'my-tasks':
                 return <TasksOverviewWidget recentTasks={dashboardData.allTasks} userMap={dashboardData.userMap} isLoading={dashboardData.isLoading} />;
-            case 'task-stats':
-                return <TaskStatsWidget {...props} />;
             case 'calendar':
                 return <CalendarWidget upcomingSchedule={dashboardData.upcomingSchedule} isLoading={dashboardData.isLoading} />;
             default:

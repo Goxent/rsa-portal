@@ -4,7 +4,6 @@ export type WidgetType =
     | 'all-tasks'
     | 'pending-actions'
     | 'calendar'
-    | 'task-stats'
     | 'greetings'
     | 'compliance-banner'
     | 'focus';
@@ -63,14 +62,7 @@ export const WIDGET_REGISTRY: WidgetMeta[] = [
         defaultSize: 'md',
         category: 'tasks',
     },
-    {
-        type: 'task-stats',
-        title: 'Task Statistics',
-        description: 'Overview of task distribution by status',
-        icon: 'PieChart',
-        defaultSize: 'md',
-        category: 'tasks',
-    },
+
     {
         type: 'all-tasks',
         title: 'Legacy: All Tasks',
@@ -98,22 +90,19 @@ export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {
         case UserRole.ADMIN:
         case UserRole.MASTER_ADMIN:
             return [
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 2, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 0, size: 'md', visible: true },
+                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 1, size: 'full', visible: true },
             ];
         case UserRole.MANAGER:
             return [
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 2, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 0, size: 'md', visible: true },
+                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 1, size: 'full', visible: true },
             ];
         case UserRole.STAFF:
         default:
             return [
-                { id: 'w_tstat', type: 'task-stats', title: 'Task Statistics', position: 0, size: 'md', visible: true },
-                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 1, size: 'md', visible: true },
-                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 2, size: 'full', visible: true },
+                { id: 'w_cal', type: 'calendar', title: 'Upcoming Schedule', position: 0, size: 'md', visible: true },
+                { id: 'w_tasks_over', type: 'tasks-overview', title: 'Tasks Overview', position: 1, size: 'full', visible: true },
             ];
     }
 };

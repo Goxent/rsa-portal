@@ -216,7 +216,6 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                             }`}>{task.title}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px]">
-                                            <span className="font-mono text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider bg-slate-100 dark:bg-black/40 px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/5 shadow-sm">#{task.id.substring(0, 5)}</span>
                                             {task.clientName && (
                                                 <div
                                                     className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-all cursor-pointer font-bold border border-brand-200 dark:border-brand-500/20 bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20`}

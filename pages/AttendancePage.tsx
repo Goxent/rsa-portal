@@ -122,12 +122,10 @@ const AttendancePage: React.FC = () => {
     useEffect(() => {
         const today = new Date();
         const np = new NepaliDate(today);
-        const currentYear = np.getYear();
-        const currentMonth = np.getMonth();
 
-        // Start of Nepali Month
-        const startOfMonthNp = new NepaliDate(currentYear, currentMonth, 1);
-        const startOfMonthAd = startOfMonthNp.toJsDate().toISOString().split('T')[0];
+        // Start of Gregorian Month
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const startOfMonthAd = startOfMonth.toISOString().split('T')[0];
 
         // End Date (Today)
         const todayAd = today.toISOString().split('T')[0];
@@ -354,29 +352,50 @@ const AttendancePage: React.FC = () => {
         const periodBs = `${formatDateBS(filterStartDate)} - ${formatDateBS(filterEndDate)} BS`;
         doc.text(`Period: ${formatDateAD(filterStartDate)} to ${formatDateAD(filterEndDate)}  |  ${periodBs}`, pageW / 2, 40, { align: 'center' });
 
-        // ── Generated timestamp ─────────────────────────────────────────
+        // ── Generated timestamp & Staff Info ────────────────────────────────
         doc.setFontSize(7);
         doc.setTextColor(120, 140, 160);
         doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 55);
 
         // ── Table ───────────────────────────────────────────────────────
-        const rows = reportData.map((r, idx) => [
-            idx + 1,
-            formatDateAD(r.date),
-            formatDateBS(r.date),
-            getDayOfWeek(r.date),
-            r.userName,
-            r.status,
-            r.clockIn || '-',
-            r.clockOut || '-',
-            r.workHours ? `${r.workHours}h` : '-',
-            r.workLogs?.length > 0
-                ? [...new Set(r.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].join(', ')
-                : '-',
-            r.workLogs?.length > 0
-                ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('; ')
-                : (r.clientName || '-')
-        ]);
+        const uniqueStaffNames = [...new Set(reportData.map(r => r.userName))];
+        const isSingleStaff = uniqueStaffNames.length === 1;
+        const staffNameStr = isSingleStaff ? uniqueStaffNames[0] : '';
+
+        if (isSingleStaff) {
+            doc.setFontSize(10);
+            doc.setTextColor(30, 41, 59);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Staff Member: ${staffNameStr}`, pageW - 14, 55, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
+        }
+
+        const rows = reportData.map((r, idx) => {
+            const rowData: any[] = [
+                idx + 1,
+                formatDateAD(r.date),
+                formatDateBS(r.date),
+                getDayOfWeek(r.date)
+            ];
+            
+            if (!isSingleStaff) {
+                rowData.push(r.userName);
+            }
+            
+            rowData.push(
+                r.status,
+                r.clockIn || '-',
+                r.clockOut || '-',
+                r.workHours ? `${r.workHours}h` : '-',
+                r.workLogs?.length > 0
+                    ? [...new Set(r.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].join(', ')
+                    : '-',
+                r.workLogs?.length > 0
+                    ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('; ')
+                    : (r.clientName || '-')
+            );
+            return rowData;
+        });
 
         const getStatusColor = (status: string): [number, number, number] => {
             if (status === 'PRESENT') return [220, 252, 231];
@@ -386,25 +405,32 @@ const AttendancePage: React.FC = () => {
             return [245, 245, 250];
         };
 
+        const headRow = ['SN', 'Date (AD)', 'Date (BS)', 'Day'];
+        if (!isSingleStaff) headRow.push('Staff');
+        headRow.push('Status', 'In', 'Out', 'Hrs', 'Nature of Assignment', 'Client & Work Description');
+
+        const statusIdx = isSingleStaff ? 4 : 5;
+        const colStyles: any = {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 24 },
+            2: { cellWidth: 24 },
+            3: { cellWidth: 12 },
+        };
+        colStyles[statusIdx] = { cellWidth: 16, halign: 'center' };
+        colStyles[statusIdx + 1] = { cellWidth: 12 };
+        colStyles[statusIdx + 2] = { cellWidth: 12 };
+        colStyles[statusIdx + 3] = { cellWidth: 10, halign: 'center' };
+        colStyles[statusIdx + 5] = { cellWidth: 'auto' };
+
         autoTable(doc, {
-            head: [['SN', 'Date (AD)', 'Date (BS)', 'Day', 'Staff', 'Status', 'In', 'Out', 'Hrs', 'Nature of Assignment', 'Client & Work Description']],
+            head: [headRow],
             body: rows,
             startY: 60,
             styles: { fontSize: 7, cellPadding: 2.5, lineColor: [220, 225, 235], lineWidth: 0.2 },
             headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5 },
-            columnStyles: {
-                0: { cellWidth: 10, halign: 'center' },
-                1: { cellWidth: 24 },
-                2: { cellWidth: 24 },
-                3: { cellWidth: 12 },
-                5: { cellWidth: 16, halign: 'center' },
-                6: { cellWidth: 12 },
-                7: { cellWidth: 12 },
-                8: { cellWidth: 10, halign: 'center' },
-                10: { cellWidth: 'auto' },
-            },
+            columnStyles: colStyles,
             didParseCell: (data) => {
-                if (data.section === 'body' && data.column.index === 5) {
+                if (data.section === 'body' && data.column.index === statusIdx) {
                     const status = data.cell.raw as string;
                     data.cell.styles.fillColor = getStatusColor(status);
                     data.cell.styles.textColor = [30, 41, 59];
@@ -460,8 +486,12 @@ const AttendancePage: React.FC = () => {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
-        const TOTAL_COLS = 12; // SN + Date(AD) + Date(BS) + Day + Staff + Status + In + Out + Hrs + Client + Nature + Description
-        const lastColLetter = 'L';
+        const uniqueStaffNames = [...new Set(reportData.map(r => r.userName))];
+        const isSingleStaff = uniqueStaffNames.length === 1;
+        const staffNameStr = isSingleStaff ? uniqueStaffNames[0] : '';
+        
+        const TOTAL_COLS = isSingleStaff ? 11 : 12; // SN + Date(AD) + Date(BS) + Day + [Staff] + Status + In + Out + Hrs + Client + Nature + Description
+        const lastColLetter = isSingleStaff ? 'K' : 'L';
 
         // ── Company Header Block ────────────────────────────────────────
         sheet.mergeCells(`A1:${lastColLetter}1`);
@@ -491,7 +521,11 @@ const AttendancePage: React.FC = () => {
         sheet.mergeCells(`A4:${lastColLetter}4`);
         const periodCell = sheet.getCell('A4');
         const bsPeriod = `${formatDateBS(filterStartDate)} - ${formatDateBS(filterEndDate)} BS`;
-        periodCell.value = `Period: ${formatDateAD(filterStartDate)} to ${formatDateAD(filterEndDate)}  |  ${bsPeriod}  |  Generated: ${new Date().toLocaleString()}`;
+        let headerText = `Period: ${formatDateAD(filterStartDate)} to ${formatDateAD(filterEndDate)}  |  ${bsPeriod}  |  Generated: ${new Date().toLocaleString()}`;
+        if (isSingleStaff) {
+             headerText = `Staff Member: ${staffNameStr}  |  ` + headerText;
+        }
+        periodCell.value = headerText;
         periodCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
         periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
         periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
@@ -501,12 +535,18 @@ const AttendancePage: React.FC = () => {
         sheet.getRow(5).height = 6;
 
         // ── Column Headers ──────────────────────────────────────────────
-        const COLS = [
+        const COLS: any[] = [
             { header: 'SN', key: 'sn', width: 6 },
             { header: 'Date (AD)', key: 'dateAD', width: 16 },
             { header: 'Date (BS)', key: 'dateBS', width: 16 },
             { header: 'Day', key: 'day', width: 10 },
-            { header: 'Staff Name', key: 'name', width: 22 },
+        ];
+        
+        if (!isSingleStaff) {
+            COLS.push({ header: 'Staff Name', key: 'name', width: 22 });
+        }
+        
+        COLS.push(
             { header: 'Status', key: 'status', width: 13 },
             { header: 'Clock In', key: 'in', width: 11 },
             { header: 'Clock Out', key: 'out', width: 11 },
@@ -514,7 +554,7 @@ const AttendancePage: React.FC = () => {
             { header: 'Client Name', key: 'client', width: 25 },
             { header: 'Nature of Assignment', key: 'nature', width: 22 },
             { header: 'Work Description', key: 'description', width: 45 },
-        ];
+        );
         sheet.columns = COLS;
 
         const headerRow = sheet.getRow(6);
@@ -551,12 +591,11 @@ const AttendancePage: React.FC = () => {
                 ? r.workLogs.map((l: any) => l.description).filter(Boolean).join('\n')
                 : (r.notes && r.notes !== '-' ? r.notes : '-');
 
-            const row = sheet.addRow({
+            const rowData: any = {
                 sn: idx + 1,
                 dateAD: formatDateAD(r.date),
                 dateBS: formatDateBS(r.date),
                 day: getDayOfWeek(r.date),
-                name: r.userName,
                 status: r.status,
                 in: r.clockIn || '-',
                 out: r.clockOut || '-',
@@ -564,7 +603,13 @@ const AttendancePage: React.FC = () => {
                 client: clientName,
                 nature: natureOfAssignment,
                 description: description,
-            });
+            };
+            
+            if (!isSingleStaff) {
+                rowData.name = r.userName;
+            }
+
+            const row = sheet.addRow(rowData);
 
             const rowBg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
             const statusBg = statusFill[r.status] || rowBg;
@@ -756,9 +801,13 @@ const AttendancePage: React.FC = () => {
                     <div className="lg:col-span-2">
                         <ClockWidget />
                     </div>
-                    <StatCard title="Total Present" value={stats.present} icon={UserCheck} color="text-brand-400" trend={`${stats.late} delayed`} />
-                    <StatCard title="Absentees" value={stats.absent} icon={XCircle} color="text-rose-400" />
-                    <StatCard title="Personal Leave" value={stats.onLeave} icon={UserPlus} color="text-sky-400" />
+                    {isAdmin && (
+                        <>
+                            <StatCard title="Total Present" value={stats.present} icon={UserCheck} color="text-brand-400" trend={`${stats.late} delayed`} />
+                            <StatCard title="Absentees" value={stats.absent} icon={XCircle} color="text-rose-400" />
+                            <StatCard title="Personal Leave" value={stats.onLeave} icon={UserPlus} color="text-sky-400" />
+                        </>
+                    )}
                 </div>
 
                 {/* ── Filter & Search Bar ── */}

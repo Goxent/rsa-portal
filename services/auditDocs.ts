@@ -46,6 +46,8 @@ export interface AuditDocFile {
     uploadedBy: string;
     uploadedByName: string;
     uploadedAt: string;      // ISO
+    taskId?: string;         // Linked Task
+    subtaskId?: string;      // Linked Procedure
 }
 
 export interface AuditDocFolder {
@@ -95,17 +97,17 @@ export const AuditDocService = {
         const appwriteFile = await AppwriteService.uploadFile(file);
 
         // 2. Store metadata in Firestore
-        const record: Omit<AuditDocFile, 'id'> = {
+        const record = AuditDocService.sanitizeData({
             appwriteFileId: appwriteFile.$id,
             fileName: file.name,
             fileSize: file.size,
             mimeType: file.type || 'application/octet-stream',
             uploadedAt: new Date().toISOString(),
             ...meta,
-        };
+        });
 
-        const docRef = await addDoc(collection(db, 'auditDocFiles'), record);
-        return { id: docRef.id, ...record };
+        const docRef = await addDoc(collection(db, 'auditDocFiles'), record as any);
+        return { id: docRef.id, ...record } as AuditDocFile;
     },
 
     /**
@@ -148,7 +150,8 @@ export const AuditDocService = {
      * Update notes/networkPath for a file metadata record.
      */
     updateFileMeta: async (fileId: string, updates: Partial<Pick<AuditDocFile, 'notes' | 'networkPath'>>): Promise<void> => {
-        await updateDoc(doc(db, 'auditDocFiles', fileId), updates);
+        const record = AuditDocService.sanitizeData(updates);
+        await updateDoc(doc(db, 'auditDocFiles', fileId), record as any);
     },
 
     /**
@@ -161,7 +164,20 @@ export const AuditDocService = {
         await deleteDoc(doc(db, 'auditDocFiles', firestoreId));
     },
 
-    // ── Custom Folders ─────────────────────────────────────────────────────────
+    // ─── Custom Folders ─────────────────────────────────────────────────────────
+    
+    /**
+     * Helper to remove undefined values before Firestore operations
+     */
+    sanitizeData: <T extends object>(data: T): T => {
+        const sanitized = { ...data } as any;
+        Object.keys(sanitized).forEach(key => {
+            if (sanitized[key] === undefined) {
+                delete sanitized[key];
+            }
+        });
+        return sanitized;
+    },
 
     /**
      * Create a custom sub-folder within a main folder slot.
@@ -169,12 +185,12 @@ export const AuditDocService = {
     createFolder: async (
         folder: Omit<AuditDocFolder, 'id' | 'createdAt'>
     ): Promise<AuditDocFolder> => {
-        const record: Omit<AuditDocFolder, 'id'> = {
+        const record = AuditDocService.sanitizeData({
             ...folder,
             createdAt: new Date().toISOString(),
-        };
-        const docRef = await addDoc(collection(db, 'auditDocFolders'), record);
-        return { id: docRef.id, ...record };
+        });
+        const docRef = await addDoc(collection(db, 'auditDocFolders'), record as any);
+        return { id: docRef.id, ...record } as AuditDocFolder;
     },
 
     /**

@@ -58,12 +58,13 @@ const TemplatesPage: React.FC = () => {
         id?: string;
         name: string;
         description: string;
-        category: 'TASK' | 'CHECKLIST' | 'DOCUMENT' | 'WORKFLOW';
+        category: 'TASK' | 'CHECKLIST' | 'DOCUMENT' | 'WORKFLOW' | 'REVIEWER_CHECKLIST';
         type: string;
         content: string;
         priority: string;
         expectedDays: number;
         taskType?: TaskType;
+        reviewerRole?: 'TL' | 'ER' | 'SP';
         tags: string[];
         attachments: any[];
         folderId: string;
@@ -71,6 +72,7 @@ const TemplatesPage: React.FC = () => {
     }>({
         name: '', description: '', category: 'TASK', type: '', content: '',
         priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+        reviewerRole: undefined,
         tags: [], attachments: [], folderId: '', folderName: ''
     });
 
@@ -189,6 +191,12 @@ const TemplatesPage: React.FC = () => {
             });
             setNextTemplateId('');
             setIsModalOpen(false);
+            setNewTemplate({ 
+                name: '', description: '', category: 'TASK', type: '', content: '',
+                priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+                reviewerRole: undefined,
+                tags: [], attachments: [], folderId: '', folderName: '' 
+            });
             
             // Intelligence: Invalidate templates query to sync with task creation workflow
             queryClient.invalidateQueries({ queryKey: templateKeys.all });
@@ -216,7 +224,8 @@ const TemplatesPage: React.FC = () => {
             tags: template.tags || [],
             attachments: template.attachments || [],
             folderId: template.folderId || '',
-            folderName: template.folderName
+            folderName: template.folderName,
+            reviewerRole: template.reviewerRole
         });
 
         // Populate subtasks
@@ -512,10 +521,20 @@ const TemplatesPage: React.FC = () => {
                             template.category === 'TASK' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
                             template.category === 'CHECKLIST' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                             template.category === 'DOCUMENT' ? 'bg-brand-500/10 text-brand-400 border-brand-500/20' :
-                            'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                            template.category === 'REVIEWER_CHECKLIST' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                            'bg-pink-500/10 text-pink-400 border-pink-500/20'
                         }`}>
-                            {template.category}
+                            {template.category === 'REVIEWER_CHECKLIST' ? 'Reviewer' : template.category}
                         </span>
+                        {template.category === 'REVIEWER_CHECKLIST' && template.reviewerRole && (
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-wider ${
+                                template.reviewerRole === 'TL' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' :
+                                template.reviewerRole === 'ER' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                                'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                            }`}>
+                                {template.reviewerRole}
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -922,8 +941,34 @@ const TemplatesPage: React.FC = () => {
                                         <option value="CHECKLIST">Checklist</option>
                                         <option value="DOCUMENT">Document</option>
                                         <option value="WORKFLOW">Workflow</option>
+                                        <option value="REVIEWER_CHECKLIST">Reviewer Checklist</option>
                                     </select>
                                 </div>
+                                {newTemplate.category === 'REVIEWER_CHECKLIST' && (
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Reviewer Layer</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { id: 'TL', label: 'Team Leader', color: 'indigo' },
+                                                { id: 'ER', label: 'Engagement Reviewer', color: 'purple' },
+                                                { id: 'SP', label: 'Signing Partner', color: 'rose' }
+                                            ].map(role => (
+                                                <button
+                                                    key={role.id}
+                                                    type="button"
+                                                    onClick={() => setNewTemplate({ ...newTemplate, reviewerRole: role.id as any })}
+                                                    className={`p-3 rounded-xl border text-center transition-all ${
+                                                        newTemplate.reviewerRole === role.id 
+                                                            ? `bg-${role.color}-500/10 border-${role.color}-500 text-${role.color}-400 shadow-lg` 
+                                                            : 'bg-white/5 border-white/5 text-gray-500 hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    <div className="text-[10px] font-black uppercase tracking-widest">{role.label}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Type / Tag</label>
                                     <input type="text" className="w-full glass-input rounded-lg px-3 py-2 text-sm"
@@ -1068,15 +1113,15 @@ const TemplatesPage: React.FC = () => {
                                     </AnimatePresence>
                                 </div>
 
-                                {/* SECTION 2: Status-based Automation (Reviewer Checklists) */}
+                                {/* SECTION 2: Status-based Automation (Auto-Checklists) */}
                                 <div className="col-span-2 border-t border-white/5 pt-4">
                                     <button type="button" onClick={() => toggleSection('statuses')}
                                         className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
                                         <div className="flex items-center gap-2 text-purple-400">
                                             <Sparkles size={18} />
-                                            <span className="text-sm font-black uppercase tracking-wider">Status-based Automation</span>
+                                            <span className="text-sm font-black uppercase tracking-wider">Auto-Checklists on Status Change</span>
                                             <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
-                                                {Object.values(statusSubtaskMap).flat().length} Hooks
+                                                {Object.values(statusSubtaskMap).flat().length} Automations
                                             </span>
                                         </div>
                                         {expandedSections.statuses ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
@@ -1086,10 +1131,15 @@ const TemplatesPage: React.FC = () => {
                                         {expandedSections.statuses && (
                                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                                 <div className="p-4 space-y-3">
-                                                    <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3 mb-4">
-                                                        <p className="text-[10px] text-purple-300 font-medium leading-relaxed">
-                                                            Subtasks defined here will be <b>automatically injected</b> into the task when it enters the selected status (e.g. Under Review). Perfect for reviewer checklists.
-                                                        </p>
+                                                    <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3 mb-4 flex gap-3 items-start">
+                                                        <AlertTriangle size={14} className="text-purple-400 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-[10px] text-purple-300 font-black uppercase tracking-widest mb-1">What is this?</p>
+                                                            <p className="text-[11px] text-purple-200/60 leading-relaxed">
+                                                                Define subtasks that <b>automatically appear</b> when a task moves to a specific status. 
+                                                                <br/><i>Example: When moving to "Under Review", automatically add "Partner Sign-off Required".</i>
+                                                            </p>
+                                                        </div>
                                                     </div>
 
                                                     {[TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED].map(status => (
@@ -1097,7 +1147,7 @@ const TemplatesPage: React.FC = () => {
                                                             <button type="button" onClick={() => toggleStatusAccordion(status)}
                                                                 className="w-full px-4 py-2 flex items-center justify-between hover:bg-white/[0.03] transition-colors">
                                                                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                                                    Trigger: {status.replace(/_/g, ' ')}
+                                                                    When status becomes: {status.replace(/_/g, ' ')}
                                                                 </span>
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="text-[9px] font-bold text-gray-600">{(statusSubtaskMap[status] || []).length} items</span>
@@ -1121,7 +1171,7 @@ const TemplatesPage: React.FC = () => {
                                                                     ))}
                                                                     <button type="button" onClick={() => addStatusSubtask(status)}
                                                                         className="w-full py-1.5 rounded-lg border border-dashed border-white/5 text-[9px] font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all">
-                                                                        + Add Hook Item
+                                                                        + Add Automation Task
                                                                     </button>
                                                                 </div>
                                                             )}
@@ -1163,6 +1213,15 @@ const TemplatesPage: React.FC = () => {
                                 </h3>
                                 <div className="flex gap-3 mt-3">
                                     <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/20">{previewTemplate.category}</span>
+                                    {previewTemplate.category === 'REVIEWER_CHECKLIST' && previewTemplate.reviewerRole && (
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                            previewTemplate.reviewerRole === 'TL' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' :
+                                            previewTemplate.reviewerRole === 'ER' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                                            'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                        }`}>
+                                            Role: {previewTemplate.reviewerRole === 'TL' ? 'Team Lead' : previewTemplate.reviewerRole === 'ER' ? 'Engagement Reviewer' : 'Signing Partner'}
+                                        </span>
+                                    )}
                                     {previewTemplate.taskType && (
                                         <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 flex items-center gap-1.5">
                                             {(() => {

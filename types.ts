@@ -207,6 +207,9 @@ export interface Task {
   // Audit Master Suite (Observations & Findings)
   observations?: AuditObservation[];
 
+  // ── Reviewer Checklists (populated from REVIEWER_CHECKLIST templates) ──
+  reviewChecklist?: ReviewChecklistItem[];
+
   // Audit Documentation Tagging (for future NAS integration)
   auditFolderTag?: AuditFolderKey;   // Which audit folder this task maps to (A/B/C/D/E)
   auditLineItem?: string;            // Specific B-folder line item e.g. "B.3"
@@ -546,7 +549,7 @@ export interface TaskTemplate {
   folderId?: string; // NEW: Associate with a folder
   folderName?: string;
   priority: TaskPriority;
-  category: 'TASK' | 'CHECKLIST' | 'DOCUMENT' | 'WORKFLOW' | 'SOP' | 'TEMPLATE';
+  category: 'TASK' | 'CHECKLIST' | 'DOCUMENT' | 'WORKFLOW' | 'SOP' | 'TEMPLATE' | 'REVIEWER_CHECKLIST';
   taskType?: TaskType;
   subtasks?: string[]; // Legacy array of strings for SOPs/Checklists
   subtaskDetails?: { 
@@ -580,12 +583,27 @@ export interface TaskTemplate {
   isPublic?: boolean;
   usageCount?: number;
   type?: string;
+  reviewerRole?: 'TL' | 'ER' | 'SP';
   content?: string;
   createdBy?: string;
   nextTemplateId?: string; // NEW: Trigger this template automatically when task completes
+  // ── Reviewer Checklist Fields ──────────────────────────────────────────
+  reviewerRole?: 'TL' | 'ER' | 'SP'; // Which reviewer layer this checklist is for
 }
 
 export type Template = TaskTemplate;
+
+// ─── Reviewer Checklist Item (stored on Task) ───────────────────────────────
+export interface ReviewChecklistItem {
+  id: string;
+  title: string;
+  minimumRequirement?: string;
+  isCompleted: boolean;
+  completedBy?: string; // UID
+  completedAt?: string; // ISO timestamp
+  reviewerRole: 'TL' | 'ER' | 'SP'; // Which reviewer layer owns this item
+  templateId?: string; // Source template
+}
 
 export interface Category {
   id: string;

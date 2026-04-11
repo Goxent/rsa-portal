@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     CalendarDays, CheckCircle, Clock, Plus, X, AlertTriangle, 
-    Mail, XCircle, ChevronDown, Check, UserCog, Loader2, Activity 
+    Mail, XCircle, ChevronDown, Check, UserCog, Loader2, Activity, BookOpen
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { LeaveRequest, UserRole, UserProfile } from '../types';
@@ -11,8 +11,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { leaveSchema, LeaveFormValues } from '../utils/validationSchemas';
 import LeaveCalendar from '../components/leave/LeaveCalendar';
+import NepaliDate from 'nepali-date-converter';
 
 const ARTICLESHIP_LEAVE_LIMIT = 120; // 3 Years Total
+
+// Convert an AD ISO date string to BS formatted string
+const toBSStr = (adStr: string): string => {
+    try {
+        if (!adStr) return '';
+        const nd = new NepaliDate(new Date(adStr + 'T00:00:00'));
+        return nd.format('DD MMM, YYYY');
+    } catch {
+        return '';
+    }
+};
 
 const CircularProgress: React.FC<{ 
     value: number, 
@@ -82,7 +94,7 @@ const LeavePage: React.FC = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [adjustmentData, setAdjustmentData] = useState({ uid: '', name: '', amount: 0 });
 
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<LeaveFormValues>({
+    const { register, handleSubmit, reset, watch: watchForm, formState: { errors } } = useForm<LeaveFormValues>({
         resolver: zodResolver(leaveSchema),
         defaultValues: {
             type: 'Sick',
@@ -91,6 +103,11 @@ const LeavePage: React.FC = () => {
             reason: ''
         }
     });
+
+    const watchedStartDate = watchForm('startDate');
+    const watchedEndDate = watchForm('endDate');
+    const startBSStr = toBSStr(watchedStartDate);
+    const endBSStr = toBSStr(watchedEndDate);
 
     const [isSaving, setIsSaving] = useState(false);
 
@@ -463,10 +480,14 @@ const LeavePage: React.FC = () => {
 
                                     {isArticleTrainee ? (
                                         <div className="bg-surface p-4 rounded-xl border border-border">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <BookOpen size={14} className="text-accent" />
+                                                <span className="text-[10px] font-black text-accent uppercase tracking-wider">Articleship Period — Total 120 Days</span>
+                                            </div>
                                             <div className="flex justify-between text-[11px] font-bold text-muted mb-3 uppercase tracking-wider">
-                                                <span>Total Limit Status</span>
+                                                <span>Leave Consumed</span>
                                                 <span className={`${totalDaysTaken > 100 ? 'text-status-halted' : 'text-accent'}`}>
-                                                    {balanceRemaining} Left
+                                                    {balanceRemaining} Days Remaining
                                                 </span>
                                             </div>
                                             <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
@@ -475,6 +496,7 @@ const LeavePage: React.FC = () => {
                                                     style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
                                                 />
                                             </div>
+                                            <p className="text-[9px] text-muted italic mt-2">Cumulative across entire articleship period, not reset annually.</p>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
@@ -585,10 +607,16 @@ const LeavePage: React.FC = () => {
                                 <div>
                                     <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">Start Date</label>
                                     <input type="date" className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-heading focus:border-accent outline-none" {...register('startDate')} />
+                                    {startBSStr && (
+                                        <p className="text-[10px] text-accent font-semibold mt-1 pl-1">{startBSStr} BS</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">End Date</label>
                                     <input type="date" className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-heading focus:border-accent outline-none" {...register('endDate')} />
+                                    {endBSStr && (
+                                        <p className="text-[10px] text-accent font-semibold mt-1 pl-1">{endBSStr} BS</p>
+                                    )}
                                 </div>
                             </div>
 

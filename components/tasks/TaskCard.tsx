@@ -157,9 +157,6 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                                             <IconComp size={11} className="text-slate-400" />
                                         </div>
                                     )}
-                                    <span className="text-[9px] font-mono text-slate-700 group-hover/card:text-slate-500 transition-colors">
-                                        #{task.id.substring(0, 4).toUpperCase()}
-                                    </span>
                                     <div
                                         className="p-0.5 text-slate-700 hover:text-slate-400 transition-colors rounded hover:bg-white/5 opacity-50 group-hover/card:opacity-100"
                                     >
