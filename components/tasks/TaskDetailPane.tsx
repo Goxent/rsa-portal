@@ -1544,6 +1544,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 </div>
                             </div>
                         </div>
+                    </div>
 
                     {/* High-End Global Command Bar (Footer) */}
                     <div className="shrink-0 px-16 py-10 border-t border-white/[0.04] bg-[#0c0e12] flex justify-between items-center relative z-20 shadow-[0_-24px_64px_rgba(0,0,0,0.6)]">
@@ -1604,6 +1605,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         )}
                     </AnimatePresence>
                 </motion.div>
+            </div>
             )}
 
             {/* ── Subtask Template Import Modal ── */}
