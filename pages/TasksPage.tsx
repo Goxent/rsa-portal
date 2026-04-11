@@ -594,6 +594,14 @@ const TasksPage: React.FC = () => {
                 }
             } else {
                 createTaskMutation.mutate(taskToSave as Task);
+                // Clear view-restricting filters so the user immediately sees the task
+                if (filterStatus !== 'ALL') setFilterStatus('ALL');
+                if (filterPriority !== 'ALL' && taskToSave.priority !== filterPriority) setFilterPriority('ALL');
+                if (filterClient !== 'ALL' && !taskToSave.clientIds?.includes(filterClient)) setFilterClient('ALL');
+                if (filterStaff !== 'ALL' && !taskToSave.assignedTo?.includes(filterStaff)) setFilterStaff('ALL');
+                if (filterTaskType !== 'ALL' && taskToSave.taskType !== filterTaskType) setFilterTaskType('ALL');
+                if (filterAuditor !== 'ALL') setFilterAuditor('ALL');
+                if (searchTerm) setSearchTerm('');
             }
 
             // Mentions Notification Logic (In-app)
