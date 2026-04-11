@@ -417,7 +417,7 @@ const EventModal: React.FC<EventModalProps> = ({
                                     onChange={e => setFormData({ ...formData, rsvpRequired: e.target.checked })}
                                     className="mr-3"
                                 />
-                                <Users size={16} className="mr-2 text-emerald-400" />
+                                <Users size={16} className="mr-2 text-brand-400" />
                                 <span className="text-sm font-semibold text-gray-300">Require RSVP</span>
                             </label>
                         </div>

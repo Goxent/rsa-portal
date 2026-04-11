@@ -98,7 +98,7 @@ export const ThemedToaster: React.FC = () => {
                 },
                 success: {
                     iconTheme: {
-                        primary: theme === 'dark' ? '#2e8a61' : '#1a6e4d',
+                        primary: theme === 'dark' ? "var(--accent)" : "var(--accent)",
                         secondary: theme === 'dark' ? '#0c0c0e' : '#ffffff',
                     },
                 },

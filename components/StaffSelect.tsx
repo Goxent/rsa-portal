@@ -89,7 +89,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         const count = userTasksCount[userId] || 0;
         if (count >= 10) return { icon: <Flame size={10} />, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20', label: 'Overloaded', count };
         if (count >= 6) return { icon: <AlertTriangle size={10} />, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', label: 'Busy', count };
-        return { icon: <CheckCircle2 size={10} />, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: 'Available', count };
+        return { icon: <CheckCircle2 size={10} />, color: 'text-brand-400', bg: 'bg-brand-500/10', border: 'border-brand-500/20', label: 'Available', count };
     };
 
     const renderTrigger = () => {

@@ -24,21 +24,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ── Components ──
 
 const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
-    <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-xl p-4 flex items-start justify-between hover:border-gray-300 dark:hover:border-[#8b949e] transition-all group">
+    <div 
+        className="flex items-start justify-between p-4 transition-all duration-200 group rounded-xl border border-[var(--border)] hover:border-[var(--border-accent)] hover:-translate-y-[1px]"
+        style={{ background: 'var(--bg-secondary)', boxShadow: 'var(--shadow-card)' }}
+    >
         <div>
-            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <p style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="uppercase mb-1 flex items-center gap-1.5">
                 <Icon size={12} className={color} /> {title}
             </p>
-            <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{value}</h3>
+            <h3 style={{ fontSize: '1.625rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-heading)' }} className="leading-tight">{value}</h3>
             {trend && (
                 <div className="flex items-center gap-1 mt-1">
-                    <TrendingUp size={10} className="text-emerald-500" />
-                    <span className="text-[10px] text-emerald-500 font-bold">{trend}</span>
+                    <TrendingUp size={10} className="text-[var(--accent)]" />
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--accent)' }}>{trend}</span>
                 </div>
             )}
         </div>
-        <div className={`p-2.5 rounded-lg bg-opacity-10 ${color.replace('text-', 'bg-')} border border-white/[0.03]`}>
-            <Icon size={18} className={color} />
+        <div 
+            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-md)]"
+            style={{ background: 'var(--accent-dim)' }}
+        >
+            <Icon size={18} style={{ color: 'var(--accent)' }} />
         </div>
     </div>
 );
@@ -54,17 +60,26 @@ const ClockWidget = () => {
     const np = new NepaliDate(time);
 
     return (
-        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-[#161b22] dark:to-[#0d1117] border border-gray-200 dark:border-[#30363d] rounded-2xl p-5 flex flex-col items-center justify-center relative overflow-hidden group shadow-xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-amber-500/10 transition-all duration-700" />
-            <div className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Live Tracker
+        <div 
+            className="flex flex-col items-center justify-center p-5 relative overflow-hidden group shadow-xl border border-[var(--border)]"
+            style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)' }}
+        >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[var(--accent)]/10 transition-all duration-700" />
+            <div 
+                style={{ fontSize: '0.625rem', fontWeight: 800, letterSpacing: '0.2em', color: 'var(--accent)' }}
+                className="uppercase mb-1.5 flex items-center gap-2"
+            >
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" /> Live Tracker
             </div>
-            <div className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter tabular-nums mb-1">
+            <div 
+                style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-heading)', fontVariantNumeric: 'tabular-nums' }}
+                className="tracking-tighter mb-1"
+            >
                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
             </div>
-            <div className="flex items-center gap-3 text-gray-500 font-bold text-[11px]">
+            <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }} className="flex items-center gap-3">
                 <span className="flex items-center gap-1"><CalendarIcon size={11} /> {time.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                <span className="w-1 h-1 rounded-full bg-gray-800" />
+                <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
                 <span>{np.format('DD MMMM, YYYY')} BS</span>
             </div>
         </div>
@@ -82,6 +97,7 @@ const AttendancePage: React.FC = () => {
     const [holidays, setHolidays] = useState<CalendarEvent[]>([]);
     const [clients, setClients] = useState<Client[]>([]); // Added Clients
     const [loading, setLoading] = useState(true);
+    const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
     // Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -99,6 +115,7 @@ const AttendancePage: React.FC = () => {
     const [useNepaliTo, setUseNepaliTo] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeTab, setActiveTab] = useState<'ALL' | 'MY' | 'ADMIN'>('ALL');
 
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
 
@@ -137,16 +154,29 @@ const AttendancePage: React.FC = () => {
                 AuthService.getAllClients()
             ]);
 
-            setUsersList(uList); // Removed Inactive filter to ensure all directory users are visible
+            setUsersList(uList); 
             setHistory(attHistory);
             setLeavesList(lList.filter(l => l.status === 'APPROVED'));
             setHolidays(allEvents.filter(e => e.type === 'HOLIDAY'));
             setClients(fetchedClients);
+
+            if (isAdmin) {
+                fetchPendingCount();
+            }
         } catch (err) {
             console.error("Error loading attendance data:", err);
             toast.error("Failed to load attendance records");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPendingCount = async () => {
+        try {
+            const requests = await AuthService.getPendingAttendanceRequests();
+            setPendingRequestsCount(requests.length);
+        } catch (error) {
+            console.error("Failed to fetch pending attendance count:", error);
         }
     };
 
@@ -651,46 +681,72 @@ const AttendancePage: React.FC = () => {
     };
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-[#0d1117] text-gray-900 dark:text-[#c9d1d9] relative pb-20">
+        <div className="h-full overflow-y-auto custom-scrollbar relative pb-20" style={{ background: 'var(--bg-main)', color: 'var(--text-body)' }}>
             <div className="max-w-[1600px] mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-6 animate-in fade-in duration-500">
                 
                 {/* ── Top Bar (Navigation & Actions) ── */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-lg shadow-amber-500/5">
-                            <Users className="text-amber-500" size={24} />
+                        <div 
+                            className="w-12 h-12 flex items-center justify-center shadow-lg"
+                            style={{ background: 'var(--accent-dim)', border: '1px solid var(--border-accent)', borderRadius: 'var(--radius-lg)' }}
+                        >
+                            <Users style={{ color: 'var(--accent)' }} size={24} />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 tracking-widest uppercase">
-                                <span className="hover:text-amber-500 cursor-pointer transition-colors">Operations</span>
+                            <div className="flex items-center gap-2" style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                <span className="hover:text-[var(--accent)] cursor-pointer transition-colors">Operations</span>
                                 <ChevronRight size={10} />
-                                <span className="text-gray-400">Attendance</span>
+                                <span style={{ color: 'var(--text-muted)' }}>Attendance</span>
                             </div>
-                            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight mt-0.5">Firm Attendance</h1>
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-heading)', letterSpacing: '-0.025em' }} className="mt-0.5">Firm Attendance</h1>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3 w-full lg:w-auto">
-                        <div className="flex bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] p-1 rounded-xl shadow-inner">
+                        <div 
+                            className="flex p-1 shadow-inner border"
+                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
+                        >
                             <button 
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-gray-100 dark:bg-[#21262d] text-gray-900 dark:text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'shadow-lg' : 'hover:opacity-80'}`}
+                                style={{ 
+                                    background: viewMode === 'list' ? 'var(--bg-secondary)' : 'transparent',
+                                    color: viewMode === 'list' ? 'var(--text-heading)' : 'var(--text-muted)'
+                                }}
                             >
                                 <ListIcon size={18} />
                             </button>
                             <button 
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-[#21262d] text-gray-900 dark:text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'shadow-lg' : 'hover:opacity-80'}`}
+                                style={{ 
+                                    background: viewMode === 'grid' ? 'var(--bg-secondary)' : 'transparent',
+                                    color: viewMode === 'grid' ? 'var(--text-heading)' : 'var(--text-muted)'
+                                }}
                             >
                                 <LayoutGrid size={18} />
                             </button>
                         </div>
-                        <div className="h-8 w-px bg-[#30363d]" />
-                        <button onClick={handleExportPDF} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#30363d] transition-all text-sm font-bold shadow-md">
+                        <div className="h-8 w-px" style={{ background: 'var(--border)' }} />
+                        <button 
+                            onClick={handleExportPDF} 
+                            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 transition-all text-sm font-bold shadow-md border"
+                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-mid)', color: 'var(--text-heading)', borderRadius: 'var(--radius-md)' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
+                        >
                             <FileText size={16} className="text-rose-400" /> PDF
                         </button>
-                        <button onClick={handleExportExcel} className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#30363d] transition-all text-sm font-bold shadow-md">
-                            <Download size={16} className="text-emerald-400" /> Excel
+                        <button 
+                            onClick={handleExportExcel} 
+                            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 transition-all text-sm font-bold shadow-md border"
+                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-mid)', color: 'var(--text-heading)', borderRadius: 'var(--radius-md)' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
+                        >
+                            <Download size={16} style={{ color: 'var(--accent)' }} /> Excel
                         </button>
                     </div>
                 </div>
@@ -700,22 +756,34 @@ const AttendancePage: React.FC = () => {
                     <div className="lg:col-span-2">
                         <ClockWidget />
                     </div>
-                    <StatCard title="Total Present" value={stats.present} icon={UserCheck} color="text-emerald-400" trend={`${stats.late} delayed`} />
+                    <StatCard title="Total Present" value={stats.present} icon={UserCheck} color="text-brand-400" trend={`${stats.late} delayed`} />
                     <StatCard title="Absentees" value={stats.absent} icon={XCircle} color="text-rose-400" />
                     <StatCard title="Personal Leave" value={stats.onLeave} icon={UserPlus} color="text-sky-400" />
                 </div>
 
                 {/* ── Filter & Search Bar ── */}
-                <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
+                <div 
+                    className="p-4 flex flex-col gap-4 shadow-xl border"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)' }}
+                >
                     
                     {/* Top Row: Search & Manual Log */}
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
                         <div className="relative w-full sm:max-w-md">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} size={16} />
                             <input 
                                 type="text"
                                 placeholder="Search team member or status..."
-                                className="w-full bg-gray-50 dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-600 text-gray-900 dark:text-white"
+                                className="w-full border outline-none transition-all py-2.5 pl-10 pr-4"
+                                style={{ 
+                                    background: 'var(--bg-main)', 
+                                    borderColor: 'var(--border)', 
+                                    borderRadius: 'var(--radius-md)',
+                                    color: 'var(--text-heading)',
+                                    fontSize: '0.875rem'
+                                }}
+                                onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -725,11 +793,25 @@ const AttendancePage: React.FC = () => {
                             {isAdmin && (
                                 <button 
                                     onClick={() => setIsReviewModalOpen(true)}
-                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-amber-600/10 hover:bg-amber-600/20 text-amber-500 rounded-xl border border-amber-500/30 transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-amber-500/5 group relative"
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 transition-all font-bold uppercase tracking-widest shadow-lg border relative group"
+                                    style={{ 
+                                        background: 'var(--accent-dim)', 
+                                        color: 'var(--accent)', 
+                                        borderColor: 'var(--border-accent)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontSize: '0.6875rem'
+                                    }}
                                 >
                                     <Clock size={16} className="group-hover:rotate-12 transition-transform" /> 
                                     <span>Review Requests</span>
-                                    {/* Optional: Add a notification dot here if pending requests > 0 */}
+                                    {pendingRequestsCount > 0 && (
+                                        <span 
+                                            className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center font-bold text-[10px] animate-in zoom-in-50 duration-300"
+                                            style={{ background: 'var(--color-danger)', color: 'white', borderRadius: '50%', boxShadow: '0 0 0 2px var(--bg-surface)' }}
+                                        >
+                                            {pendingRequestsCount}
+                                        </span>
+                                    )}
                                 </button>
                             )}
 
@@ -741,16 +823,25 @@ const AttendancePage: React.FC = () => {
                                     setSelectedRecord(null);
                                     setIsEditModalOpen(true);
                                 }}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] text-gray-900 dark:text-white rounded-xl border border-gray-200 dark:border-[#30363d] hover:border-gray-300 dark:hover:border-[#484f58] transition-all font-black text-[11px] uppercase tracking-widest shadow-lg shadow-black/5 dark:shadow-black/20 group shrink-0"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 transition-all font-bold uppercase tracking-widest shadow-lg border group shrink-0"
+                                style={{ 
+                                    background: 'var(--bg-surface)', 
+                                    color: 'var(--text-heading)', 
+                                    borderColor: 'var(--border-mid)',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontSize: '0.6875rem'
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
                             >
-                                <Plus size={16} className="text-amber-500 group-hover:scale-110 transition-transform" /> 
+                                <Plus size={16} style={{ color: 'var(--accent)' }} className="group-hover:scale-110 transition-transform" /> 
                                 <span>{isAdmin ? 'Manual Log' : 'Request Manual Log'}</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Bottom Row: Filters */}
-                    <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 w-full border-t border-[#30363d] pt-4">
+                    <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 w-full border-t pt-4" style={{ borderColor: 'var(--border)' }}>
                         {isAdmin && (
                             <div className="w-full xl:w-56 shrink-0 z-20">
                                 <StaffSelect
@@ -765,7 +856,13 @@ const AttendancePage: React.FC = () => {
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="bg-white dark:bg-[#21262d] border border-gray-200 dark:border-[#30363d] rounded-xl px-4 py-2 text-sm text-gray-700 dark:text-gray-300 outline-none hover:border-gray-400 dark:hover:border-gray-600 transition-all w-full xl:w-48 shrink-0 h-[56px] appearance-none"
+                            className="px-4 py-2 text-sm outline-none transition-all w-full xl:w-48 shrink-0 h-[48px] appearance-none border"
+                            style={{ 
+                                background: 'var(--bg-main)', 
+                                borderColor: 'var(--border)', 
+                                borderRadius: 'var(--radius-md)',
+                                color: 'var(--text-body)'
+                            }}
                         >
                             <option value="ALL">All Statuses</option>
                             <option value="PRESENT">Present Only</option>
@@ -774,21 +871,18 @@ const AttendancePage: React.FC = () => {
                             <option value="HOLIDAY">Firm Holidays</option>
                         </select>
 
-                        <div className="flex-1 w-full bg-white dark:bg-[#21262d] border border-gray-200 dark:border-[#30363d] rounded-xl px-4 py-2 group hover:border-gray-400 dark:hover:border-[#484f58] transition-all h-[56px]">
-                            <div className="flex items-center justify-between xl:mb-0 mb-1">
-                                <div className="flex items-center gap-2 xl:hidden">
-                                    <CalendarDays size={14} className="text-amber-500" />
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Date Range</span>
-                                </div>
-                            </div>
+                        <div 
+                            className="flex-1 w-full border px-4 py-2 group transition-all h-[48px]"
+                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
+                        >
                             <div className="flex items-center gap-4 h-full">
                                 <div className="flex-1 w-1/2 relative flex items-center h-full">
-                                    <span className="absolute -top-4 left-0 bg-white dark:bg-[#21262d] px-1 text-[8px] font-bold text-gray-400 dark:text-gray-500 z-10 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">FROM</span>
+                                    <span className="absolute -top-4 left-0 px-1 text-[8px] font-bold transition-colors z-10" style={{ background: 'var(--bg-main)', color: 'var(--text-muted)' }}>FROM</span>
                                     {useNepaliFrom ? (
                                         <NepaliDatePicker 
                                             value={filterStartDate} 
                                             onChange={setFilterStartDate} 
-                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-full !text-white !text-xs !static w-full" 
+                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-full !text-xs !static w-full !text-[var(--text-heading)]" 
                                             placeholder="Start Date"
                                             showADDate={false}
                                         />
@@ -797,18 +891,19 @@ const AttendancePage: React.FC = () => {
                                             type="date" 
                                             value={filterStartDate} 
                                             onChange={(e) => setFilterStartDate(e.target.value)} 
-                                            className="w-full bg-transparent border-0 p-0 h-full text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
+                                            style={{ color: 'var(--text-heading)' }}
+                                            className="w-full bg-transparent border-0 p-0 h-full text-xs outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
                                         />
                                     )}
                                 </div>
-                                <div className="w-px h-5 bg-[#30363d]" />
+                                <div className="w-px h-5" style={{ background: 'var(--border)' }} />
                                 <div className="flex-1 w-1/2 relative flex items-center h-full">
-                                    <span className="absolute -top-4 left-0 bg-[#21262d] px-1 text-[8px] font-bold text-gray-500 z-10 group-hover:text-gray-400 transition-colors">TO</span>
+                                    <span className="absolute -top-4 left-0 px-1 text-[8px] font-bold transition-colors z-10" style={{ background: 'var(--bg-main)', color: 'var(--text-muted)' }}>TO</span>
                                     {useNepaliFrom ? (
                                         <NepaliDatePicker 
                                             value={filterEndDate} 
                                             onChange={setFilterEndDate} 
-                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-full !text-white !text-xs !static w-full" 
+                                            className="!bg-transparent !border-0 !p-0 !min-h-0 !h-full !text-xs !static w-full !text-[var(--text-heading)]" 
                                             placeholder="End Date"
                                             showADDate={false}
                                         />
@@ -817,14 +912,19 @@ const AttendancePage: React.FC = () => {
                                             type="date" 
                                             value={filterEndDate} 
                                             onChange={(e) => setFilterEndDate(e.target.value)} 
-                                            className="w-full bg-transparent border-0 p-0 h-full text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
+                                            style={{ color: 'var(--text-heading)' }}
+                                            className="w-full bg-transparent border-0 p-0 h-full text-xs outline-none [&::-webkit-calendar-picker-indicator]:invert-[0.6] [&::-webkit-calendar-picker-indicator]:opacity-60 cursor-pointer" 
                                         />
                                     )}
                                 </div>
                                 <div className="hidden xl:flex items-center">
                                     <button 
                                         onClick={() => setUseNepaliFrom(!useNepaliFrom)} 
-                                        className={`text-[9px] px-2 py-0.5 rounded font-black transition-all ${useNepaliFrom ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-400 bg-white/5 hover:text-gray-300'}`}
+                                        className={`text-[9px] px-2 py-0.5 rounded font-black transition-all ${useNepaliFrom ? 'shadow-lg' : ''}`}
+                                        style={{ 
+                                            background: useNepaliFrom ? 'var(--accent)' : 'var(--accent-dim)',
+                                            color: useNepaliFrom ? 'white' : 'var(--accent)'
+                                        }}
                                     >
                                         BS
                                     </button>
@@ -832,97 +932,157 @@ const AttendancePage: React.FC = () => {
                             </div>
                         </div>
 
-                        <button onClick={loadData} className="w-full xl:w-auto h-[56px] flex items-center justify-center px-6 bg-amber-600 hover:bg-amber-500 text-white rounded-xl transition-all font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-600/20 shrink-0">
+                        <button 
+                            onClick={loadData} 
+                            style={{ background: 'var(--accent)', color: 'white', borderRadius: 'var(--radius-md)' }}
+                            className="w-full xl:w-auto h-[48px] flex items-center justify-center px-6 hover:opacity-90 transition-all font-bold text-xs uppercase tracking-widest shadow-lg shrink-0"
+                        >
                             Apply Filter
                         </button>
                     </div>
                 </div>
 
+                {/* ── Tab Bar (Categories) ── */}
+                <div 
+                    className="p-1 flex p-1 w-full max-w-lg mx-auto"
+                    style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)' }}
+                >
+                    {(['ALL', 'MY', 'ADMIN'] as const)
+                        .filter(tab => {
+                            if (tab === 'MY') return true;
+                            return isAdmin;
+                        })
+                        .map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => {
+                                    setActiveTab(tab);
+                                    if (tab === 'MY') setFilterStaffId(user?.uid || 'ALL');
+                                    else setFilterStaffId('ALL');
+                                }}
+                                className="flex-1 py-2 text-xs transition-all duration-200"
+                                style={{ 
+                                    background: activeTab === tab ? 'var(--bg-secondary)' : 'transparent',
+                                    color: activeTab === tab ? 'var(--text-heading)' : 'var(--text-muted)',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontWeight: activeTab === tab ? 600 : 500,
+                                    boxShadow: activeTab === tab ? 'var(--shadow-card)' : 'none'
+                                }}
+                            >
+                                {tab === 'ALL' ? 'All Attendance' : tab === 'MY' ? 'My Attendance' : 'Admin View'}
+                            </button>
+                        ))}
+                </div>
+
                 {/* ── Main Records Section ── */}
                 <AnimatePresence mode="wait">
-                    {viewMode === 'list' ? (
                         <motion.div 
                             key="list"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="bg-[#161b22] border border-[#30363d] rounded-2xl overflow-hidden shadow-2xl relative"
+                            className="border overflow-hidden shadow-2xl relative"
+                            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)' }}
                         >
                             <div className="overflow-x-auto overflow-y-hidden">
                                 <table className="w-full text-left border-collapse min-w-[1000px]">
                                     <thead>
-                                        <tr className="border-b border-[#30363d] bg-[#0d1117]/50">
-                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest w-12">SN</th>
-                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Date & Staff</th>
-                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest w-20">Day</th>
-                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Timing</th>
-                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Status</th>
-                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Nature of Assignment</th>
-                                            <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Clients & Work Logs</th>
-                                            {isAdmin && <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>}
+                                        <tr className="border-b" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase w-12 text-center">SN</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Date & Staff</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase w-20">Day</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Timing</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Status</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Nature of Assignment</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Clients & Work Logs</th>
+                                            {isAdmin && <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase text-right">Actions</th>}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[#30363d]">
+                                    <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
                                         {loading ? (
                                             <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center">
                                                 <div className="flex flex-col items-center gap-4">
-                                                    <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-                                                    <span className="text-gray-500 font-bold uppercase tracking-widest text-[11px]">Synchronizing Records...</span>
+                                                    <div className="w-10 h-10 border-4 border-t-[var(--accent)] rounded-full animate-spin" style={{ borderColor: 'var(--accent-dim)' }} />
+                                                    <span style={{ color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.6875rem' }} className="uppercase">Synchronizing Records...</span>
                                                 </div>
                                             </td></tr>
                                         ) : reportData.length === 0 ? (
-                                            <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center text-gray-600 font-bold italic tracking-wide">No attendance records found for the selected criteria.</td></tr>
+                                            <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center text-gray-500 font-bold italic tracking-wide">No attendance records found for the selected criteria.</td></tr>
                                         ) : (
                                             reportData.map((record, idx) => (
-                                                <tr key={record.id} className="hover:bg-[#21262d]/40 transition-all group/row">
+                                                <tr key={record.id} className="hover:bg-[var(--bg-surface)] transition-all group/row">
                                                     <td className="px-4 py-4 text-center">
-                                                        <span className="text-[11px] font-bold text-gray-600 tabular-nums">{idx + 1}</span>
+                                                        <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{idx + 1}</span>
                                                     </td>
                                                     <td className="px-4 py-5">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-9 h-9 rounded-full bg-[#30363d] border border-[#484f58] flex items-center justify-center text-gray-300 font-black text-[10px] shadow-inner">
+                                                            <div 
+                                                                className="w-9 h-9 flex items-center justify-center font-bold shadow-inner border"
+                                                                style={{ background: 'var(--bg-main)', borderColor: 'var(--border-mid)', borderRadius: '99px', color: 'var(--text-muted)', fontSize: '0.625rem' }}
+                                                            >
                                                                 {record.userName.substring(0, 2).toUpperCase()}
                                                             </div>
                                                             <div>
-                                                                <div className="text-[13px] font-bold text-white leading-tight">{record.userName}</div>
+                                                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-heading)' }} className="leading-tight">{record.userName}</div>
                                                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                                                    <span className="text-[10px] font-black text-gray-500 uppercase">{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                                                    <span className="w-1 h-1 rounded-full bg-gray-700" />
-                                                                    <span className="text-[10px] font-bold text-amber-500/80">{(() => { try { return new NepaliDate(new Date(record.date + 'T00:00:00')).format('DD MMM, YYYY'); } catch { return '-'; } })()}</span>
+                                                                    <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                                    <span className="w-1 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+                                                                    <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--accent)' }}>{(() => { try { return new NepaliDate(new Date(record.date + 'T00:00:00')).format('DD MMM, YYYY'); } catch { return '-'; } })()}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
-                                                        <span className="text-[11px] font-bold text-gray-400">{(() => { try { return new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }); } catch { return '-'; } })()}</span>
+                                                        <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)' }}>{(() => { try { return new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }); } catch { return '-'; } })()}</span>
                                                     </td>
                                                     <td className="px-4 py-5">
                                                         {record.clockIn ? (
                                                             <div className="space-y-1.5">
-                                                                <div className="flex items-center gap-2 text-[11px] text-gray-300 font-bold tabular-nums">
-                                                                    <Clock size={12} className="text-emerald-500" /> {record.clockIn}
-                                                                    {record.clockOut && <span className="text-gray-600">→</span>}
+                                                                <div className="flex items-center gap-2 tabular-nums" style={{ fontSize: '0.6875rem', color: 'var(--text-body)', fontWeight: 600 }}>
+                                                                    <Clock size={12} style={{ color: 'var(--accent)' }} /> {record.clockIn}
+                                                                    {record.clockOut && <span style={{ color: 'var(--text-muted)' }}>→</span>}
                                                                     {record.clockOut && <span>{record.clockOut}</span>}
                                                                 </div>
                                                                 {record.workHours > 0 && (
-                                                                    <div className="bg-white/5 border border-white/5 px-2 py-0.5 rounded text-[9px] font-black text-gray-500 w-fit">
+                                                                    <div 
+                                                                        className="px-2 py-0.5"
+                                                                        style={{ background: 'var(--accent-dim)', borderRadius: 'var(--radius-sm)', fontSize: '0.5625rem', fontWeight: 800, color: 'var(--accent)', width: 'fit-content' }}
+                                                                    >
                                                                         {record.workHours}H TOTAL
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <div className="text-gray-700 font-black tracking-widest text-[10px]">UNTRACKED</div>
+                                                            <div style={{ color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em', fontSize: '0.625rem' }}>UNTRACKED</div>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-5">
-                                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black border uppercase tracking-widest shadow-sm ${
-                                                            record.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                            record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                            record.status === 'ABSENT' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                                            record.status === 'ON LEAVE' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                                                            record.type === 'HOLIDAY' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                            'bg-gray-500/10 text-gray-400 border-gray-500/20'
-                                                        }`}>
+                                                        <span 
+                                                            className="px-2.5 py-1 uppercase tracking-widest shadow-sm border"
+                                                            style={{ 
+                                                                borderRadius: '99px',
+                                                                fontSize: '0.6875rem',
+                                                                fontWeight: 600,
+                                                                background: 
+                                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.15)' :
+                                                                    record.status === 'LATE' ? 'rgba(201,138,42,0.12)' :
+                                                                    record.status === 'ABSENT' ? 'rgba(196,68,90,0.12)' :
+                                                                    record.status === 'ON LEAVE' ? 'rgba(61,130,201,0.12)' :
+                                                                    'var(--bg-main)',
+                                                                color:
+                                                                    record.status === 'PRESENT' ? 'var(--accent)' :
+                                                                    record.status === 'LATE' ? 'var(--color-warning)' :
+                                                                    record.status === 'ABSENT' ? 'var(--color-danger)' :
+                                                                    record.status === 'ON LEAVE' ? 'var(--color-info)' :
+                                                                    'var(--text-muted)',
+                                                                borderColor:
+                                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.25)' :
+                                                                    record.status === 'LATE' ? 'rgba(201,138,42,0.2)' :
+                                                                    record.status === 'ABSENT' ? 'rgba(196,68,90,0.2)' :
+                                                                    record.status === 'ON LEAVE' ? 'rgba(61,130,201,0.2)' :
+                                                                    'var(--border)'
+                                                            }}
+                                                        >
                                                             {record.status}
                                                         </span>
                                                     </td>
@@ -930,28 +1090,28 @@ const AttendancePage: React.FC = () => {
                                                         {record.workLogs?.length > 0 ? (
                                                             <div className="space-y-1">
                                                                 {[...new Set(record.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].map((nature: string, i: number) => (
-                                                                    <span key={i} className="inline-block px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/15 rounded text-[9px] font-bold mr-1 mb-1">{nature}</span>
+                                                                    <span key={i} className="inline-block px-2 py-0.5 border rounded" style={{ background: 'var(--accent-dim)', color: 'var(--accent)', borderColor: 'var(--border-accent)', fontSize: '0.5625rem', fontWeight: 800, textTransform: 'uppercase' }}>{nature}</span>
                                                                 ))}
                                                             </div>
                                                         ) : (
-                                                            <span className="text-gray-700 text-[10px] italic">—</span>
+                                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.625rem' }} className="italic">—</span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-5">
                                                         {record.workLogs?.length > 0 ? (
                                                             <div className="flex flex-wrap gap-2">
                                                                 {record.workLogs.slice(0, 3).map((log: any, i: number) => (
-                                                                    <div key={i} className="px-2 py-1 bg-white/[0.03] border border-white/5 rounded-md group/log cursor-default hover:bg-white/5 transition-colors max-w-[140px]">
-                                                                        <div className="text-[9px] font-black text-amber-500 truncate">{log.clientName || 'TASK'}</div>
-                                                                        <div className="text-[10px] text-gray-400 truncate mt-0.5">{log.description}</div>
+                                                                    <div key={i} className="px-2 py-1 transition-colors max-w-[140px] border shadow-sm" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}>
+                                                                        <div style={{ fontSize: '0.5625rem', fontWeight: 800, color: 'var(--accent)' }} className="truncate uppercase">{log.clientName || 'TASK'}</div>
+                                                                        <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }} className="truncate mt-0.5">{log.description}</div>
                                                                     </div>
                                                                 ))}
                                                                 {record.workLogs.length > 3 && (
-                                                                    <div className="text-[9px] font-black text-gray-600 mt-2">+{record.workLogs.length - 3} MORE</div>
+                                                                    <div style={{ fontSize: '0.5625rem', fontWeight: 800, color: 'var(--text-muted)' }} className="mt-2 text-center">+{record.workLogs.length - 3} MORE</div>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <div className="text-gray-600 italic text-[11px] leading-relaxed">
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} className="italic leading-relaxed">
                                                                 {record.clientName || record.notes || '—'}
                                                             </div>
                                                         )}
@@ -969,7 +1129,10 @@ const AttendancePage: React.FC = () => {
                                                                         setIsEditModalOpen(true);
                                                                     }
                                                                 }}
-                                                                className="p-2 hover:bg-[#30363d] rounded-lg text-gray-500 hover:text-amber-500 transition-all shadow-sm"
+                                                                className="p-2 transition-all shadow-sm border"
+                                                                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}
+                                                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                                                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                                                             >
                                                                 <Edit2 size={16} />
                                                             </button>
@@ -991,50 +1154,78 @@ const AttendancePage: React.FC = () => {
                             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
                         >
                             {reportData.map((record) => (
-                                <div key={record.id} className="bg-[#161b22] border border-[#30363d] rounded-2xl p-5 hover:border-amber-500/30 transition-all group relative overflow-hidden">
+                                <div 
+                                    key={record.id} 
+                                    className="p-5 transition-all group relative overflow-hidden border"
+                                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-card)' }}
+                                >
                                     <div className="absolute top-0 right-0 p-3">
-                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
-                                            record.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                            record.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                            record.status === 'ABSENT' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                            record.type === 'HOLIDAY' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                            'bg-sky-500/10 text-sky-400 border-sky-500/20'
-                                        }`}>
+                                        <span 
+                                            className="px-2 py-0.5 border"
+                                            style={{ 
+                                                borderRadius: '99px',
+                                                fontSize: '0.625rem',
+                                                fontWeight: 800,
+                                                letterSpacing: '0.05em',
+                                                textTransform: 'uppercase',
+                                                background: 
+                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.15)' :
+                                                    record.status === 'LATE' ? 'rgba(201,138,42,0.12)' :
+                                                    record.status === 'ABSENT' ? 'rgba(196,68,90,0.12)' :
+                                                    'rgba(0,0,0,0.05)',
+                                                color:
+                                                    record.status === 'PRESENT' ? 'var(--accent)' :
+                                                    record.status === 'LATE' ? 'var(--color-warning)' :
+                                                    record.status === 'ABSENT' ? 'var(--color-danger)' :
+                                                    'var(--text-muted)',
+                                                borderColor:
+                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.25)' :
+                                                    record.status === 'LATE' ? 'rgba(201,138,42,0.2)' :
+                                                    record.status === 'ABSENT' ? 'rgba(196,68,90,0.2)' :
+                                                    'var(--border)'
+                                            }}
+                                        >
                                             {record.status}
                                         </span>
                                     </div>
 
                                     <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-[#0d1117] border border-[#30363d] flex items-center justify-center text-amber-500 font-black text-sm shadow-xl group-hover:scale-110 transition-transform">
+                                        <div 
+                                            className="w-12 h-12 flex items-center justify-center font-bold text-sm shadow-xl group-hover:scale-110 transition-transform border"
+                                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--accent)' }}
+                                        >
                                             {record.userName.substring(0, 2).toUpperCase()}
                                         </div>
                                         <div>
-                                            <div className="text-sm font-bold text-white tracking-tight">{record.userName}</div>
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter mt-0.5">{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-heading)' }}>{record.userName}</div>
+                                            <div style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }} className="mt-0.5">{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                                         </div>
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="bg-[#0d1117] border border-[#30363d] rounded-xl p-3 flex justify-between items-center group-hover:bg-[#1c2128] transition-colors">
-                                            <div className="text-[10px] font-black text-gray-600 uppercase">Timing</div>
-                                            <div className="text-[11px] font-bold text-gray-300 tabular-nums">
-                                                {record.clockIn || '--:--'} <span className="mx-1 text-gray-700">/</span> {record.clockOut || '--:--'}
+                                        <div 
+                                            className="p-3 flex justify-between items-center transition-colors border"
+                                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
+                                        >
+                                            <div style={{ fontSize: '0.625rem', fontWeight: 800, color: 'var(--text-muted)' }} className="uppercase">Timing</div>
+                                            <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-body)', fontVariantNumeric: 'tabular-nums' }}>
+                                                {record.clockIn || '--:--'} <span className="mx-1" style={{ color: 'var(--border)' }}>/</span> {record.clockOut || '--:--'}
                                             </div>
                                         </div>
                                         
                                         <div className="min-h-[60px]">
-                                            <div className="text-[10px] font-black text-gray-600 uppercase mb-2">Activities</div>
+                                            <div style={{ fontSize: '0.625rem', fontWeight: 800, color: 'var(--text-muted)' }} className="uppercase mb-2">Activities</div>
                                             {record.workLogs?.length > 0 ? (
                                                 <div className="space-y-1.5">
                                                     {record.workLogs.slice(0, 2).map((log: any, i: number) => (
-                                                        <div key={i} className="text-[11px] text-gray-400 italic line-clamp-1 border-l-2 border-amber-500/30 pl-2">
-                                                            {log.natureOfAssignment && <span className="text-[9px] font-black text-amber-500/70 not-italic mr-1">[{log.natureOfAssignment}]</span>}
+                                                        <div key={i} className="italic line-clamp-1 border-l-2 pl-2" style={{ fontSize: '0.6875rem', color: 'var(--text-body)', borderLeftColor: 'var(--accent)' }}>
+                                                            {log.natureOfAssignment && <span style={{ fontSize: '0.5625rem', fontWeight: 800, color: 'var(--accent)' }} className="not-italic mr-1">[{log.natureOfAssignment}]</span>}
                                                             {log.description}
                                                         </div>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-[11px] text-gray-700 italic">{record.notes || 'No activities logged.'}</div>
+                                                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }} className="italic">{record.notes || 'No activities logged.'}</div>
                                             )}
                                         </div>
                                     </div>
@@ -1051,7 +1242,10 @@ const AttendancePage: React.FC = () => {
                                                     setIsEditModalOpen(true);
                                                 }
                                             }}
-                                            className="mt-4 w-full py-2 bg-[#21262d] hover:bg-[#30363d] text-gray-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[#30363d]"
+                                            className="mt-4 w-full py-2 transition-all border shadow-sm uppercase tracking-widest"
+                                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.625rem', fontWeight: 700 }}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; e.currentTarget.style.color = 'var(--text-heading)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                                         >
                                             Modify Record
                                         </button>
@@ -1059,40 +1253,42 @@ const AttendancePage: React.FC = () => {
                                 </div>
                             ))}
                         </motion.div>
-                    )}
                 </AnimatePresence>
 
                 {/* ── Period Summary Bar ── */}
                 {!loading && reportData.length > 0 && (() => {
                     const pStats = getPeriodStats();
                     return (
-                        <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-                            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Period Summary</div>
-                            <div className="flex flex-wrap items-center gap-6">
+                        <div 
+                            className="p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl border"
+                            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)' }}
+                        >
+                            <div style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)' }} className="uppercase">Period Summary</div>
+                            <div className="flex flex-wrap items-center gap-8">
                                 <div className="text-center">
-                                    <div className="text-lg font-black text-emerald-400 tabular-nums">{pStats.totalPresent}</div>
-                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Present</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>{pStats.totalPresent}</div>
+                                    <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }} className="uppercase">Present</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-lg font-black text-rose-400 tabular-nums">{pStats.totalAbsent}</div>
-                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Absent</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>{pStats.totalAbsent}</div>
+                                    <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }} className="uppercase">Absent</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-lg font-black text-sky-400 tabular-nums">{pStats.totalLeave}</div>
-                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Leave</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-info)', fontVariantNumeric: 'tabular-nums' }}>{pStats.totalLeave}</div>
+                                    <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }} className="uppercase">Leave</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-lg font-black text-purple-400 tabular-nums">{pStats.totalHoliday}</div>
-                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Holidays</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-warning)', fontVariantNumeric: 'tabular-nums' }}>{pStats.totalHoliday}</div>
+                                    <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }} className="uppercase">Holidays</div>
                                 </div>
-                                <div className="h-8 w-px bg-[#30363d]" />
+                                <div className="h-8 w-px" style={{ background: 'var(--border)' }} />
                                 <div className="text-center">
-                                    <div className="text-lg font-black text-amber-400 tabular-nums">{pStats.totalHours}h</div>
-                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Total Hours</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-heading)', fontVariantNumeric: 'tabular-nums' }}>{pStats.totalHours}h</div>
+                                    <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }} className="uppercase">Total Hours</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-lg font-black text-gray-300 tabular-nums">{reportData.length}</div>
-                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Records</div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-heading)', fontVariantNumeric: 'tabular-nums' }}>{reportData.length}</div>
+                                    <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }} className="uppercase">Records</div>
                                 </div>
                             </div>
                         </div>
@@ -1121,7 +1317,10 @@ const AttendancePage: React.FC = () => {
                 onClose={() => setIsReviewModalOpen(false)}
                 adminId={user?.uid || ''}
                 adminName={user?.displayName || 'Admin'}
-                onDataChange={loadData}
+                onDataChange={() => {
+                    loadData();
+                    fetchPendingCount();
+                }}
             />
         </div>
     );

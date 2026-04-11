@@ -132,10 +132,10 @@ const ResourcesPage: React.FC = () => {
                     </div>
                     <nav className="flex bg-navy-950 p-1.5 rounded-2xl border border-white/10 shadow-inner">
                         {[
-                            { id: 'templates', label: 'Frameworks', icon: <Grid size={13} /> },
+                            { id: 'templates', label: 'Frameworks', icon: <Grid size={13} />, roles: ['ADMIN', 'MASTER_ADMIN', 'MANAGER'] },
                             { id: 'knowledge', label: 'Compliance', icon: <Shield size={13} /> },
                             { id: 'library', label: 'Archives', icon: <Folder size={13} /> }
-                        ].map(t => (
+                        ].filter(t => !t.roles || t.roles.includes(user?.role || '')).map(t => (
                             <button 
                                 key={t.id} 
                                 onClick={() => setActiveTab(t.id as ActiveTab)} 

@@ -66,7 +66,7 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
 
     const getCellColor = (count: number) => {
         if (count === 0) return 'bg-white/5 text-gray-500';
-        if (count <= 3) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'; // Light load
+        if (count <= 3) return 'bg-brand-500/20 text-brand-300 border-brand-500/30'; // Light load
         if (count <= 6) return 'bg-amber-500/20 text-amber-300 border-amber-500/30'; // Optimal
         if (count <= 9) return 'bg-amber-500/20 text-amber-300 border-amber-500/30'; // Heavy
         return 'bg-red-500/20 text-red-300 border-red-500/30 font-bold'; // Overload
@@ -104,7 +104,7 @@ const StaffCapacityHeatmap: React.FC<StaffCapacityHeatmapProps> = ({ users, task
                     </button>
                 </div>
                 <div className="flex gap-4 text-xs">
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-500/20 border border-emerald-500/30 rounded"></div> 1-3</div>
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-brand-500/20 border border-brand-500/30 rounded"></div> 1-3</div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 bg-amber-500/20 border border-amber-500/30 rounded"></div> 4-6</div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 bg-amber-500/20 border border-amber-500/30 rounded"></div> 7-9</div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-500/20 border border-red-500/30 rounded"></div> 10+</div>

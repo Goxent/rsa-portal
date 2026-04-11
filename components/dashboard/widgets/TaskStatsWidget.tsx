@@ -6,10 +6,10 @@ interface TaskStatsWidgetProps {
 }
 
 const STATUS_CONFIG = [
-    { key: 'Completed', icon: CheckCircle2, color: 'text-emerald-400', bar: 'bg-emerald-500/30', ring: '#10b981', bg: 'bg-emerald-500/10' },
-    { key: 'In Progress', icon: Loader, color: 'text-amber-400', bar: 'bg-amber-500/30', ring: '#3b82f6', bg: 'bg-amber-500/10' },
-    { key: 'Review', icon: Eye, color: 'text-amber-400', bar: 'bg-amber-500/30', ring: '#6366f1', bg: 'bg-amber-500/10' },
-    { key: 'Pending', icon: Pause, color: 'text-slate-500', bar: 'bg-slate-500/20', ring: '#64748b', bg: 'bg-slate-500/10' },
+    { key: 'Completed', icon: CheckCircle2, color: 'text-brand-400', bar: 'bg-brand-500', ring: 'var(--accent)', bg: 'bg-brand-500/10' },
+    { key: 'In Progress', icon: Loader, color: 'text-brand-500', bar: 'bg-brand-400', ring: 'var(--accent-glow)', bg: 'bg-brand-400/10' },
+    { key: 'Review', icon: Eye, color: 'text-status-pending', bar: 'bg-status-pending', ring: 'var(--status-pending)', bg: 'bg-status-pending-dim' },
+    { key: 'Pending', icon: Pause, color: 'text-brand-300 dark:text-brand-700/50', bar: 'bg-slate-300 dark:bg-brand-900/30', ring: 'var(--accent-dim)', bg: 'bg-brand-900/10' },
 ];
 
 const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
@@ -23,47 +23,47 @@ const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
     const strokeDash = (completionRate / 100) * circumference;
 
     const getRingColor = (rate: number) => {
-        if (rate >= 75) return '#10b981'; // emerald
-        if (rate >= 50) return '#3b82f6'; // blue
-        if (rate >= 25) return '#6366f1'; // indigo
-        return '#ef4444'; // red
+        if (rate >= 80) return 'var(--accent)';
+        if (rate >= 1)  return 'var(--accent-glow)';
+        return 'var(--border-mid)';
     };
 
     if (total === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-                <BarChart3 size={28} className="mb-2 opacity-30" />
-                <p className="text-sm">No task data yet</p>
+            <div className="flex flex-col items-center justify-center min-h-[140px] text-brand-500/40">
+                <BarChart3 size={24} className="mb-2 opacity-50" />
+                <p className="text-[11px] font-bold uppercase tracking-widest">No activity tracked</p>
             </div>
         );
     }
 
     return (
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-6 h-full p-2">
             {/* Completion Ring */}
-            <div className="relative flex-shrink-0 w-28 h-28 drop-shadow-lg scale-105">
+            <div className="relative flex-shrink-0 w-28 h-28">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
                     {/* Track */}
-                    <circle cx="48" cy="48" r={radius} fill="none" stroke="currentColor" className="text-slate-200 dark:text-white/5" strokeWidth="10" />
+                    <circle cx="48" cy="48" r={radius} fill="none" stroke="var(--accent-dim)" strokeWidth="6" strokeOpacity="0.2" />
                     {/* Progress */}
                     <circle
                         cx="48" cy="48" r={radius}
                         fill="none"
                         stroke={getRingColor(completionRate)}
-                        strokeWidth="10"
+                        strokeWidth="8"
                         strokeLinecap="round"
                         strokeDasharray={`${strokeDash} ${circumference}`}
-                        className="transition-all duration-1000 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+                        className="transition-all duration-1000"
+                        style={{ filter: completionRate > 0 ? 'drop-shadow(0 0 4px var(--accent-glow))' : 'none' }}
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-extrabold text-slate-800 dark:text-white">{completionRate}%</span>
-                    <span className="text-[9px] text-slate-400 dark:text-gray-500 uppercase tracking-widest font-bold">Done</span>
+                    <span className="text-xl font-black text-heading drop-shadow-sm">{completionRate}%</span>
+                    <span className="text-[9px] text-accent dark:text-brand-400 uppercase font-black tracking-widest leading-none">Done</span>
                 </div>
             </div>
 
             {/* Status Bars */}
-            <div className="flex-1 space-y-2.5">
+            <div className="flex-1 space-y-3">
                 {STATUS_CONFIG.map(cfg => {
                     const item = taskData.find(t => t.name === cfg.key);
                     const count = item?.value || 0;
@@ -71,20 +71,20 @@ const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
                     const Icon = cfg.icon;
 
                     return (
-                        <div key={cfg.key}>
-                            <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-1.5">
-                                    <Icon size={11} className={cfg.color} />
-                                    <span className="text-[11px] text-gray-400">{cfg.key}</span>
+                        <div key={cfg.key} className="group/bar">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2">
+                                    <Icon size={12} className={`${cfg.color}`} />
+                                    <span className="text-[11px] font-semibold text-muted group-hover/bar:text-heading transition-colors">{cfg.key}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-bold text-slate-800 dark:text-white tabular-nums">{count}</span>
-                                    <span className="text-[10px] font-medium text-slate-500 tracking-tight">{pct}%</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-bold text-heading tabular-nums">{count}</span>
+                                    <span className="text-[9px] font-bold text-muted/60 opacity-0 group-hover/bar:opacity-100 transition-opacity">{pct}%</span>
                                 </div>
                             </div>
-                            <div className="h-1.5 bg-slate-200 dark:bg-white/[0.04] rounded-full overflow-hidden shadow-inner">
+                            <div className="h-1 bg-surface rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full ${cfg.bar} rounded-full transition-all duration-700`}
+                                    className={`h-full ${cfg.bar} rounded-full transition-all duration-700 shadow-sm`}
                                     style={{ width: `${pct}%` }}
                                 />
                             </div>
@@ -92,10 +92,10 @@ const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {
                     );
                 })}
 
-                {/* Total */}
-                <div className="flex items-center justify-between pt-2">
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Total Workload</span>
-                    <span className="text-xs font-black text-slate-800 dark:text-white tabular-nums">{total}</span>
+                {/* Total Footer */}
+                <div className="flex items-center justify-between pt-1 opacity-50">
+                    <span className="text-[9px] font-black text-muted uppercase tracking-widest">Aggregate Load</span>
+                    <span className="text-[11px] font-black text-heading tabular-nums">{total}</span>
                 </div>
             </div>
         </div>

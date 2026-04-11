@@ -14,35 +14,35 @@ const PendingActionsWidget: React.FC<PendingActionsWidgetProps> = ({
     pendingActions = { invoices: 0, documents: 0, signatures: 0, emails: 0 }
 }) => {
     const items = [
-        { icon: DollarSign, label: 'Invoices', count: pendingActions.invoices, color: 'text-green-400 bg-green-500/20' },
-        { icon: FileText, label: 'Documents', count: pendingActions.documents, color: 'text-amber-400 bg-amber-500/20' },
-        { icon: Mail, label: 'Emails', count: pendingActions.emails, color: 'text-purple-400 bg-purple-500/20' },
+        { icon: DollarSign, label: 'Invoices', count: pendingActions.invoices, color: 'text-status-completed bg-status-completed-dim' },
+        { icon: FileText, label: 'Documents', count: pendingActions.documents, color: 'text-status-pending bg-status-pending-dim' },
+        { icon: Mail, label: 'Emails', count: pendingActions.emails, color: 'text-accent bg-accent/10' },
     ];
 
     const total = items.reduce((sum, item) => sum + item.count, 0);
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-2 py-1">
             {items.map((item) => (
                 <div
                     key={item.label}
-                    className="flex items-center gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-surface border border-border group hover:border-accent/40 shadow-sm transition-all"
                 >
-                    <div className={`p-2 rounded-lg ${item.color.split(' ')[1]}`}>
-                        <item.icon size={16} className={item.color.split(' ')[0]} />
+                    <div className={`p-2 rounded-lg ${item.color.split(' ')[1]} transition-colors`}>
+                        <item.icon size={14} className={item.color.split(' ')[0]} />
                     </div>
                     <div className="flex-1">
-                        <span className="text-sm text-gray-300">{item.label}</span>
+                        <span className="text-[12px] font-semibold text-muted group-hover:text-heading transition-colors">{item.label}</span>
                     </div>
-                    <span className={`text-lg font-bold ${item.count > 0 ? 'text-white' : 'text-gray-500'}`}>
+                    <span className={`text-base font-bold tabular-nums ${item.count > 0 ? 'text-heading' : 'text-muted/40'}`}>
                         {item.count}
                     </span>
                 </div>
             ))}
 
-            <div className="pt-2 border-t border-white/10 flex justify-between items-center">
-                <span className="text-sm text-gray-400">Total pending</span>
-                <span className={`text-xl font-bold ${total > 0 ? 'text-brand-400' : 'text-gray-500'}`}>
+            <div className="pt-3 mt-1 border-t border-border/50 flex justify-between items-center px-1">
+                <span className="text-[10px] font-black text-muted uppercase tracking-widest">Aggregate Action</span>
+                <span className={`text-lg font-black tabular-nums ${total > 0 ? 'text-accent' : 'text-muted/40'}`}>
                     {total}
                 </span>
             </div>

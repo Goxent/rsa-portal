@@ -378,7 +378,7 @@ const ClientsPage: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => handleExport('excel')}
-                                className="p-2.5 rounded-xl text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-900/10"
+                                className="p-2.5 rounded-xl text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-/10"
                                 title="Export Excel"
                             >
                                 <FileSpreadsheet size={18} />
@@ -504,7 +504,7 @@ const ClientsPage: React.FC = () => {
                                                     {client.code}
                                                 </span>
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full border backdrop-blur-sm font-bold uppercase tracking-wider ${client.status === 'Active'
-                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                                    ? 'bg-brand-500/20 text-brand-300 border-brand-500/30'
                                                     : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                                                     }`}>
                                                     {client.status}

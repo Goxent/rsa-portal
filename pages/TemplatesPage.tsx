@@ -459,7 +459,7 @@ const TemplatesPage: React.FC = () => {
     });
 
     const getTemplateIcon = (type: string) => {
-        if (type.includes('spreadsheet') || type.includes('excel')) return <FileSpreadsheet size={20} className="text-emerald-400" />;
+        if (type.includes('spreadsheet') || type.includes('excel')) return <FileSpreadsheet size={20} className="text-brand-400" />;
         if (type.includes('pdf')) return <FileText size={20} className="text-red-400" />;
         return <File size={20} className="text-amber-400" />;
     };
@@ -511,7 +511,7 @@ const TemplatesPage: React.FC = () => {
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-wider ${
                             template.category === 'TASK' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
                             template.category === 'CHECKLIST' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                            template.category === 'DOCUMENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            template.category === 'DOCUMENT' ? 'bg-brand-500/10 text-brand-400 border-brand-500/20' :
                             'bg-purple-500/10 text-purple-400 border-purple-500/20'
                         }`}>
                             {template.category}
@@ -1299,7 +1299,7 @@ const TemplatesPage: React.FC = () => {
                                                 <span className="text-gray-600 font-bold uppercase">Priority</span>
                                                 <span className={`font-black uppercase tracking-widest ${
                                                     previewTemplate.priority === 'HIGH' ? 'text-rose-400' :
-                                                    previewTemplate.priority === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'
+                                                    previewTemplate.priority === 'MEDIUM' ? 'text-amber-400' : 'text-brand-400'
                                                 }`}>{previewTemplate.priority}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">

@@ -156,6 +156,9 @@ export interface SubTask {
   queryRaisedAt?: string; // Timestamp
 }
 
+// Audit folder key — defined here so Task interface can reference it
+export type AuditFolderKey = 'A' | 'B' | 'C' | 'D' | 'E';
+
 export interface Task {
   id: string;
   title: string;
@@ -198,11 +201,101 @@ export interface Task {
   signingPartnerApprovedAt?: string; // NEW: Timestamp for Final Partner sign-off
   
   // Archiving
-  fiscalYear?: string; // NEW: The Nepali Fiscal Year (e.g., "2080-81") assigned during creation
-  archivedFiscalYear?: string; // NEW: Metadata field for the year it was actually archived
+  fiscalYear?: string;                // The Nepali Fiscal Year (e.g., "2080-81") assigned during creation
+  archivedFiscalYear?: string;        // Metadata field for the year it was actually archived
   
   // Audit Master Suite (Observations & Findings)
   observations?: AuditObservation[];
+
+  // Audit Documentation Tagging (for future NAS integration)
+  auditFolderTag?: AuditFolderKey;   // Which audit folder this task maps to (A/B/C/D/E)
+  auditLineItem?: string;            // Specific B-folder line item e.g. "B.3"
+}
+
+// ─── Audit Documentation System ──────────────────────────────────────────────
+
+
+export interface AuditFolderDefinition {
+  label: string;
+  description: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  lineItems?: string[];
+}
+
+export const AUDIT_FOLDER_STRUCTURE: Record<AuditFolderKey, AuditFolderDefinition> = {
+  A: {
+    label: 'A. Initial Documents',
+    description: 'Engagement letters, client KYC, prior year communications, planning documents',
+    color: '#3b82f6',
+    bgColor: 'rgba(59,130,246,0.10)',
+    borderColor: 'rgba(59,130,246,0.25)',
+  },
+  B: {
+    label: 'B. Docs Related to V&V of FS',
+    description: 'Verification and validation working papers for each financial statement line item',
+    color: '#8b5cf6',
+    bgColor: 'rgba(139,92,246,0.10)',
+    borderColor: 'rgba(139,92,246,0.25)',
+    lineItems: [
+      'B.1. Opening Checking',
+      'B.2. PPE',
+      'B.3. Investments',
+      'B.4. Trade and Other Receivables',
+      'B.5. Advance and Deposits',
+      'B.6. Cash & Cash Equivalents',
+      'B.7. Inventories',
+      'B.8. Share Capital',
+      'B.9. Long Term Loan',
+      'B.10. Accounts and Other Payables',
+      'B.11. Provision for Taxation',
+      'B.12. Revenue',
+      'B.13. Other Income',
+      'B.14. Administrative Expense',
+      'B.15. Finance Cost',
+    ],
+  },
+  C: {
+    label: 'C. Compliance Checking',
+    description: 'Regulatory compliance documents, tax compliance, statutory requirements',
+    color: '#f59e0b',
+    bgColor: 'rgba(245,158,11,0.10)',
+    borderColor: 'rgba(245,158,11,0.25)',
+  },
+  D: {
+    label: 'D. Others',
+    description: 'Miscellaneous working papers, internal memos, correspondence',
+    color: '#10b981',
+    bgColor: 'rgba(16,185,129,0.10)',
+    borderColor: 'rgba(16,185,129,0.25)',
+  },
+  E: {
+    label: 'E. Documents Related with Reporting',
+    description: 'Draft reports, management letters, final audit reports, sign-off documents',
+    color: '#ef4444',
+    bgColor: 'rgba(239,68,68,0.10)',
+    borderColor: 'rgba(239,68,68,0.25)',
+  },
+};
+
+export type AuditDocumentStatus = 'LINKED' | 'PENDING' | 'NOT_APPLICABLE';
+
+export interface AuditDocumentEntry {
+  id: string;
+  clientId: string;
+  clientName: string;
+  fiscalYear: string;           // e.g., "2081-82"
+  folderKey: AuditFolderKey;
+  lineItem?: string;            // e.g., "B.3" — only for folder B
+  lineItemLabel?: string;       // e.g., "B.3. Investments"
+  notes?: string;
+  networkPath?: string;         // Future: UNC path \\SERVER\Clients\ClientName\FY\FolderKey
+  status: AuditDocumentStatus;
+  addedBy: string;              // User UID
+  addedByName: string;          // Display name
+  addedAt: string;              // ISO timestamp
+  updatedAt?: string;
 }
 
 export interface AuditObservation {

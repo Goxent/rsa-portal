@@ -5,36 +5,35 @@ interface EmptyStateProps {
     icon: LucideIcon;
     title: string;
     description: string;
-    actionLabel?: string;
-    onAction?: () => void;
+    action?: {
+        label: string;
+        onClick: () => void;
+    };
     className?: string;
-    iconSize?: number;
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
     icon: Icon,
     title,
     description,
-    actionLabel,
-    onAction,
-    className = '',
-    iconSize = 48
+    action,
+    className = ''
 }) => {
     return (
-        <div className={`flex flex-col items-center justify-center p-8 text-center animate-fade-in-up ${className}`}>
-            <div className={`p-4 bg-white/5 rounded-full mb-4 border border-white/5 shadow-inner`}>
-                <Icon size={iconSize} className="text-gray-500 opacity-60" />
+        <div className={`empty-state ${className}`}>
+            <div className="w-16 h-16 bg-surface border border-border rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+                <Icon size={28} className="text-accent opacity-70" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-            <p className="text-sm text-gray-400 max-w-sm mb-6 leading-relaxed">
+            <h3 className="empty-state-title">{title}</h3>
+            <p className="empty-state-desc max-w-sm">
                 {description}
             </p>
-            {actionLabel && onAction && (
+            {action && (
                 <button
-                    onClick={onAction}
-                    className="btn-primary flex items-center gap-2"
+                    onClick={action.onClick}
+                    className="btn-primary mt-5"
                 >
-                    {actionLabel}
+                    {action.label}
                 </button>
             )}
         </div>

@@ -168,7 +168,7 @@ const AuditLogPage: React.FC = () => {
     }
 
     const getActionColor = (action: string) => {
-        if (action.includes('CREATE')) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+        if (action.includes('CREATE')) return 'text-brand-400 bg-brand-500/10 border-brand-500/20';
         if (action.includes('DELETE')) return 'text-red-400 bg-red-500/10 border-red-500/20';
         if (action.includes('UPDATE')) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
         return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
@@ -192,7 +192,7 @@ const AuditLogPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={handleExportExcel}
-                            className="px-4 py-2 bg-white/[0.03] hover:bg-white/[0.08] text-emerald-400 rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all shadow-lg"
+                            className="px-4 py-2 bg-white/[0.03] hover:bg-white/[0.08] text-brand-400 rounded-xl border border-white/[0.05] flex items-center gap-2 text-xs font-bold transition-all shadow-lg"
                         >
                             <FileSpreadsheet size={16} /> Export Excel
                         </button>
@@ -320,7 +320,7 @@ const AuditLogPage: React.FC = () => {
                                                                             <span className="text-amber-400 font-bold">{key}:</span>
                                                                             <span className="text-rose-400 line-through bg-rose-500/10 px-1 rounded">{oldV || 'null'}</span>
                                                                             <ArrowRight size={10} className="text-gray-500" />
-                                                                            <span className="text-emerald-400 bg-emerald-500/10 px-1 rounded">{newV || 'null'}</span>
+                                                                            <span className="text-brand-400 bg-brand-500/10 px-1 rounded">{newV || 'null'}</span>
                                                                         </div>
                                                                     );
                                                                 }

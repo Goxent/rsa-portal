@@ -167,7 +167,7 @@ const PerformancePage: React.FC = () => {
 
     const getTierColor = (tier: string) => {
         switch (tier) {
-            case 'Exceptional': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+            case 'Exceptional': return 'text-brand-400 bg-brand-500/10 border-brand-500/30';
             case 'Strong': return 'text-brand-400 bg-brand-500/10 border-brand-500/30';
             case 'Meeting Expectations': return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
             case 'Needs Improvement': return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
@@ -346,16 +346,16 @@ const PerformancePage: React.FC = () => {
                                 <button
                                     onClick={handleFinalize}
                                     disabled={isFinalizing}
-                                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all"
+                                    className="bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all"
                                 >
                                     {isFinalizing ? <Loader2 size={16} className="animate-spin mr-2" /> : <Lock size={16} className="mr-2" />}
                                     Finalize {format(subMonths(new Date(), 1), 'MMM')} Performance
                                 </button>
                             )}
                             {finalizedCycle && (
-                                <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
-                                    <Lock size={14} className="text-emerald-400" />
-                                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-tight">Finalized</span>
+                                <div className="flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 px-3 py-1.5 rounded-lg">
+                                    <Lock size={14} className="text-brand-400" />
+                                    <span className="text-xs font-bold text-brand-400 uppercase tracking-tight">Finalized</span>
                                 </div>
                             )}
                             <select
@@ -426,7 +426,7 @@ const PerformancePage: React.FC = () => {
             {/* Staff of the Month Section */}
             {staffOfTheMonth && selectedMonth === 0 && (
                 <div className="relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-600/20 to-emerald-600/20 rounded-3xl blur-3xl -z-10 animate-pulse" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-600/20 to-brand-/20 rounded-3xl blur-3xl -z-10 animate-pulse" />
                     <div className="glass-panel p-8 rounded-3xl border-2 border-brand-500/30 flex flex-col md:flex-row items-center gap-8 relative">
                         <div className="relative">
                             <div className="w-32 h-32 rounded-full border-4 border-brand-500 p-1 shadow-2xl overflow-hidden ring-8 ring-brand-500/10">
@@ -451,7 +451,7 @@ const PerformancePage: React.FC = () => {
                             <div className="flex flex-wrap gap-4 mt-4">
                                 <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
                                     <p className="text-[10px] text-gray-500 uppercase font-bold">Performance Score</p>
-                                    <p className="text-xl font-mono font-bold text-emerald-400">{staffOfTheMonth.score.toFixed(1)}%</p>
+                                    <p className="text-xl font-mono font-bold text-brand-400">{staffOfTheMonth.score.toFixed(1)}%</p>
                                 </div>
                                 <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
                                     <p className="text-[10px] text-gray-500 uppercase font-bold">Status</p>
@@ -476,9 +476,9 @@ const PerformancePage: React.FC = () => {
                         {(Object.values(performanceData).reduce((sum, s) => sum + s.totalScore, 0) / Math.max(staff.length, 1)).toFixed(1)}%
                     </p>
                 </div>
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-emerald-500">
+                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-brand-">
                     <p className="text-[10px] text-gray-500 uppercase font-bold">Exceptional</p>
-                    <p className="text-2xl font-bold text-emerald-400">
+                    <p className="text-2xl font-bold text-brand-400">
                         {Object.values(performanceData).filter(s => s.performanceTier === 'Exceptional').length}
                     </p>
                 </div>
@@ -529,7 +529,7 @@ const PerformancePage: React.FC = () => {
                                         <p className="text-xs text-gray-500 capitalize">{member.role.replace('_', ' ')} • {member.department || 'General'}</p>
                                     </div>
                                     <div className="text-right">
-                                        <span className={`text-lg font-mono font-bold ${stats.totalScore > 85 ? 'text-emerald-400' : stats.totalScore > 60 ? 'text-brand-400' : 'text-orange-400'}`}>
+                                        <span className={`text-lg font-mono font-bold ${stats.totalScore > 85 ? 'text-brand-400' : stats.totalScore > 60 ? 'text-brand-400' : 'text-orange-400'}`}>
                                             {stats.totalScore.toFixed(0)}
                                         </span>
                                         <span className="text-[10px] text-gray-600 font-bold">/100</span>
@@ -543,7 +543,7 @@ const PerformancePage: React.FC = () => {
                                     </div>
                                     <div className="h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
                                         <div
-                                            className={`h-full rounded-full transition-all duration-1000 ${stats.totalScore > 85 ? 'bg-emerald-500' : stats.totalScore > 60 ? 'bg-brand-500' : 'bg-orange-500'}`}
+                                            className={`h-full rounded-full transition-all duration-1000 ${stats.totalScore > 85 ? 'bg-brand-500' : stats.totalScore > 60 ? 'bg-brand-500' : 'bg-orange-500'}`}
                                             style={{ width: `${stats.totalScore}%` }}
                                         />
                                     </div>
@@ -555,7 +555,7 @@ const PerformancePage: React.FC = () => {
                                                 <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Fulfillment</p>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-white">{(stats.assignmentFulfillment || 0).toFixed(0)}%</span>
-                                                    <TrendingUp size={10} className="text-emerald-400" />
+                                                    <TrendingUp size={10} className="text-brand-400" />
                                                 </div>
                                             </div>
                                             <div className="bg-white/5 p-2 rounded-lg">

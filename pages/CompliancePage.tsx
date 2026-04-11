@@ -221,12 +221,25 @@ const CompliancePage: React.FC = () => {
 
     const getCategoryColor = (category: string) => {
         const colors = {
-            TAX: 'text-amber-400 bg-amber-500/20',
-            AUDIT: 'text-purple-400 bg-purple-500/20',
-            REGULATORY: 'text-orange-400 bg-orange-500/20',
-            INTERNAL: 'text-gray-400 bg-gray-500/20',
+            TAX: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10',
+            AUDIT: 'text-indigo-400 bg-indigo-500/10',
+            REGULATORY: 'text-[var(--color-warning)] bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20',
+            INTERNAL: 'text-[var(--muted)] bg-[var(--bg-surface)] border-[var(--border)]',
         };
-        return colors[category as keyof typeof colors] || 'text-gray-400 bg-gray-500/20';
+        return colors[category as keyof typeof colors] || 'text-[var(--muted)] bg-[var(--bg-surface)]';
+    };
+
+    const getStatusStyle = (status: string) => {
+        switch (status) {
+            case 'COMPLETED': // Compliant
+                return { color: 'var(--accent)', background: 'rgba(101,154,43,0.1)' };
+            case 'DUE_SOON': // At risk
+                return { color: 'var(--color-warning)', background: 'rgba(201,138,42,0.1)' };
+            case 'OVERDUE': // Non-compliant
+                return { color: 'var(--color-danger)', background: 'rgba(196,68,90,0.1)' };
+            default: // Pending / Upcoming
+                return { color: 'var(--color-info)', background: 'rgba(61,130,201,0.1)' };
+        }
     };
 
     const canEdit = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
@@ -275,26 +288,30 @@ const CompliancePage: React.FC = () => {
         <div className="min-h-full p-4 md:p-6 bg-transparent">
             <div className="space-y-6 animate-in fade-in duration-500 pb-32 max-w-7xl mx-auto">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[var(--border)] pb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <CalIcon className="text-amber-400" />
+                    <h1 className="text-2xl font-bold text-[var(--heading)] flex items-center gap-2">
+                        <CalIcon className="text-[var(--accent)]" />
                         Compliance Calendar
                     </h1>
-                    <p className="text-sm text-gray-400">Track statutory deadlines, tax filings, and audit schedules.</p>
+                    <p className="text-sm text-[var(--muted)]">Track statutory deadlines, tax filings, and audit schedules.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex flex-col items-end">
                         <button
                             onClick={syncCompliance}
                             disabled={isSyncing || !isSyncDay}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${isSyncing || !isSyncDay ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed' : 'bg-brand-500/10 text-brand-400 border-brand-500/20 hover:bg-brand-500/20'}`}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-md)] text-sm font-bold transition-all border ${
+                                isSyncing || !isSyncDay 
+                                    ? 'bg-[var(--bg-secondary)] text-[var(--muted)] border-[var(--border)] cursor-not-allowed' 
+                                    : 'bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/20 hover:bg-[var(--accent)]/20'
+                            }`}
                         >
                             {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
                             Sync Compliance
                         </button>
                         {!isSyncDay && (
-                            <span className="text-[9px] text-amber-500/60 font-bold mt-1 uppercase tracking-tighter">Available on 24th & 25th BS Only</span>
+                            <span className="text-[9px] text-[var(--color-warning)] font-bold mt-1 uppercase tracking-tighter">Available on 24th & 25th BS Only</span>
                         )}
                     </div>
                     {canEdit && (
@@ -310,7 +327,7 @@ const CompliancePage: React.FC = () => {
                                 });
                                 setIsModalOpen(true);
                             }}
-                            className="bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-700 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
+                            className="bg-[var(--accent)] text-white px-4 py-2.5 rounded-[var(--radius-md)] text-sm font-bold hover:brightness-110 shadow-lg flex items-center transition-all hover:-translate-y-0.5"
                         >
                             <Plus size={16} className="mr-2" /> Add Event
                         </button>
@@ -319,17 +336,17 @@ const CompliancePage: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
+            <div className="flex bg-[var(--bg-secondary)] p-1 rounded-[var(--radius-md)] border border-[var(--border)] w-fit">
                 <button
                     onClick={() => setActiveTab('calendar')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'calendar' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                    className={`px-4 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all ${activeTab === 'calendar' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--muted)] hover:text-[var(--text-main)]'}`}
                 >
                     Calendar & Events
                 </button>
                 {canEdit && (
                     <button
                         onClick={() => setActiveTab('clients')}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'clients' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all ${activeTab === 'clients' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--muted)] hover:text-[var(--text-main)]'}`}
                     >
                         Client Statutory Status
                     </button>
@@ -340,41 +357,50 @@ const CompliancePage: React.FC = () => {
             {activeTab === 'calendar' ? (
                 <>
                     {/* VAT Filing Countdown Panel */}
-                    <div className="glass-panel p-8 rounded-2xl border-l-4 border-l-emerald-500 relative overflow-hidden bg-gradient-to-r from-emerald-900/20 to-navy-900/40">
-                        <div className="absolute right-0 top-0 opacity-10">
-                            <ShieldCheck size={180} className="text-white" />
-                        </div>
+                    <div className="p-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-secondary)] relative overflow-hidden">
                         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 uppercase tracking-wider">
                                         VAT Filing Deadline
                                     </span>
-                                    <span className="text-gray-400 text-xs font-medium">Monthly Requirement</span>
+                                    <span className="text-[var(--muted)] text-xs font-medium">Monthly Requirement</span>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white mb-2">Monthly VAT Submission</h3>
-                                <p className="text-gray-300 text-lg">
-                                    Due Date: <span className="text-white font-semibold">{vatDeadline.bsStr}</span>
+                                <h3 className="text-3xl font-bold text-[var(--heading)] mb-2">Monthly VAT Submission</h3>
+                                <p className="text-[var(--muted)] text-lg">
+                                    Due Date: <span className="text-[var(--heading)] font-semibold">{vatDeadline.bsStr}</span>
                                 </p>
                             </div>
 
                             <div className="flex gap-4">
                                 {(() => {
                                     const diff = vatDeadline.ad.getTime() - new Date().getTime();
-                                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                    const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+                                    const hours = Math.max(0, Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+                                    const mins = Math.max(0, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
+
+                                    const getColorForDays = (d: number) => {
+                                        if (d > 30) return 'var(--accent)';
+                                        if (d >= 7) return 'var(--color-warning)';
+                                        return 'var(--color-danger)';
+                                    };
 
                                     return [
                                         { val: days, label: 'Days' },
                                         { val: hours, label: 'Hours' },
                                         { val: mins, label: 'Mins' }
                                     ].map((item, idx) => (
-                                        <div key={idx} className="text-center group">
-                                            <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-1 group-hover:scale-110 transition-transform duration-300">
-                                                {Math.max(0, item.val)}
+                                        <div key={idx} className="text-center group min-w-[80px]">
+                                            <div 
+                                                className="text-4xl md:text-5xl font-bold mb-1 group-hover:scale-110 transition-transform duration-300"
+                                                style={{ 
+                                                    color: idx === 0 ? getColorForDays(days) : 'var(--heading)',
+                                                    fontVariantNumeric: 'tabular-nums'
+                                                }}
+                                            >
+                                                {item.val}
                                             </div>
-                                            <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest">{item.label}</div>
+                                            <div className="text-[10px] uppercase font-bold text-[var(--muted)] tracking-widest">{item.label}</div>
                                         </div>
                                     ));
                                 })()}
@@ -397,35 +423,45 @@ const CompliancePage: React.FC = () => {
                         const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
 
                         return (
-                            <div className="glass-panel p-8 rounded-2xl border-l-4 border-l-brand-500 relative overflow-hidden bg-gradient-to-r from-brand-900/40 to-navy-900/40">
-                                <div className="absolute right-0 top-0 opacity-10">
-                                    <CalIcon size={180} className="text-white" />
-                                </div>
+                            <div className="p-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-secondary)] relative overflow-hidden">
                                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase tracking-wider">
+                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 uppercase tracking-wider">
                                                 Next Deadline
                                             </span>
                                             <span className={`px-2 py-0.5 rounded text-xs font-bold ${getCategoryColor(nearestEvent.category)}`}>
                                                 {nearestEvent.category}
                                             </span>
                                         </div>
-                                        <h3 className="text-3xl font-bold text-white mb-2">{nearestEvent.title}</h3>
-                                        <p className="text-gray-300 text-lg">
-                                            Due: <span className="text-white font-semibold">{formatDateWithBS(nearestEvent.dueDate)}</span>
+                                        <h3 className="text-3xl font-bold text-[var(--heading)] mb-2">{nearestEvent.title}</h3>
+                                        <p className="text-[var(--muted)] text-lg">
+                                            Due: <span className="text-[var(--heading)] font-semibold">{formatDateWithBS(nearestEvent.dueDate)}</span>
                                         </p>
                                     </div>
 
                                     <div className="flex gap-4">
-                                        {[{ val: days, label: 'Days' }, { val: hours, label: 'Hours' }, { val: minutes, label: 'Mins' }].map((item, idx) => (
-                                            <div key={idx} className="text-center group">
-                                                <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-1 group-hover:scale-110 transition-transform duration-300">
-                                                    {Math.max(0, item.val)}
+                                        {(() => {
+                                            const getColorForDays = (d: number) => {
+                                                if (d > 30) return 'var(--accent)';
+                                                if (d >= 7) return 'var(--color-warning)';
+                                                return 'var(--color-danger)';
+                                            };
+                                            return [{ val: days, label: 'Days' }, { val: hours, label: 'Hours' }, { val: minutes, label: 'Mins' }].map((item, idx) => (
+                                                <div key={idx} className="text-center group min-w-[80px]">
+                                                    <div 
+                                                        className="text-4xl md:text-5xl font-bold mb-1 group-hover:scale-110 transition-transform duration-300"
+                                                        style={{ 
+                                                            color: idx === 0 ? getColorForDays(days) : 'var(--heading)',
+                                                            fontVariantNumeric: 'tabular-nums'
+                                                        }}
+                                                    >
+                                                        {Math.max(0, item.val)}
+                                                    </div>
+                                                    <div className="text-[10px] uppercase font-bold text-[var(--muted)] tracking-widest">{item.label}</div>
                                                 </div>
-                                                <div className="text-[10px] uppercase font-bold text-brand-400 tracking-widest">{item.label}</div>
-                                            </div>
-                                        ))}
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -435,14 +471,14 @@ const CompliancePage: React.FC = () => {
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {[
-                            { label: 'Upcoming', count: upcomingCount, icon: CalIcon, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                            { label: 'Due Soon', count: dueSoonCount, icon: Bell, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                            { label: 'Overdue', count: overdueCount, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
-                            { label: 'Completed', count: events.filter(e => e.status === 'COMPLETED').length, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
+                            { label: 'Upcoming', count: upcomingCount, icon: CalIcon, color: 'text-[var(--accent)]', bg: 'bg-[var(--accent)]/10' },
+                            { label: 'Due Soon', count: dueSoonCount, icon: Bell, color: 'text-[var(--color-warning)]', bg: 'bg-[var(--color-warning)]/10' },
+                            { label: 'Overdue', count: overdueCount, icon: AlertTriangle, color: 'text-[var(--color-danger)]', bg: 'bg-[var(--color-danger)]/10' },
+                            { label: 'Completed', count: events.filter(e => e.status === 'COMPLETED').length, icon: CheckCircle, color: 'text-[var(--accent)]', bg: 'bg-[var(--accent)]/10' }
                         ].map((stat, idx) => (
-                            <div key={idx} className="glass-card p-5 rounded-xl flex items-center justify-between group hover:border-brand-500/30 transition-all">
+                            <div key={idx} className="bg-[var(--bg-secondary)] border border-[var(--border)] p-5 rounded-[var(--radius-md)] flex items-center justify-between group hover:border-[var(--accent)]/30 hover:bg-[var(--bg-surface)] transition-all">
                                 <div>
-                                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">{stat.label}</p>
+                                    <p className="text-xs text-[var(--muted)] font-bold uppercase tracking-wider">{stat.label}</p>
                                     <h3 className={`text-3xl font-bold mt-1 ${stat.color} group-hover:scale-105 transition-transform`}>{stat.count}</h3>
                                 </div>
                                 <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
@@ -453,14 +489,14 @@ const CompliancePage: React.FC = () => {
                     </div>
 
                     {/* Controls */}
-                    <div className="glass-panel p-2 rounded-xl flex overflow-x-auto gap-2">
+                    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-2 rounded-[var(--radius-md)] flex overflow-x-auto gap-2">
                         {['ALL', 'UPCOMING', 'DUE_SOON', 'OVERDUE', 'COMPLETED'].map((f) => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filter === f
-                                    ? 'bg-amber-600 text-white shadow-lg shadow-blue-900/20'
-                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                className={`px-4 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all whitespace-nowrap ${filter === f
+                                    ? 'bg-[var(--accent)] text-white shadow-lg'
+                                    : 'text-[var(--muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-main)]'
                                     }`}
                             >
                                 {f.replace('_', ' ')}
@@ -473,32 +509,31 @@ const CompliancePage: React.FC = () => {
                         {filteredEvents.map((event) => (
                             <div
                                 key={event.id}
-                                className="glass-panel p-6 rounded-xl hover:border-brand-500/30 transition-all group relative overflow-hidden"
+                                className="bg-[var(--bg-secondary)] border border-[var(--border)] p-[0.875rem_1rem] rounded-[var(--radius-md)] hover:bg-[var(--bg-surface)] transition-all group relative overflow-hidden"
                             >
-                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-white/10 to-transparent group-hover:from-brand-500 group-hover:to-brand-600 transition-colors"></div>
                                 <div className="flex flex-col md:flex-row items-start justify-between gap-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                            <h3 className="text-lg font-bold text-white">{event.title}</h3>
+                                            <h3 className="text-lg font-bold text-[var(--heading)]">{event.title}</h3>
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getCategoryColor(event.category)}`}>
                                                 {event.category}
                                             </span>
                                             {event.priority === 'CRITICAL' && (
-                                                <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/20">
+                                                <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--color-danger)]/10 text-[var(--color-danger)] border border-[var(--color-danger)]/20">
                                                     <AlertTriangle size={10} /> CRITICAL
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-gray-400 text-sm mb-3 max-w-2xl">{event.description}</p>
-                                        <div className="flex items-center gap-6 text-xs text-gray-500 font-medium">
+                                        <p className="text-[var(--muted)] text-sm mb-3 max-w-2xl">{event.description}</p>
+                                        <div className="flex items-center gap-6 text-xs text-[var(--muted)] font-medium">
                                             <span className="flex items-center gap-1.5">
-                                                <CalIcon size={14} className="text-brand-400" />
-                                                Due: <span className="text-gray-300">{formatDateWithBS(event.dueDate)}</span>
+                                                <CalIcon size={14} className="text-[var(--accent)]" />
+                                                Due: <span className="text-[var(--muted)]">{formatDateWithBS(event.dueDate)}</span>
                                             </span>
                                             {event.clientName && (
                                                 <span className="flex items-center gap-1.5">
-                                                    <Filter size={14} className="text-purple-400" />
-                                                    Client: <span className="text-gray-300">{event.clientName}</span>
+                                                    <Filter size={14} className="text-indigo-400" />
+                                                    Client: <span className="text-[var(--muted)]">{event.clientName}</span>
                                                 </span>
                                             )}
                                         </div>
@@ -538,7 +573,7 @@ const CompliancePage: React.FC = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handleComplete(event.id)}
-                                                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-lg text-sm font-medium border border-emerald-500/20 transition-all flex items-center gap-2"
+                                                    className="bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 px-4 py-2 rounded-lg text-sm font-medium border border-brand-500/20 transition-all flex items-center gap-2"
                                                 >
                                                     <CheckCircle size={16} /> Mark Complete
                                                 </button>
@@ -577,35 +612,35 @@ const CompliancePage: React.FC = () => {
                     </div>
                 </>
             ) : canEdit ? (
-                <div className="glass-panel rounded-xl overflow-hidden border border-white/5 bg-navy-900/40 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 p-6 bg-white/5">
+                <div className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] p-6 bg-[var(--bg-surface)]/50">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                            <div className="p-2 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
                                 <ShieldCheck size={20} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-white">Client Statutory Status</h2>
-                                <p className="text-xs text-gray-500">Track VAT and Income Tax filing obligations.</p>
+                                <h2 className="text-xl font-bold text-[var(--heading)]">Client Statutory Status</h2>
+                                <p className="text-xs text-[var(--muted)]">Track VAT and Income Tax filing obligations.</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3 flex-1 max-w-xl">
                             <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" size={14} />
                                 <input
                                     type="text"
                                     placeholder="Search client name, PAN or code..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-md)] pl-9 pr-4 py-2 text-sm text-[var(--text-main)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50"
                                 />
                             </div>
-                            <div className="flex bg-white/5 rounded-xl p-1 border border-white/10 shrink-0">
+                            <div className="flex bg-[var(--bg-secondary)] rounded-[var(--radius-md)] p-1 border border-[var(--border)] shrink-0">
                                 {(['ALL', 'VAT', 'ITR'] as const).map((t) => (
                                     <button
                                         key={t}
                                         onClick={() => setStatutoryFilter(t)}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${statutoryFilter === t ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                        className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-[10px] font-bold transition-all ${statutoryFilter === t ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--muted)] hover:text-[var(--text-main)]'}`}
                                     >
                                         {t}
                                     </button>
@@ -615,9 +650,9 @@ const CompliancePage: React.FC = () => {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-300">
+                        <table className="w-full text-left text-sm text-[var(--text-main)]">
                             <thead>
-                                <tr className="text-gray-400 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
+                                <tr className="text-[var(--muted)] border-b border-[var(--border)] uppercase text-[10px] tracking-wider bg-[var(--bg-secondary)] font-black">
                                     <th className="px-6 py-4">Client</th>
                                     <th className="px-6 py-4">PAN / Code</th>
                                     <th className="px-6 py-4">Focal Person</th>
@@ -625,16 +660,16 @@ const CompliancePage: React.FC = () => {
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-[var(--border)]">
                                 {filteredClients.map((client) => (
-                                    <tr key={client.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-white uppercase text-xs">{client.name}</td>
+                                    <tr key={client.id} className="hover:bg-[var(--bg-surface)] transition-colors">
+                                        <td className="px-6 py-4 font-bold text-[var(--heading)] uppercase text-xs">{client.name}</td>
                                         <td className="px-6 py-4 text-xs">
                                             <div className="flex gap-1 items-center font-mono">
-                                                <span className="text-gray-500 font-bold uppercase text-[10px]">PAN:</span>
-                                                <span className="text-gray-300">{client.pan || 'N/A'}</span>
+                                                <span className="text-[var(--muted)] font-bold uppercase text-[10px]">PAN:</span>
+                                                <span className="text-[var(--text-main)] font-semibold">{client.pan || 'N/A'}</span>
                                             </div>
-                                            <div className="text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 rounded w-fit mt-1 uppercase font-bold tracking-wider">{client.code || 'N/A'}</div>
+                                            <div className="text-[10px] text-[var(--accent)] bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-1 py-0.5 rounded w-fit mt-1 uppercase font-bold tracking-wider">{client.code || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <select
@@ -649,9 +684,9 @@ const CompliancePage: React.FC = () => {
                                                         toast.error('Failed to update assignee');
                                                     }
                                                 }}
-                                                className="bg-navy-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-brand-300 cursor-pointer outline-none w-full max-w-[200px]"
+                                                className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-md)] px-3 py-2 text-xs text-[var(--accent)] cursor-pointer outline-none w-full max-w-[200px]"
                                             >
-                                                <option value="" className="text-gray-400">Unassigned Focal</option>
+                                                <option value="" className="text-[var(--muted)]">Unassigned Focal</option>
                                                 {staffList.map(staff => (
                                                     <option key={staff.uid} value={staff.uid}>{staff.displayName}</option>
                                                 ))}
@@ -659,14 +694,14 @@ const CompliancePage: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
-                                                {client.vatReturn && <span className="text-[10px] font-black px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">VAT Return</span>}
-                                                {client.itrReturn && <span className="text-[10px] font-black px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">ITR Return</span>}
+                                                {client.vatReturn && <span className="text-[10px] font-black px-2 py-1 rounded bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20">VAT Return</span>}
+                                                {client.itrReturn && <span className="text-[10px] font-black px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">ITR Return</span>}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button
                                                 onClick={() => toast(`Viewing tasks for ${client.name}`, { icon: '🔍' })}
-                                                className="text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg transition-colors border border-white/10"
+                                                className="text-[10px] font-bold bg-[var(--bg-secondary)] hover:bg-[var(--bg-surface)] text-[var(--text-main)] px-4 py-2 rounded-[var(--radius-md)] transition-colors border border-[var(--border)]"
                                             >
                                                 VIEW TASKS
                                             </button>
@@ -691,36 +726,34 @@ const CompliancePage: React.FC = () => {
             {/* Create/Edit Modal - Premium Style */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="glass-modal rounded-2xl w-full max-w-lg border border-white/10 shadow-2xl relative overflow-hidden">
+                    <div className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] w-full max-w-lg border border-[var(--border)] shadow-2xl relative overflow-hidden">
                         {/* Modal Header */}
-                        <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-amber-900/50 to-amber-900/50 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                {editingId ? <Filter size={20} className="text-amber-400" /> : <Plus size={20} className="text-amber-400" />}
+                        <div className="px-6 py-5 border-b border-[var(--border)] bg-[var(--bg-surface)] flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-[var(--heading)] flex items-center gap-2">
+                                {editingId ? <Filter size={20} className="text-[var(--accent)]" /> : <Plus size={20} className="text-[var(--accent)]" />}
                                 {editingId ? 'Edit Event' : 'New Compliance Event'}
                             </h3>
-                            <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/20 hover:text-white transition-all">
+                            <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-main)] transition-all">
                                 <Plus size={18} className="rotate-45" />
                             </button>
                         </div>
 
                         <div className="p-6 space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Title <span className="text-red-400">*</span></label>
+                                <label className="block text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-2">Title <span className="text-[var(--color-danger)]">*</span></label>
                                 <input
                                     type="text"
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-md)] px-4 py-3 text-[var(--text-main)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-all"
                                     value={newEvent.title}
                                     placeholder="e.g. Q3 VAT Return"
                                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                                 />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                            </div>                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Category</label>
+                                    <label className="block text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-2">Category</label>
                                     <div className="relative">
                                         <select
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-md)] px-4 py-3 text-[var(--text-main)] appearance-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-all font-semibold"
                                             value={newEvent.category}
                                             onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value as any })}
                                         >
@@ -729,16 +762,16 @@ const CompliancePage: React.FC = () => {
                                             <option value="REGULATORY">Regulatory</option>
                                             <option value="INTERNAL">Internal</option>
                                         </select>
-                                        <div className="absolute right-3 top-3.5 pointer-events-none text-gray-500">
+                                        <div className="absolute right-3 top-3.5 pointer-events-none text-[var(--muted)]">
                                             <Filter size={14} />
                                         </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Priority</label>
+                                    <label className="block text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-2">Priority</label>
                                     <div className="relative">
                                         <select
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-md)] px-4 py-3 text-[var(--text-main)] appearance-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-all font-semibold"
                                             value={newEvent.priority}
                                             onChange={(e) => setNewEvent({ ...newEvent, priority: e.target.value as any })}
                                         >
@@ -747,7 +780,7 @@ const CompliancePage: React.FC = () => {
                                             <option value="HIGH">High</option>
                                             <option value="CRITICAL">Critical</option>
                                         </select>
-                                        <div className="absolute right-3 top-3.5 pointer-events-none text-gray-500">
+                                        <div className="absolute right-3 top-3.5 pointer-events-none text-[var(--muted)]">
                                             <AlertTriangle size={14} />
                                         </div>
                                     </div>
@@ -756,11 +789,11 @@ const CompliancePage: React.FC = () => {
 
                             <div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Due Date <span className="text-red-400">*</span></label>
+                                    <label className="block text-xs font-bold text-[var(--muted)] uppercase tracking-wider">Due Date <span className="text-[var(--color-danger)]">*</span></label>
                                     <button
                                         type="button"
                                         onClick={() => setUseNepali(!useNepali)}
-                                        className={`text-[10px] font-bold px-2 py-1 rounded transition-all ${useNepali ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-400'}`}
+                                        className={`text-[10px] font-bold px-2 py-1 rounded transition-all ${useNepali ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-secondary)] text-[var(--muted)]'}`}
                                     >
                                         {useNepali ? 'SWITCH TO AD' : 'SWITCH TO BS (NEPALI)'}
                                     </button>
@@ -774,7 +807,7 @@ const CompliancePage: React.FC = () => {
                                 ) : (
                                     <input
                                         type="date"
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                                        className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-md)] px-4 py-3 text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-all"
                                         value={newEvent.dueDate}
                                         onChange={(e) => setNewEvent({ ...newEvent, dueDate: e.target.value })}
                                     />
@@ -782,9 +815,9 @@ const CompliancePage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</label>
+                                <label className="block text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-2">Description</label>
                                 <textarea
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all resize-none"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-md)] px-4 py-3 text-[var(--text-main)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-all resize-none"
                                     rows={3}
                                     placeholder="Add notes or required documents..."
                                     value={newEvent.description}
@@ -794,7 +827,7 @@ const CompliancePage: React.FC = () => {
 
                             <button
                                 onClick={handleSaveEvent}
-                                className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2 mt-4"
+                                className="w-full bg-[var(--accent)] hover:brightness-110 text-white py-4 rounded-[var(--radius-md)] font-bold transition-all shadow-lg flex items-center justify-center gap-2 mt-4"
                             >
                                 <CheckCircle size={20} />
                                 {editingId ? 'Save Changes' : 'Create Event'}

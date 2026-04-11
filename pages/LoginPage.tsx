@@ -93,10 +93,13 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-navy-950 p-6 relative font-inter overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-6 relative font-inter overflow-hidden" 
+         style={{ background: 'var(--bg-main)', backgroundImage: 'radial-gradient(circle at 50% 50%, var(--bg-grad-1) 0%, var(--bg-main) 100%)' }}>
+      
       {/* ── NEPALI DATE ── */}
       {nepaliDate && (
-        <div className="fixed top-4 right-5 z-50 text-[10px] font-black text-brand-400/60 uppercase tracking-[0.2em] pointer-events-none select-none">
+        <div className="fixed top-4 right-5 z-50 text-[10px] font-black uppercase tracking-[0.2em] pointer-events-none select-none"
+             style={{ color: 'var(--accent)', opacity: 0.6 }}>
           {nepaliDate}
         </div>
       )}
@@ -111,26 +114,44 @@ const LoginPage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md glass-card p-10 border border-white/10 shadow-2xl relative z-10"
+        className="w-full max-w-[400px] relative z-10"
+        style={{ 
+          background: 'var(--bg-secondary)', 
+          border: '1px solid var(--border)', 
+          borderRadius: 'var(--radius-xl)', 
+          padding: '2.5rem',
+          boxShadow: 'var(--shadow-modal)'
+        }}
       >
         {/* Brand Header Inside the Card */}
         <div className="flex flex-col items-center mb-10 text-center">
-            <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/20 mb-4">
-                <ShieldCheck size={36} className="text-white" />
+            {/* Logo/Brand Block */}
+            <div className="w-10 h-10 flex items-center justify-center mb-3"
+                 style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))', borderRadius: 'var(--radius-md)' }}>
+                <span className="text-white font-[800] text-[1.25rem]">R</span>
             </div>
-            <h1 className="text-2xl font-black text-white tracking-tighter uppercase mb-1">
+            <h1 className="text-[1rem] font-[700] uppercase tracking-tighter" style={{ color: 'var(--text-heading)', marginTop: '0.75rem' }}>
                 R. Sapkota & Associates
             </h1>
-            <div className="h-px w-12 bg-brand-500/30 mb-8" />
+
+            <div className="h-[1px] w-full my-8" style={{ background: 'var(--border)' }} />
             
-            <h2 className="text-2xl font-black text-white tracking-tighter">Sign In</h2>
-            <p className="text-gray-500 text-sm mt-1">Access your secure RSA workspace dashboard.</p>
+            <h2 className="text-2xl font-black tracking-tighter" style={{ color: 'var(--text-heading)' }}>Sign In</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Access your secure RSA workspace.</p>
         </div>
 
         {rateLimitError && (
-          <div className="mb-6 bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl flex items-center gap-3 animate-shake">
-            <AlertCircle size={18} className="text-rose-400 shrink-0" />
-            <p className="text-xs text-rose-300 font-bold">{rateLimitError}</p>
+          <div className="mb-6 flex items-center gap-3"
+               style={{ 
+                 color: 'var(--color-danger)', 
+                 background: 'rgba(196,68,90,0.1)', 
+                 borderRadius: 'var(--radius-sm)', 
+                 padding: '0.625rem 0.875rem', 
+                 border: '1px solid rgba(196,68,90,0.2)', 
+                 fontSize: '0.875rem' 
+               }}>
+            <AlertCircle size={18} className="shrink-0" />
+            <p className="font-bold">{rateLimitError}</p>
           </div>
         )}
 
@@ -138,11 +159,11 @@ const LoginPage: React.FC = () => {
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
             <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
               <input
                 type="email"
-                className={`glass-input w-full pl-12 pr-4 py-4 rounded-2xl text-sm transition-all ${errors.email ? 'border-rose-500/50' : ''}`}
-                placeholder="your email address"
+                className={`glass-input w-full !pl-12 pr-4 py-4 rounded-2xl text-sm transition-all ${errors.email ? 'border-rose-500/50' : ''}`}
+                placeholder="Your email address"
                 {...register('email')}
               />
             </div>
@@ -159,11 +180,11 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
               <input
                 type={showPassword ? 'text' : 'password'}
-                className={`glass-input w-full pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.password ? 'border-rose-500/50' : ''}`}
-                placeholder="password"
+                className={`glass-input w-full !pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.password ? 'border-rose-500/50' : ''}`}
+                placeholder="Password"
                 {...register('password')}
               />
               <button
@@ -180,35 +201,38 @@ const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading || !!rateLimitError}
-            className="w-full bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-brand-500/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 group overflow-hidden relative"
+            className="w-full btn-primary py-3 rounded-[var(--radius-md)] font-bold text-sm transition-all flex items-center justify-center gap-2"
           >
             {loading ? (
-              <Loader2 size={20} className="animate-spin" />
+              <Loader2 size={18} className="animate-spin" />
             ) : (
               <>
-                <span className="relative z-10">Access Dashboard</span>
-                <ArrowRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <span>Log in</span>
+                <ArrowRight size={18} />
               </>
             )}
           </button>
         </form>
 
-        <div className="mt-8">
+        <div className="relative my-8 text-center flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center"><div className="w-full bg-[var(--border)] h-[1px]"></div></div>
+            <span className="relative z-10 px-4 text-[0.8125rem]" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>OR</span>
+        </div>
+
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full bg-white text-navy-950 hover:bg-gray-100 font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 text-sm group shadow-xl hover:shadow-white/5 active:scale-[0.98] border border-white"
+            className="w-full font-bold py-2.5 rounded-[var(--radius-md)] transition-all flex items-center justify-center gap-3 text-sm border hover:brightness-110 active:scale-[0.98]"
+            style={{ background: 'var(--bg-surface)', color: 'var(--text-heading)', borderColor: 'var(--border-mid)' }}
           >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
             Sign in with Google
           </button>
-        </div>
 
-        <div className="mt-10 text-center space-y-4">
-          <p className="text-gray-500 text-xs">
+        <div className="mt-8 text-center">
+          <p className="text-[0.8125rem]" style={{ color: 'var(--text-muted)' }}>
             System access restricted to authorized personnel.{' '}
-            <Link to="/signup" className="text-brand-400 hover:text-brand-300 font-bold transition-colors">Request Account</Link>
+            <Link to="/signup" className="font-bold hover:underline transition-colors" style={{ color: 'var(--accent)' }}>Request Account</Link>
           </p>
         </div>
       </motion.div>

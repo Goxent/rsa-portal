@@ -3,46 +3,49 @@ import React from 'react';
 
 interface LoadingSkeletonProps {
     className?: string;
-    variant?: 'text' | 'card' | 'avatar' | 'button' | 'task' | 'table-row';
+    variant?: 'text-sm' | 'text-lg' | 'card' | 'row' | 'avatar';
     count?: number;
 }
 
-/**
- * Loading skeleton component for displaying placeholder content
- */
 const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
     className = '',
-    variant = 'text',
+    variant = 'text-sm',
     count = 1
 }) => {
     const variantClasses = {
-        text: 'h-4 w-full rounded',
-        card: 'h-32 w-full rounded-xl',
-        avatar: 'h-10 w-10 rounded-full',
-        button: 'h-10 w-24 rounded-lg',
-        task: 'h-24 w-full rounded-xl',
-        'table-row': 'h-12 w-full rounded-lg'
+        'text-sm': 'h-3.5 w-full rounded-full',
+        'text-lg': 'h-5 w-[60%] rounded-full',
+        card: 'h-[120px] w-full rounded-[var(--radius-lg)]',
+        row: 'h-[44px] w-full rounded-[var(--radius-md)]',
+        avatar: 'h-9 w-9 rounded-full'
     };
 
     const skeletons = Array.from({ length: count }, (_, i) => (
         <div
             key={i}
             className={`skeleton ${variantClasses[variant]} ${className}`}
-            style={{ animationDelay: `${i * 100}ms` }}
         />
     ));
 
-    return count > 1 ? <>{skeletons}</> : skeletons[0];
+    if (count > 1) {
+        return (
+            <div className="stagger-children w-full">
+                {skeletons}
+            </div>
+        );
+    }
+
+    return skeletons[0];
 };
 
 /**
  * Full page loading state with centered spinner
  */
 export const PageLoader: React.FC = () => (
-    <div className="flex h-screen items-center justify-center bg-dark-900">
+    <div className="flex h-screen items-center justify-center bg-main">
         <div className="text-center">
-            <div className="w-12 h-12 border-4 border-amber-500/30 border-t-blue-500 rounded-full animate-spin mb-4 mx-auto" />
-            <p className="text-amber-400 animate-pulse">Loading...</p>
+            <div className="w-12 h-12 border-4 border-[var(--accent)]/20 border-t-[var(--accent)] rounded-full animate-spin mb-4 mx-auto" />
+            <p className="text-muted text-xs font-bold uppercase tracking-widest animate-pulse">Synchronizing Workspace...</p>
         </div>
     </div>
 );

@@ -103,8 +103,8 @@ const ForgotPasswordPage: React.FC = () => {
                 >
                     {sent ? (
                         <div className="flex flex-col items-center text-center space-y-6 animate-in fade-in duration-300">
-                            <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                <CheckCircle2 size={40} className="text-emerald-400" />
+                            <div className="w-20 h-20 rounded-full bg-brand-500/10 border border-brand-500/20 flex items-center justify-center">
+                                <CheckCircle2 size={40} className="text-brand-400" />
                             </div>
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-black text-white tracking-tighter">Transmission Complete</h2>
@@ -134,12 +134,12 @@ const ForgotPasswordPage: React.FC = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 text-inter">Registered Email</label>
                                     <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
                                         <input
                                             type="email"
                                             required
-                                            className="glass-input w-full pl-12 pr-4 py-4 rounded-2xl text-sm transition-all"
-                                            placeholder="name@firm.com"
+                                            className="glass-input w-full !pl-12 pr-4 py-4 rounded-2xl text-sm transition-all"
+                                            placeholder="Name@firm.com"
                                             value={email}
                                             onChange={e => setEmail(e.target.value)}
                                         />

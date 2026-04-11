@@ -186,7 +186,7 @@ const ClientDetailPage: React.FC = () => {
                                     {client.code}
                                 </span>
                                 <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider border ${client.status === 'Active'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                    ? 'bg-brand-500/10 text-brand-400 border-brand-500/20'
                                     : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                                     }`}>
                                     {client.status}
@@ -231,7 +231,7 @@ const ClientDetailPage: React.FC = () => {
                             <div>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Contact</p>
                                 <div className="flex flex-col gap-1 text-sm text-gray-200 font-medium">
-                                    {client.phone && <span className="flex items-center"><Phone size={12} className="mr-2 text-emerald-400" /> {client.phone}</span>}
+                                    {client.phone && <span className="flex items-center"><Phone size={12} className="mr-2 text-brand-400" /> {client.phone}</span>}
                                     {client.email && <span className="flex items-center"><Mail size={12} className="mr-2 text-amber-400" /> <span className="truncate">{client.email}</span></span>}
                                     {!client.phone && !client.email && <span className="text-gray-500 italic">No contact info</span>}
                                 </div>
@@ -347,10 +347,10 @@ const ClientDetailPage: React.FC = () => {
                                 </div>
                                 {/* Work Status */}
                                 <div className="glass-panel p-6 rounded-2xl border border-white/5">
-                                    <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-400" /> Work Status</h4>
+                                    <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2"><CheckCircle2 size={14} className="text-brand-400" /> Work Status</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-white/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-white">{clientTasks.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Tasks</p></div>
-                                        <div className="bg-emerald-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-emerald-400">{clientTasks.filter(t => t.status === 'COMPLETED').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Completed</p></div>
+                                        <div className="bg-brand-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-brand-400">{clientTasks.filter(t => t.status === 'COMPLETED').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Completed</p></div>
                                         <div className="bg-rose-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-rose-400">{overdueTasks.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Overdue</p></div>
                                         <div className="bg-amber-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-amber-400">{clientTasks.filter(t => t.status === 'IN_PROGRESS').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">In Progress</p></div>
                                     </div>
@@ -425,7 +425,7 @@ const ClientDetailPage: React.FC = () => {
                                         <div key={task.id} className="glass-card p-5 rounded-2xl hover:border-brand-500/30 transition-all cursor-pointer" onClick={() => navigate('/tasks')}>
                                             <div className="flex justify-between items-start mb-3">
                                                 <h4 className="font-bold text-white text-sm line-clamp-2">{task.title}</h4>
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${task.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${task.status === 'COMPLETED' ? 'bg-brand-500/20 text-brand-400 border-brand-500/30' :
                                                     task.status === 'IN_PROGRESS' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                         'bg-gray-500/20 text-gray-400 border-gray-500/30'
                                                     }`}>
@@ -465,7 +465,7 @@ const ClientDetailPage: React.FC = () => {
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-black text-white">{clientWorkLogs.reduce((sum, w) => sum + (w.workHours || 0), 0).toFixed(1)}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Hours</p></div>
                                         <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-black text-amber-400">{new Set(clientWorkLogs.map(w => w.userId)).size}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Unique Staff</p></div>
-                                        <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-black text-emerald-400">{clientWorkLogs.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Sessions</p></div>
+                                        <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-black text-brand-400">{clientWorkLogs.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Sessions</p></div>
                                     </div>
                                     <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
                                         <table className="w-full text-sm">
@@ -480,7 +480,7 @@ const ClientDetailPage: React.FC = () => {
                                                     <td className="p-4 text-gray-300">{log.clockOut ? new Date(log.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
                                                     <td className="p-4 text-gray-200 font-medium">{log.workHours?.toFixed(1) || '—'}</td>
                                                     <td className="p-4 text-gray-400 max-w-[200px] truncate">{log.workDescription || '—'}</td>
-                                                    <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${log.status === 'PRESENT' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{log.status}</span></td>
+                                                    <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${log.status === 'PRESENT' ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{log.status}</span></td>
                                                 </tr>
                                             ))}</tbody>
                                         </table>

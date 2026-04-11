@@ -151,13 +151,13 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 transition-opacity"
+                className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[90] transition-opacity"
                 onClick={onClose}
             />
 
             {/* Panel */}
             <div
-                className="fixed inset-y-0 right-0 w-80 md:w-96 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right"
+                className="fixed inset-y-0 right-0 w-80 md:w-96 shadow-2xl z-[100] flex flex-col animate-in slide-in-from-right"
                 style={{
                     background: 'var(--bg-secondary)',
                     borderLeft: '1px solid var(--border)',

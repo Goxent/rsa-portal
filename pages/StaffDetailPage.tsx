@@ -134,8 +134,8 @@ const StaffDetailPage: React.FC = () => {
                                 {staff.role.replace(/_/g, ' ')}
                             </span>
                             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/20 border border-white/5 backdrop-blur-sm">
-                                <span className={`w-2 h-2 rounded-full ${staff.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                                <span className={`text-xs font-bold uppercase tracking-wider ${staff.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                <span className={`w-2 h-2 rounded-full ${staff.status === 'Active' ? 'bg-brand-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                                <span className={`text-xs font-bold uppercase tracking-wider ${staff.status === 'Active' ? 'text-brand-400' : 'text-rose-400'}`}>
                                     {staff.status}
                                 </span>
                             </div>
@@ -168,7 +168,7 @@ const StaffDetailPage: React.FC = () => {
                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Active Tasks</p>
                          </div>
                          <div className="text-center px-4 border-r border-white/10">
-                            <p className="text-2xl font-black text-emerald-400">{tasksCompletedThisMonth}</p>
+                            <p className="text-2xl font-black text-brand-400">{tasksCompletedThisMonth}</p>
                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Done (Mo)</p>
                          </div>
                          <div className="text-center px-4">
@@ -230,7 +230,7 @@ const StaffDetailPage: React.FC = () => {
                                         </div>
                                         <div className="flex justify-between items-center text-sm pt-2 border-t border-white/5">
                                             <span className="text-gray-400">Completed (This Month)</span>
-                                            <span className="text-emerald-400 font-bold">{tasksCompletedThisMonth}</span>
+                                            <span className="text-brand-400 font-bold">{tasksCompletedThisMonth}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm text-rose-400 font-bold">
                                             <span>Overdue</span>
@@ -242,7 +242,7 @@ const StaffDetailPage: React.FC = () => {
                                 {/* Attendance Summary */}
                                 <div className="glass-panel p-6 rounded-2xl border border-white/5">
                                     <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <Clock size={14} className="text-emerald-400" /> Attendance (This Month)
+                                        <Clock size={14} className="text-brand-400" /> Attendance (This Month)
                                     </h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="text-center p-3 bg-white/5 rounded-xl">
@@ -274,7 +274,7 @@ const StaffDetailPage: React.FC = () => {
                                                     <p className="text-sm font-bold text-white leading-tight">{c.name}</p>
                                                     <p className="text-xs text-gray-500">{c.code}</p>
                                                 </div>
-                                                <span className={`w-2 h-2 rounded-full ${c.status === 'Active' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                                <span className={`w-2 h-2 rounded-full ${c.status === 'Active' ? 'bg-brand-500' : 'bg-rose-500'}`}></span>
                                             </div>
                                         )) : (
                                             <p className="text-sm text-gray-500 italic">Not assigned as focal person for any clients.</p>
@@ -299,7 +299,7 @@ const StaffDetailPage: React.FC = () => {
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
-                                                        task.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                                        task.status === 'COMPLETED' ? 'bg-brand-500/20 text-brand-400 border-brand-500/30' :
                                                         task.status === 'IN_PROGRESS' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                         task.status === 'UNDER_REVIEW' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                         'bg-gray-500/20 text-gray-400 border-gray-500/30'
@@ -345,7 +345,7 @@ const StaffDetailPage: React.FC = () => {
                                             <div className="flex justify-between items-start mb-3 gap-2">
                                                 <h4 className={`font-bold text-sm line-clamp-2 ${isOverdue ? 'text-rose-100' : 'text-white'}`}>{task.title}</h4>
                                                 <span className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
-                                                    task.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                                    task.status === 'COMPLETED' ? 'bg-brand-500/20 text-brand-400 border-brand-500/30' :
                                                     task.status === 'IN_PROGRESS' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                     task.status === 'UNDER_REVIEW' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                     'bg-gray-500/20 text-gray-400 border-gray-500/30'
@@ -382,7 +382,7 @@ const StaffDetailPage: React.FC = () => {
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                              <div className="glass-panel p-4 rounded-xl flex gap-6 text-center divide-x divide-white/10">
                                 <div className="flex-1"><p className="text-2xl font-black text-white">{attendanceRecords.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Days Logged (60d)</p></div>
-                                <div className="flex-1"><p className="text-2xl font-black text-emerald-400">{attendanceRecords.filter(a => a.status === 'PRESENT').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">On Time</p></div>
+                                <div className="flex-1"><p className="text-2xl font-black text-brand-400">{attendanceRecords.filter(a => a.status === 'PRESENT').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">On Time</p></div>
                                 <div className="flex-1"><p className="text-2xl font-black text-amber-400">{attendanceRecords.filter(a => a.status === 'LATE').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Late</p></div>
                                 <div className="flex-1"><p className="text-2xl font-black text-amber-400">{attendanceRecords.reduce((sum, a) => sum + (a.workHours || 0), 0).toFixed(1)}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Hours</p></div>
                             </div>
@@ -415,7 +415,7 @@ const StaffDetailPage: React.FC = () => {
                                                             <td className="p-4 text-gray-400">{record.clockOut ? new Date(record.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
                                                             <td className="p-4 text-center text-white font-bold">{record.workHours?.toFixed(1) || '—'}</td>
                                                             <td className="p-4 text-center">
-                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${record.status === 'PRESENT' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{record.status}</span>
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${record.status === 'PRESENT' ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{record.status}</span>
                                                             </td>
                                                             <td className="p-4 text-gray-400 text-xs truncate max-w-[200px]" title={record.workDescription}>{record.workDescription || '—'}</td>
                                                         </tr>
@@ -480,7 +480,7 @@ const StaffDetailPage: React.FC = () => {
                                                         <td className="p-4 text-center text-white font-bold">{days}</td>
                                                         <td className="p-4 text-gray-400 text-xs truncate max-w-[200px]" title={leave.reason}>{leave.reason}</td>
                                                         <td className="p-4 text-center">
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${leave.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' : leave.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>{leave.status}</span>
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${leave.status === 'APPROVED' ? 'bg-brand-500/20 text-brand-400' : leave.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>{leave.status}</span>
                                                         </td>
                                                         <td className="p-4 text-gray-500 text-xs">{new Date(leave.createdAt).toLocaleDateString()}</td>
                                                     </tr>

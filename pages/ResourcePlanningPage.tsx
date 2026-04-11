@@ -31,7 +31,7 @@ type FilterKey = 'all' | 'overloaded' | 'free' | 'atrisk';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getCapacityLevel = (count: number) => {
     // Monotonic (Brand Indigo) color ramp
-    if (count === 0) return { label: 'Free', color: 'emerald', bar: 'from-emerald-500/20 to-emerald-500/10', dot: 'bg-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' };
+    if (count === 0) return { label: 'Free', color: 'emerald', bar: 'from-brand-500/20 to-brand-/10', dot: 'bg-brand-400', text: 'text-brand-400', bg: 'bg-brand-500/10', border: 'border-brand-500/20' };
     
     // Use varying brand-500 opacities for a monotonic ramp
     const intensity = Math.min(Math.ceil(count / 2), 4); // 1, 2, 3, 4
@@ -393,16 +393,16 @@ const ResourcePlanningPage: React.FC = () => {
                         value: overloadedCount,
                         label: 'Overloaded',
                         sub: overloadedCount > 0 ? 'Action needed' : 'All balanced',
-                        accent: overloadedCount > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-emerald-500/20 bg-emerald-500/5',
-                        leftBorder: overloadedCount > 0 ? 'border-l-red-500' : 'border-l-emerald-500',
+                        accent: overloadedCount > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-brand-500/20 bg-brand-500/5',
+                        leftBorder: overloadedCount > 0 ? 'border-l-red-500' : 'border-l-brand-',
                     },
                     {
                         icon: <Clock size={14} className="text-amber-400" />,
                         value: totalOverdue,
                         label: 'Overdue Tasks',
                         sub: `${totalHighRisk} high risk`,
-                        accent: totalOverdue > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-emerald-500/20 bg-emerald-500/5',
-                        leftBorder: totalOverdue > 0 ? 'border-l-red-500' : 'border-l-emerald-500',
+                        accent: totalOverdue > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-brand-500/20 bg-brand-500/5',
+                        leftBorder: totalOverdue > 0 ? 'border-l-red-500' : 'border-l-brand-',
                     },
                     {
                         icon: <Calendar size={14} className="text-purple-400" />,
@@ -589,7 +589,7 @@ const ResourcePlanningPage: React.FC = () => {
                             </h3>
                             {selectedStaff.tasks.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-8 text-gray-600">
-                                    <CheckCircle2 size={24} className="mb-2 text-emerald-500/50" />
+                                    <CheckCircle2 size={24} className="mb-2 text-brand-500/50" />
                                     <p className="text-xs">No active tasks</p>
                                 </div>
                             ) : (
@@ -652,20 +652,20 @@ const ResourcePlanningPage: React.FC = () => {
 
                 {/* Available capacity */}
                 {freeCount > 0 && (
-                    <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-2xl p-4">
+                    <div className="bg-brand-500/8 border border-brand-500/20 rounded-2xl p-4">
                         <div className="flex items-center gap-2 mb-3">
-                            <CheckCircle2 size={16} className="text-emerald-400" />
-                            <h3 className="font-bold text-emerald-200 text-sm">Available Capacity ({freeCount})</h3>
+                            <CheckCircle2 size={16} className="text-brand-400" />
+                            <h3 className="font-bold text-brand-200 text-sm">Available Capacity ({freeCount})</h3>
                         </div>
                         <div className="space-y-2">
                             {workloadData.filter(d => d.totalTasks === 0).map(d => (
                                 <div key={d.uid} className="flex items-center justify-between text-xs">
-                                    <span className="text-emerald-300 font-medium">{d.name}</span>
-                                    <span className="text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Ready to assign</span>
+                                    <span className="text-brand-300 font-medium">{d.name}</span>
+                                    <span className="text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-500/20">Ready to assign</span>
                                 </div>
                             ))}
                         </div>
-                        <p className="text-[11px] text-emerald-400/70 mt-3">These team members have no active tasks and can take on new work.</p>
+                        <p className="text-[11px] text-brand-400/70 mt-3">These team members have no active tasks and can take on new work.</p>
                     </div>
                 )}
 

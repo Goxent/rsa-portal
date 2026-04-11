@@ -197,37 +197,34 @@ const Dashboard: React.FC = () => {
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
-        <div className="flex flex-col gap-6 min-h-full overflow-x-hidden p-2 md:p-4 lg:p-6 pb-24 custom-scrollbar relative">
-            {/* Top ambient glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-brand-500/10 blur-[100px] pointer-events-none" />
+        <div className="flex flex-col gap-6 min-h-full overflow-x-hidden p-6 pb-24 custom-scrollbar relative bg-transparent">
+            {/* Top ambient glow - themed to olive-green */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-accent/5 blur-[120px] pointer-events-none" />
 
             {/* ── COMMAND STRIP ── sticky at top */}
             <CommandStrip
                 pendingTasksCount={myOpenTasks}
             />
 
-            {/* NEW: Reviewer's Action Center (High-Priority Sign-offs) */}
-            <ReviewerActionCenter 
-                tasks={allTasks} 
-                currentUser={user} 
-                onViewTask={handleViewTask} 
-            />
-
-            {/* Top Row: Greetings & Focus */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-none z-10 relative">
-                <GreetingsWidget 
-                    pendingCount={myOpenTasks} 
-                    completedToday={completedToday} 
+            <div className="space-y-6 relative z-10 animate-in fade-in duration-700">
+                {/* 1. High Priority Alerts: Reviewer's Action Center */}
+                <ReviewerActionCenter 
+                    tasks={allTasks} 
+                    currentUser={user} 
+                    onViewTask={handleViewTask} 
                 />
-                <FocusWidget />
-            </div>
 
-            {/* ── 2. MAIN CONTENT + RIGHT SIDEBAR ──────────────────────── */}
-            <div className="flex flex-col xl:flex-row gap-6 flex-none relative z-10">
+                {/* 2. Top Row: Greetings & Focus */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <GreetingsWidget 
+                        pendingCount={myOpenTasks} 
+                        completedToday={completedToday} 
+                    />
+                    <FocusWidget />
+                </div>
 
-                {/* Left: Widget Grid */}
-                <div className="flex-1 min-w-0 flex flex-col gap-6">
-                    {/* Secondary Row: Attendance */}
+                {/* 3. Main Widget Ecosystem */}
+                <div className="flex flex-col gap-6">
                     <AttendanceWidget />
                     
                     {user && (

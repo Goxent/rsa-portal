@@ -11,12 +11,19 @@ export const EmailService = {
             });
 
             if (!response.ok) {
-                console.error(`Email send failed with status ${response.status}`);
+                let detail = 'No detail available';
+                try {
+                    const errorJson = await response.json();
+                    detail = JSON.stringify(errorJson);
+                } catch {
+                    detail = await response.text();
+                }
+                console.error(`Email send failed | Status: ${response.status} (${response.statusText}) | Detail: ${detail}`);
             }
 
             return response.ok;
         } catch (error) {
-            console.error('Email send failed:', error);
+            console.error('Email send failed | Network or Exception Error:', error);
             return false;
         }
     },
@@ -24,10 +31,20 @@ export const EmailService = {
     /**
      * Internal helper to wrap content in the premium RSA branding.
      */
-    getTemplateWrapper: (contentHtml: string, headerSubTitle: string, actionLabel?: string, actionLink?: string): string => {
+    getTemplateWrapper: (
+        contentHtml: string,
+        typePill: string,
+        actionLabel?: string,
+        actionLink?: string,
+        buttonStyle?: 'green' | 'danger' | 'info'
+    ): string => {
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const btnStart = buttonStyle === 'danger' ? '#c4445a' : buttonStyle === 'info' ? '#3d82c9' : '#659a2b';
+        const btnEnd = buttonStyle === 'danger' ? '#8a2e3e' : buttonStyle === 'info' ? '#1e60a8' : '#3f6018';
+
         const actionButton = (actionLabel && actionLink) ? `
-            <div style="text-align: center; margin-top: 48px; margin-bottom: 8px;">
-                <a href="${actionLink}" style="background-color: #3b82f6; color: white; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 0.3px;">${actionLabel}</a>
+            <div style="text-align:center; margin:28px 0 8px;">
+                <a href="${actionLink}" style="display:inline-block; background:linear-gradient(135deg,${btnStart},${btnEnd}); color:#ffffff; text-decoration:none; padding:13px 32px; border-radius:10px; font-size:14px; font-weight:700; border: none; outline: none; letter-spacing:0.3px; font-family:${fontStack};">${actionLabel}</a>
             </div>
         ` : '';
 
@@ -37,30 +54,34 @@ export const EmailService = {
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased;">
-            <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);">
-                <!-- Header -->
-                <div style="background-color: #1e293b; padding: 48px 32px; text-align: center; background-image: linear-gradient(to bottom right, #1e293b, #0f172a);">
-                    <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">RSA System</h1>
-                    <div style="height: 2px; width: 40px; background-color: #3b82f6; margin: 16px auto;"></div>
-                    <p style="color: #94a3b8; margin: 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">${headerSubTitle}</p>
+        <body style="margin: 0; padding: 0; background-color: #f0f2ec; -webkit-font-smoothing: antialiased;">
+            <div style="max-width: 600px; margin: 32px auto; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #edf0e8;">
+                <!-- Header Block -->
+                <div style="background: linear-gradient(to bottom right, #1c2216, #111a0b); padding: 36px 32px 30px; text-align: center;">
+                    <div style="width:44px; height:44px; background:linear-gradient(135deg,#659a2b,#3f6018); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
+                        <span style="color:#fff; font-size:22px; font-weight:800; line-height:44px; font-family:${fontStack};">R</span>
+                    </div>
+                    <p style="color:#ffffff; font-size:19px; font-weight:700; letter-spacing:-0.3px; margin:0 0 10px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
+                    <span style="display:inline-block; background:rgba(101,154,43,0.22); color:#b8d98a; border:1px solid rgba(101,154,43,0.38); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">${typePill}</span>
                 </div>
 
-                <!-- Content Body -->
-                <div style="padding: 48px 40px; color: #334155;">
+                <!-- Content Block -->
+                <div style="padding:36px 40px; color:#475569; font-family:${fontStack};">
                     ${contentHtml}
                     ${actionButton}
 
-                    <!-- Brand Sign-off -->
-                    <div style="margin-top: 56px; padding-top: 32px; border-top: 1px solid #f1f5f9; text-align: left;">
-                        <p style="color: #64748b; font-size: 14px; margin: 0;">Warm regards,</p>
-                        <p style="color: #1e293b; font-weight: 800; font-size: 16px; margin: 8px 0 0 0; letter-spacing: -0.2px;">R. Sapkota & Associates</p>
+                    <!-- Sign-off Block -->
+                    <div style="margin-top:32px; padding-top:22px; border-top:1px solid #f1f5f9;">
+                        <p style="color:#94a3b8; font-size:13px; margin:0 0 4px; font-family:${fontStack};">Warm regards,</p>
+                        <p style="color:#1e293b; font-size:15px; font-weight:800; margin:0; letter-spacing:-0.2px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <div style="background-color: #f8fafc; padding: 32px; text-align: center; border-top: 1px solid #f1f5f9;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0; line-height: 1.5;">&copy; ${new Date().getFullYear()} R. Sapkota & Associates.<br/>All rights reserved.</p>
+                <!-- Footer Block -->
+                <div style="background:#f8faf5; border-top:1px solid #edf0e8; padding:18px 32px; text-align:center;">
+                    <p style="color:#94a3b8; font-size:11px; margin:0; line-height:1.6; font-family:${fontStack};">
+                        &copy; ${new Date().getFullYear()} R. Sapkota &amp; Associates. All rights reserved.
+                    </p>
                 </div>
             </div>
         </body>
@@ -69,164 +90,355 @@ export const EmailService = {
     },
 
     sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string, taskDescription?: string): Promise<boolean> => {
-        const descSnippet = taskDescription ? ` - ${taskDescription.substring(0, 30)}${taskDescription.length > 30 ? '...' : ''}` : '';
-        const subject = `New Task: ${taskTitle} | ${clientName}${descSnippet}`;
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `New Task Assigned: ${taskTitle} — ${clientName}`;
 
-        let priorityColor = '#3b82f6';
-        if (priority === 'HIGH' || priority === 'URGENT') priorityColor = '#ef4444';
-        else if (priority === 'MEDIUM') priorityColor = '#f59e0b';
+        let priorityPillStyle = 'background:rgba(101,154,43,0.10); color:#527a22; border:1px solid rgba(101,154,43,0.22);';
+        if (priority === 'HIGH' || priority === 'URGENT') {
+            priorityPillStyle = 'background:rgba(196,68,90,0.10); color:#ad3049; border:1px solid rgba(196,68,90,0.22);';
+        } else if (priority === 'MEDIUM') {
+            priorityPillStyle = 'background:rgba(201,138,42,0.10); color:#8a5c10; border:1px solid rgba(201,138,42,0.22);';
+        }
+
+        const commonPill = 'display:inline-block; border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; padding:3px 10px;';
 
         const content = `
-            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
-            <p style="line-height: 1.6; font-size: 16px; color: #475569;">You have been assigned to a new engagement. Below are the key details for your review:</p>
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Dear <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                You have been assigned to a new engagement. Below are the details for your review.
+            </p>
 
-            <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; margin-top: 32px; border: 1px solid #f1f5f9; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-                <h2 style="margin: 0 0 24px 0; color: #1e293b; font-size: 22px; font-weight: 800; line-height: 1.3;">${taskTitle}</h2>
-                
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="padding: 10px 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; font-weight: 700; width: 110px;">Client</td>
-                        <td style="padding: 10px 0; color: #1e293b; font-size: 15px; font-weight: 600;">${clientName}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; font-weight: 700;">Due Date</td>
-                        <td style="padding: 10px 0; color: #1e293b; font-size: 15px; font-weight: 600;">${dueDate}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; font-weight: 700;">Priority</td>
-                        <td style="padding: 10px 0; color: ${priorityColor}; font-size: 14px; font-weight: 800;">● ${priority}</td>
-                    </tr>
-                </table>
-                ${taskDescription ? `
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
-                    <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">${taskDescription}</p>
-                </div>` : ''}
+            <!-- Task card -->
+            <div style="border:1px solid #e8f0de; background:#f5f9ee; border-radius:10px; overflow:hidden; margin-bottom:28px;">
+                <!-- Card header -->
+                <div style="padding:16px 20px 12px; border-bottom:1px solid #dce9cc;">
+                    <p style="font-size:17px; font-weight:700; color:#1e293b; margin:0 0 6px; font-family:${fontStack};">${taskTitle}</p>
+                    <span style="display:inline-block; background:rgba(101,154,43,0.15); color:#527a22; border:1px solid rgba(101,154,43,0.25); border-radius:99px; font-size:10px; font-weight:700; padding:2px 10px; font-family:${fontStack};">${clientName}</span>
+                </div>
+
+                <!-- Card rows -->
+                <div style="padding:14px 20px;">
+                    <table style="width:100%; border-collapse:collapse; font-family:${fontStack};">
+                        <tr>
+                            <td style="padding:7px 0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:#94a3b8; width:90px;">Due date</td>
+                            <td style="padding:7px 0; font-size:14px; font-weight:600; color:#1e293b;">${dueDate}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:7px 0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:#94a3b8;">Priority</td>
+                            <td style="padding:7px 0;"><span style="${commonPill} ${priorityPillStyle}">${priority}</span></td>
+                        </tr>
+                    </table>
+
+                    ${taskDescription ? `
+                    <div style="margin-top:14px; padding-top:14px; border-top:1px solid #dce9cc;">
+                        <p style="margin:0; font-size:13px; color:#64748b; line-height:1.65; font-family:${fontStack};">${taskDescription}</p>
+                    </div>` : ''}
+                </div>
             </div>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, clientName, 'View Task Details', taskLink);
+        const html = EmailService.getTemplateWrapper(content, 'Task Assignment', 'View Task Details', taskLink, 'green');
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendEventInvitation: async (toEmail: string, userName: string, eventTitle: string, eventDate: string, eventLink: string) => {
-        const subject = `Event Invitation: ${eventTitle}`;
-        const content = `
-            <p style="font-size: 18px; margin-bottom: 24px;">Hi <strong>${userName}</strong>,</p>
-            <p style="line-height: 1.6; font-size: 16px; color: #475569;">You are invited to join an upcoming session. Please mark your calendar accordingly.</p>
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `You're Invited: ${eventTitle} on ${eventDate}`;
 
-            <div style="background-color: #f8fafc; border-radius: 12px; padding: 32px; margin-top: 32px; border: 1px solid #f1f5f9; text-align: center;">
-                <div style="display: inline-block; background-color: #ffffff; padding: 12px 20px; border-radius: 8px; border: 1px solid #f1f5f9; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                    <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase;">Event Date</p>
-                    <p style="margin: 4px 0 0 0; color: #1e293b; font-size: 18px; font-weight: 800;">${eventDate}</p>
-                </div>
-                <h2 style="margin: 0; color: #1e293b; font-size: 24px; font-weight: 800; line-height: 1.2;">${eventTitle}</h2>
-            </div>
+        const d = new Date(eventDate + 'T00:00:00');
+        const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+        const day = d.getDate().toString();
+        const year = d.getFullYear().toString();
+
+        const content = `
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Hi <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                You are invited to an upcoming session. Please mark your calendar accordingly.
+            </p>
+
+            <!-- Event card — table based for compatibility -->
+            <table style="width:100%; border-collapse:collapse; background:#f5f9ee; border:1px solid #e8f0de; border-radius:10px; margin-bottom:28px; font-family:${fontStack};">
+                <tr>
+                    <td style="padding:22px 24px;">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:76px; vertical-align:top; padding-right:20px;">
+                                    <div style="background:#ffffff; border:1px solid #e8f0de; border-radius:8px; padding:12px 16px; text-align:center; min-width:76px;">
+                                        <p style="margin:0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#659a2b; font-family:${fontStack};">${month}</p>
+                                        <p style="margin:2px 0; font-size:28px; font-weight:800; color:#1e293b; line-height:1.1; font-family:${fontStack};">${day}</p>
+                                        <p style="margin:0; font-size:11px; color:#94a3b8; font-family:${fontStack};">${year}</p>
+                                    </div>
+                                </td>
+                                <td style="vertical-align:middle;">
+                                    <p style="font-size:17px; font-weight:700; color:#1e293b; margin:0 0 5px; font-family:${fontStack};">${eventTitle}</p>
+                                    <p style="font-size:13px; color:#64748b; margin:0; font-family:${fontStack};">All team members</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, 'Calendar Invitation', 'Review Event Details', eventLink);
+        const html = EmailService.getTemplateWrapper(content, 'Calendar Invitation', 'Add to Calendar', eventLink, 'info');
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendDueDateReminder: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string) => {
-        const subject = `Urgent Reminder: Task Due Today - ${taskTitle}`;
-        const content = `
-            <p style="font-size: 18px; margin-bottom: 24px;">Dear <strong>${userName}</strong>,</p>
-            <p style="line-height: 1.6; font-size: 16px; color: #475569;">This is a priority reminder that your task is <strong>due today</strong>. Please ensure all required documentation is submitted.</p>
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `Urgent — Task Due Today: ${taskTitle}`;
 
-            <div style="background-color: #fef2f2; border-radius: 12px; padding: 32px; margin-top: 32px; border: 1px solid #fee2e2; border-left: 4px solid #ef4444;">
-                <p style="margin: 0; color: #ef4444; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Deadline Today</p>
-                <h2 style="margin: 12px 0 8px 0; color: #1e293b; font-size: 24px; font-weight: 800; line-height: 1.2;">${taskTitle}</h2>
-                <p style="margin: 0; color: #64748b; font-size: 15px;">Client: <strong style="color: #475569;">${clientName}</strong></p>
+        const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f0f2ec; -webkit-font-smoothing: antialiased;">
+            <div style="max-width: 600px; margin: 32px auto; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #edf0e8;">
+                <!-- Red Alert Header -->
+                <div style="background: linear-gradient(to bottom right, #1e1414, #120a0a); padding: 36px 32px 30px; text-align: center;">
+                    <div style="width:44px; height:44px; background:linear-gradient(135deg,#c4445a,#8a2e3e); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
+                        <span style="color:#fff; font-size:22px; font-weight:800; line-height:44px; font-family:${fontStack};">R</span>
+                    </div>
+                    <p style="color:#ffffff; font-size:19px; font-weight:700; letter-spacing:-0.3px; margin:0 0 10px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
+                    <span style="display:inline-block; background:rgba(196,68,90,0.20); color:#e89aa8; border:1px solid rgba(196,68,90,0.35); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">Due Date Reminder</span>
+                </div>
+
+                <!-- Content Block -->
+                <div style="padding:36px 40px; color:#475569; font-family:${fontStack};">
+                    <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">Dear <strong>${userName}</strong>,</p>
+                    <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">This is a priority reminder — your task is <strong style="color:#c4445a;">due today</strong>. Please ensure all required documentation is submitted promptly.</p>
+
+                    <!-- Due date card -->
+                    <div style="background:#fff8f8; border:1px solid #ffd5d5; border-left:4px solid #c4445a; border-radius:0 10px 10px 0; padding:18px 20px; margin-bottom:28px;">
+                        <span style="display:inline-block; background:rgba(196,68,90,0.10); color:#ad3049; border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:3px 10px; margin-bottom:10px; font-family:${fontStack};">Deadline today</span>
+                        <p style="font-size:17px; font-weight:700; color:#1e293b; margin:0 0 4px; font-family:${fontStack};">${taskTitle}</p>
+                        <p style="font-size:13px; color:#64748b; margin:0; font-family:${fontStack};">Client: <strong>${clientName}</strong></p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div style="text-align:center; margin:28px 0 8px;">
+                        <a href="${taskLink}" style="display:inline-block; background:linear-gradient(135deg,#c4445a,#8a2e3e); color:#ffffff; text-decoration:none; padding:13px 32px; border-radius:10px; font-size:14px; font-weight:700; letter-spacing:0.3px; font-family:${fontStack};">Review Task Now</a>
+                    </div>
+
+                    <!-- Sign-off Block -->
+                    <div style="margin-top:32px; padding-top:22px; border-top:1px solid #f1f5f9;">
+                        <p style="color:#94a3b8; font-size:13px; margin:0 0 4px; font-family:${fontStack};">Warm regards,</p>
+                        <p style="color:#1e293b; font-size:15px; font-weight:800; margin:0; letter-spacing:-0.2px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
+                    </div>
+                </div>
+
+                <!-- Footer Block -->
+                <div style="background:#f8faf5; border-top:1px solid #edf0e8; padding:18px 32px; text-align:center;">
+                    <p style="color:#94a3b8; font-size:11px; margin:0; line-height:1.6; font-family:${fontStack};">
+                        &copy; ${new Date().getFullYear()} R. Sapkota &amp; Associates. All rights reserved.
+                    </p>
+                </div>
             </div>
+        </body>
+        </html>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, 'Due Date Reminder', 'Review Task Now', taskLink);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, clientName: string, commentText: string, taskLink: string) => {
-        const subject = `New Mention: ${authorName} in ${taskTitle}`;
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `${authorName} mentioned you in ${taskTitle}`;
         const content = `
-            <p style="font-size: 18px; margin-bottom: 24px;">Hi <strong>${userName}</strong>,</p>
-            <p style="line-height: 1.6; font-size: 16px; color: #475569;"><strong>${authorName}</strong> mentioned you in a discussion regarding <strong>${taskTitle}</strong>.</p>
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Hi <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                <strong style="color:#1e293b;">${authorName}</strong> mentioned you in a discussion on
+                <strong style="color:#1e293b;">${taskTitle}</strong>.
+            </p>
 
-            <div style="margin-top: 32px; padding: 24px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; position: relative;">
-                <p style="margin: 0; color: #64748b; font-size: 15px; line-height: 1.7; font-style: italic;">"${commentText}"</p>
+            <!-- Quote block with green left accent -->
+            <div style="position:relative; background:#f5f9ee; border:1px solid #e8f0de; border-left:3px solid #659a2b; border-radius:0 10px 10px 0; padding:18px 20px 18px 22px; margin-bottom:28px;">
+                <p style="font-size:12px; font-weight:700; color:#659a2b; margin:0 0 8px; font-family:${fontStack};">${authorName}</p>
+                <p style="font-size:14px; color:#475569; line-height:1.65; font-style:italic; margin:0 0 12px; font-family:${fontStack};">"${commentText}"</p>
+                <p style="font-size:12px; color:#94a3b8; margin:0; font-family:${fontStack};">${taskTitle} &middot; ${clientName}</p>
             </div>
-
-            <p style="margin-top: 24px; font-size: 14px; color: #94a3b8;">Task: <span style="color: #64748b; font-weight: 600;">${taskTitle}</span> | Client: <span style="color: #64748b; font-weight: 600;">${clientName}</span></p>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, 'New Mention', 'Reply to Comment', taskLink);
+        const html = EmailService.getTemplateWrapper(content, 'New Mention', 'Reply to Comment', taskLink, 'green');
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendWorkflowStatusChange: async (toEmail: string, userName: string, taskTitle: string, oldStatus: string, newStatus: string, taskLink: string) => {
-        const subject = `Workflow Update: ${taskTitle} Status Changed`;
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `Workflow Update: ${taskTitle} — ${oldStatus.replace(/_/g, ' ')} → ${newStatus.replace(/_/g, ' ')}`;
+        
         const content = `
-            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
-            <p style="line-height: 1.6; font-size: 16px; color: #475569;">The status of your engagement <strong>"${taskTitle}"</strong> has been updated.</p>
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Hello <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                The status of <strong style="color:#1e293b;">${taskTitle}</strong> has been updated by your reviewer.
+            </p>
 
-            <div style="margin-top: 32px; padding: 32px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; text-align: center;">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
-                    <div style="display: inline-block;">
-                        <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase;">Previous</p>
-                        <span style="background-color: #f1f5f9; color: #64748b; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; border: 1px solid #e2e8f0;">${oldStatus.replace('_', ' ')}</span>
-                    </div>
-                    
-                    <div style="display: inline-block; margin: 0 16px; color: #cbd5e1; font-size: 24px;">&rarr;</div>
-
-                    <div style="display: inline-block;">
-                        <p style="margin: 0 0 8px 0; color: #3b82f6; font-size: 11px; font-weight: 800; text-transform: uppercase;">Current</p>
-                        <span style="background-color: #dbeafe; color: #1d4ed8; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; border: 1px solid #bfdbfe;">${newStatus.replace('_', ' ')}</span>
-                    </div>
-                </div>
-            </div>
+            <!-- Status flow card -->
+            <table style="width:100%; border-collapse:collapse; background:#f8faf5; border:1px solid #e8f0de; border-radius:10px; margin-bottom:28px; font-family:${fontStack};">
+                <tr>
+                    <td style="padding:24px; text-align:center;">
+                        <table style="margin:0 auto; border-collapse:collapse;">
+                            <tr>
+                                <!-- Old status -->
+                                <td style="padding:0 8px; text-align:center; vertical-align:top;">
+                                    <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#94a3b8; margin:0 0 8px; font-family:${fontStack};">Previous</p>
+                                    <span style="display:inline-block; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; border-radius:99px; font-size:12px; font-weight:700; padding:6px 16px; font-family:${fontStack};">${oldStatus.replace(/_/g, ' ')}</span>
+                                </td>
+                                <!-- Arrow -->
+                                <td style="padding:0 12px; vertical-align:middle; padding-top:24px;">
+                                    <span style="color:#c8d5be; font-size:18px;">&rarr;</span>
+                                </td>
+                                <!-- New status -->
+                                <td style="padding:0 8px; text-align:center; vertical-align:top;">
+                                    <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#659a2b; margin:0 0 8px; font-family:${fontStack};">Current</p>
+                                    <span style="display:inline-block; background:rgba(101,154,43,0.15); color:#527a22; border:1px solid rgba(101,154,43,0.30); border-radius:99px; font-size:12px; font-weight:700; padding:6px 16px; font-family:${fontStack};">${newStatus.replace(/_/g, ' ')}</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, 'Status Update', 'Review Task Progress', taskLink);
+        const html = EmailService.getTemplateWrapper(content, 'Workflow Update', 'View Task Progress', taskLink, 'green');
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
     sendLeaveStatusChange: async (toEmail: string, userName: string, leaveType: string, start: string, end: string, status: string, reason?: string) => {
-        const subject = `Leave Request ${status}: ${leaveType} (${start})`;
-        const isApproved = status === 'APPROVED';
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `Leave ${status === 'APPROVED' ? 'Approved' : 'Rejected'}: ${leaveType} (${start} to ${end})`;
         
-        const content = `
-            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
-            <p style="line-height: 1.6; font-size: 16px; color: #475569;">Your request for <strong>${leaveType}</strong> from <strong>${start}</strong> to <strong>${end}</strong> has been <strong>${status}</strong>.</p>
+        const isApproved = status === 'APPROVED';
+        const cardBg      = isApproved ? '#f0f7e6' : '#fff8f8';
+        const cardBorder  = isApproved ? '#c8e09a' : '#ffd5d5';
+        const statusColor = isApproved ? '#3f6018' : '#8a2e3e';
+        const statusLabel = isApproved ? 'Leave Approved' : 'Leave Rejected';
+        const icon        = isApproved ? '✓' : '✕';
+        const iconColor   = isApproved ? '#527a22' : '#c4445a';
+        const noteBorder  = isApproved ? 'rgba(101,154,43,0.20)' : 'rgba(196,68,90,0.20)';
+        const btnStyle    = isApproved ? 'green' : 'danger';
 
-            <div style="margin-top: 32px; padding: 32px; background-color: ${isApproved ? '#f0fdf4' : '#fef2f2'}; border-radius: 16px; border: 1px solid ${isApproved ? '#dcfce7' : '#fee2e2'}; text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 16px;">${isApproved ? '✅' : '❌'}</div>
-                <h2 style="margin: 0; color: ${isApproved ? '#166534' : '#991b1b'}; font-size: 24px; font-weight: 800;">Request ${status}</h2>
+        const content = `
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Hello <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                Your request for <strong style="color:#1e293b;">${leaveType}</strong> from
+                <strong style="color:#1e293b;">${start}</strong> to
+                <strong style="color:#1e293b;">${end}</strong> has been reviewed.
+            </p>
+
+            <!-- Decision card -->
+            <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:10px; padding:24px; margin-bottom:28px; text-align:center;">
+                <p style="font-size:32px; font-weight:800; color:${iconColor}; margin:0 0 10px; line-height:1; font-family:${fontStack};">${icon}</p>
+                <p style="font-size:20px; font-weight:800; color:${statusColor}; margin:0 0 6px; font-family:${fontStack};">${statusLabel}</p>
+                <p style="font-size:13px; color:#64748b; margin:0; font-family:${fontStack};">${leaveType} &middot; ${start} to ${end}</p>
+
                 ${reason ? `
-                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid ${isApproved ? '#dcfce7' : '#fee2e2'}; text-align: left;">
-                    <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase;">Admin Note</p>
-                    <p style="margin: 0; color: #475569; font-size: 15px; font-style: italic;">"${reason}"</p>
+                <div style="background:rgba(255,255,255,0.7); border:1px solid ${noteBorder}; border-radius:8px; padding:12px 16px; margin-top:18px; text-align:left;">
+                    <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#94a3b8; margin:0 0 5px; font-family:${fontStack};">Note from admin</p>
+                    <p style="font-size:13px; color:#475569; font-style:italic; margin:0; line-height:1.6; font-family:${fontStack};">"${reason}"</p>
                 </div>` : ''}
             </div>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, 'Leave Update', 'View My Leaves', `${window.location.origin}/#/leaves`);
+        const html = EmailService.getTemplateWrapper(content, 'Leave Decision', 'View My Leaves', `${window.location.origin}/#/leaves`, btnStyle as any);
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
-    sendStaffInvitation: async (toEmail: string, userName: string, inviterName: string): Promise<boolean> => {
-        const subject = `Invitation to join RSA Workspace`;
-        const signupLink = `${window.location.origin}/#/signup?email=${encodeURIComponent(toEmail)}`;
+    sendAttendanceStatusChange: async (toEmail: string, userName: string, date: string, status: string, reason?: string) => {
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `Attendance Log ${status}: ${date}`;
         
-        const content = `
-            <p style="font-size: 18px; margin-bottom: 24px;">Hello <strong>${userName}</strong>,</p>
-            <p style="line-height: 1.6; font-size: 16px; color: #475569;"><strong>${inviterName}</strong> has invited you to join the official <strong>R. Sapkota & Associates (RSA)</strong> digital workspace.</p>
-            
-            <p style="line-height: 1.6; font-size: 16px; color: #475569; margin-top: 24px;">This platform will be used for your daily attendance, task management, and resource planning. Please complete your registration using the button below:</p>
+        const isApproved = status === 'APPROVED';
+        const cardBg      = isApproved ? '#f0f7e6' : '#fff8f8';
+        const cardBorder  = isApproved ? '#c8e09a' : '#ffd5d5';
+        const statusColor = isApproved ? '#3f6018' : '#8a2e3e';
+        const statusLabel = isApproved ? 'Log Approved' : 'Log Rejected';
+        const icon        = isApproved ? '✓' : '✕';
+        const iconColor   = isApproved ? '#527a22' : '#c4445a';
+        const noteBorder  = isApproved ? 'rgba(101,154,43,0.20)' : 'rgba(196,68,90,0.20)';
+        const btnStyle    = isApproved ? 'green' : 'danger';
 
-            <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; margin-top: 32px; border: 1px solid #f1f5f9; text-align: center;">
-                <p style="margin: 0; color: #64748b; font-size: 14px;">Registration is restricted to invited emails only. Ensure you use <strong>${toEmail}</strong> during signup.</p>
+        const content = `
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Hello <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                Your manual attendance log request for <strong style="color:#1e293b;">${date}</strong> has been reviewed.
+            </p>
+
+            <!-- Decision card -->
+            <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:10px; padding:24px; margin-bottom:28px; text-align:center;">
+                <p style="font-size:32px; font-weight:800; color:${iconColor}; margin:0 0 10px; line-height:1; font-family:${fontStack};">${icon}</p>
+                <p style="font-size:20px; font-weight:800; color:${statusColor}; margin:0 0 6px; font-family:${fontStack};">${statusLabel}</p>
+                <p style="font-size:13px; color:#64748b; margin:0; font-family:${fontStack};">Manual Log &middot; ${date}</p>
+
+                ${reason ? `
+                <div style="background:rgba(255,255,255,0.7); border:1px solid ${noteBorder}; border-radius:8px; padding:12px 16px; margin-top:18px; text-align:left;">
+                    <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#94a3b8; margin:0 0 5px; font-family:${fontStack};">Note from admin</p>
+                    <p style="font-size:13px; color:#475569; font-style:italic; margin:0; line-height:1.6; font-family:${fontStack};">"${reason}"</p>
+                </div>` : ''}
             </div>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, 'Workspace Invitation', 'Accept Invitation & Sign Up', signupLink);
+        const html = EmailService.getTemplateWrapper(content, 'Attendance Update', 'View Attendance', `${window.location.origin}/#/attendance`, btnStyle as any);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+    },
+
+    sendStaffInvitation: async (toEmail: string, userName: string, _inviterName: string): Promise<boolean> => {
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `You're invited to join the RSA Workspace`;
+        const signupLink = `${window.location.origin}/#/signup?email=${encodeURIComponent(toEmail)}`;
+        
+        const content = `
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Hello <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                <strong style="color:#1e293b;">R. Sapkota &amp; Associates</strong> has invited you to join the official RSA digital workspace — our central platform for daily firm operations.
+            </p>
+
+            <!-- Features card -->
+            <div style="background:linear-gradient(135deg,#f5f9ee,#eef5e0); border:1px solid #d8ebb5; border-radius:10px; padding:22px 24px; margin-bottom:28px;">
+                <p style="font-size:12px; font-weight:700; color:#3f6018; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.07em; font-family:${fontStack};">What you'll use the portal for</p>
+
+                <table style="width:100%; border-collapse:collapse; font-family:${fontStack};">
+                    <tr><td style="padding:5px 0; vertical-align:top; width:16px;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Daily attendance check-in and leave management</td></tr>
+                    <tr><td style="padding:5px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Task management and client workflow tracking</td></tr>
+                    <tr><td style="padding:5px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Resource planning and compliance monitoring</td></tr>
+                    <tr><td style="padding:5px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Document sharing and team communication</td></tr>
+                </table>
+
+                <!-- Restricted email notice -->
+                <table style="width:100%; border-collapse:collapse; background:#ffffff; border:1px solid #e8f0de; border-radius:8px; padding:10px 14px; margin-top:16px; font-family:${fontStack};">
+                  <tr>
+                    <td style="padding:10px 14px;">
+                      <table style="width:100%; border-collapse:collapse;">
+                        <tr>
+                          <td style="width:20px; vertical-align:top; color:#659a2b; font-size:13px;">✉</td>
+                          <td style="font-size:12px; color:#64748b; line-height:1.55; padding-left:8px;">
+                            Registration is restricted to invited email addresses only. Please sign up using <strong style="color:#1e293b;">${toEmail}</strong>.
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+            </div>
+        `;
+
+        const html = EmailService.getTemplateWrapper(content, 'Workspace Invitation', 'Accept Invitation & Sign Up', signupLink, 'green');
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     }
 };

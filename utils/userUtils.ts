@@ -11,7 +11,7 @@ export const getAvatarColor = (uid: string = 'guest') => {
   const gradients = [
     { from: 'from-blue-600/20', to: 'to-indigo-400/10', text: 'text-blue-400', border: 'border-blue-500/20', bg: 'bg-blue-500/10' },
     { from: 'from-purple-600/20', to: 'to-pink-400/10', text: 'text-purple-400', border: 'border-purple-500/20', bg: 'bg-purple-500/10' },
-    { from: 'from-emerald-600/20', to: 'to-teal-400/10', text: 'text-emerald-400', border: 'border-emerald-500/20', bg: 'bg-emerald-500/10' },
+    { from: 'from-brand-600/20', to: 'to-teal-400/10', text: 'text-brand-400', border: 'border-brand-500/20', bg: 'bg-brand-500/10' },
     { from: 'from-orange-600/20', to: 'to-amber-400/10', text: 'text-orange-400', border: 'border-orange-500/20', bg: 'bg-orange-500/10' },
     { from: 'from-rose-600/20', to: 'to-red-400/10', text: 'text-rose-400', border: 'border-rose-500/20', bg: 'bg-rose-500/10' },
     { from: 'from-indigo-600/20', to: 'to-violet-400/10', text: 'text-indigo-400', border: 'border-indigo-500/20', bg: 'bg-indigo-500/10' },

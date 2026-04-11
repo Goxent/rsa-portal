@@ -38,6 +38,7 @@ const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const ResourcePlanningPage = lazy(() => import('./pages/ResourcePlanningPage'));
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
 const ArchivedTasksPage = lazy(() => import('./pages/ArchivedTasksPage'));
+const AuditDocumentationPage = lazy(() => import('./pages/AuditDocumentationPage'));
 
 // Suspense wrapper for lazy-loaded components with Error Boundary
 const LazyPage = ({ children }: { children: React.ReactNode }) => {
@@ -213,6 +214,11 @@ const App: React.FC = () => {
                     <Route path="audit-log" element={
                       <AdminRoute>
                         <LazyPage><AuditLogPage /></LazyPage>
+                      </AdminRoute>
+                    } />
+                    <Route path="audit-docs" element={
+                      <AdminRoute>
+                        <LazyPage><AuditDocumentationPage /></LazyPage>
                       </AdminRoute>
                     } />
                     <Route path="compliance" element={<LazyPage><CompliancePage /></LazyPage>} />

@@ -1,6 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, CheckCircle, Clock, Plus, X, AlertCircle, AlertTriangle, Mail, XCircle, ChevronDown, Check, ThumbsDown, UserCog, Loader2 } from 'lucide-react';
+import { 
+    CalendarDays, CheckCircle, Clock, Plus, X, AlertTriangle, 
+    Mail, XCircle, ChevronDown, Check, UserCog, Loader2, Activity 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { LeaveRequest, UserRole, UserProfile } from '../types';
 import { AuthService } from '../services/firebase';
@@ -18,39 +20,39 @@ const CircularProgress: React.FC<{
     color: string, 
     label: string, 
     size?: number 
-}> = ({ value, max, color, label, size = 80 }) => {
+}> = ({ value, max, color, label, size = 72 }) => {
     const percentage = Math.min((value / max) * 100, 100);
-    const radius = 36;
+    const radius = 32;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (percentage / 100) * circumference;
 
     return (
-        <div className="flex flex-col items-center gap-2 group cursor-help">
+        <div className="flex flex-col items-center gap-2.5 group cursor-help">
             <div className="relative" style={{ width: size, height: size }}>
                 <svg className="w-full h-full transform -rotate-90">
                     <circle
                         cx="50%" cy="50%" r={radius}
-                        className="stroke-white/5 fill-none"
-                        strokeWidth="6"
+                        className="stroke-border fill-none"
+                        strokeWidth="5"
                     />
                     <circle
                          cx="50%" cy="50%" r={radius}
-                         className={`fill-none transition-all duration-1000 ease-out`}
+                         className="fill-none transition-all duration-[1500ms] ease-out"
                          style={{ 
                             stroke: color,
                             strokeDasharray: circumference,
                             strokeDashoffset: offset,
                             strokeLinecap: 'round'
                          }}
-                         strokeWidth="6"
+                         strokeWidth="5"
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[14px] font-black text-white leading-none">{value}</span>
-                    <span className="text-[8px] text-gray-500 font-bold uppercase mt-0.5 tracking-tighter">/ {max}</span>
+                    <span className="text-[13px] font-bold text-heading leading-none">{value}</span>
+                    <span className="text-[10px] text-muted font-medium mt-0.5 tracking-tighter">/ {max}</span>
                 </div>
             </div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center group-hover:text-white transition-colors">{label}</span>
+            <span className="text-[10px] font-semibold text-muted uppercase tracking-[0.05em] text-center group-hover:text-heading transition-colors">{label}</span>
         </div>
     );
 };
@@ -59,11 +61,9 @@ const CircularProgress: React.FC<{
 const getCurrentNepaliYearRange = () => {
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth(); // 0-indexed
+    const month = now.getMonth();
     const day = now.getDate();
 
-    // If it's before April 14, we're in the previous year's range (which ends this April)
-    // If it's April 14 or later, we're in the new BS year (which ends next April)
     if (month < 3 || (month === 3 && day < 14)) {
         return { start: `${year - 1}-04-14`, end: `${year}-04-13` };
     }
@@ -82,11 +82,10 @@ const LeavePage: React.FC = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [adjustmentData, setAdjustmentData] = useState({ uid: '', name: '', amount: 0 });
 
-    // Form Setup
     const { register, handleSubmit, reset, formState: { errors } } = useForm<LeaveFormValues>({
         resolver: zodResolver(leaveSchema),
         defaultValues: {
-            type: 'SICK',
+            type: 'Sick',
             startDate: '',
             endDate: '',
             reason: ''
@@ -102,25 +101,22 @@ const LeavePage: React.FC = () => {
                 AuthService.getAllStaff().then(setAllStaff);
             }
         }
-    }, [user]);
+    }, [user, isAdmin]);
 
     const loadLeaves = async () => {
         if (!user) return;
-        const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN;
         const userId = isAdmin ? undefined : user.uid;
         const data = await AuthService.getAllLeaves(userId);
         setLeaves(data);
     };
 
-    // Calculate Stats
-    const myApprovedLeaves = leaves.filter(l => l.status === 'APPROVED' && (user?.role !== UserRole.ADMIN || l.userId === user?.uid));
+    const myApprovedLeaves = leaves.filter(l => l.status === 'APPROVED' && (!isAdmin || l.userId === user?.uid));
 
-    // Helper to calculate days between dates
     const calculateDays = (start: string, end: string) => {
         const s = new Date(start);
         const e = new Date(end);
         const diffTime = Math.abs(e.getTime() - s.getTime());
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Inclusive
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     };
 
     const isArticleTrainee = user?.position === 'Article Trainee';
@@ -136,22 +132,14 @@ const LeavePage: React.FC = () => {
 
     const balanceRemaining = isArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT - totalDaysTaken : null;
 
-    // Breakdown by type
-    const breakdown = {
-        Sick: 0,
-        Casual: 0,
-        Exam: 0,
-        Home: 0,
-        Other: 0
-    };
-
+    const breakdown = { Sick: 0, Casual: 0, Exam: 0, Home: 0, Other: 0 };
     myApprovedLeaves.forEach(l => {
         const days = calculateDays(l.startDate, l.endDate);
-        if (breakdown[l.type as keyof typeof breakdown] !== undefined) {
-            breakdown[l.type as keyof typeof breakdown] += days;
-        } else {
-            breakdown.Other += days;
-        }
+        if (l.type === 'Sick') breakdown.Sick += days;
+        else if (l.type === 'Casual') breakdown.Casual += days;
+        else if (l.type === 'Exam') breakdown.Exam += days;
+        else if (l.type === 'Home') breakdown.Home += days;
+        else breakdown.Other += days;
     });
 
     const onSubmit = async (data: LeaveFormValues) => {
@@ -236,22 +224,22 @@ const LeavePage: React.FC = () => {
         switch (status) {
             case 'APPROVED': 
                 return (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-                        <div className="w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-completed-dim text-status-completed text-[10px] font-bold uppercase tracking-wider border border-status-completed-dim">
+                        <CheckCircle size={10} />
                         Approved
                     </div>
                 );
             case 'REJECTED': 
                 return (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-wider">
-                        <div className="w-1 h-1 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-halted-dim text-status-halted text-[10px] font-bold uppercase tracking-wider border border-status-halted-dim">
+                        <XCircle size={10} />
                         Rejected
                     </div>
                 );
             default: 
                 return (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-wider animate-pulse">
-                        <div className="w-1 h-1 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-pending-dim text-status-pending text-[10px] font-bold uppercase tracking-wider border border-status-pending-dim animate-pulse">
+                        <Clock size={10} />
                         Pending
                     </div>
                 );
@@ -259,550 +247,434 @@ const LeavePage: React.FC = () => {
     };
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
-            <div className="space-y-6 animate-in fade-in duration-500 pb-32 max-w-7xl mx-auto">
+        <div className="h-full overflow-y-auto custom-scrollbar p-6 bg-transparent">
+            <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
+                
+                {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-white">Leave Management</h1>
-                    <p className="text-sm text-gray-400">
-                        {user?.position === 'Article Trainee'
-                            ? `Articleship Leave Balance (120 Days / 3 Years)`
-                            : `Staff Leave Balances`
-                        }
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 shrink-0">
-                        <button
-                            onClick={() => setActiveTab('my')}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'my' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            My History
-                        </button>
-                        {isAdmin && (
-                            <button
-                                onClick={() => setActiveTab('admin')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'admin' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                Admin Panel
-                            </button>
-                        )}
+                    <div>
+                        <h1 className="text-xl font-bold text-heading">Leave Management</h1>
+                        <p className="text-sm text-muted">
+                            {user?.position === 'Article Trainee'
+                                ? `Articleship Leave Balance (120 Days Total)`
+                                : `Manage and track leave requests`
+                            }
+                        </p>
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-700 shadow-lg shadow-amber-900/40 flex items-center border border-amber-500/30 transition-all hover:-translate-y-0.5"
-                    >
-                        <Plus size={18} className="mr-2" /> Request Leave
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="flex bg-surface p-1 rounded-lg border border-border">
+                            <button
+                                onClick={() => setActiveTab('my')}
+                                className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'my' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
+                            >
+                                My History
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('calendar')}
+                                className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'calendar' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
+                            >
+                                Calendar
+                            </button>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setActiveTab('admin')}
+                                    className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'admin' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
+                                >
+                                    Admin Panel
+                                </button>
+                            )}
+                        </div>
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-accent text-accent-fg px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-accent-hover transition-all flex items-center shadow-accent-glow"
+                        >
+                            <Plus size={16} className="mr-2" /> Request
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            {activeTab === 'admin' && (user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) ? (
-                <div className="space-y-8">
-                    {/* Pending Requests Section */}
-                    {leaves.some(l => l.status === 'PENDING') && (
-                        <div className="glass-panel rounded-xl overflow-hidden border border-amber-500/30 shadow-2xl animate-in slide-in-from-bottom-2 duration-500">
-                            <div className="px-6 py-4 border-b border-white/10 bg-amber-500/10 flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-amber-200 flex items-center gap-2">
-                                        <AlertTriangle size={18} /> Pending Approvals
-                                    </h3>
-                                    <p className="text-[10px] text-amber-200/60 uppercase tracking-widest font-black mt-1">Action Required</p>
+                {activeTab === 'calendar' ? (
+                    <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-card p-1">
+                        <LeaveCalendar leaves={leaves} isAdmin={isAdmin} currentUserId={user?.uid || ''} />
+                    </div>
+                ) : activeTab === 'admin' && isAdmin ? (
+                    <div className="space-y-6">
+                        {/* Pending Admin Section */}
+                        {leaves.some(l => l.status === 'PENDING') && (
+                            <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-card">
+                                <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+                                    <AlertTriangle size={18} className="text-status-pending" />
+                                    <div>
+                                        <h3 className="text-sm font-bold text-heading uppercase tracking-wider">Pending Approvals</h3>
+                                        <p className="text-[10px] text-muted tracking-wide mt-0.5">ACTION REQUIRED</p>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm">
+                                        <thead>
+                                            <tr className="border-b border-border bg-secondary/30 text-[10px] uppercase font-black tracking-widest text-muted">
+                                                <th className="px-6 py-3">Employee</th>
+                                                <th className="px-6 py-3">Type</th>
+                                                <th className="px-6 py-3">Duration</th>
+                                                <th className="px-6 py-3">Reason</th>
+                                                <th className="px-6 py-3 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border/50">
+                                            {leaves.filter(l => l.status === 'PENDING').map(leave => (
+                                                <tr key={leave.id} className="hover:bg-accent/5 transition-colors">
+                                                    <td className="px-6 py-4 font-bold text-heading">{leave.userName}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border bg-secondary border-border text-muted`}>
+                                                            {leave.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-xs text-heading font-medium">
+                                                            {leave.startDate === leave.endDate ? leave.startDate : `${leave.startDate} → ${leave.endDate}`}
+                                                            <span className="text-muted ml-1 font-normal">({calculateDays(leave.startDate, leave.endDate)}d)</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs text-muted italic line-clamp-1">{leave.reason}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <button
+                                                                onClick={() => handleStatusUpdate(leave.id, 'APPROVED')}
+                                                                className="px-3 py-1.5 bg-status-completed-dim text-status-completed rounded-md border border-status-completed-dim hover:bg-status-completed hover:text-white transition-all text-[10px] font-bold uppercase"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleStatusUpdate(leave.id, 'REJECTED')}
+                                                                className="px-3 py-1.5 bg-status-halted-dim text-status-halted rounded-md border border-status-halted-dim hover:bg-status-halted hover:text-white transition-all text-[10px] font-bold uppercase"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Staff Balance Admin Table */}
+                        <div className="bg-secondary rounded-xl border border-border overflow-hidden shadow-card">
+                            <div className="px-6 py-4 border-b border-border">
+                                <h3 className="text-sm font-bold text-heading uppercase tracking-wider">Staff Leave Utilization</h3>
+                            </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm text-gray-300">
+                                <table className="w-full text-left text-sm">
                                     <thead>
-                                        <tr className="text-amber-200/60 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
-                                            <th className="px-6 py-3">Employee</th>
-                                            <th className="px-6 py-3">Type</th>
-                                            <th className="px-6 py-3">Dates</th>
-                                            <th className="px-6 py-3">Reason</th>
-                                            <th className="px-6 py-3 text-right">Actions</th>
+                                        <tr className="border-b border-border bg-secondary/50 text-[10px] uppercase font-black tracking-widest text-muted">
+                                            <th className="px-6 py-4">Employee</th>
+                                            <th className="px-6 py-4">Position</th>
+                                            <th className="px-6 py-4">Used</th>
+                                            <th className="px-6 py-4">Adj</th>
+                                            <th className="px-6 py-4">Status / Balance</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {leaves.filter(l => l.status === 'PENDING').map(leave => (
-                                            <tr key={leave.id} className="hover:bg-amber-500/5 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-white">{leave.userName}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${leave.type === 'Sick' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                        leave.type === 'Exam' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                            'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                                                        }`}>
-                                                        {leave.type}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="text-xs">
-                                                        {leave.startDate === leave.endDate ? leave.startDate : `${leave.startDate} to ${leave.endDate}`}
-                                                        <span className="text-gray-500 ml-1">({calculateDays(leave.startDate, leave.endDate)}d)</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-xs text-gray-400 italic">{leave.reason}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex justify-end gap-2">
+                                    <tbody className="divide-y divide-border/50">
+                                        {allStaff.map(staff => {
+                                            const isStaffArticle = staff.position === 'Article Trainee';
+                                            const sLeaves = leaves.filter(l => l.userId === staff.uid && l.status === 'APPROVED');
+                                            const taken = isStaffArticle
+                                                ? sLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0)
+                                                : sLeaves.filter(l => l.startDate >= npStart && l.startDate <= npEnd).reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
+                                            const adj = staff.leaveAdjustment || 0;
+                                            const net = isStaffArticle ? ARTICLESHIP_LEAVE_LIMIT - (taken + adj) : null;
+
+                                            return (
+                                                <tr key={staff.uid} className="hover:bg-white/5 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-heading border border-accent/20">
+                                                                {staff.displayName?.[0] || '?'}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-heading group-hover:text-accent transition-colors">{staff.displayName}</div>
+                                                                <div className="text-[10px] text-muted">{staff.email}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs text-muted">{staff.position || 'Staff'}</td>
+                                                    <td className="px-6 py-4 font-mono font-bold text-accent">{taken}d</td>
+                                                    <td className="px-6 py-4 font-mono">
+                                                        <span className={adj > 0 ? 'text-status-in-progress' : adj < 0 ? 'text-accent' : 'text-muted'}>
+                                                            {adj > 0 ? `+${adj}` : adj}d
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {isStaffArticle ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`font-bold font-mono text-xs ${net! < 20 ? 'text-status-halted' : 'text-accent'}`}>{net} Days</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted text-[10px] uppercase font-bold tracking-widest">Active</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
                                                         <button
-                                                            onClick={() => handleStatusUpdate(leave.id, 'APPROVED')}
-                                                            className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg border border-green-500/20 transition-all text-xs font-bold"
+                                                            onClick={() => {
+                                                                setAdjustmentData({ uid: staff.uid, name: staff.displayName, amount: staff.leaveAdjustment || 0 });
+                                                                setIsAdjustModalOpen(true);
+                                                            }}
+                                                            className="p-2 hover:bg-accent/10 rounded-lg text-muted hover:text-accent transition-all"
                                                         >
-                                                            <Check size={14} /> Approve
+                                                            <UserCog size={16} />
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleStatusUpdate(leave.id, 'REJECTED')}
-                                                            className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg border border-red-500/20 transition-all text-xs font-bold"
-                                                        >
-                                                            <X size={14} /> Reject
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                    )}
-
-                    <div className="glass-panel rounded-xl overflow-hidden border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                            <div>
-                                <h3 className="font-bold text-white">Staff Leave Balances</h3>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mt-1">Rule: 120d for Article Trainees • Yearly for others</p>
-                            </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm text-gray-300">
-                                <thead>
-                                    <tr className="text-gray-400 border-b border-white/10 uppercase text-[10px] tracking-wider bg-black/20 font-black">
-                                        <th className="px-6 py-4">Employee</th>
-                                        <th className="px-6 py-4">Position</th>
-                                        <th className="px-6 py-4 font-bold text-gray-300">Total / Yearly Taken</th>
-                                        <th className="px-6 py-4">Adjustment</th>
-                                        <th className="px-6 py-4">Status / Balance</th>
-                                        <th className="px-6 py-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {allStaff.map(staffMember => {
-                                        const isStaffArticleTrainee = staffMember.position === 'Article Trainee';
-                                        const staffLeaves = leaves.filter(l => l.userId === staffMember.uid && l.status === 'APPROVED');
-
-                                        // For Article Trainees, count all leaves (lifetime limit)
-                                        // For others, count ONLY current Nepali Year
-                                        const taken = isStaffArticleTrainee
-                                            ? staffLeaves.reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0)
-                                            : staffLeaves.filter(l => l.startDate >= npStart && l.startDate <= npEnd)
-                                                .reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
-
-                                        const adj = staffMember.leaveAdjustment || 0;
-                                        const net = isStaffArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT - (taken + adj) : null;
-
-                                        return (
-                                            <tr key={staffMember.uid} className="hover:bg-white/5 transition-colors group">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-400 border border-brand-500/20">
-                                                            {staffMember.displayName[0]}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-bold text-white group-hover:text-brand-400 transition-colors">{staffMember.displayName}</div>
-                                                            <div className="text-[10px] text-gray-500">{staffMember.email}</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-xs">{staffMember.position || 'Staff'}</td>
-                                                <td className="px-6 py-4 font-mono font-bold text-amber-400">{taken}d</td>
-                                                <td className="px-6 py-4 font-mono">
-                                                    <span className={adj > 0 ? 'text-orange-400' : adj < 0 ? 'text-emerald-400' : 'text-gray-500'}>
-                                                        {adj > 0 ? `+${adj}` : adj}d
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {isStaffArticleTrainee ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`font-bold font-mono ${net! < 20 ? 'text-red-400' : 'text-emerald-400'}`}>{net}d Balance</span>
-                                                            <div className="w-20 bg-white/5 rounded-full h-1 hidden md:block">
-                                                                <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.max(0, (net! / ARTICLESHIP_LEAVE_LIMIT) * 100)}%` }}></div>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-gray-500 text-xs italic">Yearly Total</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => {
-                                                            setAdjustmentData({ uid: staffMember.uid, name: staffMember.displayName, amount: staffMember.leaveAdjustment || 0 });
-                                                            setIsAdjustModalOpen(true);
-                                                        }}
-                                                        className="p-2 hover:bg-brand-500/20 rounded-lg text-brand-400 transition-all"
-                                                        title="Adjust Balance"
-                                                    >
-                                                        <UserCog size={16} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
-                </div>
-            ) : (
-                <>
-                    {/* Balance Cards (Modernized) */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-                        {/* Primary Balance Widget */}
-                        <div className="lg:col-span-5 glass-panel p-6 rounded-2xl relative overflow-hidden group hover:bg-white/5 transition-all border-l-4 border-l-brand-600">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <CalendarDays size={120} />
-                            </div>
-                            <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-6">
-                                    <div>
-                                        <p className="text-[10px] font-black text-brand-400 uppercase tracking-[2px]">Utilization Overview</p>
-                                        <h2 className="text-3xl font-black text-white mt-1">
-                                            {totalDaysTaken}
-                                            <span className="text-gray-500 ml-2 text-sm font-bold uppercase tracking-widest">
-                                                / {isArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT : 'Annual'} Days
-                                            </span>
-                                        </h2>
-                                    </div>
-                                    <div className="p-3 bg-brand-500/20 text-brand-400 rounded-xl border border-brand-500/20 shadow-lg shadow-brand-500/10">
-                                        <CalendarDays size={20} />
-                                    </div>
+                ) : (
+                    <>
+                        {/* Summary Widget Section */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            
+                            {/* Usage Card */}
+                            <div className="lg:col-span-5 bg-secondary p-6 rounded-2xl border border-border shadow-card relative overflow-hidden group">
+                                <div className="absolute top-[-20px] right-[-20px] p-6 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700">
+                                    <CalendarDays size={180} />
                                 </div>
+                                <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-8">
+                                        <div>
+                                            <p className="text-[10px] font-black text-accent uppercase tracking-[0.15em]">Quota Utilization</p>
+                                            <h2 className="text-4xl font-black text-heading mt-2">
+                                                {totalDaysTaken}
+                                                <span className="text-muted ml-3 text-sm font-bold uppercase tracking-widest opacity-60">
+                                                    / {isArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT : 'Annual'}
+                                                </span>
+                                            </h2>
+                                        </div>
+                                        <div className="p-3 bg-accent/10 text-accent rounded-xl border border-accent/20">
+                                            <Activity size={20} />
+                                        </div>
+                                    </div>
 
-                                <div className="space-y-4">
                                     {isArticleTrainee ? (
-                                        <div className="p-4 bg-white/3 rounded-xl border border-white/5">
-                                            <div className="flex justify-between text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-wide">
-                                                <span>Articleship Quota Progress</span>
-                                                <span className={`${totalDaysTaken > 100 ? 'text-red-400' : 'text-brand-400'}`}>
-                                                    {balanceRemaining} Days Left
+                                        <div className="bg-surface p-4 rounded-xl border border-border">
+                                            <div className="flex justify-between text-[11px] font-bold text-muted mb-3 uppercase tracking-wider">
+                                                <span>Total Limit Status</span>
+                                                <span className={`${totalDaysTaken > 100 ? 'text-status-halted' : 'text-accent'}`}>
+                                                    {balanceRemaining} Left
                                                 </span>
                                             </div>
-                                            <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden p-0.5 border border-white/5">
+                                            <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-[1500ms] ease-out ${
-                                                        totalDaysTaken > 100 ? 'bg-gradient-to-r from-red-600 to-rose-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 
-                                                        'bg-gradient-to-r from-brand-600 to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                                    }`}
+                                                    className={`h-full rounded-full transition-all duration-[2000ms] ${totalDaysTaken > 100 ? 'bg-status-halted' : 'bg-accent'} shadow-accent-glow`}
                                                     style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
                                                 />
                                             </div>
-                                            <p className="text-[9px] text-gray-500 mt-2 italic font-medium">Standard 3-year allowance as per ICAI/ICAN guidelines.</p>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-3 p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
-                                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                                        <div className="flex items-center gap-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
+                                            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent border border-accent/20">
                                                 <CheckCircle size={18} />
                                             </div>
                                             <div>
-                                                <p className="text-xs text-white font-bold">Standard Staff Balance</p>
-                                                <p className="text-[10px] text-emerald-400/70 font-medium">Tracking current fiscal year: {npStart} to {npEnd}</p>
+                                                <p className="text-xs text-heading font-bold">Standard Allowance</p>
+                                                <p className="text-[10px] text-muted">Fiscal Year: {npStart} to {npEnd}</p>
                                             </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Radial Breakdown Widget */}
-                        <div className="lg:col-span-7 glass-panel p-6 rounded-2xl flex flex-col justify-between border border-white/5">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[2px]">Type Breakdown</h3>
-                                <span className="text-[10px] bg-white/5 px-2 py-1 rounded-md text-gray-400 border border-white/5 font-bold">Approved Only</span>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <CircularProgress 
-                                    value={breakdown.Sick} 
-                                    max={12} 
-                                    color="#ef4444" 
-                                    label="Sick" 
-                                />
-                                <CircularProgress 
-                                    value={breakdown.Casual} 
-                                    max={6} 
-                                    color="#f59e0b" 
-                                    label="Casual" 
-                                />
-                                <CircularProgress 
-                                    value={breakdown.Exam} 
-                                    max={isArticleTrainee ? 40 : 5} 
-                                    color="#a855f7" 
-                                    label="Exam" 
-                                />
-                                <CircularProgress 
-                                    value={breakdown.Home + breakdown.Other} 
-                                    max={15} 
-                                    color="#3b82f6" 
-                                    label="Other" 
-                                />
-                            </div>
-                            
-                            <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
-                                <div className="flex gap-4">
-                                   <div className="flex items-center gap-1.5">
-                                       <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-                                       <span className="text-[9px] text-gray-500 font-bold uppercase">Total Approved</span>
-                                   </div>
-                                    <div className="flex items-center gap-1.5">
-                                       <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                                       <span className="text-[9px] text-gray-500 font-bold uppercase">Quota Limit</span>
-                                   </div>
+                            {/* Breakdown Card */}
+                            <div className="lg:col-span-7 bg-surface p-6 rounded-2xl border border-border flex flex-col justify-between shadow-card">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-[11px] font-black text-muted uppercase tracking-[0.15em]">Leave Type Analysis</h3>
+                                    <span className="text-[9px] bg-secondary px-2 py-1 rounded text-muted border border-border font-bold uppercase tracking-widest">Analytics</span>
                                 </div>
-
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <CircularProgress value={breakdown.Sick} max={12} color="var(--color-danger)" label="Sick" />
+                                    <CircularProgress value={breakdown.Casual} max={6} color="var(--color-warning)" label="Casual" />
+                                    <CircularProgress value={breakdown.Exam} max={isArticleTrainee ? 40 : 5} color="#8b5cf6" label="Exam" />
+                                    <CircularProgress value={breakdown.Home + breakdown.Other} max={15} color="var(--accent)" label="Others" />
+                                </div>
+                                
+                                <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
+                                    <p className="text-[9px] text-muted italic font-medium">Auto-derived from approved requests across the active period.</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Leave History Table */}
-                    <div className="glass-panel rounded-xl overflow-hidden">
-                        <div className="px-6 py-4 border-b border-white/10 bg-white/5">
-                            <h3 className="font-bold text-white">Leave Requests & History</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm text-gray-300">
-                                <thead>
-                                    <tr className="text-gray-400 border-b border-white/10 uppercase text-xs tracking-wider bg-black/20">
-                                        <th className="px-6 py-3 font-medium">Employee</th>
-                                        <th className="px-6 py-3 font-medium">Applied On</th>
-                                        <th className="px-6 py-3 font-medium">Type</th>
-                                        <th className="px-6 py-3 font-medium">Duration</th>
-                                        <th className="px-6 py-3 font-medium">Reason</th>
-                                        <th className="px-6 py-3 font-medium">Status</th>
-                                        {user?.role === UserRole.ADMIN && <th className="px-6 py-3 font-medium text-right">Actions</th>}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {leaves.map((leave) => (
-                                        <tr key={leave.id} className="hover:bg-white/5 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-white">{leave.userName}</td>
-                                            <td className="px-6 py-4 text-gray-400 text-xs">
-                                                <div>{leave.createdAt}</div>
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-white">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${leave.type === 'Sick' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                    leave.type === 'Exam' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                        'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                                                    }`}>
-                                                    {leave.type}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-300">
-                                                {leave.startDate === leave.endDate ? (
-                                                    <div>{leave.startDate}</div>
-                                                ) : (
-                                                    <div>
-                                                        <span>{leave.startDate} to {leave.endDate}</span>
-                                                        <div className="text-xs text-gray-500 mt-0.5">({calculateDays(leave.startDate, leave.endDate)} days)</div>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-400 truncate max-w-xs">{leave.reason}</td>
-                                            <td className="px-6 py-4">
-                                                {getStatusBadge(leave.status)}
-                                            </td>
-                                            {user?.role === UserRole.ADMIN && (
-                                                <td className="px-6 py-4 text-right">
-                                                    {leave.status === 'PENDING' ? (
-                                                        leave.userId !== user.uid ? (
-                                                            <div className="flex justify-end space-x-2">
-                                                                <button onClick={() => handleStatusUpdate(leave.id, 'APPROVED')} className="p-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg border border-green-500/20 transition-colors" title="Approve Request">
-                                                                    <Check size={16} />
-                                                                </button>
-                                                                <button onClick={() => handleStatusUpdate(leave.id, 'REJECTED')} className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg border border-red-500/20 transition-colors" title="Reject Request">
-                                                                    <X size={16} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-gray-700/50 text-gray-400 text-[10px] border border-gray-600/30 cursor-help" title="You cannot approve your own request">
-                                                                <UserCog size={10} className="mr-1" /> Self Request
-                                                            </span>
-                                                        )
-                                                    ) : (
-                                                        <span className="text-xs text-gray-500 font-mono">
-                                                            {leave.status === 'APPROVED' ? 'Processed' : 'Closed'}
-                                                        </span>
-                                                    )}
+                        {/* Recent History Section */}
+                        <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-card">
+                            <div className="px-6 py-4 border-b border-border bg-secondary/30 flex justify-between items-center">
+                                <h3 className="text-sm font-bold text-heading uppercase tracking-wider">Request Timeline</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead>
+                                        <tr className="border-b border-border text-[10px] uppercase font-black tracking-widest text-muted bg-secondary/30">
+                                            <th className="px-6 py-3">Applied</th>
+                                            <th className="px-6 py-3">Type</th>
+                                            <th className="px-6 py-3">Period</th>
+                                            <th className="px-6 py-3">Days</th>
+                                            <th className="px-6 py-3">Reason</th>
+                                            <th className="px-6 py-3 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/50">
+                                        {leaves.map((leave) => (
+                                            <tr key={leave.id} className="hover:bg-accent/5 transition-colors">
+                                                <td className="px-6 py-4 text-xs font-medium text-muted font-mono">{leave.createdAt}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-secondary border border-border text-heading">{leave.type}</span>
                                                 </td>
-                                            )}
-                                        </tr>
-                                    ))}
-                                    {leaves.length === 0 && (
-                                        <tr>
-                                            <td colSpan={user?.role === UserRole.ADMIN ? 7 : 6} className="px-6 py-8 text-center text-gray-500">No leave history found.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Request Modal */}
-                    {isModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200">
-                            <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 border border-white/10">
-                                <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                                    <h3 className="text-lg font-bold text-white">Request Leave</h3>
-                                    <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
-                                </div>
-
-                                <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
-                                    <div className="relative">
-                                        <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Leave Type</label>
-                                        <div className="relative">
-                                            <select
-                                                className={`w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer border ${errors.type ? 'border-red-500' : 'border-gray-600'} bg-gray-800 text-white focus:ring-2 focus:ring-amber-500`}
-                                                {...register('type')}
-                                            >
-                                                <option value="SICK">Sick Leave</option>
-                                                <option value="CASUAL">Casual Leave</option>
-                                                <option value="EARNED">Earned Leave</option>
-                                                <option value="UNPAID">Unpaid Leave</option>
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={16} />
-                                        </div>
-                                        {errors.type && <p className="text-red-400 text-xs mt-1">{errors.type.message}</p>}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Start Date</label>
-                                            <input
-                                                type="date"
-                                                className={`w-full rounded-lg px-3 py-2 text-sm glass-input ${errors.startDate ? 'border-red-500' : ''}`}
-                                                {...register('startDate')}
-                                            />
-                                            {errors.startDate && <p className="text-red-400 text-xs mt-1">{errors.startDate.message}</p>}
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">End Date</label>
-                                            <input
-                                                type="date"
-                                                className={`w-full rounded-lg px-3 py-2 text-sm glass-input ${errors.endDate ? 'border-red-500' : ''}`}
-                                                {...register('endDate')}
-                                            />
-                                            {errors.endDate && <p className="text-red-400 text-xs mt-1">{errors.endDate.message}</p>}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Reason</label>
-                                        <textarea
-                                            rows={3}
-                                            placeholder="e.g. Not feeling well, Family emergency..."
-                                            className={`w-full rounded-lg px-3 py-2 text-sm glass-input ${errors.reason ? 'border-red-500' : ''}`}
-                                            {...register('reason')}
-                                        />
-                                        {errors.reason && <p className="text-red-400 text-xs mt-1">{errors.reason.message}</p>}
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <button
-                                            type="submit"
-                                            disabled={isSaving}
-                                            className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-amber-900/30 flex justify-center items-center transition-all transform active:scale-[0.98] disabled:opacity-50"
-                                        >
-                                            {isSaving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Mail size={16} className="mr-2" />}
-                                            {isSaving ? 'Submitting...' : 'Submit Request'}
-                                        </button>
-                                    </div>
-                                </form>
+                                                <td className="px-6 py-4 font-semibold text-heading text-xs">
+                                                    {leave.startDate === leave.endDate ? leave.startDate : `${leave.startDate} → ${leave.endDate}`}
+                                                </td>
+                                                <td className="px-6 py-4 text-xs font-bold text-accent">{calculateDays(leave.startDate, leave.endDate)}d</td>
+                                                <td className="px-6 py-4 text-xs text-muted max-w-xs truncate italic">"{leave.reason}"</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    {getStatusBadge(leave.status)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {leaves.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-10 text-center text-muted text-xs italic">No activity recorded for this period.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                    )}
-                </>
-            )}
+                    </>
+                )}
+            </div>
 
-            {/* Admin Rejection Modal */}
-            {rejectionTarget && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-white/10">
-                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="text-lg font-bold text-white">Reject Request</h3>
-                            <button onClick={() => setRejectionTarget(null)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+            {/* Request Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+                    <div className="relative bg-secondary rounded-2xl border border-border shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+                        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                            <h3 className="text-sm font-bold text-heading uppercase tracking-widest">New Leave Request</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-muted hover:text-heading transition-colors"><X size={18} /></button>
                         </div>
-                        <div className="p-6">
-                            <p className="text-sm text-gray-400 mb-4 italic">Please provide a reason for rejecting <span className="text-white font-bold">{rejectionTarget.userName}</span>'s request.</p>
 
-                            <div className="space-y-4">
+                        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">Leave Type</label>
+                                <select
+                                    className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-sm text-heading focus:border-accent outline-none appearance-none"
+                                    {...register('type')}
+                                >
+                                    <option value="Sick">Sick Leave</option>
+                                    <option value="Casual">Casual Leave</option>
+                                    <option value="Exam">Exam Leave</option>
+                                    <option value="Other">Other Leave</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">Rejection Reason</label>
-                                    <textarea
-                                        className="w-full rounded-xl px-4 py-3 bg-white/5 border border-white/10 text-white focus:border-red-500 outline-none text-sm min-h-[100px] transition-all"
-                                        placeholder="Enter reason for rejection..."
-                                        value={rejectionReason}
-                                        onChange={(e) => setRejectionReason(e.target.value)}
-                                        autoFocus
-                                    />
+                                    <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">Start Date</label>
+                                    <input type="date" className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-heading focus:border-accent outline-none" {...register('startDate')} />
                                 </div>
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setRejectionTarget(null)}
-                                        className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-gray-400 text-xs font-bold hover:bg-white/5 transition-all"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={confirmRejection}
-                                        disabled={isSaving || !rejectionReason.trim()}
-                                        className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-lg hover:shadow-red-500/20 disabled:opacity-50"
-                                    >
-                                        {isSaving ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Confirm Reject'}
-                                    </button>
+                                <div>
+                                    <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">End Date</label>
+                                    <input type="date" className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-heading focus:border-accent outline-none" {...register('endDate')} />
                                 </div>
                             </div>
-                        </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">Detailed Reason</label>
+                                <textarea rows={3} className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-sm text-heading focus:border-accent outline-none" {...register('reason')} />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isSaving}
+                                className="w-full bg-accent text-accent-fg py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-accent-hover transition-all flex items-center justify-center shadow-accent-glow disabled:opacity-50"
+                            >
+                                {isSaving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Mail size={16} className="mr-2" />}
+                                {isSaving ? 'Processing...' : 'Send Request'}
+                            </button>
+                        </form>
                     </div>
                 </div>
             )}
 
-            {/* Adjust Balance Modal — rendered at top level so it works from any tab */}
-            {isAdjustModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-white/10">
-                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="text-lg font-bold text-white">Adjust Leave Balance</h3>
-                            <button onClick={() => setIsAdjustModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+            {/* Rejection Modal */}
+            {rejectionTarget && (
+                <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setRejectionTarget(null)} />
+                    <div className="relative bg-secondary rounded-2xl border border-border shadow-2xl w-full max-w-sm overflow-hidden animate-in scale-in duration-150">
+                        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                            <h3 className="text-[11px] font-black text-heading uppercase tracking-widest">Reject Request</h3>
+                            <button onClick={() => setRejectionTarget(null)} className="text-muted hover:text-heading transition-colors"><X size={18} /></button>
                         </div>
                         <div className="p-6">
-                            <p className="text-sm text-gray-400 mb-4">Set manual leave adjustment for <span className="text-white font-bold">{adjustmentData.name}</span>. Positive values increase "taken" count (reducing balance).</p>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">Days to Adjust</label>
-                                    <input
-                                        type="number"
-                                        className="w-full rounded-lg px-4 py-3 bg-navy-900/50 border border-white/10 text-white focus:border-brand-500 outline-none font-mono text-center text-2xl"
-                                        value={adjustmentData.amount}
-                                        onChange={(e) => setAdjustmentData({ ...adjustmentData, amount: parseInt(e.target.value) || 0 })}
-                                    />
-                                    <div className="flex justify-between mt-2 px-1">
-                                        <button type="button" onClick={() => setAdjustmentData(d => ({ ...d, amount: d.amount - 1 }))} className="text-[10px] text-emerald-400 font-bold hover:underline">-1 Day</button>
-                                        <button type="button" onClick={() => setAdjustmentData(d => ({ ...d, amount: d.amount + 1 }))} className="text-[10px] text-orange-400 font-bold hover:underline">+1 Day</button>
-                                    </div>
-                                </div>
-
+                            <textarea
+                                className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-heading outline-none focus:border-status-halted transition-all min-h-[100px]"
+                                placeholder="State reason for rejection..."
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                            />
+                            <div className="flex gap-3 mt-5">
+                                <button onClick={() => setRejectionTarget(null)} className="flex-1 py-3 text-[11px] font-bold uppercase text-muted hover:text-heading transition-colors">Cancel</button>
                                 <button
-                                    type="button"
-                                    onClick={(e) => handleAdjustLeave(e as any)}
-                                    disabled={isSaving}
-                                    className="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-brand-500/20 disabled:opacity-50"
+                                    onClick={confirmRejection}
+                                    disabled={!rejectionReason.trim() || isSaving}
+                                    className="flex-1 bg-status-halted text-white rounded-xl text-[11px] font-bold uppercase shadow-lg shadow-status-halted-dim disabled:opacity-50"
                                 >
-                                    {isSaving ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Save Adjustment'}
+                                    Confirm Rejection
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+
+            {/* Adjustment Modal */}
+            {isAdjustModalOpen && (
+                <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsAdjustModalOpen(false)} />
+                    <div className="relative bg-secondary rounded-2xl border border-border shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
+                        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                            <h3 className="text-sm font-bold text-heading uppercase tracking-widest">Adjust Balance</h3>
+                            <button onClick={() => setIsAdjustModalOpen(false)} className="text-muted hover:text-heading transition-colors"><X size={18} /></button>
+                        </div>
+                        <div className="p-6">
+                            <div className="text-center mb-6">
+                                <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Target Individual</p>
+                                <p className="text-lg font-bold text-heading">{adjustmentData.name}</p>
+                            </div>
+                            <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+                                <input
+                                    type="number"
+                                    className="w-full bg-transparent text-center text-4xl font-black text-accent outline-none"
+                                    value={adjustmentData.amount}
+                                    onChange={(e) => setAdjustmentData({ ...adjustmentData, amount: parseInt(e.target.value) || 0 })}
+                                />
+                                <p className="text-[10px] text-muted text-center mt-2 uppercase font-bold tracking-widest">Adjusted Days</p>
+                            </div>
+                            <button
+                                onClick={handleAdjustLeave}
+                                disabled={isSaving}
+                                className="w-full bg-accent text-accent-fg py-3 rounded-xl text-xs font-bold uppercase tracking-widest shadow-accent-glow disabled:opacity-50"
+                            >
+                                {isSaving ? 'Updating...' : 'Save Adjustment'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

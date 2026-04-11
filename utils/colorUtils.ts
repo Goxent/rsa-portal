@@ -6,7 +6,7 @@
 export const GRADIENT_PALETTE = [
     { from: 'from-blue-600/20', to: 'to-indigo-400/10', accent: 'text-blue-400', text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30 shadow-blue-500/10' },
     { from: 'from-purple-600/20', to: 'to-pink-400/10', accent: 'text-purple-400', text: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30 shadow-purple-500/10' },
-    { from: 'from-emerald-600/20', to: 'to-teal-400/10', accent: 'text-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30 shadow-emerald-500/10' },
+    { from: 'from-brand-600/20', to: 'to-teal-400/10', accent: 'text-brand-400', text: 'text-brand-400', bg: 'bg-brand-500/10', border: 'border-brand-500/30 shadow-brand-/10' },
     { from: 'from-orange-600/20', to: 'to-amber-400/10', accent: 'text-orange-400', text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30 shadow-orange-500/10' },
     { from: 'from-rose-600/20', to: 'to-red-400/10', accent: 'text-rose-400', text: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30 shadow-rose-500/10' },
     { from: 'from-indigo-600/20', to: 'to-violet-400/10', accent: 'text-indigo-400', text: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30 shadow-indigo-500/10' },

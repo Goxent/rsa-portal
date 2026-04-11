@@ -47,8 +47,8 @@ const SignupPage: React.FC = () => {
   };
   const strengthScore = Object.values(strength).filter(Boolean).length;
   const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strengthScore];
-  const strengthColor = ['', 'text-rose-500', 'text-amber-500', 'text-emerald-500', 'text-brand-400'][strengthScore];
-  const strengthBg = ['', 'bg-rose-500', 'bg-amber-500', 'bg-emerald-500', 'bg-brand-500'][strengthScore];
+  const strengthColor = ['', 'text-rose-500', 'text-amber-500', 'text-brand-500', 'text-brand-400'][strengthScore];
+  const strengthBg = ['', 'bg-rose-500', 'bg-amber-500', 'bg-brand-500', 'bg-brand-500'][strengthScore];
 
   const onSubmit = async (data: SignupFormValues) => {
     setLoading(true);
@@ -99,7 +99,7 @@ const SignupPage: React.FC = () => {
           {[
             { phase: 'Verify Identity', icon: <Mail size={16} />, color: 'text-amber-400', bg: 'bg-amber-400/10' },
             { phase: 'Configure Workspace', icon: <Zap size={16} />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-            { phase: 'Complete Onboarding', icon: <CheckCircle2 size={16} />, color: 'text-emerald-400', bg: 'bg-emerald-400/10' }
+            { phase: 'Complete Onboarding', icon: <CheckCircle2 size={16} />, color: 'text-brand-400', bg: 'bg-brand-400/10' }
           ].map((item, i) => (
             <motion.div
               key={item.phase}
@@ -146,11 +146,11 @@ const SignupPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Work Email</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
                 <input
                   type="email"
-                  className={`glass-input w-full pl-12 pr-4 py-4 rounded-2xl text-sm transition-all ${errors.email ? 'border-rose-500/50' : ''}`}
-                  placeholder="name@firm.com"
+                  className={`glass-input w-full !pl-12 pr-4 py-4 rounded-2xl text-sm transition-all ${errors.email ? 'border-rose-500/50' : ''}`}
+                  placeholder="Name@firm.com"
                   {...register('email')}
                 />
               </div>
@@ -160,10 +160,10 @@ const SignupPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Secret Key</label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className={`glass-input w-full pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.password ? 'border-rose-500/50' : ''}`}
+                  className={`glass-input w-full !pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.password ? 'border-rose-500/50' : ''}`}
                   placeholder="••••••••"
                   {...register('password')}
                 />
@@ -188,7 +188,7 @@ const SignupPage: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <div className="flex flex-wrap gap-x-3 gap-y-1">
                       {[{ ok: strength.length, lab: '8+ chars' }, { ok: strength.upper, lab: 'ABC' }, { ok: strength.number, lab: '123' }, { ok: strength.special, lab: '#!$' }].map(r => (
-                        <span key={r.lab} className={`text-[9px] font-black uppercase flex items-center gap-1 ${r.ok ? 'text-emerald-400' : 'text-gray-600'}`}>
+                        <span key={r.lab} className={`text-[9px] font-black uppercase flex items-center gap-1 ${r.ok ? 'text-brand-400' : 'text-gray-600'}`}>
                           <Check size={8} /> {r.lab}
                         </span>
                       ))}
@@ -202,10 +202,10 @@ const SignupPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Validate Secret</label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
                 <input
                   type={showConfirm ? 'text' : 'password'}
-                  className={`glass-input w-full pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.confirmPassword ? 'border-rose-500/50' : ''}`}
+                  className={`glass-input w-full !pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.confirmPassword ? 'border-rose-500/50' : ''}`}
                   placeholder="Repeat your secret"
                   {...register('confirmPassword')}
                 />

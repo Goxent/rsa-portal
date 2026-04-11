@@ -66,7 +66,7 @@ const MyPerformancePage: React.FC = () => {
 
     const getTierColor = (tier: string) => {
         switch (tier) {
-            case 'Exceptional': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+            case 'Exceptional': return 'text-brand-400 bg-brand-500/10 border-brand-500/20';
             case 'Strong': return 'text-brand-400 bg-brand-500/10 border-brand-500/20';
             case 'Meeting Expectations': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
             default: return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
@@ -116,13 +116,13 @@ const MyPerformancePage: React.FC = () => {
                             </div>
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Current Score</p>
                             <h3 className="text-4xl font-black text-white">{currentStats.totalScore.toFixed(1)}%</h3>
-                            <div className="mt-4 flex items-center text-xs text-emerald-400 font-bold">
+                            <div className="mt-4 flex items-center text-xs text-brand-400 font-bold">
                                 <TrendingUp size={14} className="mr-1" /> Above average by 4.2%
                             </div>
                         </div>
 
-                        <div className="glass-panel p-6 rounded-3xl border-l-4 border-l-emerald-500 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 text-emerald-500/10 group-hover:text-emerald-500/20 transition-colors">
+                        <div className="glass-panel p-6 rounded-3xl border-l-4 border-l-brand- relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 text-brand-500/10 group-hover:text-brand-500/20 transition-colors">
                                 <CheckCircle2 size={64} />
                             </div>
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Completion</p>
@@ -166,7 +166,7 @@ const MyPerformancePage: React.FC = () => {
                             <div className="space-y-6">
                                 {[
                                     { label: 'Task Throughput', value: currentStats.completionRate, color: 'bg-brand-500', weight: '30%' },
-                                    { label: 'SLA Compliance', value: currentStats.onTimeRate, color: 'bg-emerald-500', weight: '25%' },
+                                    { label: 'SLA Compliance', value: currentStats.onTimeRate, color: 'bg-brand-500', weight: '25%' },
                                     { label: 'Attendance & Punctuality', value: currentStats.punctualityScore, color: 'bg-orange-500', weight: '20%' },
                                     { label: 'Quality of Submissions', value: currentStats.qualityScore, color: 'bg-amber-500', weight: '15%' },
                                     { label: 'Difficulty Overhead', value: currentStats.difficultyBonus * 10, color: 'bg-amber-500', weight: '10%' },

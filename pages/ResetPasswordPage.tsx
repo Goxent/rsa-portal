@@ -149,8 +149,8 @@ const ResetPasswordPage: React.FC = () => {
                 >
                     {success ? (
                         <div className="text-center space-y-6">
-                            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
-                                <CheckCircle2 size={40} className="text-emerald-400" />
+                            <div className="w-20 h-20 bg-brand-500/10 rounded-full flex items-center justify-center mx-auto border border-brand-500/20">
+                                <CheckCircle2 size={40} className="text-brand-400" />
                             </div>
                             <h2 className="text-2xl font-black text-white tracking-tighter">System Re-Secured</h2>
                             <p className="text-gray-500 text-sm">Your credentials have been successfully updated. Redirecting to access terminal...</p>
@@ -169,10 +169,10 @@ const ResetPasswordPage: React.FC = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">New Password</label>
                                     <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
                                         <input
                                             type={showPassword ? 'text' : 'password'}
-                                            className={`glass-input w-full pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.password ? 'border-rose-500/50' : ''}`}
+                                            className={`glass-input w-full !pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.password ? 'border-rose-500/50' : ''}`}
                                             placeholder="••••••••"
                                             {...register('password')}
                                         />
@@ -190,10 +190,10 @@ const ResetPasswordPage: React.FC = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Confirm New Password</label>
                                     <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" size={18} />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors z-10" size={18} />
                                         <input
                                             type={showPassword ? 'text' : 'password'}
-                                            className={`glass-input w-full pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.confirmPassword ? 'border-rose-500/50' : ''}`}
+                                            className={`glass-input w-full !pl-12 pr-12 py-4 rounded-2xl text-sm transition-all ${errors.confirmPassword ? 'border-rose-500/50' : ''}`}
                                             placeholder="••••••••"
                                             {...register('confirmPassword')}
                                         />

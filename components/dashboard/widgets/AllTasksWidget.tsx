@@ -27,7 +27,7 @@ const getStatusConfig = (status: string) => {
     switch (status) {
         case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' };
         case TaskStatus.UNDER_REVIEW: return { label: 'Under Review', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
-        case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+        case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' };
         case TaskStatus.HALTED: return { label: 'Halted', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' };
         default: return { label: 'Not Started', color: 'text-gray-400', bg: 'bg-gray-500/10 border-gray-500/20' };
     }

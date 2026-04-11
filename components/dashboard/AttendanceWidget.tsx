@@ -279,9 +279,9 @@ const AttendanceWidget: React.FC = () => {
 
 
                     {status === 'CLOCKED_IN' && (
-                        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-sm dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Session Timer</p>
-                            <p className="text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 leading-none drop-shadow-sm">
+                        <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-sm dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                            <p className="text-[10px] text-brand-600 dark:text-brand-400/80 uppercase tracking-widest font-bold mb-1">Session Timer</p>
+                            <p className="text-xl font-mono font-bold text-brand-600 dark:text-brand-400 leading-none drop-shadow-sm">
                                 {formatTime(sessionSeconds)}
                             </p>
                         </div>
@@ -292,19 +292,34 @@ const AttendanceWidget: React.FC = () => {
             {/* Main Content Area */}
             <div className="p-6 relative z-10">
                 {/* Late Arrival Input */}
+                {/* Late Arrival Alert Card */}
                 {isLate && status === 'CLOCKED_OUT' && (
-                    <div className="mb-6 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
-                        <AlertTriangle className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={18} />
-                        <div className="flex-1">
-                            <h3 className="text-amber-700 dark:text-amber-400 font-bold text-sm mb-1">Late Arrival Detected</h3>
-                            <p className="text-amber-600/70 dark:text-amber-200/70 text-xs mb-3">You are checking in after 10:15 AM. Please provide a reason.</p>
-                            <input
-                                type="text"
-                                placeholder="Reason for late arrival..."
-                                value={lateReason}
-                                onChange={(e) => setLateReason(e.target.value)}
-                                className="w-full bg-amber-50 dark:bg-black/20 border border-amber-200 dark:border-amber-500/30 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-amber-500/40 focus:outline-none focus:border-amber-400"
-                            />
+                    <div className="mb-6 bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-transparent border border-amber-200 dark:border-amber-500/30 rounded-2xl p-5 shadow-sm overflow-hidden relative group">
+                        {/* Decorative glow */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-amber-500/10 transition-colors" />
+                        
+                        <div className="flex items-start gap-4 relative z-10">
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                                <AlertTriangle className="text-amber-600 dark:text-amber-400" size={20} />
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-[14px] font-bold text-slate-900 dark:text-white mb-1">
+                                    Late Arrival Detected
+                                </h3>
+                                <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                                    You are checking in after 10:15 AM. Please provide a reason to proceed.
+                                </p>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Type your reason for late arrival..."
+                                        value={lateReason}
+                                        onChange={(e) => setLateReason(e.target.value)}
+                                        className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all shadow-inner"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -314,10 +329,18 @@ const AttendanceWidget: React.FC = () => {
                     <button
                         onClick={handleClockIn}
                         disabled={loading || (isLate && !lateReason)}
-                        className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-xl font-bold shadow-lg shadow-black/10 dark:shadow-white/10 transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                        className="w-full py-4 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-2xl font-black shadow-xl shadow-[var(--accent-dim)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 group relative overflow-hidden"
                     >
-                        {loading ? <Loader2 className="animate-spin text-brand-500" /> : <Play size={18} className="fill-current text-brand-500 dark:text-brand-600" />}
-                        Start Work Day
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                        
+                        <div className="flex items-center gap-2 relative z-10 uppercase tracking-[0.15em] text-[13px]">
+                            {loading ? <Loader2 className="animate-spin" size={20} /> : <Play size={20} className="fill-current group-hover:scale-110 transition-transform" />}
+                            Start Work Day
+                        </div>
+                        <span className="text-[9px] opacity-60 font-medium lowercase tracking-normal relative z-10 group-disabled:hidden">
+                            Click to log your arrival time
+                        </span>
                     </button>
                 ) : (
                     <div className="space-y-6">

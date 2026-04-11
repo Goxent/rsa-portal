@@ -19,39 +19,34 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
     rows = 4,
     ...props
 }, ref) => {
-
-    // Generate random ID if not provided and label is present
     const textareaId = id || (label ? `textarea-${Math.random().toString(36).substr(2, 9)}` : undefined);
 
-    const baseInputStyles = "block rounded-xl border bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed resize-y";
-    const errorStyles = error
-        ? "border-red-500/50 focus:ring-red-500"
-        : "border-white/10 hover:border-white/20";
-
-    const widthStyles = fullWidth ? "w-full" : "";
+    const baseTextareaStyles = "block w-full text-[0.875rem] transition-all duration-150 ease-in-out placeholder:text-[var(--text-muted)] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-y px-3.5 py-2.5 bg-transparent border-none text-[var(--text-heading)]";
+    
+    const containerClasses = `
+        relative flex bg-[var(--bg-surface)] border rounded-[var(--radius-md)]
+        ${error 
+            ? 'border-[var(--color-danger)] shadow-[0_0_0_3px_rgba(196,68,90,0.15)]' 
+            : 'border-[var(--border-mid)] hover:border-[var(--border-accent)] focus-within:border-[var(--accent)] focus-within:shadow-[0_0_0_3px_var(--accent-dim)]'}
+    `;
 
     return (
-        <div className={`${widthStyles} ${className}`}>
+        <div className={`${fullWidth ? 'w-full' : ''} ${className}`}>
             {label && (
                 <label
                     htmlFor={textareaId}
-                    className="block text-sm font-medium text-gray-300 mb-1.5"
+                    className="block text-[0.8125rem] font-500 text-[var(--text-body)] mb-[0.375rem]"
                 >
                     {label}
                 </label>
             )}
 
-            <div className="relative">
+            <div className={containerClasses}>
                 <textarea
                     ref={ref}
                     id={textareaId}
                     rows={rows}
-                    className={`
-                        ${baseInputStyles}
-                        ${errorStyles}
-                        ${widthStyles}
-                        px-4 py-3 text-sm
-                    `}
+                    className={baseTextareaStyles}
                     disabled={disabled}
                     aria-invalid={!!error}
                     {...props}
@@ -59,14 +54,14 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
             </div>
 
             {error && (
-                <div className="mt-1.5 flex items-center text-xs text-red-400 animate-fade-in">
+                <div className="mt-[0.25rem] flex items-center text-[0.75rem] text-[var(--color-danger)] animate-fade-in">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     <span>{error}</span>
                 </div>
             )}
 
             {!error && helperText && (
-                <p className="mt-1.5 text-xs text-gray-500">
+                <p className="mt-[0.25rem] text-[0.75rem] text-[var(--text-muted)]">
                     {helperText}
                 </p>
             )}

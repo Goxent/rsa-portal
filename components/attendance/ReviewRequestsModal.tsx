@@ -83,33 +83,47 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="bg-[#161b22] rounded-2xl w-full max-w-4xl border border-[#30363d] shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
-                <div className="px-6 py-5 border-b border-[#30363d] flex justify-between items-center bg-[#0d1117]/50">
+        <div 
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+            style={{ 
+                background: 'var(--modal-backdrop, rgba(0,0,0,0.6))',
+                backdropFilter: 'blur(4px)'
+            }}
+        >
+            <div 
+                className="w-full max-w-4xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh] border animate-in slide-in-from-bottom-2 duration-300"
+                style={{ 
+                    background: 'var(--bg-secondary)', 
+                    borderColor: 'var(--border-mid)', 
+                    borderRadius: 'var(--radius-xl)',
+                    boxShadow: 'var(--shadow-modal)'
+                }}
+            >
+                <div className="px-6 py-5 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)' }}>
                     <div>
-                        <h2 className="text-xl font-black text-white flex items-center gap-2 tracking-tight">
-                            <Clock className="text-amber-500" size={22} />
+                        <h2 className="text-xl font-bold flex items-center gap-2 tracking-tight" style={{ color: 'var(--text-heading)' }}>
+                            <Clock style={{ color: 'var(--accent)' }} size={22} />
                             Pending Manual Log Requests
                         </h2>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                        <p className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: 'var(--text-muted)' }}>
                             Review and approve staff attendance changes
                         </p>
                     </div>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white transition-all p-2 hover:bg-white/5 rounded-xl">
+                    <button onClick={onClose} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-all">
                         <X size={24} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[#0d1117]/30">
+                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar" style={{ background: 'var(--bg-main)' }}>
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
-                            <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-                            <span className="text-gray-500 font-bold uppercase tracking-widest text-[11px]">Loading requests...</span>
+                            <div className="w-10 h-10 border-4 border-t-[var(--accent)] rounded-full animate-spin" style={{ borderColor: 'var(--accent-dim)' }} />
+                            <span style={{ color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.6875rem' }} className="uppercase">Loading requests...</span>
                         </div>
                     ) : requests.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
                             <div className="w-16 h-16 bg-[#161b22] rounded-full flex items-center justify-center border border-[#30363d] mb-4">
-                                <Check className="text-emerald-500/50" size={32} />
+                                <Check className="text-brand-500/50" size={32} />
                             </div>
                             <h3 className="text-white font-bold text-lg mb-1">Queue Empty</h3>
                             <p className="text-gray-500 text-sm italic">All manual log requests have been processed.</p>
@@ -117,17 +131,22 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                     ) : (
                         <div className="space-y-4">
                             {requests.map((req) => (
-                                <div key={req.id} className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#484f58] transition-all group relative">
+                                <div key={req.id} className="p-5 transition-all group relative border" 
+                                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)' }}
+                                >
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                                         {/* User & Date Info */}
                                         <div className="lg:col-span-3 space-y-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 font-black text-xs">
+                                                <div 
+                                                    className="w-10 h-10 flex items-center justify-center font-bold text-xs border shadow-sm"
+                                                    style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)', color: 'var(--accent)', borderRadius: '99px' }}
+                                                >
                                                     {req.userName.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div className="text-sm font-black text-white">{req.userName}</div>
-                                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Staff Member</div>
+                                                    <div style={{ color: 'var(--text-heading)' }} className="text-sm font-bold">{req.userName}</div>
+                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[10px] font-bold uppercase tracking-tighter">Staff Member</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 text-[11px] text-gray-400 font-bold">
@@ -139,31 +158,37 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                         {/* Attendance Details */}
                                         <div className="lg:col-span-5 space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="bg-[#0d1117] rounded-lg p-2.5 border border-[#30363d]">
-                                                    <div className="text-[9px] font-black text-gray-600 uppercase mb-1">Status</div>
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-widest ${
-                                                        req.status === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                        req.status === 'LATE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                        'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                                    }`}>
+                                                <div className="p-2.5 border" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}>
+                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[9px] font-black uppercase mb-1">Status</div>
+                                                    <span 
+                                                        className="px-2 py-0.5 border uppercase tracking-widest"
+                                                        style={{ 
+                                                            fontSize: '9px',
+                                                            fontWeight: 600,
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            background: req.status === 'PRESENT' ? 'rgba(101,154,43,0.1)' : 'rgba(196,68,90,0.1)',
+                                                            color: req.status === 'PRESENT' ? 'var(--accent)' : 'var(--color-danger)',
+                                                            borderColor: req.status === 'PRESENT' ? 'rgba(101,154,43,0.2)' : 'rgba(196,68,90,0.2)'
+                                                        }}
+                                                    >
                                                         {req.status}
                                                     </span>
                                                 </div>
-                                                <div className="bg-[#0d1117] rounded-lg p-2.5 border border-[#30363d]">
-                                                    <div className="text-[9px] font-black text-gray-600 uppercase mb-1">Hours / Timing</div>
-                                                    <div className="text-[11px] font-bold text-gray-300 tabular-nums lowercase">
-                                                        {req.clockIn} - {req.clockOut} <span className="text-gray-600 text-[10px] ml-1">({req.workHours}h)</span>
+                                                <div className="p-2.5 border" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}>
+                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[9px] font-black uppercase mb-1">Hours / Timing</div>
+                                                    <div style={{ color: 'var(--text-body)' }} className="text-[11px] font-bold tabular-nums lowercase">
+                                                        {req.clockIn} - {req.clockOut} <span style={{ color: 'var(--text-muted)' }} className="text-[10px] ml-1">({req.workHours}h)</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             
                                             {req.notes && (
-                                                <div className="bg-[#0d1117] rounded-lg p-3 border border-amber-500/10 border-l-amber-500/50">
+                                                <div className="p-3 border border-l-4" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderLeftColor: 'var(--accent)', borderRadius: 'var(--radius-md)' }}>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <MessageSquare size={10} className="text-amber-500/70" />
-                                                        <span className="text-[9px] font-black text-gray-600 uppercase">Staff Notes</span>
+                                                        <MessageSquare size={10} style={{ color: 'var(--accent)', opacity: 0.7 }} />
+                                                        <span style={{ color: 'var(--text-muted)' }} className="text-[9px] font-black uppercase">Staff Notes</span>
                                                     </div>
-                                                    <p className="text-[12px] text-gray-400 italic leading-relaxed">"{req.notes}"</p>
+                                                    <p style={{ color: 'var(--text-body)' }} className="text-[12px] italic leading-relaxed">"{req.notes}"</p>
                                                 </div>
                                             )}
                                         </div>
@@ -173,7 +198,8 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                             {rejectingId === req.id ? (
                                                 <div className="space-y-2 animate-in slide-in-from-right-2 duration-200">
                                                     <textarea 
-                                                        className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl p-3 text-xs text-white placeholder:text-gray-700 focus:border-rose-500/50 outline-none resize-none h-20"
+                                                        className="w-full border p-3 text-xs outline-none resize-none h-20"
+                                                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-heading)' }}
                                                         placeholder="Reason for rejection..."
                                                         value={rejectReason}
                                                         onChange={(e) => setRejectReason(e.target.value)}
@@ -183,13 +209,15 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                         <button 
                                                             onClick={() => handleReject(req.id)}
                                                             disabled={processingId === req.id}
-                                                            className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-rose-600/20"
+                                                            className="flex-1 py-2 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
+                                                            style={{ background: 'var(--color-danger)', borderRadius: 'var(--radius-md)' }}
                                                         >
                                                             {processingId === req.id ? '...' : 'Confirm Reject'}
                                                         </button>
                                                         <button 
                                                             onClick={() => { setRejectingId(null); setRejectReason(''); }}
-                                                            className="px-4 py-2 bg-[#21262d] text-gray-400 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest border border-[#30363d]"
+                                                            className="px-4 py-2 border text-[10px] font-black uppercase tracking-widest"
+                                                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}
                                                         >
                                                             Cancel
                                                         </button>
@@ -200,7 +228,8 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                     <button 
                                                         onClick={() => handleApprove(req.id)}
                                                         disabled={processingId === req.id}
-                                                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 group"
+                                                        className="w-full py-3 text-white text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 group"
+                                                        style={{ background: 'var(--accent)', borderRadius: 'var(--radius-xl)' }}
                                                     >
                                                         {processingId === req.id ? (
                                                             <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -211,7 +240,10 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                     </button>
                                                     <button 
                                                         onClick={() => setRejectingId(req.id)}
-                                                        className="w-full py-2 bg-[#21262d] hover:bg-rose-900/20 text-gray-400 hover:text-rose-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[#30363d] hover:border-rose-500/30 flex items-center justify-center gap-2"
+                                                        className="w-full py-2 border transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', color: 'var(--text-muted)' }}
+                                                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-danger)'; e.currentTarget.style.color = 'var(--color-danger)'; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                                                     >
                                                         <AlertCircle size={14} />
                                                         Reject Request
@@ -230,14 +262,15 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                     )}
                 </div>
 
-                <div className="px-6 py-4 border-t border-[#30363d] bg-[#0d1117]/30 flex justify-between items-center">
+                <div className="px-6 py-4 border-t flex justify-between items-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                     <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.1em]">Total {requests.length} Pending Actions</span>
+                        <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />
+                        <span style={{ color: 'var(--text-muted)' }} className="text-[10px] font-black uppercase tracking-[0.1em]">Total {requests.length} Pending Actions</span>
                     </div>
                     <button 
                         onClick={onClose}
-                        className="px-6 py-2 bg-[#21262d] hover:bg-[#30363d] text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-[#30363d]"
+                        className="px-6 py-2 transition-all border shadow-sm text-xs font-black uppercase tracking-widest"
+                        style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', color: 'var(--text-heading)' }}
                     >
                         Close Portal
                     </button>

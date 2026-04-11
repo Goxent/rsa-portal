@@ -204,7 +204,7 @@ const PeerReviewPage: React.FC = () => {
                     return (
                         <div key={member.uid} className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-brand-500/40 transition-all hover:bg-white/[0.02] flex flex-col justify-between relative group overflow-hidden">
                             {hasReviewed && (
-                                <div className="absolute top-0 right-0 p-1 bg-emerald-500 text-white rounded-bl-xl shadow-lg animate-in slide-in-from-tr duration-500">
+                                <div className="absolute top-0 right-0 p-1 bg-brand-500 text-white rounded-bl-xl shadow-lg animate-in slide-in-from-tr duration-500">
                                     <CheckCircle2 size={14} />
                                 </div>
                             )}
@@ -223,7 +223,7 @@ const PeerReviewPage: React.FC = () => {
                                 <div className="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5">
                                     <span className="text-xs text-gray-400">Status</span>
                                     {hasReviewed ? (
-                                        <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Feedback Submitted</span>
+                                        <span className="text-[10px] text-brand-400 font-black uppercase tracking-widest">Feedback Submitted</span>
                                     ) : (
                                         <span className="text-[10px] text-orange-400 font-black uppercase tracking-widest">Pending Review</span>
                                     )}

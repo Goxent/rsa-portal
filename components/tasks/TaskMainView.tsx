@@ -43,55 +43,54 @@ const S: Record<string, {
 }> = {
     [TaskStatus.NOT_STARTED]: {
         label: 'Not Started', dot: 'bg-slate-500', dotColor: '#64748b',
-        headerAccent: 'bg-slate-100 dark:bg-slate-800',
-        headerBg: 'bg-slate-200/50 dark:bg-slate-900/40',
-        countBg: 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-slate-700',
-        ring: 'ring-slate-400 dark:ring-slate-500/30', dropBg: 'bg-slate-100 dark:bg-slate-500/5',
-        border: 'border-slate-300 dark:border-slate-800', text: 'text-slate-700 dark:text-slate-400',
+        headerAccent: 'bg-[var(--bg-surface)]',
+        headerBg: 'bg-[var(--bg-elevated)]',
+        countBg: 'bg-[var(--bg-elevated)] text-[var(--text-body)] border-[var(--border)]',
+        ring: 'ring-slate-500/40', dropBg: 'bg-slate-500/5',
+        border: 'border-[var(--border)]', text: 'text-[var(--text-body)]',
     },
     [TaskStatus.IN_PROGRESS]: {
-        label: 'In Progress', dot: 'bg-blue-600 dark:bg-blue-400', dotColor: '#2563eb',
-        headerAccent: 'bg-blue-50 dark:bg-blue-900/30',
-        headerBg: 'bg-blue-100/40 dark:bg-blue-950/20',
-        countBg: 'bg-blue-500/10 dark:bg-blue-900/50 text-blue-900 dark:text-blue-300 border-blue-500/20 dark:border-blue-800',
-        ring: 'ring-blue-400 dark:ring-blue-500/30', dropBg: 'bg-blue-50 dark:bg-blue-500/5',
-        border: 'border-blue-200 dark:border-blue-900/30', text: 'text-blue-700 dark:text-blue-300',
+        label: 'In Progress', dot: 'bg-blue-500', dotColor: '#3b82f6',
+        headerAccent: 'bg-blue-500/5',
+        headerBg: 'bg-blue-500/10',
+        countBg: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+        ring: 'ring-blue-500/40', dropBg: 'bg-blue-500/5',
+        border: 'border-blue-500/20', text: 'text-blue-400',
     },
     [TaskStatus.UNDER_REVIEW]: {
-        label: 'Under Review', dot: 'bg-amber-600 dark:bg-amber-400', dotColor: '#d97706',
-        headerAccent: 'bg-amber-50 dark:bg-amber-900/30',
-        headerBg: 'bg-amber-100/40 dark:bg-amber-950/20',
-        countBg: 'bg-amber-500/10 dark:bg-amber-900/50 text-amber-900 dark:text-amber-300 border-amber-500/20 dark:border-amber-800',
-        ring: 'ring-amber-400 dark:ring-amber-500/30', dropBg: 'bg-amber-50 dark:bg-amber-500/5',
-        border: 'border-amber-200 dark:border-amber-900/30', text: 'text-amber-700 dark:text-amber-300',
+        label: 'Under Review', dot: 'bg-amber-500', dotColor: '#f59e0b',
+        headerAccent: 'bg-amber-500/5',
+        headerBg: 'bg-amber-500/10',
+        countBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        ring: 'ring-amber-500/40', dropBg: 'bg-amber-500/5',
+        border: 'border-amber-500/20', text: 'text-amber-400',
     },
     [TaskStatus.COMPLETED]: {
-        label: 'Completed', dot: 'bg-emerald-600 dark:bg-emerald-400', dotColor: '#059669',
-        headerAccent: 'bg-emerald-50 dark:bg-emerald-900/30',
-        headerBg: 'bg-emerald-100/40 dark:bg-emerald-950/20',
-        countBg: 'bg-emerald-500/10 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-300 border-emerald-500/20 dark:border-emerald-800',
-        ring: 'ring-emerald-400 dark:ring-emerald-500/30', dropBg: 'bg-emerald-50 dark:bg-emerald-500/5',
-        border: 'border-emerald-200 dark:border-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300',
+        label: 'Completed', dot: 'bg-emerald-500', dotColor: '#10b981',
+        headerAccent: 'bg-emerald-500/5',
+        headerBg: 'bg-emerald-500/10',
+        countBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        ring: 'ring-emerald-500/40', dropBg: 'bg-emerald-500/5',
+        border: 'border-emerald-500/20', text: 'text-emerald-400',
     },
     [TaskStatus.HALTED]: {
-        label: 'Halted', dot: 'bg-rose-600 dark:bg-rose-400', dotColor: '#e11d48',
-        headerAccent: 'from-rose-500/10 via-rose-500/5 to-transparent',
-        headerBg: 'bg-rose-100/40 dark:bg-rose-950/20',
-        countBg: 'bg-rose-500/10 dark:bg-rose-900/50 text-rose-900 dark:text-rose-300 border-rose-500/20 dark:border-rose-800',
-        ring: 'ring-rose-400 dark:ring-rose-500/30', dropBg: 'bg-rose-50 dark:bg-rose-500/5',
-        border: 'border-rose-500/20 dark:border-rose-900/30', text: 'text-rose-900 dark:text-rose-300',
+        label: 'Halted', dot: 'bg-rose-500', dotColor: '#f43f5e',
+        headerAccent: 'bg-rose-500/5',
+        headerBg: 'bg-rose-500/10',
+        countBg: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+        ring: 'ring-rose-500/40', dropBg: 'bg-rose-500/5',
+        border: 'border-rose-500/20', text: 'text-rose-400',
     },
     [TaskStatus.ARCHIVED]: {
-        label: 'Archived', dot: 'bg-gray-500', dotColor: '#6b7280',
-        headerAccent: 'from-gray-600/10 via-slate-600/5 to-transparent',
-        headerBg: 'bg-gray-50 dark:bg-gray-900/30',
-        countBg: 'bg-gray-100 dark:bg-gray-800 text-gray-600 border-gray-200 dark:border-gray-700',
-        ring: 'ring-gray-300 dark:ring-gray-600/20', dropBg: 'bg-gray-50 dark:bg-gray-500/5',
-        border: 'border-gray-100 dark:border-gray-800', text: 'text-gray-500 dark:text-gray-400',
+        label: 'Archived', dot: 'bg-slate-500', dotColor: '#6b7280',
+        headerAccent: 'bg-[var(--bg-surface)]',
+        headerBg: 'bg-[var(--bg-elevated)]',
+        countBg: 'bg-[var(--bg-elevated)] text-[var(--text-muted)] border-[var(--border)]',
+        ring: 'ring-slate-500/20', dropBg: 'bg-slate-500/5',
+        border: 'border-[var(--border)]', text: 'text-[var(--text-muted)]',
     },
 };
 
-// ── Phase config with rich visuals ────────────────────────────────────────────
 const PHASE_META: Record<string, {
     label: string; shortLabel: string;
     color: string; dot: string; accentHex: string;
@@ -100,29 +99,32 @@ const PHASE_META: Record<string, {
 }> = {
     [AuditPhase.ONBOARDING]: {
         label: 'Onboarding', shortLabel: 'P1',
-        color: 'text-emerald-800', dot: 'bg-emerald-500', accentHex: '#10b981',
-        bg: 'bg-white dark:bg-[#0c0c0e]',
-        headerGradient: 'from-emerald-500/20 via-emerald-500/5 to-transparent dark:from-emerald-400/20 dark:via-emerald-400/5 dark:to-transparent',
-        border: 'border-slate-300 dark:border-emerald-500/30',
-        glow: 'shadow-2xl dark:shadow-[0_0_50px_rgba(16,185,129,0.12)]',
+        color: 'text-brand-600 dark:text-brand-400',
+        dot: 'bg-[#659a2b]', accentHex: '#659a2b',
+        bg: 'bg-[var(--bg-secondary)]',
+        headerGradient: 'from-[#659a2b]/15 via-[#659a2b]/5 to-transparent',
+        border: 'border-[#659a2b]/20',
+        glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]',
         stepNum: '01',
     },
     [AuditPhase.PLANNING_AND_EXECUTION]: {
         label: 'Planning & Execution', shortLabel: 'P2',
-        color: 'text-indigo-800', dot: 'bg-indigo-500', accentHex: '#6366f1',
-        bg: 'bg-white dark:bg-[#0c0c0e]',
-        headerGradient: 'from-indigo-500/20 via-indigo-500/5 to-transparent dark:from-indigo-400/20 dark:via-indigo-400/5 dark:to-transparent',
-        border: 'border-slate-300 dark:border-indigo-500/30',
-        glow: 'shadow-2xl dark:shadow-[0_0_50px_rgba(99,102,241,0.12)]',
+        color: 'text-[#4d7c0f]',
+        dot: 'bg-[#4d7c0f]', accentHex: '#4d7c0f',
+        bg: 'bg-[var(--bg-secondary)]',
+        headerGradient: 'from-[#4d7c0f]/15 via-[#4d7c0f]/5 to-transparent',
+        border: 'border-[#4d7c0f]/20',
+        glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]',
         stepNum: '02',
     },
     [AuditPhase.REVIEW_AND_CONCLUSION]: {
         label: 'Review & Conclusion', shortLabel: 'P3',
-        color: 'text-teal-800', dot: 'bg-teal-500', accentHex: '#14b8a6',
-        bg: 'bg-white dark:bg-[#0c0c0e]',
-        headerGradient: 'from-teal-500/20 via-teal-500/5 to-transparent dark:from-teal-400/20 dark:via-teal-400/5 dark:to-transparent',
-        border: 'border-slate-300 dark:border-teal-500/30',
-        glow: 'shadow-2xl dark:shadow-[0_0_50px_rgba(20,184,166,0.12)]',
+        color: 'text-[#15803d]',
+        dot: 'bg-[#15803d]', accentHex: '#15803d',
+        bg: 'bg-[var(--bg-secondary)]',
+        headerGradient: 'from-[#15803d]/15 via-[#15803d]/5 to-transparent',
+        border: 'border-[#15803d]/20',
+        glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]',
         stepNum: '03',
     },
 };
@@ -167,7 +169,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
             <div className="h-full overflow-y-auto custom-scrollbar bg-transparent">
                 <div className="min-w-full md:min-w-[900px] w-full overflow-x-hidden md:overflow-x-visible pb-8">
                     {!isMobile && (
-                        <div className="grid grid-cols-[32px_1fr_180px_140px_100px_120px] gap-x-4 px-6 py-2.5 border-b border-white/[0.05] text-[10px] font-semibold text-slate-600 uppercase tracking-widest sticky top-0 bg-[#09090b]/95 backdrop-blur-xl z-20">
+                        <div className="grid grid-cols-[32px_1fr_180px_140px_100px_120px] gap-x-4 px-6 py-2.5 border-b border-border text-[10px] font-semibold text-muted uppercase tracking-widest sticky top-0 bg-surface/95 backdrop-blur-xl z-20">
                             <div className="flex items-center justify-center">
                                 <button
                                     onClick={onSelectAll}
@@ -264,7 +266,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     )}
                                 </div>
                             );
-                            return <React.Fragment key={task.id}>{content}</React.Fragment>;
+                            return <React.Fragment key={task.id || `task-${i}`}>{content}</React.Fragment>;
                         })}
                     </div>
                     {/* INFINITE SCROLL SENTINEL - LIST VIEW */}
@@ -317,11 +319,11 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             return (
                                 <div
                                     key={phase}
-                                    className={`flex flex-col flex-1 min-w-[380px] h-full overflow-hidden rounded-[2.5rem] border ${pm.border} ${pm.bg} ${pm.glow} backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-1`}
+                                    className={`flex flex-col flex-1 min-w-[380px] h-full overflow-hidden rounded-2xl border ${pm.border} ${pm.bg} ${pm.glow} transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]`}
                                     style={{ minHeight: 0 }}
                                 >
                                     {/* ── Phase Header ── */}
-                                    <div className={`relative flex-shrink-0 bg-white/40 dark:bg-white/[0.04] border-b ${pm.border} px-4 pt-4 pb-3 shadow-inner`}>
+                                    <div className={`relative flex-shrink-0 bg-[var(--bg-elevated)] border-b ${pm.border} px-5 pt-5 pb-4`}>
                                         {/* Gradient Background Layer */}
                                         <div className={`absolute inset-0 bg-gradient-to-r ${pm.headerGradient} opacity-50`} />
                                         
@@ -355,10 +357,10 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{phaseTotal} tasks</span>
+                                                        <span className="text-[10px] text-[var(--text-muted)] font-medium">{phaseTotal} tasks</span>
                                                         {phaseTotal > 0 && (
                                                             <>
-                                                                <span className="text-slate-300 dark:text-slate-700">·</span>
+                                                                <span className="text-[var(--text-muted)]">·</span>
                                                                 <span className="text-[10px] font-bold" style={{ color: `${pm.accentHex}d0` }}>{phaseProgress}% done</span>
                                                             </>
                                                         )}
@@ -370,7 +372,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                             {phaseTotal > 0 && (
                                                 <div className="relative w-9 h-9 flex-shrink-0">
                                                     <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                                                        <circle cx="18" cy="18" r="14" fill="none" stroke="currentColor" className="text-slate-200 dark:text-white/5" strokeWidth="3" />
+                                                        <circle cx="18" cy="18" r="14" fill="none" stroke="currentColor" className="text-[var(--border-mid)]" strokeWidth="3" />
                                                         <circle
                                                             cx="18" cy="18" r="14" fill="none"
                                                             stroke={pm.accentHex}
@@ -387,9 +389,8 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                             )}
                                         </div>
 
-                                        {/* Overall phase progress bar */}
                                         {phaseTotal > 0 && (
-                                            <div className="h-[3px] w-full rounded-full overflow-hidden bg-slate-200 dark:bg-white/5">
+                                            <div className="h-[2px] w-full rounded-full overflow-hidden bg-[var(--border)]">
                                                 <div
                                                     className="h-full rounded-full transition-all duration-700"
                                                     style={{
@@ -402,7 +403,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     </div>
 
                                     {/* ── Phase Body: Status Sections ── */}
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 space-y-1">
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar px-2.5 py-3 space-y-2">
                                         {STATUS_COLS
                                             .filter(status => !(phase === AuditPhase.ONBOARDING && status === TaskStatus.UNDER_REVIEW))
                                             .map(status => {
@@ -417,16 +418,14 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                         <div
                                                             ref={prov.innerRef}
                                                             {...prov.droppableProps}
-                                                            className={`rounded-2xl transition-all duration-300 p-2.5 mb-3 border ${
+                                                            className={`rounded-xl transition-all duration-300 p-2.5 mb-2 border ${
                                                                 snap.isDraggingOver 
-                                                                    ? `ring-2 ${cfg.ring} ${cfg.headerAccent} scale-[1.01] shadow-2xl` 
-                                                                    : `${cfg.headerAccent} ${cfg.border} shadow-sm opacity-95 hover:opacity-100`
+                                                                    ? `ring-2 ${cfg.ring} ${cfg.headerAccent} scale-[1.01] shadow-xl` 
+                                                                    : `bg-[var(--bg-surface)] border-[var(--border)] shadow-sm opacity-95 hover:opacity-100 hover:border-[var(--border-mid)]`
                                                             }`}
                                                         >
-                                                        {/* Status header — integrated into the mini-board */}
-                                                        <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg mb-2 transition-all ${
-                                                            snap.isDraggingOver ? cfg.headerBg : 'bg-white/60 dark:bg-black/40 overflow-hidden relative border border-black/[0.03]'
-                                                        }`}>
+                                                        {/* Status header */}
+                                                        <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg mb-2 border border-[var(--border)] bg-[var(--bg-elevated)] relative overflow-hidden`}>
                                                             {/* Subtle left accent border inside header */}
                                                             <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${cfg.dot}`} />
                                                             
@@ -487,10 +486,10 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                                                 exit={{ opacity: 0, y: 4, scale: 0.98 }}
                                                                                 transition={{ duration: 0.12 }}
-                                                                                className="rounded-xl border p-2.5 shadow-xl mb-1 bg-white dark:bg-[#0d1117]"
+                                                                                className="rounded-xl border p-2.5 shadow-xl mb-1 bg-[var(--bg-elevated)]"
                                                                                 style={{
                                                                                     borderColor: `${pm.accentHex}30`,
-                                                                                    boxShadow: `0 4px 24px rgba(0,0,0,0.1), 0 0 0 1px ${pm.accentHex}15`,
+                                                                                    boxShadow: `0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px ${pm.accentHex}20`,
                                                                                 }}
                                                                             >
                                                                                 <input
@@ -503,7 +502,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                                         if (e.key === 'Enter') submitQuickAdd(status);
                                                                                         if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
                                                                                     }}
-                                                                                    className="w-full bg-transparent text-[12px] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none mb-2 font-medium"
+                                                                                    className="w-full bg-transparent text-[12px] text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none mb-2 font-medium"
                                                                                 />
                                                                                 <div className="flex items-center justify-between">
                                                                                     <span className="text-[9px] text-slate-400 dark:text-slate-700 font-medium">↵ save · Esc cancel</span>

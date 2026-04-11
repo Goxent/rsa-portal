@@ -82,13 +82,23 @@ export const auth = getAuth(app!);
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 // Initialize Firestore with Persistent Cache (New API)
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore } from 'firebase/firestore';
 
-export const db = initializeFirestore(app!, {
-    localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-    })
-});
+// Prevent re-initialization error during Vite HMR
+let dbInstance;
+try {
+    // Check if firestore is already initialized for this app
+    dbInstance = getFirestore(app!);
+} catch (e) {
+    // If not, initialize with custom settings
+    dbInstance = initializeFirestore(app!, {
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+        })
+    });
+}
+
+export const db = dbInstance;
 
 import { getStorage } from 'firebase/storage';
 export const storage = getStorage(app!);
@@ -934,6 +944,38 @@ export const AuthService = {
         }
     },
 
+    // Helper to handle assignee changes and notifications
+    handleAssigneeNotifications: async (taskId: string, currentTask: Partial<Task>, isNew: boolean) => {
+        if (!currentTask.assignedTo || currentTask.assignedTo.length === 0) return;
+
+        if (isNew) {
+            // New Task: Notify all assignees
+            for (const uid of currentTask.assignedTo) {
+                await AuthService.sendTaskNotification(uid, currentTask as Task, true);
+            }
+        } else {
+            // Existing Task: Notify ONLY NEW assignees
+            try {
+                const oldTaskDoc = await getDoc(doc(db, 'tasks', taskId));
+                if (!oldTaskDoc.exists()) return;
+                
+                const oldTask = oldTaskDoc.data() as Task;
+                const oldAssignedTo = oldTask.assignedTo || [];
+                // Compare with current updates
+                const newAssignees = currentTask.assignedTo.filter(uid => !oldAssignedTo.includes(uid));
+
+                if (newAssignees.length > 0) {
+                    for (const uid of newAssignees) {
+                        const taskToNotify = { ...oldTask, ...currentTask } as Task;
+                        await AuthService.sendTaskNotification(uid, taskToNotify, true);
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking for new assignees:", error);
+            }
+        }
+    },
+
     // Helper to send notifications (Internal & Email)
     sendTaskNotification: async (uid: string, task: Task, isNewRel: boolean) => {
         // In-App Notification
@@ -1085,10 +1127,20 @@ export const AuthService = {
             }
         }
 
+        // Sanitize: remove all undefined values to avoid Firestore crash
+        const sanitizedUpdates = Object.fromEntries(
+            Object.entries(updates).filter(([, v]) => v !== undefined)
+        );
+
         await updateDoc(doc(db, 'tasks', taskId), {
-            ...updates,
+            ...sanitizedUpdates,
             updatedAt: new Date().toISOString()
         });
+
+        // Handle Assignee Change Notifications
+        if (updates.assignedTo) {
+            await AuthService.handleAssigneeNotifications(taskId, updates, false);
+        }
 
         // --- AUTO-ARCHIVING LOGIC (NEW) ---
         // If task is COMPLETED in Phase 3, check if it's past its Assigned Fiscal Year
@@ -1323,12 +1375,35 @@ export const AuthService = {
         };
         const ref = await addDoc(collection(db, 'attendanceRequests'), newRequest);
         
+        // ── Notify Admins ──────────────────────────────────────────────
+        try {
+            const users = await AuthService.getAllUsers();
+            const admins = users.filter(u => 
+                u.role === UserRole.ADMIN || 
+                u.role === UserRole.MASTER_ADMIN || 
+                u.role === UserRole.MANAGER
+            );
+
+            for (const admin of admins) {
+                await AuthService.createNotification({
+                    userId: admin.uid,
+                    title: 'New Attendance Request',
+                    message: `${requestData.userName} requested a manual log for ${requestData.date}`,
+                    type: 'INFO',
+                    category: 'ATTENDANCE',
+                    link: '/attendance'
+                });
+            }
+        } catch (error) {
+            console.error("Failed to notify admins of attendance request:", error);
+        }
+
         // Log the action
         if (auth.currentUser) {
             await createAuditLog({
                 userId: auth.currentUser.uid,
                 userName: auth.currentUser.displayName || 'User',
-                action: AuditAction.LEAVE_REQUESTED, // Reusing similar action or create new one?
+                action: AuditAction.LEAVE_REQUESTED, 
                 targetType: 'attendance',
                 targetId: ref.id,
                 targetName: `Manual Log Request for ${requestData.date}`,
@@ -1382,7 +1457,26 @@ export const AuthService = {
             adminNotes: `Approved by ${adminName}`
         });
 
-        // 3. Log Audit
+        // 3. Notify User via Email
+        try {
+            const userDoc = await getDoc(doc(db, 'users', reqData.userId));
+            if (userDoc.exists()) {
+                const userData = userDoc.data() as UserProfile;
+                if (userData.email) {
+                    await EmailService.sendAttendanceStatusChange(
+                        userData.email,
+                        userData.displayName,
+                        reqData.date,
+                        'APPROVED',
+                        `Approved by ${adminName}`
+                    );
+                }
+            }
+        } catch (err) {
+            console.error("Failed to send attendance approval email:", err);
+        }
+
+        // 4. Log Audit
         await createAuditLog({
             userId: adminId,
             userName: adminName,
@@ -1396,10 +1490,34 @@ export const AuthService = {
 
     rejectAttendanceRequest: async (requestId: string, adminId: string, adminName: string, reason: string) => {
         const reqRef = doc(db, 'attendanceRequests', requestId);
+        const reqSnap = await getDoc(reqRef);
+        
+        if (!reqSnap.exists()) throw new Error("Request not found");
+        const reqData = reqSnap.data() as AttendanceLogRequest;
+
         await updateDoc(reqRef, {
             requestStatus: 'REJECTED',
             adminNotes: reason
         });
+
+        // Notify User via Email
+        try {
+            const userDoc = await getDoc(doc(db, 'users', reqData.userId));
+            if (userDoc.exists()) {
+                const userData = userDoc.data() as UserProfile;
+                if (userData.email) {
+                    await EmailService.sendAttendanceStatusChange(
+                        userData.email,
+                        userData.displayName,
+                        reqData.date,
+                        'REJECTED',
+                        reason
+                    );
+                }
+            }
+        } catch (err) {
+            console.error("Failed to send attendance rejection email:", err);
+        }
 
         // Log Audit
         await createAuditLog({

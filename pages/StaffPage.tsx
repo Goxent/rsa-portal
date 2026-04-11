@@ -167,28 +167,50 @@ const StaffPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white font-heading">Staff Directory</h1>
-                    <p className="text-sm text-gray-400">Manage employee profiles and access permissions</p>
+                    <h1 
+                        className="text-white" 
+                        style={{ fontSize: '1.375rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-heading)' }}
+                    >
+                        Staff Directory
+                    </h1>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        Manage employee profiles and access permissions
+                    </p>
                 </div>
                 <button
                     onClick={handleOpenAdd}
-                    className="bg-brand-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-brand-700 flex items-center shadow-lg shadow-brand-900/40 transition-all hover:-translate-y-0.5 border border-brand-500/30 group"
+                    className="flex items-center transition-all hover:-translate-y-0.5 group btn-primary"
+                    style={{ 
+                        background: 'var(--accent)', 
+                        color: 'white', 
+                        padding: '0.625rem 1.5rem', 
+                        borderRadius: 'var(--radius-xl)', 
+                        fontSize: '0.875rem', 
+                        fontWeight: 600,
+                        boxShadow: '0 4px 12px var(--accent-glow)'
+                    }}
                 >
-                    <Plus size={18} className="mr-2 group-hover:rotate-90 transition-transform duration-300" /> Invite Staff Member
+                    <Plus size={18} className="mr-2 group-hover:rotate-90 transition-transform duration-300" /> 
+                    Invite Staff Member
                 </button>
             </div>
 
             {/* Position Filters */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-2 hide-scrollbar">
+            <div 
+                className="flex items-center gap-1 overflow-x-auto p-1 hide-scrollbar"
+                style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}
+            >
                 {filterTabs.map(tab => (
                     <button
                         key={tab}
                         onClick={() => setSelectedTab(tab)}
-                        className={`px-5 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap border ${
-                            selectedTab === tab
-                                ? 'bg-brand-500/20 text-brand-300 border-brand-500/30 shadow-lg shadow-brand-500/10'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
-                        }`}
+                        className="px-5 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap"
+                        style={{ 
+                            background: selectedTab === tab ? 'var(--bg-secondary)' : 'transparent',
+                            color: selectedTab === tab ? 'var(--text-heading)' : 'var(--text-muted)',
+                            boxShadow: selectedTab === tab ? 'var(--shadow-card)' : 'none',
+                            border: selectedTab === tab ? '1px solid var(--border)' : '1px solid transparent'
+                        }}
                     >
                         {tab}
                     </button>
@@ -196,22 +218,47 @@ const StaffPage: React.FC = () => {
             </div>
 
             {/* Controls */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center glass-panel p-4 rounded-xl border border-white/5">
+            <div 
+                className="flex flex-col md:flex-row gap-4 justify-between items-center p-3"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}
+            >
                 <div className="relative w-full md:w-96">
-                    <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                    <Search className="absolute left-3 top-2.5" size={18} style={{ color: 'var(--text-muted)' }} />
                     <input
                         type="text"
-                        className="block w-full pl-10 pr-3 py-2 border border-white/10 rounded-lg bg-navy-800/50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm text-gray-100"
+                        className="block w-full pl-10 pr-3 py-2 outline-none text-sm"
+                        style={{ background: 'var(--bg-surface)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }}
                         placeholder="Search staff by name, email or position..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center bg-white/5 p-1 rounded-lg border border-white/10">
-                    <button onClick={() => setViewMode('GRID')} className={`p-1.5 rounded ${viewMode === 'GRID' ? 'bg-white/10 text-white' : 'text-gray-400'}`}>
+                <div 
+                    className="flex items-center p-1 border"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)' }}
+                >
+                    <button 
+                        onClick={() => setViewMode('GRID')} 
+                        className="p-1.5 transition-all"
+                        style={{ 
+                            background: viewMode === 'GRID' ? 'var(--bg-secondary)' : 'transparent',
+                            color: viewMode === 'GRID' ? 'var(--accent)' : 'var(--text-muted)',
+                            borderRadius: 'var(--radius-md)',
+                            boxShadow: viewMode === 'GRID' ? 'var(--shadow-card)' : 'none'
+                        }}
+                    >
                         <Grid size={16} />
                     </button>
-                    <button onClick={() => setViewMode('LIST')} className={`p-1.5 rounded ${viewMode === 'LIST' ? 'bg-white/10 text-white' : 'text-gray-400'}`}>
+                    <button 
+                        onClick={() => setViewMode('LIST')} 
+                        className="p-1.5 transition-all"
+                        style={{ 
+                            background: viewMode === 'LIST' ? 'var(--bg-secondary)' : 'transparent',
+                            color: viewMode === 'LIST' ? 'var(--accent)' : 'var(--text-muted)',
+                            borderRadius: 'var(--radius-md)',
+                            boxShadow: viewMode === 'LIST' ? 'var(--shadow-card)' : 'none'
+                        }}
+                    >
                         <List size={16} />
                     </button>
                 </div>
@@ -221,86 +268,108 @@ const StaffPage: React.FC = () => {
             {viewMode === 'GRID' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredUsers.map((staff, index) => {
-                        const avatarStyle = getAvatarColor(staff.uid);
-
                         return (
                             <div
                                 key={staff.uid}
-                                className="glass-panel p-0 rounded-2xl overflow-hidden group border border-white/5 hover:border-white/20 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-500/10 hover:-translate-y-1"
-                                style={{ animationDelay: `${index * 50}ms` }}
+                                className="group relative transition-all duration-300 border hover:-translate-y-[2px]"
+                                style={{ 
+                                    background: 'var(--bg-secondary)', 
+                                    borderColor: 'var(--border)', 
+                                    borderRadius: 'var(--radius-lg)',
+                                    padding: '1.25rem',
+                                    boxShadow: 'var(--shadow-card)',
+                                    animationDelay: `${index * 30}ms`
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.borderColor = 'var(--border-accent)';
+                                    e.currentTarget.style.boxShadow = '0 4px 20px var(--accent-glow)';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.borderColor = 'var(--border)';
+                                    e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+                                }}
                             >
-                                {/* Card Header with Fluid Gradient */}
-                                <div className={`p-6 bg-gradient-to-br ${avatarStyle.from} ${avatarStyle.to} relative overflow-hidden`}>
-                                    {/* Abstract Shapes */}
-                                    <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
-                                    <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-black/10 rounded-full blur-xl"></div>
-
-                                    <div className="relative z-10 flex justify-between items-start">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md ${avatarStyle.bg} ${avatarStyle.text} border ${avatarStyle.border} group-hover:scale-110 transition-transform duration-500`}>
-                                                {getInitials(staff.displayName)}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-white text-lg leading-tight tracking-tight group-hover:text-blue-200 transition-colors">
-                                                    {staff.displayName}
-                                                </h3>
-                                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-bold border border-brand-500/30 backdrop-blur-sm uppercase tracking-wider">
-                                                        {getRoleLabel(staff.role)}
-                                                    </span>
-                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/20 border border-white/5 backdrop-blur-sm">
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${staff.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${staff.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {staff.status}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => handleOpenEdit(staff)}
-                                            className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-all backdrop-blur-md transform translate-x-2 group-hover:translate-x-0"
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center gap-4">
+                                        <div 
+                                            className="w-[52px] h-[52px] flex items-center justify-center font-bold text-[1.125rem] border shadow-sm"
+                                            style={{ 
+                                                background: 'var(--bg-surface)', 
+                                                borderColor: 'var(--border)', 
+                                                color: 'var(--accent)',
+                                                borderRadius: '99px'
+                                            }}
                                         >
-                                            <Edit size={16} />
-                                        </button>
+                                            {getInitials(staff.displayName)}
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-heading)' }}>
+                                                {staff.displayName}
+                                            </h3>
+                                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.375rem' }}>
+                                                {staff.department || 'General Department'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleOpenEdit(staff)}
+                                        className="p-1.5 opacity-0 group-hover:opacity-100 transition-all hover:bg-[var(--bg-surface)]"
+                                        style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }}
+                                    >
+                                        <Edit size={16} />
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 mb-4">
+                                    <span 
+                                        className="text-[10.5px] font-bold px-2 py-0.5 uppercase tracking-wider"
+                                        style={{ 
+                                            borderRadius: '99px',
+                                            background: (staff.role === UserRole.ADMIN || staff.role === UserRole.MASTER_ADMIN) 
+                                                ? 'rgba(61,130,201,0.12)' 
+                                                : staff.role === UserRole.MANAGER 
+                                                    ? 'rgba(201,138,42,0.12)' 
+                                                    : 'var(--bg-surface)',
+                                            color: (staff.role === UserRole.ADMIN || staff.role === UserRole.MASTER_ADMIN)
+                                                ? 'var(--color-info)'
+                                                : staff.role === UserRole.MANAGER
+                                                    ? 'var(--color-warning)'
+                                                    : 'var(--text-muted)'
+                                        }}
+                                    >
+                                        {getRoleLabel(staff.role)}
+                                    </span>
+                                    <div 
+                                        className="flex items-center gap-1.5 px-2 py-0.5 border"
+                                        style={{ 
+                                            borderRadius: '99px',
+                                            background: staff.status === 'Active' ? 'rgba(101,154,43,0.15)' : 'var(--bg-surface)',
+                                            color: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)',
+                                            borderColor: staff.status === 'Active' ? 'rgba(101,154,43,0.25)' : 'var(--border)'
+                                        }}
+                                    >
+                                        <div 
+                                            className="w-1.5 h-1.5 rounded-full" 
+                                            style={{ background: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)' }} 
+                                        />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                                            {staff.status || 'Active'}
+                                        </span>
                                     </div>
                                 </div>
 
-                                {/* Card Body */}
-                                <div className="p-6 space-y-4 bg-navy-900/40 backdrop-blur-sm">
-                                    <div className="grid grid-cols-2 gap-4">
-
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Position</p>
-                                            <div className="flex items-center text-sm font-medium text-gray-200">
-                                                <Shield size={14} className={`mr-2 ${avatarStyle.text}`} />
-                                                <span className="truncate">{staff.position || 'N/A'}</span>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Department</p>
-                                            <div className="flex items-center text-sm font-medium text-gray-200">
-                                                <Briefcase size={14} className={`mr-2 ${avatarStyle.text}`} />
-                                                <span className="truncate">{staff.department || 'General'}</span>
-                                            </div>
-                                        </div>
+                                <div className="space-y-2 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                                    <div className="flex items-center gap-[0.25rem] text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                                        <Mail size={12} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
+                                        <span className="truncate">{staff.email}</span>
                                     </div>
-
-                                    <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
-                                            <Mail size={12} className="mr-2 text-gray-500" />
-                                            <span className="truncate">{staff.email}</span>
-                                        </div>
-                                        <div className="flex items-center text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
-                                            <Phone size={12} className="mr-2 text-gray-500" />
-                                            <span className="truncate">{staff.phoneNumber || 'Not provided'}</span>
-                                        </div>
-                                        <div className="flex items-center text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
-                                            <Calendar size={12} className="mr-2 text-gray-500" />
-                                            <span>Joined: {staff.dateOfJoining || 'N/A'}</span>
-                                        </div>
+                                    <div className="flex items-center gap-[0.25rem] text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                                        <Phone size={12} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
+                                        <span>{staff.phoneNumber || 'Not provided'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-[0.25rem] text-[0.75rem]" style={{ color: 'var(--text-muted)' }}>
+                                        <Calendar size={12} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
+                                        <span>Joined: {staff.dateOfJoining || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -308,76 +377,168 @@ const StaffPage: React.FC = () => {
                     })}
                 </div>
             ) : (
-                <div className="glass-panel rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-sm text-gray-300">
-                        <thead className="bg-navy-900/50 text-gray-400 border-b border-white/10">
-                            <tr>
-                                <th className="px-6 py-4 font-heading">Name</th>
-                                <th className="px-6 py-4 font-heading">Role / Position</th>
-                                <th className="px-6 py-4 font-heading">Contact</th>
+                <div 
+                    className="overflow-hidden border"
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)' }}
+                >
+                    <div 
+                        className="grid items-center px-4 py-3 border-b uppercase tracking-wider font-black"
+                        style={{ 
+                            background: 'var(--bg-surface)', 
+                            borderColor: 'var(--border)', 
+                            gridTemplateColumns: '48px 2fr 1.5fr 1.5fr 1fr 80px',
+                            fontSize: '10px',
+                            color: 'var(--text-muted)'
+                        }}
+                    >
+                        <div className="pl-2">Avatar</div>
+                        <div>Full Name</div>
+                        <div>Role / Position</div>
+                        <div>Department</div>
+                        <div>Status</div>
+                        <div className="text-right">Action</div>
+                    </div>
+                    <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                        {filteredUsers.length > 0 ? (
+                            filteredUsers.map((staff) => (
+                                <div 
+                                    key={staff.uid} 
+                                    className="grid items-center px-4 hover:bg-[var(--bg-surface)] transition-colors group"
+                                    style={{ 
+                                        height: '52px', 
+                                        gridTemplateColumns: '48px 2fr 1.5fr 1.5fr 1fr 80px',
+                                        background: 'var(--bg-secondary)'
+                                    }}
+                                >
+                                    <div className="pl-1">
+                                        <div 
+                                            className="w-9 h-9 flex items-center justify-center font-bold border shadow-sm"
+                                            style={{ 
+                                                background: 'var(--bg-surface)', 
+                                                borderColor: 'var(--border)', 
+                                                color: 'var(--accent)',
+                                                borderRadius: '99px',
+                                                fontSize: '10px'
+                                            }}
+                                        >
+                                            {getInitials(staff.displayName)}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)' }}>{staff.displayName}</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{staff.email}</span>
+                                    </div>
+                                    <div className="flex">
+                                        <span 
+                                            className="text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider"
+                                            style={{ 
+                                                borderRadius: '99px',
+                                                background: (staff.role === UserRole.ADMIN || staff.role === UserRole.MASTER_ADMIN) 
+                                                    ? 'rgba(61,130,201,0.12)' 
+                                                    : staff.role === UserRole.MANAGER 
+                                                        ? 'rgba(201,138,42,0.12)' 
+                                                        : 'var(--bg-surface)',
+                                                color: (staff.role === UserRole.ADMIN || staff.role === UserRole.MASTER_ADMIN)
+                                                    ? 'var(--color-info)'
+                                                    : staff.role === UserRole.MANAGER
+                                                        ? 'var(--color-warning)'
+                                                        : 'var(--text-muted)'
+                                            }}
+                                        >
+                                            {staff.position || getRoleLabel(staff.role)}
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                        {staff.department || 'General'}
+                                    </div>
+                                    <div>
+                                        <div 
+                                            className="inline-flex items-center gap-1.5 px-2 py-0.5 border"
+                                            style={{ 
+                                                borderRadius: '99px',
+                                                background: staff.status === 'Active' ? 'rgba(101,154,43,0.15)' : 'var(--bg-surface)',
+                                                color: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)',
+                                                borderColor: staff.status === 'Active' ? 'rgba(101,154,43,0.25)' : 'var(--border)'
+                                            }}
+                                        >
+                                            <div 
+                                                className="w-1 h-1 rounded-full" 
+                                                style={{ background: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)' }} 
+                                            />
+                                            <span className="text-[9px] font-bold uppercase">
+                                                {staff.status || 'Active'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <button
+                                            onClick={() => handleOpenEdit(staff)}
+                                            className="p-2 transition-colors opacity-0 group-hover:opacity-100"
+                                            style={{ color: 'var(--text-muted)' }}
+                                            disabled={staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN}
+                                        >
+                                            <Edit size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 bg-transparent">
+                                <Search size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem', opacity: 0.5 }} />
+                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-heading)' }}>
+                                    No staff members found
+                                </h3>
+                                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                    Try adjusting your search or filters to find what you're looking for.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
-                                <th className="px-6 py-4 font-heading">Gender</th>
-                                <th className="px-6 py-4 font-heading">Status</th>
-                                <th className="px-6 py-4 font-heading">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {filteredUsers.map((staff) => {
-                                const avatarStyle = getAvatarColor(staff.uid);
-                                return (
-                                    <tr key={staff.uid} className="hover:bg-white/5 transition-colors border-b border-white/5">
-                                        <td className="px-6 py-4 font-medium text-white flex items-center">
-                                            <div className={`w-9 h-9 rounded-xl ${avatarStyle.bg} ${avatarStyle.text} flex items-center justify-center mr-3 text-xs font-black border ${avatarStyle.border}`}>
-                                                {getInitials(staff.displayName)}
-                                            </div>
-                                            {staff.displayName}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-white">{staff.position || getRoleLabel(staff.role)}</div>
-                                            <div className="text-xs text-gray-500">{getRoleLabel(staff.role)}</div>
-                                        </td>
-                                        <td className="px-6 py-4 text-xs">
-                                            <div className="text-gray-200 font-medium">{staff.email}</div>
-                                            <div className="text-gray-500 mt-0.5">{staff.phoneNumber || 'No phone'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-400">{staff.gender || '-'}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className={`w-1.5 h-1.5 rounded-full ${staff.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${staff.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {staff.status || 'Active'}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => handleOpenEdit(staff)}
-                                                className={`text-amber-400 hover:text-white transition-colors ${staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                disabled={staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN}
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+            {filteredUsers.length === 0 && viewMode === 'GRID' && (
+                <div className="flex flex-col items-center justify-center py-32">
+                    <Search size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem', opacity: 0.5 }} />
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-heading)' }}>
+                        No results match your criteria
+                    </h3>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        Expand your search or try a different filter category.
+                    </p>
                 </div>
             )}
 
             {/* Add/Edit Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/10">
-                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="text-lg font-bold text-white font-heading">{isEditing ? 'Edit Staff Profile' : 'Send Workspace Invitation'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors hover:rotate-90 duration-200"><X size={20} /></button>
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ 
+                        background: 'var(--modal-backdrop, rgba(0,0,0,0.6))',
+                        backdropFilter: 'blur(4px)'
+                    }}
+                >
+                    <div 
+                        className="w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] border animate-in slide-in-from-bottom-2 duration-300"
+                        style={{ 
+                            background: 'var(--bg-secondary)', 
+                            borderColor: 'var(--border-mid)', 
+                            borderRadius: 'var(--radius-xl)',
+                            boxShadow: 'var(--shadow-modal)'
+                        }}
+                    >
+                        <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)' }}>
+                            <h3 className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-heading)' }}>
+                                {isEditing ? 'Edit Staff Profile' : 'Send Workspace Invitation'}
+                            </h3>
+                            <button onClick={() => setIsModalOpen(false)} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-all">
+                                <X size={20} />
+                            </button>
                         </div>
 
                         <form onSubmit={handleSave} className="p-6 overflow-y-auto">
                             {successMessage && (
-                                <div className="mb-4 bg-emerald-500/20 text-emerald-200 px-4 py-3 rounded-lg flex items-center text-sm border border-emerald-500/30 animate-in fade-in duration-300">
+                                <div className="mb-4 bg-brand-500/20 text-brand-200 px-4 py-3 rounded-lg flex items-center text-sm border border-brand-500/30 animate-in fade-in duration-300">
                                     <CheckCircle2 size={16} className="mr-2 flex-shrink-0" /> {successMessage}
                                 </div>
                             )}
@@ -389,29 +550,29 @@ const StaffPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Full Name *</label>
-                                    <input required className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} />
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Full Name *</label>
+                                    <input required className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} />
                                 </div>
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Official Email *</label>
-                                    <input type="email" required disabled={isEditing} className="w-full glass-input rounded-lg px-3 py-2 text-sm disabled:opacity-50" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="staff@rsa.com" />
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Official Email *</label>
+                                    <input type="email" required disabled={isEditing} className="w-full px-3 py-2 text-sm border outline-none transition-all disabled:opacity-50" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="staff@rsa.com" />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Role / Permission</label>
-                                    <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Role / Permission</label>
+                                    <select className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
                                         <option value={UserRole.STAFF}>User</option>
                                         {(user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.ADMIN) && <option value={UserRole.ADMIN}>Admin</option>}
                                         {user?.role === UserRole.MASTER_ADMIN && <option value={UserRole.MASTER_ADMIN}>Master Admin</option>}
                                     </select>
-                                    <div className="text-[10px] text-gray-500 mt-1">* Only Master Admin can assign Admin roles</div>
+                                    <div className="text-[10px] italic mt-1" style={{ color: 'var(--text-muted)' }}>* Only Master Admin can assign Admin roles</div>
                                 </div>
 
-
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Job Position</label>
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Job Position</label>
                                     <select
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                        className="w-full px-3 py-2 text-sm border outline-none transition-all"
+                                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }}
                                         value={formData.position}
                                         onChange={e => setFormData({ ...formData, position: e.target.value })}
                                     >
@@ -424,9 +585,10 @@ const StaffPage: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Gender</label>
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Gender</label>
                                     <select
-                                        className="w-full glass-input rounded-lg px-3 py-2 text-sm"
+                                        className="w-full px-3 py-2 text-sm border outline-none transition-all"
+                                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }}
                                         value={formData.gender}
                                         onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
                                     >
@@ -437,31 +599,41 @@ const StaffPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Phone Number</label>
-                                    <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} />
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Phone Number</label>
+                                    <input className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Date of Joining</label>
-                                    <input type="date" className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.dateOfJoining} onChange={e => setFormData({ ...formData, dateOfJoining: e.target.value })} />
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Date of Joining</label>
+                                    <input type="date" className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.dateOfJoining} onChange={e => setFormData({ ...formData, dateOfJoining: e.target.value })} />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Status</label>
-                                    <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Status</label>
+                                    <select className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
                                         <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>
                                     </select>
                                 </div>
 
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Address</label>
-                                    <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Full residential address" />
+                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Address</label>
+                                    <input className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Full residential address" />
                                 </div>
                             </div>
 
-                            <div className="pt-6 mt-4 border-t border-white/10 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 transition-colors text-sm disabled:opacity-50">Cancel</button>
-                                <button type="submit" disabled={isSaving} className="bg-brand-600 hover:bg-brand-500 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center min-w-[150px] justify-center transition-all">
+                            <div className="pt-6 mt-4 border-t flex justify-end space-x-3" style={{ borderColor: 'var(--border)' }}>
+                                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50" style={{ color: 'var(--text-muted)' }}>Cancel</button>
+                                <button 
+                                    type="submit" 
+                                    disabled={isSaving} 
+                                    className="px-6 py-2 text-xs font-bold uppercase tracking-widest shadow-lg flex items-center min-w-[150px] justify-center transition-all"
+                                    style={{ 
+                                        background: 'var(--accent)', 
+                                        color: 'white', 
+                                        borderRadius: 'var(--radius-xl)',
+                                        boxShadow: '0 4px 12px var(--accent-glow)'
+                                    }}
+                                >
                                     {isSaving ? (
                                         <><Loader2 size={16} className="mr-2 animate-spin" /> {isEditing ? 'Saving...' : 'Sending...'}</>
                                     ) : (

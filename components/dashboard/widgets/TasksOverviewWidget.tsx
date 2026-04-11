@@ -27,11 +27,11 @@ const getPriorityConfig = (priority: string) => {
 
 const getStatusConfig = (status: string) => {
     switch (status) {
-        case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' };
-        case TaskStatus.UNDER_REVIEW: return { label: 'Under Review', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
-        case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
-        case TaskStatus.HALTED: return { label: 'Halted', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' };
-        default: return { label: 'Not Started', color: 'text-gray-400', bg: 'bg-gray-500/10 border-gray-500/20' };
+        case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-brand-600 dark:text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' };
+        case TaskStatus.UNDER_REVIEW: return { label: 'Under Review', color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/20' };
+        case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+        case TaskStatus.HALTED: return { label: 'Halted', color: 'text-status-halted', bg: 'bg-status-halted-dim border-status-halted-dim' };
+        default: return { label: 'Not Started', color: 'text-slate-500 dark:text-gray-500', bg: 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10' };
     }
 };
 
@@ -102,13 +102,13 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
         <div className="space-y-4">
             {/* ── Mode Toggle (Header Tabs) ── */}
             {isAdmin && (
-                <div className="flex bg-slate-100 dark:bg-navy-900/50 p-1 rounded-xl border border-slate-200 dark:border-white/5">
+                <div className="flex bg-slate-100 dark:bg-brand-950/20 p-1 rounded-xl border border-slate-200 dark:border-brand-500/20 shadow-inner">
                     <button
                         onClick={() => setViewMode('ALL')}
                         className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
                             viewMode === 'ALL' 
-                                ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' 
-                                : 'text-slate-500 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-300'
+                                ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-md shadow-brand-900/10' 
+                                : 'text-slate-500 dark:text-gray-500 hover:text-slate-700 dark:hover:text-brand-400'
                         }`}
                     >
                         <LayoutGrid size={14} /> All Tasks
@@ -117,8 +117,8 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
                         onClick={() => setViewMode('MY')}
                         className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
                             viewMode === 'MY' 
-                                ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' 
-                                : 'text-slate-500 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-300'
+                                ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-md shadow-brand-900/10' 
+                                : 'text-slate-500 dark:text-gray-500 hover:text-slate-700 dark:hover:text-brand-400'
                         }`}
                     >
                         <UserCheck size={14} /> My Tasks
@@ -130,7 +130,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
             <div className="flex flex-wrap gap-1.5">
                 <button
                     onClick={() => setFilterStatus('active')}
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'active' ? 'bg-brand-500/20 border-brand-500/30 text-brand-600 dark:text-brand-300' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-500'}`}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'active' ? 'bg-brand-500/20 border-brand-500/30 text-brand-600 dark:text-brand-300 shadow-[0_0_12px_rgba(101,154,43,0.1)]' : 'bg-slate-50 dark:bg-brand-950/20 border-slate-200 dark:border-brand-500/10 text-slate-500 dark:text-gray-500'}`}
                 >
                     Active · {activeCount}
                 </button>
@@ -145,7 +145,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
                 {reviewCount > 0 && (
                     <button
                         onClick={() => setFilterStatus('review')}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border border-purple-500/20 bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-all ${filterStatus === 'review' ? 'ring-1 ring-purple-500/50' : ''}`}
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition-all ${filterStatus === 'review' ? 'ring-1 ring-indigo-500/50' : ''}`}
                     >
                         Review · {reviewCount}
                     </button>
@@ -160,13 +160,13 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
 
             {/* ── Search ── */}
             <div className="relative">
-                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-600" />
+                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-brand-500/40" />
                 <input
                     type="text"
                     placeholder={`Search ${viewMode === 'MY' ? 'your' : 'all'} tasks...`}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-white/4 border border-slate-200 dark:border-white/8 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500/40 transition-all"
+                    className="w-full bg-slate-50 dark:bg-brand-950/30 border border-slate-200 dark:border-brand-500/10 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500/40 focus:ring-2 focus:ring-brand-500/5 transition-all"
                 />
             </div>
 

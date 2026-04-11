@@ -49,7 +49,7 @@ const CommandStrip: React.FC<CommandStripProps> = ({
             icon: <CheckSquare size={13} />,
             label: 'My Tasks',
             value: pendingTasksCount,
-            accent: pendingTasksCount > 5 ? 'text-rose-600 dark:text-rose-400' : pendingTasksCount > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-emerald-600 dark:text-emerald-400',
+            accent: pendingTasksCount > 5 ? 'text-rose-600 dark:text-rose-400' : pendingTasksCount > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-brand-600 dark:text-brand-400',
             onClick: () => navigate('/tasks'),
         },
     ];

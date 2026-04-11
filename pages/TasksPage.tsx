@@ -462,7 +462,8 @@ const TasksPage: React.FC = () => {
             clientIds: [],
             teamLeaderId: '',
             comments: [],
-            auditPhase: AuditPhase.ONBOARDING
+            auditPhase: AuditPhase.ONBOARDING,
+            taskType: filterTaskType !== 'ALL' ? (filterTaskType as TaskType) : TaskType.OTHER
         });
         setIsModalOpen(true);
         setDateMode('AD');
@@ -595,7 +596,7 @@ const TasksPage: React.FC = () => {
                 createTaskMutation.mutate(taskToSave as Task);
             }
 
-            // Mentions Notification Logic
+            // Mentions Notification Logic (In-app)
             if (currentTask.description) {
                 usersList.forEach(u => {
                     const mention = `@${u.displayName} `;
@@ -1070,22 +1071,9 @@ const TasksPage: React.FC = () => {
                 }
             }
 
-            // B. Forward-Only Rule: Staff/Assignees (non-admin/non-manager) can only move FORWARD
-            if (!isAdmin && !isManager) {
-                const oldPhaseOrder = PHASE_ORDER[task.auditPhase as AuditPhase || AuditPhase.ONBOARDING];
-                const newPhaseOrder = PHASE_ORDER[newPhase];
-                const oldStatusOrder = STATUS_ORDER[task.status];
-                const newStatusOrder = STATUS_ORDER[newStatus];
+            // B. Directional Governance: Logic here can be added if specific phase-lock is needed, 
+            // but for now we follow the form's flexibility as requested.
 
-                // Check for backward movement
-                const isBackwardPhase = newPhaseOrder < oldPhaseOrder;
-                const isBackwardStatus = (newPhaseOrder === oldPhaseOrder) && (newStatusOrder < oldStatusOrder);
-
-                if (isBackwardPhase || isBackwardStatus) {
-                    toast.error('Workflow Governance: Users can only move tasks forward. Please contact Admin for backward moves.', { icon: '🚫' });
-                    return;
-                }
-            }
             if (newPhase === AuditPhase.ONBOARDING && newStatus === TaskStatus.UNDER_REVIEW) {
                 newStatus = TaskStatus.IN_PROGRESS;
             }
@@ -1305,35 +1293,44 @@ const TasksPage: React.FC = () => {
     );
 
     return (
-        <div className="relative h-full w-full flex flex-col overflow-hidden bg-transparent">
+        <div className="relative h-full w-full flex flex-col overflow-hidden bg-surface">
             {/* --- REFINED UNIFIED TOOLBAR --- */}
-            <header className="flex-none bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.04] relative z-20 transition-colors duration-300">
-                <div className="flex flex-col border-b border-slate-100 dark:border-white/[0.02]">
-                    <div className="flex items-center gap-3 px-4 py-2.5">
+            <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-30 transition-colors duration-300">
+                <div className="flex flex-col border-b border-border/50">
+                    <div className="flex items-center gap-3 px-4 py-3">
                         {/* LEFT: View Mode Toggle */}
-                        <div className="flex bg-slate-100 dark:bg-white/[0.03] rounded-xl p-1 border border-slate-200 dark:border-white/[0.05] h-[34px] flex-shrink-0 shadow-inner dark:shadow-black/20">
-                            <button
-                                onClick={() => setViewMode('LIST')}
-                                className={`px-3 flex items-center gap-1.5 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'LIST' ? 'bg-indigo-500/20 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.2)] border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                <ListIcon size={12} /> List
-                            </button>
-                            {!isMobile && (
-                                <button
-                                    onClick={() => setViewMode('KANBAN')}
-                                    className={`px-3 flex items-center gap-1.5 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'KANBAN' ? 'bg-indigo-500/20 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.2)] border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300'}`}
-                                >
-                                    <LayoutGrid size={12} /> Board
-                                </button>
-                            )}
-                            {!isMobile && (
-                                <button
-                                    onClick={() => setViewMode('TIMELINE')}
-                                    className={`px-3 flex items-center gap-1.5 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'TIMELINE' ? 'bg-indigo-500/20 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.2)] border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300'}`}
-                                >
-                                    <GanttChartSquare size={12} /> Timeline
-                                </button>
-                            )}
+                        <div
+                            className="flex-shrink-0 inline-flex"
+                            style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: '3px', border: '1px solid var(--border)' }}
+                        >
+                            {([
+                                { id: 'LIST', label: 'List', Icon: ListIcon, desktopOnly: false },
+                                { id: 'KANBAN', label: 'Board', Icon: LayoutGrid, desktopOnly: true },
+                                { id: 'TIMELINE', label: 'Timeline', Icon: GanttChartSquare, desktopOnly: true },
+                            ] as const).map(({ id, label, Icon, desktopOnly }) => {
+                                if (desktopOnly && isMobile) return null;
+                                const isActive = viewMode === id;
+                                return (
+                                    <button
+                                        key={id}
+                                        onClick={() => setViewMode(id as any)}
+                                        className="flex items-center gap-1.5 transition-all"
+                                        style={{
+                                            height: '30px',
+                                            padding: '0 0.75rem',
+                                            fontSize: '0.8125rem',
+                                            fontWeight: isActive ? 600 : 400,
+                                            borderRadius: 'var(--radius-sm)',
+                                            color: isActive ? 'var(--text-heading)' : 'var(--text-muted)',
+                                            background: isActive ? 'var(--bg-secondary)' : 'transparent',
+                                            boxShadow: isActive ? 'var(--shadow-card)' : 'none',
+                                        }}
+                                    >
+                                        <Icon size={13} />
+                                        {label}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* CENTER: Search & Workflow Dropdown */}
@@ -1342,36 +1339,37 @@ const TasksPage: React.FC = () => {
                             <div className="relative" ref={workflowMenuRef}>
                                 <button
                                     onClick={() => setShowWorkflowMenu(!showWorkflowMenu)}
-                                    className={`h-[34px] px-3.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${
+                                    className={`h-[38px] px-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${
                                         filterTaskType !== 'ALL'
-                                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-lg shadow-indigo-500/5'
-                                            : 'bg-slate-100 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.1] text-slate-500 hover:text-slate-300'
+                                            ? 'bg-accent/10 border-accent/40 text-accent'
+                                            : 'bg-secondary border-border text-muted hover:text-heading hover:border-border-mid'
                                     }`}
                                 >
-                                    <Layers size={13} className={filterTaskType !== 'ALL' ? 'text-indigo-400' : 'text-slate-400'} />
+                                    <Layers size={13} className={filterTaskType !== 'ALL' ? 'text-accent' : 'text-muted'} />
                                     <span className="max-w-[120px] truncate">
-                                        {filterTaskType === 'ALL' ? 'All Workflows' : filterTaskType.replace(/_/g, ' ')}
+                                        {filterTaskType === 'ALL' ? 'Workflows' : filterTaskType.replace(/_/g, ' ')}
                                     </span>
-                                    <ChevronDown size={10} className={`transition-transform duration-200 ${showWorkflowMenu ? 'rotate-180' : ''}`} />
+                                    <ChevronDown size={11} className={`transition-transform duration-300 ${showWorkflowMenu ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 <AnimatePresence>
                                     {showWorkflowMenu && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 8 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 8 }}
-                                            className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
-                                        >
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 8 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 8 }}
+                                                    className="absolute top-full left-0 mt-2 w-64 border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
+                                                    style={{ background: 'var(--bg-secondary)' }}
+                                                >
                                             <div className="p-2 space-y-0.5">
                                                 <button
                                                     onClick={() => { setFilterTaskType('ALL'); setShowWorkflowMenu(false); }}
-                                                    className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${filterTaskType === 'ALL' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
+                                                    className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${filterTaskType === 'ALL' ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-surface hover:text-heading'}`}
                                                 >
                                                     All Workflows
                                                     {filterTaskType === 'ALL' && <Check size={12} />}
                                                 </button>
-                                                <div className="h-px bg-slate-100 dark:bg-white/[0.05] my-1 mx-2" />
+                                                <div className="h-px bg-border my-1 mx-2" />
                                                 {Object.values(TaskType).filter(t => t !== TaskType.OTHER).map((type, idx) => {
                                                     const isSelected = filterTaskType === type;
                                                     const count = tasks.filter(t => t.taskType === type).length;
@@ -1379,10 +1377,10 @@ const TasksPage: React.FC = () => {
                                                         <button
                                                             key={type || `type-${idx}`}
                                                             onClick={() => { setFilterTaskType(type); setShowWorkflowMenu(false); }}
-                                                            className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${isSelected ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
+                                                            className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${isSelected ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-surface hover:text-heading'}`}
                                                         >
                                                             <div className="flex items-center gap-2">
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-400' : 'bg-slate-700'}`} />
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-accent' : 'bg-border-mid'}`} />
                                                                 {type.replace(/_/g, ' ')}
                                                             </div>
                                                             {count > 0 && <span className="text-[9px] opacity-40">{count}</span>}
@@ -1396,13 +1394,13 @@ const TasksPage: React.FC = () => {
                             </div>
 
                             <div className="relative flex-1 group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-600 group-focus-within:text-amber-500 transition-colors" size={13} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors" size={13} />
                                 <input
                                     type="text"
-                                    placeholder="Search tasks, clients, or IDs..."
+                                    placeholder="Search assignments, clients, or IDs..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full h-[34px] bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] hover:border-slate-400 dark:hover:border-white/[0.12] rounded-xl pl-9 pr-3 text-[11px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:border-amber-500/40 dark:focus:border-amber-500/40 focus:bg-white dark:focus:bg-white/5 transition-all shadow-sm"
+                                    className="w-full h-[38px] bg-secondary border border-border hover:border-accent/30 rounded-xl pl-9 pr-3 text-[11px] text-heading placeholder:text-muted focus:outline-none focus:border-accent/50 focus:bg-surface transition-all shadow-sm"
                                 />
                             </div>
                         </div>
@@ -1412,10 +1410,10 @@ const TasksPage: React.FC = () => {
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="flex items-center gap-2 flex-shrink-0 bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-2 py-1 shadow-lg shadow-indigo-500/10"
+                                className="flex items-center gap-2 flex-shrink-0 bg-accent/10 border border-accent/30 rounded-xl px-2 py-1 shadow-accent-glow"
                             >
-                                <span className="text-[10px] font-black text-indigo-400 tabular-nums px-2 py-0.5 bg-indigo-500/20 rounded-lg">{selectedTaskIds.length}</span>
-                                <div className="w-px h-4 bg-indigo-500/20" />
+                                <span className="text-[10px] font-black text-accent tabular-nums px-2 py-0.5 bg-accent/20 rounded-lg">{selectedTaskIds.length} Selective</span>
+                                <div className="w-px h-4 bg-accent/20" />
                                 <div className="relative" ref={statusMenuRef}>
                                     <button
                                         onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
@@ -1429,7 +1427,7 @@ const TasksPage: React.FC = () => {
                                                 initial={{ opacity: 0, y: 8 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 8 }}
-                                                className="absolute top-full left-0 mt-2 w-44 bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl"
+                                                className="absolute top-full left-0 mt-2 w-44 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl"
                                             >
                                                 {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
                                                     <button
@@ -1458,7 +1456,7 @@ const TasksPage: React.FC = () => {
                                                 initial={{ opacity: 0, y: 8 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 8 }}
-                                                className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-[#09090b] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
+                                                className="absolute top-full left-0 mt-2 w-52 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
                                             >
                                                 <div className="px-4 py-2.5 border-b border-slate-100 dark:border-white/[0.05] bg-slate-50 dark:bg-white/[0.02]">
                                                     <p className="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest text-center">Assign to Team</p>
@@ -1505,31 +1503,31 @@ const TasksPage: React.FC = () => {
                             <button
                                 onClick={() => setIsTemplateModalOpen(true)}
                                 disabled={!canCreateTask}
-                                className="h-[34px] px-3.5 bg-slate-100 dark:bg-white/[0.02] hover:bg-slate-200 dark:hover:bg-white/[0.06] text-slate-600 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-white/[0.06] flex items-center gap-2 text-[10px] font-black transition-all disabled:opacity-50 shadow-sm"
+                                className="h-[38px] px-4 bg-secondary border border-border rounded-xl flex items-center gap-2 text-[10px] font-black tracking-widest text-muted hover:text-heading transition-all disabled:opacity-50"
                             >
-                                <Sparkles size={13} className="text-amber-600 dark:text-amber-500" />
-                                <span className={isMobile ? 'sr-only' : ''}>TEMPLATES</span>
+                                <Sparkles size={13} className="text-accent" />
+                                <span className={isMobile ? 'sr-only' : ''}>PRESETS</span>
                             </button>
 
                             {/* Export Group */}
-                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/[0.02] p-1 rounded-xl border border-slate-200 dark:border-white/[0.06] h-[34px] shadow-sm">
-                                <button onClick={handleExportPDF} title="Export PDF" className="w-7 h-full flex items-center justify-center hover:bg-rose-500/10 text-rose-600 dark:text-rose-500/70 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-all"><FileText size={14} /></button>
-                                <button onClick={() => handleExportExcel()} title="Export Excel" className="w-7 h-full flex items-center justify-center hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500/70 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg transition-all"><FileSpreadsheet size={14} /></button>
+                            <div className="flex items-center gap-1 bg-secondary border border-border p-1 rounded-xl h-[38px]">
+                                <button onClick={handleExportPDF} title="Export PDF" className="w-[30px] h-full flex items-center justify-center hover:bg-status-halted/10 text-status-halted rounded-lg transition-all"><FileText size={14} /></button>
+                                <button onClick={() => handleExportExcel()} title="Export Excel" className="w-[30px] h-full flex items-center justify-center hover:bg-status-completed/10 text-status-completed rounded-lg transition-all"><FileSpreadsheet size={14} /></button>
                             </div>
 
-                            {/* Filters Button — Integrated into Main Bar */}
+                            {/* Filters Button */}
                             <button
                                 onClick={() => setShowFilterPanel(!showFilterPanel)}
-                                className={`h-[34px] px-3.5 flex items-center gap-2 rounded-xl border text-[10px] font-black transition-all ${
+                                className={`h-[38px] px-4 flex items-center gap-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
                                     showFilterPanel || activeFilterCount > 0
-                                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-lg shadow-amber-500/5'
-                                        : 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] text-slate-500 hover:text-slate-300'
+                                        ? 'bg-accent/15 border-accent/40 text-accent shadow-accent-glow'
+                                        : 'bg-secondary border-border text-muted hover:text-heading'
                                 }`}
                             >
                                 <Filter size={13} className={activeFilterCount > 0 ? 'animate-pulse' : ''} />
-                                <span>FILTERS</span>
+                                <span>Refine</span>
                                 {activeFilterCount > 0 && (
-                                    <div className="w-4 h-4 rounded-full bg-amber-500 text-black text-[9px] font-black flex items-center justify-center ml-1">
+                                    <div className="w-4 h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center ml-1">
                                         {activeFilterCount}
                                     </div>
                                 )}
@@ -1538,10 +1536,10 @@ const TasksPage: React.FC = () => {
                             <button
                                 onClick={handleOpenCreate}
                                 disabled={!canCreateTask}
-                                className="h-[34px] px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20 flex-shrink-0 disabled:opacity-50"
+                                className="h-[38px] px-5 bg-accent hover:bg-accent-light text-white rounded-xl text-[10px] font-black uppercase tracking-[0.14em] flex items-center gap-2 transition-all shadow-accent-glow disabled:opacity-50 active:scale-95"
                             >
-                                <Plus size={15} strokeWidth={3} />
-                                <span className={isMobile ? 'sr-only' : ''}>NEW TASK</span>
+                                <Plus size={16} strokeWidth={3} />
+                                <span className={isMobile ? 'sr-only' : ''}>Create New</span>
                             </button>
                         </div>
                     </div>
@@ -1615,7 +1613,7 @@ const TasksPage: React.FC = () => {
                                         { key: 'IN_PROGRESS', label: 'In Progress', count: statusStats.IN_PROGRESS, activeColor: 'bg-blue-500/15 border-blue-400/30 text-blue-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-blue-400', dotGlow: 'shadow-[0_0_6px_rgba(96,165,250,0.4)]' },
                                         { key: 'UNDER_REVIEW', label: 'Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-500/15 border-amber-400/30 text-amber-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-amber-400', dotGlow: 'shadow-[0_0_6px_rgba(251,191,36,0.4)]' },
                                         { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-500/15 border-rose-400/30 text-rose-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-rose-400', dotGlow: 'shadow-[0_0_6px_rgba(251,113,133,0.4)]' },
-                                        { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-emerald-400', dotGlow: 'shadow-[0_0_6_rgba(52,211,153,0.4)]' },
+                                        { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-brand-500/15 border-brand-400/30 text-brand-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-brand-400', dotGlow: 'shadow-[0_0_6_rgba(52,211,153,0.4)]' },
                                     ] as const).map(({ key, label, count, activeColor, inactiveColor, dot, dotGlow }) => {
                                         const isActive = filterStatus === key;
                                         return (

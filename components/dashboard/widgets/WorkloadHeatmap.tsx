@@ -56,9 +56,9 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
                     </p>
                 </div>
                 {staffStats.free.length > 0 && (
-                    <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-xs font-medium text-emerald-400">
+                    <div className="px-3 py-1 bg-brand-500/10 border border-brand-500/20 rounded-full flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
+                        <span className="text-xs font-medium text-brand-400">
                             {staffStats.free.length} Free
                         </span>
                     </div>

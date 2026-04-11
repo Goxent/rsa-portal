@@ -48,73 +48,70 @@ const TeamWorkloadWidget: React.FC<TeamWorkloadWidgetProps> = ({
     const avgTasks = totalStaff > 0 ? (totalActiveTasks / totalStaff).toFixed(1) : '0';
 
     const getBarColor = (count: number) => {
-        if (count >= 7) return 'from-red-500 to-rose-600';
-        if (count >= 5) return 'from-orange-400 to-amber-500';
-        if (count >= 3) return 'from-yellow-400 to-amber-400';
-        if (count >= 1) return 'from-brand-500 to-indigo-500';
-        return 'from-emerald-500 to-teal-500';
+        if (count >= 7) return 'bg-status-halted';
+        if (count >= 5) return 'bg-color-warning'; // or status-pending
+        if (count >= 3) return 'bg-accent';
+        return 'bg-status-completed';
     };
 
     const getStatusDot = (count: number) => {
-        if (count >= 5) return 'bg-red-400 shadow-red-400/50';
-        if (count >= 3) return 'bg-amber-400 shadow-amber-400/50';
-        if (count >= 1) return 'bg-brand-400 shadow-brand-400/50';
-        return 'bg-emerald-400 shadow-emerald-400/50';
+        if (count >= 5) return 'bg-status-halted shadow-status-halted-dim';
+        if (count >= 3) return 'bg-accent shadow-accent-glow';
+        return 'bg-status-completed shadow-status-completed-dim';
     };
 
     const getStatusLabel = (count: number) => {
-        if (count >= 7) return { text: 'Critical', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
-        if (count >= 5) return { text: 'Overloaded', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' };
-        if (count >= 3) return { text: 'Busy', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
-        if (count >= 1) return { text: 'Active', color: 'text-brand-400 bg-brand-500/10 border-brand-500/20' };
-        return { text: 'Free', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+        if (count >= 7) return { text: 'Critical', color: 'text-status-halted bg-status-halted-dim border-status-halted-dim' };
+        if (count >= 5) return { text: 'Overloaded', color: 'text-status-pending bg-status-pending-dim border-status-pending-dim' };
+        if (count >= 3) return { text: 'Busy', color: 'text-accent bg-accent/10 border-accent/20' };
+        return { text: 'Optimal', color: 'text-status-completed bg-status-completed-dim border-status-completed-dim' };
     };
 
     if (totalStaff === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-                <Users size={28} className="mb-2 opacity-40" />
-                <p className="text-xs">No staff data available</p>
+            <div className="flex flex-col items-center justify-center min-h-[160px] text-muted">
+                <Users size={24} className="mb-2 opacity-20" />
+                <p className="text-[11px] font-medium uppercase tracking-widest">No Staff Connected</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 py-1">
             {/* Summary Row */}
-            <div className="grid grid-cols-3 gap-2">
-                <div className="bg-white/5 rounded-xl p-2.5 text-center border border-white/5">
-                    <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <Users size={11} className="text-gray-400" />
-                        <span className="text-lg font-bold text-white">{totalStaff}</span>
+            <div className="grid grid-cols-3 gap-3">
+                <div className="bg-surface rounded-xl p-3 border border-border shadow-sm">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <Users size={12} className="text-muted" />
+                        <span className="text-xl font-bold text-heading tabular-nums">{totalStaff}</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">Total</p>
+                    <p className="text-[9px] text-muted font-black uppercase tracking-widest text-center">Connected</p>
                 </div>
-                <div className="bg-white/5 rounded-xl p-2.5 text-center border border-white/5">
-                    <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <TrendingUp size={11} className="text-brand-400" />
-                        <span className="text-lg font-bold text-white">{avgTasks}</span>
+                <div className="bg-surface rounded-xl p-3 border border-border shadow-sm">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <TrendingUp size={12} className="text-accent" />
+                        <span className="text-xl font-bold text-heading tabular-nums">{avgTasks}</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">Avg Tasks</p>
+                    <p className="text-[9px] text-muted font-black uppercase tracking-widest text-center">Avg Load</p>
                 </div>
-                <div className={`rounded-xl p-2.5 text-center border ${overloadedCount > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
-                    <div className="flex items-center justify-center gap-1 mb-0.5">
+                <div className={`rounded-xl p-3 border shadow-sm transition-colors ${overloadedCount > 0 ? 'bg-status-halted-dim border-status-halted-dim' : 'bg-status-completed-dim border-status-completed-dim'}`}>
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
                         {overloadedCount > 0
-                            ? <AlertTriangle size={11} className="text-red-400" />
-                            : <CheckCircle size={11} className="text-emerald-400" />
+                            ? <Zap size={12} className="text-status-halted" />
+                            : <CheckCircle size={12} className="text-status-completed" />
                         }
-                        <span className={`text-lg font-bold ${overloadedCount > 0 ? 'text-red-300' : 'text-emerald-300'}`}>
+                        <span className={`text-xl font-bold tabular-nums ${overloadedCount > 0 ? 'text-status-halted' : 'text-status-completed'}`}>
                             {overloadedCount > 0 ? overloadedCount : '✓'}
                         </span>
                     </div>
-                    <p className={`text-[10px] uppercase tracking-wide ${overloadedCount > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                        {overloadedCount > 0 ? 'Overloaded' : 'Balanced'}
+                    <p className={`text-[9px] font-black uppercase tracking-widest text-center ${overloadedCount > 0 ? 'text-status-halted' : 'text-status-completed'}`}>
+                        {overloadedCount > 0 ? 'Strain' : 'Stable'}
                     </p>
                 </div>
             </div>
 
             {/* Staff Workload Bars */}
-            <div className="space-y-2 max-h-[180px] overflow-y-auto custom-scrollbar pr-1 pb-1">
+            <div className="space-y-1.5 max-h-[190px] overflow-y-auto custom-scrollbar pr-1">
                 {allStaff.map((staff) => {
                     const barWidth = staff.taskCount === 0 ? 4 : Math.min((staff.taskCount / maxTasks) * 100, 100);
                     const isHovered = hoveredId === staff.uid;
@@ -123,88 +120,70 @@ const TeamWorkloadWidget: React.FC<TeamWorkloadWidgetProps> = ({
                     return (
                         <div
                             key={staff.uid}
-                            className={`group relative rounded-xl p-2.5 border transition-all duration-200 cursor-default
-                                ${isHovered ? 'bg-white/8 border-white/15' : 'bg-white/3 border-white/5 hover:bg-white/6 hover:border-white/10'}`}
+                            className={`group relative rounded-lg p-3 border transition-all duration-200
+                                ${isHovered ? 'bg-surface border-border shadow-card' : 'bg-transparent border-transparent hover:bg-secondary/40'}`}
                             onMouseEnter={() => setHoveredId(staff.uid)}
                             onMouseLeave={() => setHoveredId(null)}
                         >
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-3">
                                 {/* Avatar */}
                                 <div className="relative flex-shrink-0">
-                                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500/80 to-accent-purple/80 flex items-center justify-center text-[11px] font-bold text-white">
+                                    <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center text-[11px] font-black text-heading group-hover:border-accent group-hover:text-accent transition-all">
                                         {staff.displayName?.charAt(0)?.toUpperCase() || '?'}
                                     </div>
-                                    <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0d1526] shadow-sm ${getStatusDot(staff.taskCount)}`} />
+                                    <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-secondary ${getStatusDot(staff.taskCount)}`} />
                                 </div>
 
                                 {/* Name + Bar */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-[11px] font-medium text-gray-200 truncate max-w-[90px]">
-                                            {staff.displayName?.split(' ')[0] || 'Unknown'}
+                                        <span className="text-[12px] font-bold text-heading truncate">
+                                            {staff.displayName || 'Anonymous'}
                                         </span>
-                                        <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center gap-2">
                                             {(staff.overdueCount || 0) > 0 && (
-                                                <span className="flex items-center gap-0.5 text-[9px] text-red-400">
+                                                <span className="flex items-center gap-0.5 text-[9px] font-bold text-status-halted bg-status-halted-dim px-1.5 rounded">
                                                     <Clock size={8} />
                                                     {staff.overdueCount}
                                                 </span>
                                             )}
-                                            <span className="text-[10px] font-bold text-white">
+                                            <span className="text-[11px] font-black text-heading tabular-nums">
                                                 {staff.taskCount}
                                             </span>
                                         </div>
                                     </div>
                                     {/* Progress Bar */}
-                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-1 bg-surface rounded-full overflow-hidden border border-border/20">
                                         <div
-                                            className={`h-full bg-gradient-to-r ${getBarColor(staff.taskCount)} rounded-full transition-all duration-500`}
+                                            className={`h-full ${getBarColor(staff.taskCount)} rounded-full transition-all duration-700 shadow-sm`}
                                             style={{ width: `${barWidth}%` }}
                                         />
                                     </div>
                                 </div>
 
                                 {/* Status Badge (shown on hover) */}
-                                <div className={`flex-shrink-0 transition-all duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-md border font-medium ${status.color}`}>
+                                <div className={`flex-shrink-0 transition-all duration-200 hidden sm:block ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider border ${status.color}`}>
                                         {status.text}
                                     </span>
                                 </div>
                             </div>
-
-                            {/* Hover tooltip: risk + overdue details */}
-                            {isHovered && ((staff.highRiskCount || 0) > 0 || (staff.overdueCount || 0) > 0) && (
-                                <div className="mt-2 pt-2 border-t border-white/5 flex gap-3">
-                                    {(staff.highRiskCount || 0) > 0 && (
-                                        <div className="flex items-center gap-1 text-[10px] text-red-400">
-                                            <Zap size={9} />
-                                            <span>{staff.highRiskCount} high risk</span>
-                                        </div>
-                                    )}
-                                    {(staff.overdueCount || 0) > 0 && (
-                                        <div className="flex items-center gap-1 text-[10px] text-amber-400">
-                                            <Clock size={9} />
-                                            <span>{staff.overdueCount} overdue</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     );
                 })}
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-3 pt-3 mt-2 border-t border-white/5">
+            <div className="flex items-center flex-wrap gap-4 pt-4 border-t border-border/50">
                 {[
-                    { color: 'bg-emerald-400', label: 'Free' },
-                    { color: 'bg-brand-400', label: 'Active' },
-                    { color: 'bg-amber-400', label: 'Busy' },
-                    { color: 'bg-red-400', label: 'Overloaded' },
+                    { color: 'bg-status-completed', label: 'Optimal' },
+                    { color: 'bg-accent', label: 'Active' },
+                    { color: 'bg-status-pending', label: 'High' },
+                    { color: 'bg-status-halted', label: 'Strain' },
                 ].map(item => (
-                    <div key={item.label} className="flex items-center gap-1">
+                    <div key={item.label} className="flex items-center gap-1.5">
                         <div className={`w-1.5 h-1.5 rounded-full ${item.color}`} />
-                        <span className="text-[9px] text-gray-500">{item.label}</span>
+                        <span className="text-[9px] text-muted font-bold uppercase tracking-widest">{item.label}</span>
                     </div>
                 ))}
             </div>

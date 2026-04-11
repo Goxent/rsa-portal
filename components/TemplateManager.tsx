@@ -248,7 +248,7 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     <span className="flex-1 text-sm">{s.title}</span>
                                                     {s.phase && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{s.phase.replace(/_/g, ' ')}</span>}
                                                     {s.assigneeRole && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{s.assigneeRole}</span>}
-                                                    {s.daysOffset !== undefined && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">+{s.daysOffset} d</span>}
+                                                    {s.daysOffset !== undefined && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-brand-500/10 text-brand-400 border border-brand-500/20">+{s.daysOffset} d</span>}
                                                     {isAdmin && (
                                                         <button type="button" onClick={() => removeSubtask(idx)} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1"><X size={14} /></button>
                                                     )}

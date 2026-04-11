@@ -254,7 +254,7 @@ export const getVisibilityBadge = (visibility: EventVisibility): { text: string;
         PRIVATE: { text: 'Private', color: 'text-gray-400 bg-gray-500/10 border-gray-500/20' },
         PUBLIC: { text: 'Public', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
         TEAM: { text: 'Team', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-        DEPARTMENT: { text: 'Department', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+        DEPARTMENT: { text: 'Department', color: 'text-brand-400 bg-brand-500/10 border-brand-500/20' },
     };
 
     return badges[visibility];

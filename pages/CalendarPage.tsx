@@ -49,11 +49,11 @@ const DraggableTask = ({ task, canDrag }: { task: Task, canDrag: boolean }) => {
             style={style}
             {...listeners}
             {...attributes}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand-500/20 border border-brand-500/30 hover:bg-brand-500/30 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
             onClick={(e) => { e.stopPropagation(); }}
         >
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-            <div className="text-[10.5px] text-emerald-50 truncate font-bold leading-none">
+            <div className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            <div className="text-[10.5px] text-brand-50 truncate font-bold leading-none">
                 {task.title}
             </div>
         </div>
@@ -70,7 +70,7 @@ const DroppableDay = ({ dateStr, isToday, isSelected, onClick, children }: any) 
             ref={setNodeRef}
             onClick={onClick}
             className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
-                ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-900/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                ? 'border-brand-500/50 bg-gradient-to-br from-brand-500/20 to-brand-/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                 : isSelected
                     ? 'border-amber-500/50 bg-gradient-to-br from-blue-600/20 to-amber-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
                     : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
@@ -345,7 +345,7 @@ const CalendarPage: React.FC = () => {
             >
                 <div className="grid grid-cols-7 gap-3 lg:gap-4 mb-2">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                        <div key={d} className={`text-center text-[11px] font-black uppercase tracking-[0.2em] py-2 ${i === 6 ? 'text-rose-500 drop-shadow-sm' : 'text-emerald-500'}`}>
+                        <div key={d} className={`text-center text-[11px] font-black uppercase tracking-[0.2em] py-2 ${i === 6 ? 'text-rose-500 drop-shadow-sm' : 'text-brand-500'}`}>
                             {d}
                         </div>
                     ))}
@@ -372,7 +372,7 @@ const CalendarPage: React.FC = () => {
                             >
                                 <div className="flex justify-between items-start mb-2 relative z-10">
                                     <span className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday
-                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                                        ? 'bg-brand-500 text-white shadow-lg shadow-brand-/30'
                                         : isSelected
                                             ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/30'
                                             : 'text-gray-300 group-hover:bg-white/10'}`}>
@@ -557,7 +557,7 @@ const CalendarPage: React.FC = () => {
                                                     <span className="font-bold text-white group-hover:text-brand-300 transition-colors block">{event.title}</span>
                                                     {event.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1 max-w-xs">{event.description}</p>}
                                                 </div>
-                                                {event.isRecurring && <Repeat size={14} className="text-emerald-400 shrink-0 opacity-70" />}
+                                                {event.isRecurring && <Repeat size={14} className="text-brand-400 shrink-0 opacity-70" />}
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -764,7 +764,7 @@ const CalendarPage: React.FC = () => {
                                                             </span>
                                                             <span className="uppercase font-bold tracking-wider">{eventWithDefaults.type.replace('_', ' ')}</span>
                                                             {eventWithDefaults.isRecurring && (
-                                                                <span className="text-emerald-400 flex items-center font-bold">
+                                                                <span className="text-brand-400 flex items-center font-bold">
                                                                     <Repeat size={10} className="mr-1" /> Recurring
                                                                 </span>
                                                             )}

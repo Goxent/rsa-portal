@@ -165,36 +165,54 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#161b22] rounded-2xl w-full max-w-lg border border-[#30363d] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
-                <div className="px-6 py-5 border-b border-[#30363d] flex justify-between items-center bg-[#0d1117]/50">
+        <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            style={{ 
+                background: 'var(--modal-backdrop, rgba(0,0,0,0.6))',
+                backdropFilter: 'blur(4px)'
+            }}
+        >
+            <div 
+                className="w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[90vh] border animate-in slide-in-from-bottom-3 duration-300"
+                style={{ 
+                    background: 'var(--bg-secondary)', 
+                    borderColor: 'var(--border-mid)', 
+                    borderRadius: 'var(--radius-xl)',
+                    boxShadow: 'var(--shadow-modal)'
+                }}
+            >
+                {/* Header */}
+                <div className="px-6 py-5 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)' }}>
                     <div>
-                        <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
-                            <CheckCircle2 className="text-amber-500" size={20} />
+                        <h2 className="text-base font-bold flex items-center gap-2 tracking-tight" style={{ color: 'var(--text-heading)' }}>
+                            <CheckCircle2 style={{ color: 'var(--accent)' }} size={18} />
                             {isAdmin ? 'Log Attendance' : 'Request Attendance Log'}
                         </h2>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                        <p className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: 'var(--text-muted)' }}>
                             {activeUser ? activeUser.displayName : 'Select Staff Member'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white transition-all p-1.5 hover:bg-white/5 rounded-xl border border-transparent hover:border-white/5">
+                    <button onClick={onClose} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-all">
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
-                    {/* Date Selection */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                <Calendar size={12} className="text-amber-500/50" /> Log Date
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                                <Calendar size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Log Date
                             </label>
                             <button
                                 type="button"
                                 onClick={() => setUseNepali(!useNepali)}
-                                className={`text-[9px] font-black px-1.5 py-0.5 rounded transition-all ${useNepali ? 'bg-brand-500 text-white' : 'bg-white/5 text-gray-500 hover:text-gray-400'}`}
+                                className="text-[9px] font-black px-2 py-0.5 rounded transition-all uppercase tracking-widest"
+                                style={{ 
+                                    background: useNepali ? 'var(--accent)' : 'var(--accent-dim)',
+                                    color: useNepali ? 'white' : 'var(--accent)'
+                                }}
                             >
-                                {useNepali ? 'SELECT AD' : 'SELECT BS'}
+                                {useNepali ? 'AD' : 'BS'}
                             </button>
                         </div>
                         {useNepali ? (
@@ -207,18 +225,23 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             <input
                                 type="date"
                                 required
-                                className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-white focus:border-amber-500/50 outline-none transition-all tabular-nums"
+                                className="w-full border px-4 py-2.5 text-sm outline-none transition-all tabular-nums"
+                                style={{ 
+                                    background: 'var(--bg-main)', 
+                                    borderColor: 'var(--border)', 
+                                    borderRadius: 'var(--radius-md)',
+                                    color: 'var(--text-heading)' 
+                                }}
                                 value={localDate}
                                 onChange={(e) => setLocalDate(e.target.value)}
                             />
                         )}
                     </div>
 
-                    {/* Staff Selector - shown when no user is pre-selected (admin creating new log) */}
                     {!selectedUser && isAdmin && users.length > 0 && (
                         <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
-                                <Users size={12} className="text-amber-500/50" /> Select Staff Member
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+                                <Users size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Select Staff Member
                             </label>
                             <StaffSelect
                                 value={localUser?.uid || ''}
@@ -230,24 +253,24 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                 users={users}
                             />
                             {!localUser && (
-                                <p className="text-[10px] text-amber-500/70 mt-2 font-bold">⚠ Please select a staff member to continue</p>
+                                <p className="text-[10px] mt-2 font-bold" style={{ color: 'var(--color-danger)' }}>⚠ Please select a staff member to continue</p>
                             )}
                         </div>
                     )}
 
-                    {/* Status Selection */}
                     <div>
-                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
+                        <label className="block text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
                             Attendance Status
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {['PRESENT', 'LATE', 'HALF_DAY', 'ABSENT', 'ON LEAVE'].map(status => (
-                                <label key={status} className={`
-                                    cursor-pointer px-4 py-2 rounded-xl text-[11px] font-black border transition-all uppercase tracking-wider
-                                    ${formData.status === status
-                                        ? 'bg-amber-500 text-black border-amber-500 shadow-lg shadow-amber-500/20'
-                                        : 'bg-[#0d1117] border-[#30363d] text-gray-500 hover:text-gray-300 hover:border-gray-600'}
-                                `}>
+                                <label key={status} className="cursor-pointer px-4 py-2 rounded-lg text-[11px] font-bold border transition-all uppercase tracking-wider relative"
+                                    style={{ 
+                                        background: formData.status === status ? 'var(--accent)' : 'var(--bg-main)',
+                                        borderColor: formData.status === status ? 'var(--accent)' : 'var(--border)',
+                                        color: formData.status === status ? 'white' : 'var(--text-body)'
+                                    }}
+                                >
                                     <input
                                         type="radio"
                                         name="status"
@@ -262,28 +285,39 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Time Inputs - Hide for Absent/Leave */}
                     {formData.status !== 'ABSENT' && formData.status !== 'ON LEAVE' && (
                         <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                    <Clock size={12} className="text-amber-500/50" /> Clock In
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                                    <Clock size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Clock In
                                 </label>
                                 <input
                                     type="time"
                                     required
-                                    className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-white focus:border-amber-500/50 outline-none transition-all tabular-nums"
+                                    className="w-full border px-4 py-2.5 text-sm outline-none transition-all tabular-nums"
+                                    style={{ 
+                                        background: 'var(--bg-main)', 
+                                        borderColor: 'var(--border)', 
+                                        borderRadius: 'var(--radius-md)',
+                                        color: 'var(--text-heading)' 
+                                    }}
                                     value={formData.clockIn}
                                     onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                    <Clock size={12} className="text-amber-500/50" /> Clock Out
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                                    <Clock size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Clock Out
                                 </label>
                                 <input
                                     type="time"
-                                    className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-white focus:border-amber-500/50 outline-none transition-all tabular-nums"
+                                    className="w-full border px-4 py-2.5 text-sm outline-none transition-all tabular-nums"
+                                    style={{ 
+                                        background: 'var(--bg-main)', 
+                                        borderColor: 'var(--border)', 
+                                        borderRadius: 'var(--radius-md)',
+                                        color: 'var(--text-heading)' 
+                                    }}
                                     value={formData.clockOut}
                                     onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
                                 />
@@ -291,17 +325,17 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                         </div>
                     )}
 
-                    {/* Work Logs Section */}
                     {formData.status !== 'ABSENT' && formData.status !== 'ON LEAVE' && (
                         <div className="animate-in fade-in slide-in-from-top-3 space-y-3">
                             <div className="flex items-center justify-between">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                    <Briefcase size={12} className="text-amber-500/50" /> Work Logs
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                                    <Briefcase size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Work Logs
                                 </label>
                                 <button 
                                     type="button"
                                     onClick={addWorkLog} 
-                                    className="text-[9px] text-amber-500 hover:text-amber-400 font-black uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 transition-all"
+                                    className="text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-all border shadow-sm"
+                                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--accent)' }}
                                 >
                                     + Add Item
                                 </button>
@@ -309,10 +343,12 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             
                             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                                 {(formData.workLogs || []).map((log) => (
-                                    <div key={log.id} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-3 space-y-3 relative group">
+                                    <div key={log.id} className="p-3 space-y-3 relative group border"
+                                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)' }}
+                                    >
                                         <div className="space-y-3">
                                             <div className="space-y-1">
-                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Client</span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Client</span>
                                                 <ClientSelect
                                                     clients={clients}
                                                     value={log.clientId}
@@ -322,11 +358,12 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Nature of Assignment</span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Nature of Assignment</span>
                                                 <select
                                                     value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
                                                     onChange={(e) => updateWorkLog(log.id, 'natureOfAssignment', e.target.value)}
-                                                    className="w-full bg-[#161b22] border border-[#30363d] rounded-xl px-3 py-1.5 text-xs text-white focus:border-amber-500/50 outline-none transition-all appearance-none h-9"
+                                                    className="w-full border px-3 py-1.5 text-xs outline-none transition-all h-9"
+                                                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-heading)' }}
                                                 >
                                                     {NATURE_OF_ASSIGNMENTS.map(n => (
                                                         <option key={n} value={n}>{n}</option>
@@ -335,20 +372,22 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Work Description</span>
+                                            <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Work Description</span>
                                             <input
                                                 type="text"
                                                 value={log.description}
                                                 onChange={(e) => updateWorkLog(log.id, 'description', e.target.value)}
                                                 placeholder="What did you do today?"
-                                                className="w-full bg-[#161b22] border border-[#30363d] rounded-xl px-3 py-2 text-xs text-white placeholder:text-gray-700 focus:border-amber-500/50 outline-none transition-all h-9"
+                                                className="w-full border px-3 py-2 text-xs outline-none transition-all h-9"
+                                                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-heading)' }}
                                             />
                                         </div>
                                         {(formData.workLogs || []).length > 1 && (
                                             <button
                                                 type="button"
                                                 onClick={() => removeWorkLog(log.id)}
-                                                className="absolute -top-2 -right-2 p-1.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg border border-rose-500/20 transition-all opacity-0 group-hover:opacity-100"
+                                                className="absolute -top-2 -right-2 p-1.5 shadow-md transition-all opacity-0 group-hover:opacity-100 border"
+                                                style={{ background: 'var(--bg-secondary)', color: 'var(--color-danger)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
                                             >
                                                 <X size={12} />
                                             </button>
@@ -359,34 +398,36 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                         </div>
                     )}
 
-                    {/* Notes */}
                     <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                            <FileText size={12} className="text-amber-500/50" /> Notes / Reason
+                        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                            <FileText size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Notes / Reason
                         </label>
                         <textarea
-                            className="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-3 text-white placeholder:text-gray-700 focus:border-amber-500/50 outline-none text-[13px] min-h-[100px] resize-none transition-all"
+                            className="w-full border px-4 py-3 outline-none text-[13px] min-h-[100px] resize-none transition-all"
+                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-heading)' }}
                             placeholder="Reason for manual adjustment..."
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-[#30363d]">
+                    <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 transition-all"
+                            className="px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all"
+                            style={{ color: 'var(--text-muted)' }}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSaving || !activeUser}
-                            className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                            className="px-6 py-2.5 text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 shadow-lg"
+                            style={{ background: 'var(--accent)', color: 'white', borderRadius: 'var(--radius-md)' }}
                         >
-                            {isSaving ? <span className="animate-spin italic font-serif">save</span> : <Save size={14} />}
-                            {isAdmin ? 'Confirm Log' : 'Submit Request for Approval'}
+                            {isSaving ? <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Save size={14} />}
+                            {isAdmin ? 'Confirm Log' : 'Submit Request'}
                         </button>
                     </div>
                 </form>

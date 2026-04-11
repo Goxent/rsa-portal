@@ -161,7 +161,7 @@ const SystemSettingsPage: React.FC = () => {
 
             {statusMessage && (
                 <div className={`p-4 rounded-xl flex items-center border animate-in slide-in-from-top ${statusMessage.type === 'success'
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    ? 'bg-brand-500/10 border-brand-500/20 text-brand-400'
                     : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                     {statusMessage.type === 'success'
                         ? <CheckCircle2 size={18} className="mr-2" />

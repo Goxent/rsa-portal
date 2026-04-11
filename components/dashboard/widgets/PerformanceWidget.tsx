@@ -20,7 +20,7 @@ const PerformanceWidget: React.FC<PerformanceWidgetProps> = ({
         : 100;
 
     const getScoreColor = (score: number) => {
-        if (score >= 80) return { text: 'text-emerald-400', ring: '#10b981', label: 'Excellent' };
+        if (score >= 80) return { text: 'text-brand-400', ring: '#10b981', label: 'Excellent' };
         if (score >= 60) return { text: 'text-yellow-400', ring: '#f59e0b', label: 'Good' };
         if (score >= 40) return { text: 'text-orange-400', ring: '#f97316', label: 'Fair' };
         return { text: 'text-red-400', ring: '#ef4444', label: 'Needs Work' };
@@ -49,7 +49,7 @@ const PerformanceWidget: React.FC<PerformanceWidgetProps> = ({
     };
 
     const TrendIcon = ({ rate }: { rate: number }) => {
-        if (rate >= 70) return <TrendingUp size={12} className="text-emerald-400" />;
+        if (rate >= 70) return <TrendingUp size={12} className="text-brand-400" />;
         if (rate >= 40) return <Minus size={12} className="text-yellow-400" />;
         return <TrendingDown size={12} className="text-red-400" />;
     };
@@ -93,7 +93,7 @@ const PerformanceWidget: React.FC<PerformanceWidgetProps> = ({
             <div className="grid grid-cols-3 gap-2">
                 <div className="text-center">
                     <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <Award size={11} className="text-emerald-400" />
+                        <Award size={11} className="text-brand-400" />
                         <span className="text-base font-bold text-white">{staffPerformance.completed}</span>
                     </div>
                     <span className="text-[10px] text-gray-500">Completed</span>
@@ -126,7 +126,7 @@ const PerformanceWidget: React.FC<PerformanceWidgetProps> = ({
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                     <div
-                        className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 rounded-full transition-all duration-1000"
+                        className="h-full bg-gradient-to-r from-brand-500 to-brand- rounded-full transition-all duration-1000"
                         style={{ width: `${Math.round((completionRate + onTimeRate) / 2)}%` }}
                     />
                 </div>

@@ -35,7 +35,7 @@ const getStatusConfig = (status: string) => {
     switch (status) {
         case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-amber-400' };
         case TaskStatus.UNDER_REVIEW: return { label: 'Under Review', color: 'text-purple-400' };
-        case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-emerald-400' };
+        case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-brand-400' };
         case TaskStatus.HALTED: return { label: 'Halted', color: 'text-red-400' };
         default: return { label: 'Not Started', color: 'text-gray-400' };
     }
@@ -87,8 +87,8 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ recentTasks = [] }) => {
     if (sorted.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-                <CheckCircle size={26} className="mb-2 text-emerald-500/50" />
-                <p className="text-sm font-semibold text-emerald-400">All caught up!</p>
+                <CheckCircle size={26} className="mb-2 text-brand-500/50" />
+                <p className="text-sm font-semibold text-brand-400">All caught up!</p>
                 <p className="text-xs text-gray-600 mt-1">No pending tasks assigned to you</p>
             </div>
         );

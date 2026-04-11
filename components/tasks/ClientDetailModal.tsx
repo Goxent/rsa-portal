@@ -144,8 +144,8 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                     <div className="flex gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
                                         <span className="flex items-center gap-1.5"><Briefcase size={14} className="text-amber-500" /> {client.serviceType}</span>
                                         <span className="flex items-center gap-1.5"><Tag size={14} className="text-amber-500" /> {client.industry}</span>
-                                        <span className={`flex items-center gap-1.5 ${client.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'Active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                        <span className={`flex items-center gap-1.5 ${client.status === 'Active' ? 'text-brand-400' : 'text-rose-400'}`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'Active' ? 'bg-brand-500' : 'bg-rose-500'}`} />
                                             {client.status}
                                         </span>
                                     </div>
@@ -173,7 +173,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         <div className="flex gap-8 mt-8 border-t border-white/5 pt-6 relative z-10">
                             {[
                                 { label: 'Active Tasks', value: stats.active, color: 'text-amber-400' },
-                                { label: 'Completed', value: stats.completed, color: 'text-emerald-400' },
+                                { label: 'Completed', value: stats.completed, color: 'text-brand-400' },
                                 { label: 'Compliance items', value: stats.compliance, color: 'text-amber-400' },
                             ].map(s => (
                                 <div key={s.label}>
@@ -226,7 +226,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
 
                                     <section className="bg-white/5 rounded-2xl p-6 border border-white/5">
                                         <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                            <ShieldCheck size={16} className="text-emerald-500" /> Statutory & Compliance (Nepal)
+                                            <ShieldCheck size={16} className="text-brand-500" /> Statutory & Compliance (Nepal)
                                         </h3>
                                         <div className="grid grid-cols-2 gap-y-6">
                                             <div>
@@ -262,11 +262,11 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
 
                                 <section className="bg-white/5 rounded-2xl p-6 border border-white/5">
                                     <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                        <Phone size={16} className="text-emerald-500" /> Contact Details
+                                        <Phone size={16} className="text-brand-500" /> Contact Details
                                     </h3>
                                     <div className="space-y-4">
                                         <div className="p-4 bg-black/20 rounded-xl border border-white/5 flex items-center gap-4">
-                                            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                            <div className="p-2.5 rounded-lg bg-brand-500/10 text-brand-400">
                                                 <Phone size={18} />
                                             </div>
                                             <div>
@@ -349,7 +349,7 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                                     <span className="flex items-center gap-1.5"><User size={12} /> {task.assignedToNames?.[0] || 'Unassigned'}</span>
                                                 </div>
                                             </div>
-                                            <div className={`px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest ${task.status === 'COMPLETED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                                            <div className={`px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest ${task.status === 'COMPLETED' ? 'bg-brand-500/10 border-brand-500/20 text-brand-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
                                                 {task.status.replace('_', ' ')}
                                             </div>
                                         </div>

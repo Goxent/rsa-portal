@@ -25,24 +25,25 @@ const getDaysUntil = (dateStr: string) => {
 };
 
 const getUrgencyStyle = (daysUntil: number, type: string) => {
-    if (type === 'EVENT') return { dot: 'bg-sky-400', badge: 'bg-sky-500/10 text-sky-400 border-sky-500/20' };
-    if (daysUntil < 0)  return { dot: 'bg-rose-500 animate-pulse', badge: 'bg-rose-500 text-white border-transparent' };
-    if (daysUntil <= 2) return { dot: 'bg-rose-500', badge: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
-    if (daysUntil <= 7) return { dot: 'bg-amber-400', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20' };
-    return { dot: 'bg-slate-500', badge: 'bg-white/5 text-gray-400 border-transparent' };
+    if (daysUntil === 0) return { dot: 'bg-accent shadow-[0_0_8px_var(--accent-glow)] animate-pulse', badge: 'bg-accent text-white border-transparent' };
+    if (type === 'EVENT') return { dot: 'bg-sky-400', badge: 'bg-sky-500/10 text-sky-500 border-sky-500/20' };
+    if (daysUntil < 0)  return { dot: 'bg-status-halted animate-pulse', badge: 'bg-status-halted text-white border-transparent' };
+    if (daysUntil <= 2) return { dot: 'bg-status-halted', badge: 'bg-status-halted-dim text-status-halted border-status-halted-dim' };
+    if (daysUntil <= 7) return { dot: 'bg-brand-500', badge: 'bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20' };
+    return { dot: 'bg-slate-300 dark:bg-slate-700', badge: 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-white/10' };
 };
 
 // Skeleton loader for this widget
 const CalendarSkeleton: React.FC = () => (
-    <div className="space-y-2.5 animate-pulse">
+    <div className="space-y-2.5 animate-pulse p-2">
         {[1, 2, 3, 4].map(i => (
             <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
-                <div className="w-2 h-2 rounded-full bg-white/10 flex-shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-border flex-shrink-0" />
                 <div className="flex-1 space-y-1.5">
-                    <div className="h-3 rounded bg-white/10 w-3/4" />
-                    <div className="h-2.5 rounded bg-white/[0.06] w-1/2" />
+                    <div className="h-3 rounded bg-border w-3/4" />
+                    <div className="h-2.5 rounded bg-border w-1/2 opacity-50" />
                 </div>
-                <div className="h-5 w-14 rounded-md bg-white/10" />
+                <div className="h-5 w-14 rounded-md bg-border" />
             </div>
         ))}
     </div>
@@ -52,7 +53,6 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ upcomingSchedule = [], 
     const navigate = useNavigate();
 
     const handleDateClick = (dateStr: string) => {
-        // Deep-link to calendar page with the selected date as a query param
         navigate(`/calendar?date=${dateStr}`);
     };
 
@@ -60,24 +60,24 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ upcomingSchedule = [], 
 
     if (upcomingSchedule.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-                <Calendar size={28} className="mb-2 opacity-30" />
-                <p className="text-sm">No upcoming events</p>
-                <button onClick={() => navigate('/calendar')} className="text-xs text-brand-400 hover:text-brand-300 mt-2 transition-colors">
-                    Open calendar →
+            <div className="flex flex-col items-center justify-center min-h-[160px] text-muted">
+                <Calendar size={24} className="mb-2 opacity-20" />
+                <p className="text-[11px] font-medium uppercase tracking-widest">No Events</p>
+                <button onClick={() => navigate('/calendar')} className="text-[10px] text-accent hover:underline mt-2 transition-all font-bold uppercase tracking-widest">
+                    Open Planner
                 </button>
             </div>
         );
     }
 
-    const items = upcomingSchedule.slice(0, 6);
+    const items = upcomingSchedule.slice(0, 5); // Kept compact
     const overdueCount = items.filter(i => i.type === 'DEADLINE' && getDaysUntil(i.date) < 0).length;
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-1 py-1">
             {overdueCount > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl text-[11px] text-rose-300 font-bold mb-2">
-                    <AlertTriangle size={11} className="flex-shrink-0" />
+                <div className="flex items-center gap-2 px-3 py-2 bg-status-halted-dim border border-status-halted-dim rounded-lg text-[10px] text-status-halted font-black uppercase tracking-wider mb-2">
+                    <AlertTriangle size={12} className="flex-shrink-0" />
                     <span>{overdueCount} {overdueCount > 1 ? 'deadlines' : 'deadline'} past due</span>
                 </div>
             )}
@@ -87,33 +87,33 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ upcomingSchedule = [], 
                 const style = getUrgencyStyle(daysUntil, item.type);
                 const dateLabel = new Date(item.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 let daysLabel = '';
-                if (daysUntil < 0)       daysLabel = `${Math.abs(daysUntil)}d overdue`;
+                if (daysUntil < 0)       daysLabel = `${Math.abs(daysUntil)}d past`;
                 else if (daysUntil === 0) daysLabel = 'Today';
-                else if (daysUntil === 1) daysLabel = 'Tomorrow';
+                else if (daysUntil === 1) daysLabel = 'Tmrw';
                 else                      daysLabel = `${daysUntil}d left`;
 
                 return (
                     <button
                         key={item.id}
                         onClick={() => handleDateClick(item.date)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-white/[0.05] hover:translate-x-1 group text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-surface group text-left border border-transparent hover:border-border"
                     >
-                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot} shadow-sm`} />
 
                         <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-semibold text-gray-200 group-hover:text-white truncate leading-tight transition-colors">{item.title}</p>
+                            <p className="text-[12px] font-semibold text-heading group-hover:text-accent truncate leading-tight transition-colors">{item.title}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">{dateLabel}</span>
+                                <span className="text-[9px] font-bold text-muted uppercase tracking-widest">{dateLabel}</span>
                                 {item.description && (
                                     <>
-                                        <span className="text-gray-700 text-[10px]">·</span>
-                                        <span className="text-[10px] text-gray-600 truncate">{item.description}</span>
+                                        <span className="text-muted/30 text-[10px]">·</span>
+                                        <span className="text-[9px] text-muted truncate italic">"{item.description}"</span>
                                     </>
                                 )}
                             </div>
                         </div>
 
-                        <div className={`flex-shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${style.badge}`}>
+                        <div className={`flex-shrink-0 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${style.badge}`}>
                             {daysLabel}
                         </div>
                     </button>
@@ -122,9 +122,9 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ upcomingSchedule = [], 
 
             <button
                 onClick={() => navigate('/calendar')}
-                className="flex items-center justify-center gap-1.5 w-full py-2 mt-1 text-xs text-brand-400 hover:text-brand-300 transition-colors font-medium"
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 mt-2 text-[10px] text-muted hover:text-accent transition-all font-black uppercase tracking-[0.1em] border-t border-border/50"
             >
-                View full calendar <ArrowRight size={12} />
+                Full Schedule <ArrowRight size={12} />
             </button>
         </div>
     );

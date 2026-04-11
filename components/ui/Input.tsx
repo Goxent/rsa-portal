@@ -22,33 +22,31 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
     disabled,
     ...props
 }, ref) => {
-
-    // Generate random ID if not provided and label is present
     const inputId = id || (label ? `input-${Math.random().toString(36).substr(2, 9)}` : undefined);
 
-    const baseInputStyles = "block rounded-xl border bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed";
-    const errorStyles = error
-        ? "border-red-500/50 focus:ring-red-500"
-        : "border-white/10 hover:border-white/20";
-
-    const widthStyles = fullWidth ? "w-full" : "";
-    const paddingLeft = leftIcon ? "pl-10" : "px-4";
-    const paddingRight = rightIcon ? "pr-10" : "px-4";
+    const baseInputStyles = "block w-full text-[0.875rem] transition-all duration-150 ease-in-out placeholder:text-[var(--text-muted)] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed";
+    
+    const containerClasses = `
+        relative flex items-center bg-[var(--bg-surface)] border rounded-[var(--radius-md)]
+        ${error 
+            ? 'border-[var(--color-danger)] shadow-[0_0_0_3px_rgba(196,68,90,0.15)]' 
+            : 'border-[var(--border-mid)] hover:border-[var(--border-accent)] focus-within:border-[var(--accent)] focus-within:shadow-[0_0_0_3px_var(--accent-dim)]'}
+    `;
 
     return (
-        <div className={`${widthStyles} ${className}`}>
+        <div className={`${fullWidth ? 'w-full' : ''} ${className}`}>
             {label && (
                 <label
                     htmlFor={inputId}
-                    className="block text-sm font-medium text-gray-300 mb-1.5"
+                    className="block text-[0.8125rem] font-500 text-[var(--text-body)] mb-[0.375rem]"
                 >
                     {label}
                 </label>
             )}
 
-            <div className="relative">
+            <div className={containerClasses} style={{ height: '2.375rem' }}>
                 {leftIcon && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <div className="pl-3.5 flex items-center justify-center text-[var(--text-muted)]">
                         {leftIcon}
                     </div>
                 )}
@@ -58,11 +56,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
                     id={inputId}
                     className={`
                         ${baseInputStyles}
-                        ${errorStyles}
-                        ${widthStyles}
-                        ${paddingLeft}
-                        ${paddingRight}
-                        h-10 text-sm
+                        bg-transparent border-none text-[var(--text-heading)]
+                        ${leftIcon ? 'pl-2' : 'pl-3.5'}
+                        ${rightIcon ? 'pr-2' : 'pr-3.5'}
+                        h-full
                     `}
                     disabled={disabled}
                     aria-invalid={!!error}
@@ -70,21 +67,21 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
                 />
 
                 {rightIcon && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                    <div className="pr-3.5 flex items-center justify-center text-[var(--text-muted)]">
                         {rightIcon}
                     </div>
                 )}
             </div>
 
             {error && (
-                <div className="mt-1.5 flex items-center text-xs text-red-400 animate-fade-in">
+                <div className="mt-[0.25rem] flex items-center text-[0.75rem] text-[var(--color-danger)] animate-fade-in">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     <span>{error}</span>
                 </div>
             )}
 
             {!error && helperText && (
-                <p className="mt-1.5 text-xs text-gray-500">
+                <p className="mt-[0.25rem] text-[0.75rem] text-[var(--text-muted)]">
                     {helperText}
                 </p>
             )}

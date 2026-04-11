@@ -40,7 +40,7 @@ export interface WidgetMeta {
 
 export const WIDGET_CATEGORY_COLORS: Record<string, { border: string; label: string; glow: string }> = {
     tasks:      { border: 'border-l-brand-500',   label: 'text-brand-400',   glow: 'rgba(99,102,241,0.08)' },
-    attendance: { border: 'border-l-emerald-500', label: 'text-emerald-400', glow: 'rgba(16,185,129,0.08)' },
+    attendance: { border: 'border-l-brand-', label: 'text-brand-400', glow: 'rgba(16,185,129,0.08)' },
     team:       { border: 'border-l-purple-500',  label: 'text-purple-400',  glow: 'rgba(168,85,247,0.08)'  },
     schedule:   { border: 'border-l-sky-500',     label: 'text-sky-400',     glow: 'rgba(14,165,233,0.08)'  },
     focus:      { border: 'border-l-amber-500',   label: 'text-amber-400',   glow: 'rgba(245,158,11,0.08)'  },

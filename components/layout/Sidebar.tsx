@@ -17,7 +17,8 @@ import {
     Users,
     Pin,
     Activity,
-    Archive
+    Archive,
+    FolderArchive
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -42,6 +43,7 @@ const ALL_NAV_ITEMS = [
     { id: 'templates', to: '/templates', icon: Library, label: 'Resources' },
     { id: 'archived-tasks', to: '/archived-tasks', icon: Archive, label: 'Archived Tasks', adminOnly: true },
     { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', adminOnly: true },
+    { id: 'audit-docs', to: '/audit-docs', icon: FolderArchive, label: 'Audit Documentation', adminOnly: true },
     { id: 'settings', to: '/settings', icon: Settings, label: 'Settings', masterAdminOnly: true }
 ];
 
@@ -49,14 +51,11 @@ const CORE_ITEM_IDS = ['dashboard', 'tasks', 'clients', 'calendar', 'attendance'
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobileOpen, closeMobileMenu }) => {
     const { user, logout } = useAuth();
-    const location = useLocation();
-
     const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
         try {
             return JSON.parse(localStorage.getItem('rsa_pinned_nav') || '[]');
         } catch { return []; }
     });
-
     const [isMoreOpen, setIsMoreOpen] = useState(true);
 
     const togglePin = (e: React.MouseEvent, id: string) => {
@@ -88,8 +87,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
         return true;
     };
 
-    const visibleItems = ALL_NAV_ITEMS.filter(filterVisibleItems);
-
     const NavItem = ({ item }: { item: any }) => {
         const isPinned = pinnedIds.includes(item.id);
         const Icon = item.icon;
@@ -100,49 +97,44 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                 end={item.exact}
                 onClick={closeMobileMenu}
                 onContextMenu={(e) => togglePin(e, item.id)}
-                className={({ isActive }) =>
-                    `flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-1 group relative overflow-hidden ${
-                        isActive
-                            ? 'text-white shadow-lg'
-                            : 'hover:text-white'
-                    }`
-                }
-                style={({ isActive }) => isActive ? {
-                    background: 'var(--accent)',
-                    boxShadow: '0 4px 12px var(--accent-dim)'
-                } : {
-                    color: 'var(--text-body)'
-                }}
+                className={({ isActive }) => `
+                    relative flex items-center gap-[0.625rem] px-3 transition-all duration-150 mb-[2px] rounded-[var(--radius-md)] group h-[36px] overflow-hidden
+                    ${isActive ? '' : 'hover:bg-[var(--bg-surface)]'}
+                `}
+                style={({ isActive }) => ({
+                    background: isActive ? 'var(--accent-dim)' : 'transparent',
+                    color: isActive ? 'var(--accent)' : 'var(--text-body)',
+                    border: isActive ? '1px solid var(--border-accent)' : '1px solid transparent',
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: '0.8125rem'
+                })}
             >
                 {({ isActive }) => (
                     <>
-                        <div
-                            className="absolute inset-0 transition-colors duration-200"
-                            style={{ background: isActive ? undefined : undefined }}
-                            onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--border)'; }}
-                            onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = ''; }}
+                        <Icon 
+                            size={18} 
+                            className="shrink-0 transition-colors" 
+                            style={{ color: isActive ? 'var(--accent)' : 'inherit' }}
                         />
-                        <div className="relative z-10 flex items-center min-w-0 w-full">
-                            <Icon size={isCollapsed ? 20 : 18} className={`shrink-0 transition-all duration-300 ${!isCollapsed ? 'mr-3' : 'mx-auto'}`} />
-                            {!isCollapsed && (
-                                <div className="flex-1 flex items-center justify-between min-w-0">
-                                    <span className="font-medium text-sm truncate transition-opacity duration-300">{item.label}</span>
-                                    <button
-                                        onClick={(e) => togglePin(e, item.id)}
-                                        className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-1 rounded hover:bg-black/10 ${isPinned ? 'opacity-100' : ''}`}
-                                        title={isPinned ? "Unpin from Favorites" : "Pin to Favorites"}
-                                        style={{ color: isPinned ? 'var(--accent)' : 'var(--text-muted)' }}
-                                    >
-                                        <Pin size={12} className={isPinned ? "fill-current/20" : ""} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        
+                        {!isCollapsed && (
+                            <div className="flex-1 flex items-center justify-between min-w-0">
+                                <span className="truncate">{item.label}</span>
+                                <button
+                                    onClick={(e) => togglePin(e, item.id)}
+                                    className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-1 rounded hover:bg-black/10 ${isPinned ? 'opacity-100' : ''}`}
+                                    title={isPinned ? "Unpin from Favorites" : "Pin to Favorites"}
+                                    style={{ color: isPinned ? 'var(--accent)' : 'var(--text-muted)' }}
+                                >
+                                    <Pin size={10} className={isPinned ? "fill-current/20" : ""} />
+                                </button>
+                            </div>
+                        )}
 
                         {isCollapsed && (
                             <div
-                                className="absolute left-full ml-4 px-2 py-1 text-xs rounded border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none drop-shadow-lg flex items-center gap-2"
-                                style={{ background: 'var(--bg-surface)', color: 'var(--text-heading)', borderColor: 'var(--border)' }}
+                                className="absolute left-full ml-4 px-2.5 py-1.5 text-xs rounded-[var(--radius-sm)] border opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0 whitespace-nowrap z-50 pointer-events-none shadow-xl flex items-center gap-2"
+                                style={{ background: 'var(--bg-elevated)', color: 'var(--text-heading)', borderColor: 'var(--border-mid)' }}
                             >
                                 {item.label}
                                 {isPinned && <Pin size={10} style={{ color: 'var(--accent)' }} />}
@@ -155,73 +147,111 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
     };
 
     const SectionLabel = ({ label }: { label: string }) => {
-        if (isCollapsed) return <div className="h-px my-4 mx-2" style={{ background: 'var(--border)' }} />;
+        if (isCollapsed) return <div className="h-px mx-4 my-4" style={{ background: 'var(--border)' }} />;
         return (
-            <p className="px-3 text-[10px] font-bold uppercase tracking-widest mt-6 mb-2 animate-in fade-in duration-300"
-               style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="uppercase" style={{ 
+                fontSize: '0.6rem', 
+                fontWeight: 700, 
+                letterSpacing: '0.1em', 
+                color: 'var(--text-muted)',
+                padding: '0.75rem 0.875rem 0.375rem'
+            }}>
                 {label}
             </p>
         );
     };
-
-    const sidebarClasses = `
-    fixed inset-y-0 left-0 z-30 flex flex-col transition-all duration-300 ease-in-out
-    ${isCollapsed ? 'w-20' : 'w-64'}
-    ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-  `;
 
     return (
         <>
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
                     onClick={closeMobileMenu}
                 />
             )}
 
             <aside
-                className={sidebarClasses}
-                style={{ background: 'var(--bg-main)', borderRight: '1px solid var(--border)' }}
+                className={`fixed inset-y-0 left-0 z-30 flex flex-col transition-all duration-[250ms] cubic-bezier(0.4, 0, 0.2, 1) dotted-grid ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+                style={{ 
+                    width: isCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
+                    background: 'linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-main) 100%)',
+                    borderRight: '1px solid var(--border)',
+                }}
             >
-                {/* Header / Logo */}
+                {/* Brand glow at bottom of sidebar */}
+                <div 
+                    className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none opacity-20"
+                    style={{ backgroundImage: 'radial-gradient(circle at 50% 100%, var(--accent) 0%, transparent 70%)' }}
+                />
+                {/* Logo Area */}
                 <div
-                    className={`h-16 flex items-center px-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}
-                    style={{ borderBottom: '1px solid var(--border)' }}
+                    className="flex items-center"
+                    style={{ 
+                        height: 'var(--header-height)',
+                        padding: '0 0.875rem',
+                        borderBottom: '1px solid var(--border)'
+                    }}
                 >
-                    <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="shrink-0 w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-700 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/20">
-                            <span className="text-white font-bold text-lg leading-none">R</span>
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <div 
+                            className="shrink-0 flex items-center justify-center text-white"
+                            style={{ 
+                                width: '28px',
+                                height: '28px',
+                                background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+                                borderRadius: 'var(--radius-md)'
+                            }}
+                        >
+                            <span style={{ fontWeight: 800, fontSize: '1rem' }}>R</span>
                         </div>
                         {!isCollapsed && (
-                            <div className="animate-in fade-in duration-300">
-                                <h1 className="font-bold text-slate-900 dark:text-white text-lg leading-none tracking-tight">RSA Portal</h1>
-                            </div>
+                            <h1 className="truncate" style={{ 
+                                fontSize: '0.875rem', 
+                                fontWeight: 600, 
+                                color: 'var(--text-heading)' 
+                            }}>
+                                RSA Portal
+                            </h1>
                         )}
                     </div>
 
                     <button
-                        onClick={toggleCollapse}
-                        className="hidden md:flex p-1.5 rounded-lg transition-colors"
-                        style={{ color: 'var(--text-muted)' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-heading)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}
-                    >
-                        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-                    </button>
-
-                    <button
                         onClick={closeMobileMenu}
-                        className="md:hidden p-1 text-gray-400"
+                        className="md:hidden ml-auto p-1 text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                {/* Navigation */}
-                <nav className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-4 px-3 space-y-1">
+                {/* Navigation Toggle (Desktop Only) */}
+                <button
+                    onClick={toggleCollapse}
+                    className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-3 items-center justify-center transition-all duration-200 z-50 group"
+                    style={{ 
+                        width: '24px',
+                        height: '24px',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-mid)',
+                        borderRadius: '99px',
+                        color: 'var(--text-muted)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.color = 'var(--accent)';
+                        e.currentTarget.style.borderColor = 'var(--border-accent)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.color = 'var(--text-muted)';
+                        e.currentTarget.style.borderColor = 'var(--border-mid)';
+                    }}
+                >
+                    {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                </button>
 
-                    {/* Favorites Section */}
+                {/* Navigation Scroll Area */}
+                <nav className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-3 px-2">
+                    {/* Favorites */}
                     {pinnedIds.length > 0 && (
                         <div className="mb-4">
                             <SectionLabel label="Favorites" />
@@ -239,22 +269,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         return <NavItem key={`core-${item.id}`} item={item} />
                     })}
 
-                    <div className="mt-6">
-                        <button
-                            onClick={() => setIsMoreOpen(!isMoreOpen)}
-                            className="w-full flex items-center justify-between px-3 text-[10px] font-bold uppercase tracking-widest mb-2 transition-colors"
-                            style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-body)'}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}
-                        >
-                            <span>More</span>
-                            {!isCollapsed && (
-                                <ChevronRight size={14} className={`transition-transform duration-200 ${isMoreOpen ? 'rotate-90' : ''}`} />
-                            )}
-                        </button>
+                    <div className="mt-4">
+                        {!isCollapsed && (
+                            <button
+                                onClick={() => setIsMoreOpen(!isMoreOpen)}
+                                className="w-full flex items-center justify-between px-[0.875rem] mb-1.5 group transition-colors"
+                                style={{ 
+                                    fontSize: '0.6rem', 
+                                    fontWeight: 700, 
+                                    letterSpacing: '0.1em', 
+                                    color: 'var(--text-muted)',
+                                    textTransform: 'uppercase'
+                                }}
+                            >
+                                <span>More</span>
+                                <ChevronRight size={12} className={`transition-transform duration-200 ${isMoreOpen ? 'rotate-90' : ''}`} />
+                            </button>
+                        )}
 
-                        {isMoreOpen && (
-                            <div className="space-y-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                        {(isMoreOpen || isCollapsed) && (
+                            <div className="space-y-[2px]">
                                 {ALL_NAV_ITEMS.filter(i => !CORE_ITEM_IDS.includes(i.id)).map(item => {
                                     if (!filterVisibleItems(item)) return null;
                                     return <NavItem key={`more-${item.id}`} item={item} />;
@@ -264,38 +298,73 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                     </div>
                 </nav>
 
-                {/* Footer / User Profile */}
+                {/* Footer Area */}
                 <div
-                    className="p-3"
-                    style={{ borderTop: '1px solid var(--border)' }}
+                    style={{ 
+                        borderTop: '1px solid var(--border)',
+                        padding: '0.75rem',
+                        marginTop: 'auto'
+                    }}
                 >
+                    {/* User Profile */}
                     <div
-                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} p-2 rounded-xl`}
-                        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+                        className="flex items-center gap-[0.625rem] px-3 h-[36px] rounded-[var(--radius-md)] mb-1.5 transition-colors group cursor-default"
+                        style={{ color: 'var(--text-body)' }}
+                        onMouseEnter={e => { if (!isCollapsed) e.currentTarget.style.background = 'var(--bg-surface)'; }}
+                        onMouseLeave={e => { if (!isCollapsed) e.currentTarget.style.background = 'transparent'; }}
                     >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-xs font-bold text-white shrink-0">
-                            {user?.displayName?.charAt(0).toUpperCase()}
+                        <div 
+                            className="shrink-0 flex items-center justify-center text-white"
+                            style={{ 
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '99px',
+                                background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+                                fontSize: '0.625rem',
+                                fontWeight: 700
+                            }}
+                        >
+                            {user?.displayName?.charAt(0).toUpperCase() || 'U'}
                         </div>
+                        
                         {!isCollapsed && (
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                                <p className="text-xs font-medium truncate" style={{ color: 'var(--text-heading)' }}>{user?.displayName}</p>
-                                <p className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>{user?.role}</p>
+                            <div className="flex-1 min-w-0 flex items-center justify-between">
+                                <div className="truncate pr-1">
+                                    <p className="truncate" style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-heading)' }}>
+                                        {user?.displayName}
+                                    </p>
+                                </div>
+                                <span className="shrink-0" style={{ 
+                                    fontSize: '0.625rem', 
+                                    padding: '1px 6px', 
+                                    borderRadius: '99px', 
+                                    background: 'var(--accent-dim)', 
+                                    color: 'var(--accent)',
+                                    fontWeight: 600
+                                }}>
+                                    {user?.role}
+                                </span>
                             </div>
                         )}
-                        {!isCollapsed && (
-                            <button onClick={handleLogout} className="transition-colors" style={{ color: 'var(--text-muted)' }}
-                                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#c94f5e'}
-                                onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}
-                            >
-                                <LogOut size={16} />
-                            </button>
-                        )}
                     </div>
-                    {isCollapsed && (
-                        <button onClick={handleLogout} className="mt-2 w-full flex justify-center p-2 text-gray-400 hover:text-red-400 transition-colors">
-                            <LogOut size={18} />
-                        </button>
-                    )}
+
+                    {/* Logout */}
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-[0.625rem] px-3 h-[36px] rounded-[var(--radius-md)] transition-all duration-150 group"
+                        style={{ color: 'var(--text-body)', fontSize: '0.8125rem', fontWeight: 500 }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.background = 'var(--bg-surface)';
+                            e.currentTarget.style.color = 'var(--color-danger)';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = 'var(--text-body)';
+                        }}
+                    >
+                        <LogOut size={18} className="shrink-0" />
+                        {!isCollapsed && <span>Sign Out</span>}
+                    </button>
                 </div>
             </aside>
         </>

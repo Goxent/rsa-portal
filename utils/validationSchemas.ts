@@ -54,7 +54,7 @@ export const clientSchema = z.object({
 });
 
 export const leaveSchema = z.object({
-    type: z.enum(['SICK', 'CASUAL', 'EARNED', 'UNPAID']),
+    type: z.enum(['Sick', 'Casual', 'Annual', 'Unpaid', 'Exam', 'Home', 'Other']),
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
     reason: z.string().min(1, 'Reason is required'),

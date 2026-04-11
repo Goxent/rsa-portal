@@ -44,8 +44,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const emailPass = process.env.EMAIL_PASSWORD;
 
     if (!emailPass) {
-        console.error('Email credentials missing. EMAIL_PASSWORD not set.');
-        return res.status(500).json({ error: 'Server configuration error: Missing Email Credentials.' });
+        const errorMsg = 'CRITICAL ERROR: EMAIL_PASSWORD is not set in environment variables. Gmail SMTP cannot connect without an App Password.';
+        console.error(`[Email Service] ${errorMsg}`);
+        return res.status(500).json({ 
+            error: 'Server configuration error: Missing Email Credentials.',
+            tip: 'If running locally, ensure EMAIL_PASSWORD is in your .env.local file. If on Vercel, check Project Settings -> Environment Variables.'
+        });
     }
 
     try {
@@ -75,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const mailOptions = {
-            from: `"${fromName || 'RSA System'}" <${emailUser}>`,
+            from: `"${fromName || 'RSA Portal'}" <${emailUser}>`,
             to: parsedTo,
             subject: subject,
             html: html,
