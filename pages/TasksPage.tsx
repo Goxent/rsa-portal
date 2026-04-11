@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment, AuditPhase, TaskType } from '../types';
-import { TASK_TYPE_CHECKLISTS, TASK_TYPE_ICONS, TASK_TYPE_LABELS } from '../constants/taskTypeChecklists';
+import { TASK_TYPE_ICONS, TASK_TYPE_LABELS } from '../constants/taskTypeChecklists';
 import { ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext'; // Import ModalContext
@@ -216,9 +216,13 @@ const TasksPage: React.FC = () => {
             });
         }
 
-        // 2. Fallback to Task Type defaults if folder produced nothing
+        // 2. Fallback to Task Type defaults from Database Templates
         if (phaseItems.length === 0 && task.taskType) {
-            phaseItems = TASK_TYPE_CHECKLISTS[task.taskType]?.[newPhase as AuditPhase] ?? [];
+            const taskTypeTemplates = templates.filter(t => t.taskType === task.taskType);
+            taskTypeTemplates.forEach(t => {
+                const items = t.subtaskDetails?.filter(sd => sd.phase === newPhase) || [];
+                phaseItems = [...phaseItems, ...items];
+            });
         }
 
         if (phaseItems.length === 0) return existingSubtasks;
@@ -404,6 +408,22 @@ const TasksPage: React.FC = () => {
         localStorage.setItem('rsa_filter_auditor', filterAuditor);
         localStorage.setItem('rsa_filter_tasktype', filterTaskType);
     }, [filterPriority, filterStatus, filterClient, groupBy, filterStaff, filterAuditor, filterTaskType]);
+
+    // Global Filter Reset Listener
+    useEffect(() => {
+        const handleClearAll = () => {
+            setFilterStatus('ALL');
+            setFilterPriority('ALL');
+            setFilterTaskType('ALL');
+            setFilterClient('ALL');
+            setFilterStaff('ALL');
+            setFilterAuditor('ALL');
+            setSearchTerm('');
+            setDateRange({ start: '', end: '' });
+        };
+        window.addEventListener('rsa-clear-filters', handleClearAll);
+        return () => window.removeEventListener('rsa-clear-filters', handleClearAll);
+    }, []);
 
     const filteredTasks = tasks.filter(t => {
         if (filterStatus !== 'ALL' && t.status !== filterStatus) return false;
@@ -1287,11 +1307,12 @@ const TasksPage: React.FC = () => {
         if (filterStaff !== 'ALL') count++;
         if (filterClient !== 'ALL') count++;
         if (filterAuditor !== 'ALL') count++;
+        if (filterTaskType && filterTaskType !== 'ALL') count++;
         if (dateRange.start) count++;
         if (dateRange.end) count++;
         if (searchTerm) count++;
         return count;
-    }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, dateRange, searchTerm]);
+    }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, filterTaskType, dateRange, searchTerm]);
 
     if (loading) return (
         <div className="flex flex-col h-full bg-transparent p-8 space-y-6 animate-pulse">
@@ -1553,6 +1574,59 @@ const TasksPage: React.FC = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Active Filter Chips */}
+            {activeFilterCount > 0 && (
+                <div className="px-6 py-2 border-b border-border bg-surface/50 flex flex-wrap items-center gap-2 z-20 shadow-sm relative">
+                    <span className="text-[10px] font-black text-muted uppercase tracking-widest mr-1 flex items-center gap-1.5"><Filter size={11} /> Filters applied:</span>
+                    {filterStatus !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
+                            Status: {filterStatus.replace(/_/g, ' ')}
+                            <button onClick={() => setFilterStatus('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                        </div>
+                    )}
+                    {filterPriority !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
+                            Priority: {filterPriority}
+                            <button onClick={() => setFilterPriority('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                        </div>
+                    )}
+                    {filterTaskType && filterTaskType !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
+                            Workflow: {filterTaskType.replace(/_/g, ' ')}
+                            <button onClick={() => setFilterTaskType('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                        </div>
+                    )}
+                    {filterClient !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
+                            Client: {clientsList.find(c => c.id === filterClient)?.name || 'Unknown'}
+                            <button onClick={() => setFilterClient('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                        </div>
+                    )}
+                    {filterStaff !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
+                            Staff: {usersList.find(u => u.uid === filterStaff)?.displayName?.split(' ')[0] || 'Unknown'}
+                            <button onClick={() => setFilterStaff('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                        </div>
+                    )}
+                    {filterAuditor !== 'ALL' && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
+                            Reviewer: {usersList.find(u => u.uid === filterAuditor)?.displayName?.split(' ')[0] || 'Unknown'}
+                            <button onClick={() => setFilterAuditor('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                        </div>
+                    )}
+                    {searchTerm && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
+                            Search: "{searchTerm}"
+                            <button onClick={() => setSearchTerm('')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                        </div>
+                    )}
+                    <button onClick={() => {
+                        setFilterStatus('ALL'); setFilterPriority('ALL'); setFilterTaskType('ALL'); setFilterClient('ALL'); setFilterStaff('ALL'); setFilterAuditor('ALL'); setSearchTerm(''); setDateRange({start:'', end:''});
+                    }} className="text-[10px] text-muted hover:text-white underline ml-2 transition-colors uppercase font-black">Clear All</button>
+                </div>
+            )}
+
 
             {/* Filter Popover Panel — slides down when Filters button is clicked */}
             <AnimatePresence>

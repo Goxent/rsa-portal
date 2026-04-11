@@ -1127,10 +1127,28 @@ export const AuthService = {
             }
         }
 
-        // Sanitize: remove all undefined values to avoid Firestore crash
-        const sanitizedUpdates = Object.fromEntries(
-            Object.entries(updates).filter(([, v]) => v !== undefined)
-        );
+        // Deep sanitize: remove all undefined values recursively to avoid Firestore crash
+        const sanitizeDeep = (obj: any): any => {
+            if (obj === undefined) return undefined;
+            if (obj === null) return null;
+            if (Array.isArray(obj)) {
+                return obj.map(v => sanitizeDeep(v)).filter(v => v !== undefined);
+            }
+            if (typeof obj === 'object') {
+                const result: any = {};
+                for (const [k, v] of Object.entries(obj)) {
+                    const cleanVal = sanitizeDeep(v);
+                    if (cleanVal !== undefined) {
+                        result[k] = cleanVal;
+                    }
+                }
+                return result;
+            }
+            return obj;
+        };
+
+        const sanitizedUpdates = sanitizeDeep(updates);
+
 
         await updateDoc(doc(db, 'tasks', taskId), {
             ...sanitizedUpdates,

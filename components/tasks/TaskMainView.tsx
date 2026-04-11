@@ -286,13 +286,40 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                     </div>
 
                     {tasks.length === 0 && (
-                        <div className="py-32 flex flex-col items-center justify-center text-center">
-                            <div className="w-16 h-16 rounded-2xl bg-slate-800/30 border border-white/[0.05] flex items-center justify-center mb-4">
-                                <ListIcon size={24} className="text-slate-600" />
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex flex-col items-center justify-center py-32 px-4 text-center max-w-md mx-auto"
+                        >
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full" />
+                                <div className="relative w-20 h-20 rounded-3xl bg-surface border border-border flex items-center justify-center shadow-2xl">
+                                    <Layers size={32} className="text-muted opacity-50" />
+                                    <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg border-2 border-surface">
+                                        <X size={16} strokeWidth={3} />
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-slate-400 font-medium mb-1">No tasks found</p>
-                            <p className="text-sm text-slate-600">Adjust your filters or create a new task.</p>
-                        </div>
+                            
+                            <h3 className="text-xl font-black text-heading uppercase tracking-widest mb-2">No Matches Found</h3>
+                            <p className="text-[13px] text-muted leading-relaxed mb-8">
+                                We couldn't find any assignments matching your current filter criteria. Try broadening your search or resetting the view.
+                            </p>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-3">
+                                <button 
+                                    onClick={() => {
+                                        // This is a trick: we want the parent to clear filters. 
+                                        // Usually we emit this or the parent handles it.
+                                        const event = new CustomEvent('rsa-clear-filters');
+                                        window.dispatchEvent(event);
+                                    }}
+                                    className="px-6 h-11 bg-heading text-surface rounded-xl text-[11px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-heading/10"
+                                >
+                                    Reset All Filters
+                                </button>
+                            </div>
+                        </motion.div>
                     )}
                 </div>
             </div>

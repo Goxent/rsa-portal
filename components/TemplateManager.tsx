@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Save, X, List, CheckCircle2, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
-import { TaskTemplate, TaskPriority, UserRole, AuditPhase } from '../types';
+import { TaskTemplate, TaskPriority, UserRole, AuditPhase, TaskType } from '../types';
 import { TemplateService } from '../services/templates';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +20,8 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         subtasks: [],
         subtaskDetails: [],
         documentLink: '',
-        nextTemplateId: ''
+        nextTemplateId: '',
+        taskType: undefined
     });
     const [newSubtask, setNewSubtask] = useState('');
 
@@ -229,6 +230,15 @@ const TemplateManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         <select className="w-full glass-input" value={currentTemplate.nextTemplateId || ''} onChange={e => setCurrentTemplate({ ...currentTemplate, nextTemplateId: e.target.value })} disabled={!isAdmin}>
                                             <option value="">- None -</option>
                                             {templates.filter(t => t.id !== currentTemplate.id).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Linked Assignment Type</label>
+                                        <select className="w-full glass-input" value={currentTemplate.taskType || ''} onChange={e => setCurrentTemplate({ ...currentTemplate, taskType: e.target.value as TaskType || undefined })} disabled={!isAdmin}>
+                                            <option value="">- None (Standalone) -</option>
+                                            {Object.values(TaskType).map(type => (
+                                                <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
