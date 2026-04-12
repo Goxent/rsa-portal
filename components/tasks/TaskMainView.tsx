@@ -65,6 +65,30 @@ const S: Record<string, {
         ring: 'ring-emerald-500/40', dropBg: 'bg-emerald-500/5',
         border: 'border-emerald-500/20', text: 'text-emerald-400',
     },
+    [TaskStatus.UNDER_REVIEW]: {
+        label: 'Review', dot: 'bg-amber-500', dotColor: '#f59e0b',
+        headerAccent: 'bg-amber-500/5',
+        headerBg: 'bg-amber-500/10',
+        countBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        ring: 'ring-amber-500/40', dropBg: 'bg-amber-500/5',
+        border: 'border-amber-500/20', text: 'text-amber-400',
+    },
+    [TaskStatus.HALTED]: {
+        label: 'Halted', dot: 'bg-rose-500', dotColor: '#f43f5e',
+        headerAccent: 'bg-rose-500/5',
+        headerBg: 'bg-rose-500/10',
+        countBg: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+        ring: 'ring-rose-500/40', dropBg: 'bg-rose-500/5',
+        border: 'border-rose-500/20', text: 'text-rose-400',
+    },
+    [TaskStatus.ARCHIVED]: {
+        label: 'Archived', dot: 'bg-slate-500', dotColor: '#64748b',
+        headerAccent: 'bg-slate-500/5',
+        headerBg: 'bg-slate-500/10',
+        countBg: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+        ring: 'ring-slate-500/40', dropBg: 'bg-slate-500/5',
+        border: 'border-slate-500/20', text: 'text-slate-400',
+    },
 };
 
 const PHASE_META: Record<string, {
@@ -163,7 +187,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                     )}
                     <div className="flex flex-col gap-2 px-6">
                         {[...tasks].sort((a, b) => (a.title || '').localeCompare(b.title || '')).map(task => {
-                            const sc = S[task.status];
+                            const sc = S[task.status] || S[TaskStatus.NOT_STARTED];
                             const pc = P_LIST[task.priority] ?? P_LIST[TaskPriority.LOW];
                             const isOverdue = task.dueDate && new Date(task.dueDate) < new Date()
                                 && task.status !== TaskStatus.COMPLETED && task.status !== TaskStatus.ARCHIVED;
