@@ -197,13 +197,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         <div 
                             className="shrink-0 flex items-center justify-center text-white"
                             style={{ 
-                                width: '28px',
+                                width: '36px',
                                 height: '28px',
                                 background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
                                 borderRadius: 'var(--radius-md)'
                             }}
                         >
-                            <span style={{ fontWeight: 800, fontSize: '1rem' }}>R</span>
+                            <span style={{ fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.02em' }}>RSA</span>
                         </div>
                         {!isCollapsed && (
                             <h1 className="truncate" style={{ 
@@ -342,7 +342,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                                     color: 'var(--accent)',
                                     fontWeight: 600
                                 }}>
-                                    {user?.role}
+                                    {user?.role === 'STAFF' ? 'USER' : user?.role}
                                 </span>
                             </div>
                         )}

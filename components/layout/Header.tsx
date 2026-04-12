@@ -53,13 +53,13 @@ const Header: React.FC<HeaderProps> = ({
                     <div 
                         className="shrink-0 flex items-center justify-center text-white"
                         style={{ 
-                            width: '28px',
+                            width: '36px',
                             height: '28px',
                             background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
                             borderRadius: 'var(--radius-md)'
                         }}
                     >
-                        <span style={{ fontWeight: 800, fontSize: '1rem' }}>R</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.75rem', tracking: '0.05em' }}>RSA</span>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ShieldCheck, UserCheck, ArrowRight, ShieldAlert, Clock, AlertCircle } from 'lucide-react';
-import { Task, UserProfile, TaskStatus } from '../../../types';
+import { Task, UserProfile, TaskStatus, AuditPhase } from '../../../types';
 import { motion } from 'framer-motion';
 
 interface ReviewerActionCenterProps {
@@ -14,8 +14,8 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
         if (!currentUser) return [];
 
         return tasks.filter(t => {
-            // Only tasks in Review phase
-            if (t.status !== TaskStatus.UNDER_REVIEW) return false;
+            // Only tasks in Conclusion phase that are not yet completed
+            if (t.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION || t.status === TaskStatus.COMPLETED) return false;
 
             const isER = t.engagementReviewerId === currentUser.uid && !t.engagementReviewerApprovedAt;
             const isPartner = t.signingPartnerId === currentUser.uid && !t.signingPartnerApprovedAt;

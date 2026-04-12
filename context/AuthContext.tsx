@@ -12,7 +12,7 @@ interface AuthContextType {
   signup: (email: string, pass: string) => Promise<void>;
   googleLogin: () => Promise<void>;
   logout: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   reloadUser: () => Promise<void>;
   isDemo: boolean;
 }
@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const refreshProfile = async () => {
+  const refreshUser = async () => {
     if (user && auth.currentUser) {
       try {
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signup,
         googleLogin,
         logout,
-        refreshProfile,
+        refreshUser,
         reloadUser,
         isDemo: false
       }}

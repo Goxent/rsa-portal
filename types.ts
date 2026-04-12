@@ -23,6 +23,7 @@ export interface UserProfile {
   gender?: 'Male' | 'Female' | 'Other';
   leaveAdjustment?: number; // Manual correction for leave balance
   taskCreationAuthorized?: boolean; // Granted by Master Admin: allows creating new tasks
+  complianceCreationAuthorized?: boolean; // Granted by Master Admin: allows creating compliance events
   
   // User Preference
   theme?: 'light' | 'dark';

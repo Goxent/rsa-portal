@@ -15,10 +15,7 @@ interface TaskTimelineViewProps {
 const statusColors: Record<TaskStatus, string> = {
     [TaskStatus.NOT_STARTED]: '#64748B',  // slate-500
     [TaskStatus.IN_PROGRESS]: '#3B82F6',  // blue-500
-    [TaskStatus.UNDER_REVIEW]: '#F59E0B', // amber-500
-    [TaskStatus.HALTED]: '#EF4444',       // red-500
     [TaskStatus.COMPLETED]: '#10B981',    // emerald-500
-    [TaskStatus.ARCHIVED]: '#4B5563',     // gray-600
 };
 
 const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({

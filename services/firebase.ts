@@ -222,31 +222,21 @@ export const AuthService = {
         try {
             const normalizedInputEmail = email.toLowerCase().trim();
 
-            // STEP 1: CHECK ALLOWLIST FIRST — before creating any auth account
-            const allowlistRef = doc(db, 'staffAllowlist', normalizedInputEmail);
-            const allowlistSnap = await getDoc(allowlistRef);
-
-            if (!allowlistSnap.exists()) {
-                throw new Error(
-                    'This email is not registered in the Staff Directory. ' +
-                    'Please contact your administrator to be added before signing up.'
-                );
-            }
-
-            // STEP 2: Create Auth User FIRST (to bypass unauthenticated Firestore rules)
+            // STEP 1: Create Auth User FIRST (to bypass unauthenticated Firestore rules)
             try {
                 userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                console.log(`[Auth] Firebase account created for ${normalizedInputEmail}`);
             } catch (authErr: any) {
                 if (authErr.code === 'auth/email-already-in-use') {
                     // Seamless auto-recovery for orphaned testing accounts
                     try {
                         userCredential = await signInWithEmailAndPassword(auth, email, pass);
-                        console.log("Successfully intercepted orphaned account and logged in dynamically.");
+                        console.log(`[Auth] Intercepted orphaned account for ${normalizedInputEmail}. Merging profile.`);
                     } catch (loginErr: any) {
                         if (loginErr.code === 'auth/wrong-password' || loginErr.code === 'auth/invalid-credential') {
-                            throw new Error('This email was already registered in a previous session. The password you just entered does not match the original one you set. Please use the Login tab instead.');
+                            throw new Error('This institutional email is already registered. If you forgot your password, please use the Password Reset option on the Login page.');
                         }
-                        throw authErr; // Re-throw original if it's some other weird error
+                        throw authErr; 
                     }
                 } else {
                     throw authErr;
@@ -255,29 +245,47 @@ export const AuthService = {
             const uid = userCredential.user.uid;
 
             // STEP 3: Validate email is in users directory (Staff Directory)
-            // Fix: Case-insensitive check. Fetch all users (small collection) and find match
-            const usersSnapshot = await getDocs(collection(db, 'users'));
+            // Fix: Use direct lookup with deterministic "invited_" prefix to bypass "List" permission errors
+            const invitedDocRef = doc(db, 'users', 'invited_' + normalizedInputEmail);
+            const invitedDocSnap = await getDoc(invitedDocRef);
 
-            const existingUserDoc = usersSnapshot.docs.find(doc => {
-                const data = doc.data() as UserProfile;
-                return data.email && data.email.toLowerCase().trim() === normalizedInputEmail;
-            });
+            let existingUserData: UserProfile | null = null;
+            let existingDocId: string | null = null;
+
+            if (invitedDocSnap.exists()) {
+                existingUserData = invitedDocSnap.data() as UserProfile;
+                existingDocId = invitedDocSnap.id;
+            } else {
+                // Fallback for transition period or different ID schemes
+                try {
+                    const usersSnapshot = await getDocs(query(collection(db, 'users'), where('email', '==', normalizedInputEmail)));
+                    if (!usersSnapshot.empty) {
+                        existingUserData = usersSnapshot.docs[0].data() as UserProfile;
+                        existingDocId = usersSnapshot.docs[0].id;
+                    }
+                } catch (fallbackError) {
+                    console.log(`[Auth] Note: Could not scan legacy users collection for ${normalizedInputEmail} due to security rules.`);
+                }
+            }
 
             let newUser: UserProfile;
 
             try {
-                if (existingUserDoc) {
-                    const existingUserData = existingUserDoc.data() as UserProfile;
+                if (existingUserData && existingDocId) {
+                    console.log(`[Auth] Found matching invite profile: ${existingDocId}`);
 
                     // Check if already registered
-                    if (existingUserData.uid && !existingUserData.uid.startsWith('pending_')) {
-                        await userCredential.user.delete();
-                        throw new Error('Account already set up. Please log in.');
+                    if (existingUserData.uid && !existingUserData.uid.startsWith('pending_') && !existingUserData.uid.startsWith('invited_')) {
+                        // If it's the same UID we just logged into, it's fine (retry case)
+                        if (existingUserData.uid !== uid) {
+                            await userCredential.user.delete();
+                            throw new Error('This invitation has already been claimed and set up. Please log in with your existing credentials.');
+                        }
                     }
 
                     if (existingUserData.status === 'Inactive') {
                         await userCredential.user.delete();
-                        throw new Error('This account is marked as Inactive. Please contact the administrator.');
+                        throw new Error('This staff account has been deactivated. Please contact your system administrator.');
                     }
 
                     // MERGE: Use existing data, update UID and Status
@@ -285,24 +293,30 @@ export const AuthService = {
                         ...existingUserData,
                         uid,
                         displayName: existingUserData.displayName || email.split('@')[0],
+                        email: normalizedInputEmail, // Ensure normalized email
                         isSetupComplete: false,
+                        isOnboardingComplete: false, // Force them through the new onboarding flow
                         status: 'Active',
+                        registeredAt: new Date().toISOString()
                     };
 
-                    // Create new doc with real UID
+                    // Create/Update the doc with the real UID
                     await setDoc(doc(db, 'users', uid), newUser);
 
                     // Set up session
-                    const sessionData = await setupUserSession(uid, email, 'Email/Password (Registration)');
+                    const sessionData = await setupUserSession(uid, email, 'Institutional Registration');
                     newUser = { ...newUser, ...sessionData };
 
-                    // Migrate Tasks from Old ID (pending_...) to New UID
-                    await AuthService.migrateUserTasks(existingUserDoc.id, uid);
+                    // Migrate Tasks from Old ID (pending_... or invited_...) to New UID
+                    await AuthService.migrateUserTasks(existingDocId, uid);
 
                     // Delete the old placeholder doc
-                    await deleteDoc(doc(db, 'users', existingUserDoc.id));
+                    if (existingDocId !== uid) {
+                        await deleteDoc(doc(db, 'users', existingDocId));
+                    }
                 } else {
-                    throw new Error("No staff profile found for this email. Registration is restricted to pre-approved staff only.");
+                    console.error(`[Auth] Critial Error: ${normalizedInputEmail} in allowlist but no user record found.`);
+                    throw new Error("Invitation record mismatch. Please request a new invitation from your administrator.");
                 }
 
                 // Send Verification Email
@@ -548,12 +562,13 @@ export const AuthService = {
             }
         }
 
-        // We'll create a profile with a temporary ID if no UID exists
-        const tempId = 'pending_' + Date.now();
-        await setDoc(doc(db, 'users', tempId), {
+        // We'll create a profile with a deterministic ID for direct lookup during signup
+        const inviteId = 'invited_' + staffData.email.toLowerCase().trim();
+        await setDoc(doc(db, 'users', inviteId), {
             ...staffData,
-            uid: tempId,
-            status: 'Pending Signup'
+            uid: inviteId,
+            status: 'Pending Signup',
+            isOnboardingComplete: false
         });
 
         if (staffData.email) {
@@ -572,15 +587,19 @@ export const AuthService = {
                 const adminDoc = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
                 const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
                 
-                await EmailService.sendStaffInvitation(
+                const emailSent = await EmailService.sendStaffInvitation(
                     normalizedEmail,
                     staffData.displayName || 'Team Member',
                     adminName
                 );
-            } catch (emailError) {
+
+                if (!emailSent) {
+                    throw new Error("The invitation email could not be delivered. Please check the recipient email and try again.");
+                }
+            } catch (emailError: any) {
                 console.error("Failed to send invitation email:", emailError);
-                // We don't throw here to avoid rolling back the allowlist creation
-                // but we could toast a warning if this was client-side.
+                // We re-throw this error so the UI (StaffPage.tsx) can show the error toast
+                throw new Error(emailError.message || "Failed to send invitation email.");
             }
 
             if (auth.currentUser) {
@@ -590,7 +609,7 @@ export const AuthService = {
                     AuditAction.USER_CREATED,
                     auth.currentUser.uid,
                     adminName,
-                    tempId,
+                    inviteId,
                     staffData.displayName || staffData.email,
                     { staffData }
                 );
@@ -617,6 +636,38 @@ export const AuthService = {
                 { email }
             );
         }
+    },
+
+    /**
+     * Checks if an email is in the staff allowlist and whether they have registered.
+     */
+    checkInvitationStatus: async (email: string): Promise<{ isInvited: boolean; isRegistered: boolean }> => {
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        // 1. Check staffAllowlist
+        const allowlistRef = doc(db, 'staffAllowlist', normalizedEmail);
+        const allowlistSnap = await getDoc(allowlistRef);
+        
+        if (!allowlistSnap.exists()) {
+            return { isInvited: false, isRegistered: false };
+        }
+        
+        // 2. Check if user is registered (non-pending doc in users)
+        const q = query(
+            collection(db, 'users'),
+            where('email', '==', normalizedEmail)
+        );
+        const usersSnap = await getDocs(q);
+        
+        const isRegistered = usersSnap.docs.some(d => {
+            const data = d.data();
+            return data.uid && !data.uid.startsWith('pending_');
+        });
+        
+        return { 
+            isInvited: true, 
+            isRegistered 
+        };
     },
 
     migrateExistingStaffToAllowlist: async () => {
@@ -672,11 +723,23 @@ export const AuthService = {
 
     // Grant/revoke task-creation permission (Master Admin only)
     grantTaskCreation: async (uid: string) => {
-        await updateDoc(doc(db, 'users', uid), { taskCreationAuthorized: true });
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, { taskCreationAuthorized: true });
     },
 
     revokeTaskCreation: async (uid: string) => {
-        await updateDoc(doc(db, 'users', uid), { taskCreationAuthorized: false });
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, { taskCreationAuthorized: false });
+    },
+
+    grantComplianceCreation: async (uid: string) => {
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, { complianceCreationAuthorized: true });
+    },
+
+    revokeComplianceCreation: async (uid: string) => {
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, { complianceCreationAuthorized: false });
     },
 
     seedDemoData: async () => {

@@ -6,7 +6,7 @@ import { AuthService } from '../services/firebase';
 import { UserCog, Save, LogOut } from 'lucide-react';
 
 const ProfileSetupPage: React.FC = () => {
-  const { user, refreshProfile, logout } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -31,7 +31,7 @@ const ProfileSetupPage: React.FC = () => {
         phoneNumber: formData.phoneNumber,
         isSetupComplete: true
       });
-      await refreshProfile();
+      await refreshUser();
       navigate('/dashboard');
     } catch (error) {
       console.error("Setup failed", error);

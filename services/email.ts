@@ -2,12 +2,12 @@ export const EmailService = {
     /**
      * Send an email using our Vercel Serverless Function (Resend)
      */
-    sendEmail: async (to: string | { email: string; name: string }, subject: string, html: string): Promise<boolean> => {
+    sendEmail: async (to: string | { email: string; name: string }, subject: string, html: string, fromName?: string): Promise<boolean> => {
         try {
             const response = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to, subject, html }),
+                body: JSON.stringify({ to, subject, html, fromName }),
             });
 
             if (!response.ok) {
@@ -58,8 +58,8 @@ export const EmailService = {
             <div style="max-width: 600px; margin: 32px auto; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #edf0e8;">
                 <!-- Header Block -->
                 <div style="background: linear-gradient(to bottom right, #1c2216, #111a0b); padding: 36px 32px 30px; text-align: center;">
-                    <div style="width:44px; height:44px; background:linear-gradient(135deg,#659a2b,#3f6018); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
-                        <span style="color:#fff; font-size:22px; font-weight:800; line-height:44px; font-family:${fontStack};">R</span>
+                    <div style="width:64px; height:44px; background:linear-gradient(135deg,#659a2b,#3f6018); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
+                        <span style="color:#fff; font-size:18px; font-weight:800; line-height:44px; font-family:${fontStack}; letter-spacing: 0.05em;">RSA</span>
                     </div>
                     <p style="color:#ffffff; font-size:19px; font-weight:700; letter-spacing:-0.3px; margin:0 0 10px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
                     <span style="display:inline-block; background:rgba(101,154,43,0.22); color:#b8d98a; border:1px solid rgba(101,154,43,0.38); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">${typePill}</span>
@@ -202,8 +202,8 @@ export const EmailService = {
             <div style="max-width: 600px; margin: 32px auto; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #edf0e8;">
                 <!-- Red Alert Header -->
                 <div style="background: linear-gradient(to bottom right, #1e1414, #120a0a); padding: 36px 32px 30px; text-align: center;">
-                    <div style="width:44px; height:44px; background:linear-gradient(135deg,#c4445a,#8a2e3e); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
-                        <span style="color:#fff; font-size:22px; font-weight:800; line-height:44px; font-family:${fontStack};">R</span>
+                    <div style="width:64px; height:44px; background:linear-gradient(135deg,#c4445a,#8a2e3e); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
+                        <span style="color:#fff; font-size:18px; font-weight:800; line-height:44px; font-family:${fontStack}; letter-spacing: 0.05em;">RSA</span>
                     </div>
                     <p style="color:#ffffff; font-size:19px; font-weight:700; letter-spacing:-0.3px; margin:0 0 10px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
                     <span style="display:inline-block; background:rgba(196,68,90,0.20); color:#e89aa8; border:1px solid rgba(196,68,90,0.35); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">Due Date Reminder</span>
@@ -396,9 +396,9 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
     },
 
-    sendStaffInvitation: async (toEmail: string, userName: string, _inviterName: string): Promise<boolean> => {
+    sendStaffInvitation: async (toEmail: string, userName: string, inviterName: string): Promise<boolean> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
-        const subject = `You're invited to join the RSA Workspace`;
+        const subject = `${inviterName} invited you to join RSA Portal`;
         const signupLink = `${window.location.origin}/#/signup?email=${encodeURIComponent(toEmail)}`;
         
         const content = `
@@ -406,39 +406,25 @@ export const EmailService = {
                 Hello <strong>${userName}</strong>,
             </p>
             <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
-                <strong style="color:#1e293b;">R. Sapkota &amp; Associates</strong> has invited you to join the official RSA digital workspace — our central platform for daily firm operations.
+                <strong style="color:#1e293b;">${inviterName}</strong> from <strong style="color:#1e293b;">R. Sapkota &amp; Associates</strong> has invited you to join the official RSA digital workspace.
             </p>
 
-            <!-- Features card -->
             <div style="background:linear-gradient(135deg,#f5f9ee,#eef5e0); border:1px solid #d8ebb5; border-radius:10px; padding:22px 24px; margin-bottom:28px;">
-                <p style="font-size:12px; font-weight:700; color:#3f6018; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.07em; font-family:${fontStack};">What you'll use the portal for</p>
+                <p style="font-size:12px; font-weight:700; color:#3f6018; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.07em; font-family:${fontStack};">Your Digital Workspace Features</p>
 
                 <table style="width:100%; border-collapse:collapse; font-family:${fontStack};">
-                    <tr><td style="padding:5px 0; vertical-align:top; width:16px;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Daily attendance check-in and leave management</td></tr>
-                    <tr><td style="padding:5px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Task management and client workflow tracking</td></tr>
-                    <tr><td style="padding:5px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Resource planning and compliance monitoring</td></tr>
-                    <tr><td style="padding:5px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:5px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;">Document sharing and team communication</td></tr>
-                </table>
-
-                <!-- Restricted email notice -->
-                <table style="width:100%; border-collapse:collapse; background:#ffffff; border:1px solid #e8f0de; border-radius:8px; padding:10px 14px; margin-top:16px; font-family:${fontStack};">
-                  <tr>
-                    <td style="padding:10px 14px;">
-                      <table style="width:100%; border-collapse:collapse;">
-                        <tr>
-                          <td style="width:20px; vertical-align:top; color:#659a2b; font-size:13px;">✉</td>
-                          <td style="font-size:12px; color:#64748b; line-height:1.55; padding-left:8px;">
-                            Registration is restricted to invited email addresses only. Please sign up using <strong style="color:#1e293b;">${toEmail}</strong>.
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
+                    <tr><td style="padding:6px 0; vertical-align:top; width:16px;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Daily Operations:</strong> Real-time attendance, leave requests, and performance tracking.</td></tr>
+                    <tr><td style="padding:6px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Audit Workflow:</strong> Centralized task management, client documentation, and status monitoring.</td></tr>
+                    <tr><td style="padding:6px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Collaboration:</strong> Secure document sharing, internal messaging, and compliance resources.</td></tr>
                 </table>
             </div>
+
+            <p style="font-size:13px; color:#64748b; font-family:${fontStack}; margin-bottom: 20px;">
+                Please use the button below to accept your invitation and set up your account.
+            </p>
         `;
 
         const html = EmailService.getTemplateWrapper(content, 'Workspace Invitation', 'Accept Invitation & Sign Up', signupLink, 'green');
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, `${inviterName} via RSA Portal`);
     }
 };

@@ -26,9 +26,7 @@ const getPriorityConfig = (priority: string) => {
 const getStatusConfig = (status: string) => {
     switch (status) {
         case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' };
-        case TaskStatus.UNDER_REVIEW: return { label: 'Under Review', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
         case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' };
-        case TaskStatus.HALTED: return { label: 'Halted', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' };
         default: return { label: 'Not Started', color: 'text-gray-400', bg: 'bg-gray-500/10 border-gray-500/20' };
     }
 };
@@ -44,9 +42,9 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
     // Filter and sort
     const filtered = recentTasks
         .filter(t => {
-            if (filterStatus === 'active') return t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED;
+            if (filterStatus === 'active') return t.status !== TaskStatus.COMPLETED;
             if (filterStatus === 'overdue') return t.dueDate && new Date(t.dueDate) < now && t.status !== TaskStatus.COMPLETED;
-            if (filterStatus === 'review') return t.status === TaskStatus.UNDER_REVIEW;
+            if (filterStatus === 'review') return t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED;
             return true; // 'all'
         })
         .filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()) || (t.clientName || '').toLowerCase().includes(search.toLowerCase()))
@@ -58,8 +56,8 @@ const AllTasksWidget: React.FC<AllTasksWidgetProps> = ({ recentTasks = [], userM
         });
 
     const overdueCount = recentTasks.filter(t => t.dueDate && new Date(t.dueDate) < now && t.status !== TaskStatus.COMPLETED).length;
-    const reviewCount = recentTasks.filter(t => t.status === TaskStatus.UNDER_REVIEW).length;
-    const activeCount = recentTasks.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED).length;
+    const reviewCount = recentTasks.filter(t => t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED).length;
+    const activeCount = recentTasks.filter(t => t.status !== TaskStatus.COMPLETED).length;
 
     if (isLoading) {
         return (

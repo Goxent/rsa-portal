@@ -57,14 +57,6 @@ const S: Record<string, {
         ring: 'ring-blue-500/40', dropBg: 'bg-blue-500/5',
         border: 'border-blue-500/20', text: 'text-blue-400',
     },
-    [TaskStatus.UNDER_REVIEW]: {
-        label: 'Under Review', dot: 'bg-amber-500', dotColor: '#f59e0b',
-        headerAccent: 'bg-amber-500/5',
-        headerBg: 'bg-amber-500/10',
-        countBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-        ring: 'ring-amber-500/40', dropBg: 'bg-amber-500/5',
-        border: 'border-amber-500/20', text: 'text-amber-400',
-    },
     [TaskStatus.COMPLETED]: {
         label: 'Completed', dot: 'bg-emerald-500', dotColor: '#10b981',
         headerAccent: 'bg-emerald-500/5',
@@ -72,22 +64,6 @@ const S: Record<string, {
         countBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
         ring: 'ring-emerald-500/40', dropBg: 'bg-emerald-500/5',
         border: 'border-emerald-500/20', text: 'text-emerald-400',
-    },
-    [TaskStatus.HALTED]: {
-        label: 'Halted', dot: 'bg-rose-500', dotColor: '#f43f5e',
-        headerAccent: 'bg-rose-500/5',
-        headerBg: 'bg-rose-500/10',
-        countBg: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-        ring: 'ring-rose-500/40', dropBg: 'bg-rose-500/5',
-        border: 'border-rose-500/20', text: 'text-rose-400',
-    },
-    [TaskStatus.ARCHIVED]: {
-        label: 'Archived', dot: 'bg-slate-500', dotColor: '#6b7280',
-        headerAccent: 'bg-[var(--bg-surface)]',
-        headerBg: 'bg-[var(--bg-elevated)]',
-        countBg: 'bg-[var(--bg-elevated)] text-[var(--text-muted)] border-[var(--border)]',
-        ring: 'ring-slate-500/20', dropBg: 'bg-slate-500/5',
-        border: 'border-[var(--border)]', text: 'text-[var(--text-muted)]',
     },
 };
 
@@ -327,7 +303,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     // ── KANBAN VIEW ──────────────────────────────────────────────────────────
     const PHASE_ORDER = [AuditPhase.ONBOARDING, AuditPhase.PLANNING_AND_EXECUTION, AuditPhase.REVIEW_AND_CONCLUSION];
-    const STATUS_COLS = [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.COMPLETED];
+    const STATUS_COLS = [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED];
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>

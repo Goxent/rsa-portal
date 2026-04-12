@@ -47,10 +47,7 @@ const PHASE_ORDER = {
 };const STATUS_ORDER = {
     [TaskStatus.NOT_STARTED]: 1,
     [TaskStatus.IN_PROGRESS]: 2,
-    [TaskStatus.HALTED]: 2,
-    [TaskStatus.UNDER_REVIEW]: 3,
-    [TaskStatus.COMPLETED]: 4,
-    [TaskStatus.ARCHIVED]: 5
+    [TaskStatus.COMPLETED]: 3
 };
 
 const PHASE_LABELS = {
@@ -1458,7 +1455,7 @@ const TasksPage: React.FC = () => {
                                                 exit={{ opacity: 0, y: 8 }}
                                                 className="absolute top-full left-0 mt-2 w-44 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl"
                                             >
-                                                {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map((status) => (
+                                                {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED].map((status) => (
                                                     <button
                                                         key={status}
                                                         onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
@@ -1680,7 +1677,7 @@ const TasksPage: React.FC = () => {
                                         className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
                                     >
                                         <option value="ALL">Status: All</option>
-                                        {Object.values(TaskStatus).filter(s => s !== 'ARCHIVED').map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                                        {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
                                     </select>
                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
                                 </div>

@@ -242,7 +242,7 @@ const CompliancePage: React.FC = () => {
         }
     };
 
-    const canEdit = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
+    const canEdit = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER || user?.complianceCreationAuthorized;
 
     // VAT Filing Restriction & Countdown Logic
     const npNow = new NepaliDate();

@@ -16,11 +16,9 @@ const SystemSettingsPage: React.FC = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [authSearchTerm, setAuthSearchTerm] = useState('');
-    const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const [isUpdating, setIsUpdating] = useState<string | null>(null);
     const [isAuthUpdating, setIsAuthUpdating] = useState<string | null>(null);
+    const [complianceAuthSearchTerm, setComplianceAuthSearchTerm] = useState('');
+    const [isComplianceAuthUpdating, setIsComplianceAuthUpdating] = useState<string | null>(null);
     const [isMigrating, setIsMigrating] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
     const [archiveFY, setArchiveFY] = useState('');
@@ -91,6 +89,34 @@ const SystemSettingsPage: React.FC = () => {
         }
     };
 
+    const handleGrantComplianceCreation = async (uid: string) => {
+        setIsComplianceAuthUpdating(uid);
+        try {
+            await AuthService.grantComplianceCreation(uid);
+            setUsers(prev => prev.map(u => u.uid === uid ? { ...u, complianceCreationAuthorized: true } : u));
+            setStatusMessage({ type: 'success', text: 'Compliance creation access granted.' });
+            setTimeout(() => setStatusMessage(null), 3000);
+        } catch (error) {
+            setStatusMessage({ type: 'error', text: 'Failed to grant compliance access.' });
+        } finally {
+            setIsComplianceAuthUpdating(null);
+        }
+    };
+
+    const handleRevokeComplianceCreation = async (uid: string) => {
+        setIsComplianceAuthUpdating(uid);
+        try {
+            await AuthService.revokeComplianceCreation(uid);
+            setUsers(prev => prev.map(u => u.uid === uid ? { ...u, complianceCreationAuthorized: false } : u));
+            setStatusMessage({ type: 'success', text: 'Compliance creation access revoked.' });
+            setTimeout(() => setStatusMessage(null), 3000);
+        } catch (error) {
+            setStatusMessage({ type: 'error', text: 'Failed to revoke compliance access.' });
+        } finally {
+            setIsComplianceAuthUpdating(null);
+        }
+    };
+
     const handleArchiveTasks = async () => {
         if (!archiveFY) return;
         const msg = `This will move all COMPLETED tasks from Fiscal Year ${archiveFY} to ARCHIVED status. They will no longer appear in the main Tasks page. Proceed?`;
@@ -138,6 +164,16 @@ const SystemSettingsPage: React.FC = () => {
     );
 
     const authorizedCount = users.filter(u => u.taskCreationAuthorized === true).length;
+    const complianceAuthorizedCount = users.filter(u => u.complianceCreationAuthorized === true).length;
+
+    // Only show non-admin/manager users in the compliance authorization panel
+    const complianceAuthEligibleUsers = users.filter(u =>
+        u.role !== UserRole.MASTER_ADMIN &&
+        u.role !== UserRole.ADMIN &&
+        u.uid !== user?.uid &&
+        (u.displayName.toLowerCase().includes(complianceAuthSearchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(complianceAuthSearchTerm.toLowerCase()))
+    );
 
     if (isLoading) {
         return (
@@ -337,6 +373,95 @@ const SystemSettingsPage: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* ── Compliance Event Creation Authorization (Master Admin only) ── */}
+                    <div className="glass-panel p-6 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.03]">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-white flex items-center">
+                                    <ShieldCheck size={20} className="mr-2 text-indigo-400" />
+                                    Compliance Event Creation Authorization
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Grant specific staff the ability to <strong className="text-white">create compliance events</strong>.
+                                    This allows specialized personnel to manage the firm's compliance calendar.
+                                </p>
+                            </div>
+                            {complianceAuthorizedCount > 0 && (
+                                <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 whitespace-nowrap">
+                                    {complianceAuthorizedCount} user{complianceAuthorizedCount !== 1 ? 's' : ''} authorized
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="relative w-full mb-4 mt-4">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                            <input
+                                type="text"
+                                placeholder="Search staff..."
+                                value={complianceAuthSearchTerm}
+                                onChange={(e) => setComplianceAuthSearchTerm(e.target.value)}
+                                className="w-full bg-navy-900/50 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500/50 outline-none"
+                            />
+                        </div>
+
+                        {complianceAuthEligibleUsers.length === 0 ? (
+                            <p className="text-center text-gray-500 text-sm py-6">No eligible staff members found.</p>
+                        ) : (
+                            <div className="divide-y divide-white/5">
+                                {complianceAuthEligibleUsers.map(u => (
+                                    <div
+                                        key={u.uid}
+                                        className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-white/[0.02] transition-colors"
+                                    >
+                                        {/* User info */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                                {u.displayName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-white text-sm flex items-center gap-2 flex-wrap">
+                                                    {u.displayName}
+                                                    {u.complianceCreationAuthorized && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 tracking-wider">
+                                                            Authorized
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {u.position || u.role.replace('_', ' ')}
+                                                    {u.department ? ` · ${u.department}` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Grant / Revoke button */}
+                                        <div className="flex-shrink-0 ml-4">
+                                            {isComplianceAuthUpdating === u.uid ? (
+                                                <Loader2 className="animate-spin text-indigo-400" size={18} />
+                                            ) : u.complianceCreationAuthorized ? (
+                                                <button
+                                                    onClick={() => handleRevokeComplianceCreation(u.uid)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
+                                                >
+                                                    <ShieldOff size={13} />
+                                                    Revoke
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleGrantComplianceCreation(u.uid)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 transition-all"
+                                                >
+                                                    <ShieldCheck size={13} />
+                                                    Grant Access
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Sidebar: Security Overview + Danger Zone */}
@@ -360,8 +485,12 @@ const SystemSettingsPage: React.FC = () => {
                                 <span className="text-brand-300 font-bold">{users.filter(u => u.role === UserRole.ADMIN).length}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-400">Task-Authorized Users</span>
+                                <span className="text-gray-400">Task-Authorized</span>
                                 <span className="text-amber-300 font-bold">{authorizedCount}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-400">Compliance-Authorized</span>
+                                <span className="text-indigo-300 font-bold">{complianceAuthorizedCount}</span>
                             </div>
                         </div>
                         <div className="mt-6 pt-6 border-t border-white/5">
