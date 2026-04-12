@@ -16,6 +16,10 @@ const SystemSettingsPage: React.FC = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [authSearchTerm, setAuthSearchTerm] = useState('');
+    const [isUpdating, setIsUpdating] = useState<string | null>(null);
+    const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isAuthUpdating, setIsAuthUpdating] = useState<string | null>(null);
     const [complianceAuthSearchTerm, setComplianceAuthSearchTerm] = useState('');
     const [isComplianceAuthUpdating, setIsComplianceAuthUpdating] = useState<string | null>(null);
@@ -210,13 +214,16 @@ const SystemSettingsPage: React.FC = () => {
                 {/* Left column: Role Management + Task Authorization */}
                 <div className="lg:col-span-2 space-y-6">
 
-                    {/* ── User Role Management ── */}
+                    {/* ── Unified Access & Role Management ── */}
                     <div className="glass-panel p-6 rounded-2xl border border-white/10">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                            <h3 className="text-lg font-bold text-white flex items-center">
-                                <Users size={20} className="mr-2 text-brand-400" />
-                                User Role Management
-                            </h3>
+                            <div>
+                                <h3 className="text-lg font-bold text-white flex items-center">
+                                    <ShieldCheck size={20} className="mr-2 text-brand-400" />
+                                    Access & Authorization Control
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1">Manage system roles, engagement initiation, and compliance calendar access centrally.</p>
+                            </div>
                             <div className="relative w-full md:w-64">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                                 <input
@@ -234,48 +241,68 @@ const SystemSettingsPage: React.FC = () => {
                                 <thead className="text-gray-400 border-b border-white/5 uppercase text-[10px] tracking-widest font-bold">
                                     <tr>
                                         <th className="px-4 py-3">User</th>
-                                        <th className="px-4 py-3">Current Role</th>
-                                        <th className="px-4 py-3">Change Role</th>
+                                        <th className="px-4 py-3">System Role</th>
+                                        <th className="px-4 py-3 text-center">Task Creation</th>
+                                        <th className="px-4 py-3 text-center">Compliance Auth</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {filteredUsers.map(u => (
                                         <tr key={u.uid} className="group hover:bg-white/5 transition-colors">
-                                            <td className="px-4 py-4">
+                                            <td className="px-4 py-4 min-w-[200px]">
                                                 <div className="flex items-center">
-                                                    <div className="w-10 h-10 rounded-full bg-brand-600/20 border border-brand-500/20 flex items-center justify-center text-brand-200 font-bold mr-3">
+                                                    <div className="w-10 h-10 rounded-full bg-brand-600/20 border border-brand-500/20 flex items-center justify-center text-brand-200 font-bold mr-3 flex-shrink-0">
                                                         {u.displayName.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-white">{u.displayName}</div>
-                                                        <div className="text-xs text-gray-500">{u.email}</div>
+                                                        <div className="font-bold text-white leading-tight">{u.displayName}</div>
+                                                        <div className="text-[11px] text-gray-500 mt-0.5">{u.email}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${u.role === UserRole.MASTER_ADMIN
-                                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/20'
-                                                    : u.role === UserRole.ADMIN
-                                                        ? 'bg-brand-500/20 text-brand-300 border-brand-500/20'
-                                                        : u.role === UserRole.MANAGER
-                                                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/20'
-                                                            : 'bg-gray-500/20 text-gray-400 border-gray-500/20'}`}>
-                                                    {u.role.replace('_', ' ')}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        disabled={isUpdating === u.uid || u.uid === user?.uid}
+                                                        value={u.role}
+                                                        onChange={(e) => handleRoleChange(u.uid, e.target.value as UserRole)}
+                                                        className={`bg-navy-900 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] font-bold focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 uppercase ${u.role === UserRole.MASTER_ADMIN ? 'text-purple-400' : u.role === UserRole.ADMIN ? 'text-brand-400' : 'text-gray-300'}`}
+                                                    >
+                                                        {Object.values(UserRole).map(role => (
+                                                            <option key={role} value={role}>{role.replace('_', ' ')}</option>
+                                                        ))}
+                                                    </select>
+                                                    {isUpdating === u.uid && (
+                                                        <Loader2 className="animate-spin text-brand-500" size={14} />
+                                                    )}
+                                                </div>
                                             </td>
-                                            <td className="px-4 py-4">
-                                                <select
-                                                    disabled={isUpdating === u.uid || u.uid === user?.uid}
-                                                    value={u.role}
-                                                    onChange={(e) => handleRoleChange(u.uid, e.target.value as UserRole)}
-                                                    className="bg-navy-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
-                                                >
-                                                    {Object.values(UserRole).map(role => (
-                                                        <option key={role} value={role}>{role.replace('_', ' ')}</option>
-                                                    ))}
-                                                </select>
-                                                {isUpdating === u.uid && (
-                                                    <Loader2 className="animate-spin inline-block ml-2 text-brand-500" size={14} />
+                                            <td className="px-4 py-4 text-center">
+                                                {u.role === UserRole.MASTER_ADMIN || u.role === UserRole.ADMIN ? (
+                                                    <span className="text-[10px] text-gray-500 italic block mt-1 tracking-wider uppercase">Inherited</span>
+                                                ) : isAuthUpdating === u.uid ? (
+                                                    <Loader2 className="animate-spin text-amber-500 mx-auto block mt-1" size={16} />
+                                                ) : (
+                                                    <button
+                                                        onClick={() => u.taskCreationAuthorized ? handleRevokeTaskCreation(u.uid) : handleGrantTaskCreation(u.uid)}
+                                                        className={`w-9 h-5 rounded-full relative transition-colors mx-auto block ${u.taskCreationAuthorized ? 'bg-amber-500' : 'bg-white/10'}`}
+                                                    >
+                                                        <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-[3px] transition-all ${u.taskCreationAuthorized ? 'left-[18px]' : 'left-1'}`} />
+                                                    </button>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                {u.role === UserRole.MASTER_ADMIN || u.role === UserRole.ADMIN ? (
+                                                    <span className="text-[10px] text-gray-500 italic block mt-1 tracking-wider uppercase">Inherited</span>
+                                                ) : isComplianceAuthUpdating === u.uid ? (
+                                                    <Loader2 className="animate-spin text-indigo-500 mx-auto block mt-1" size={16} />
+                                                ) : (
+                                                    <button
+                                                        onClick={() => u.complianceCreationAuthorized ? handleRevokeComplianceCreation(u.uid) : handleGrantComplianceCreation(u.uid)}
+                                                        className={`w-9 h-5 rounded-full relative transition-colors mx-auto block ${u.complianceCreationAuthorized ? 'bg-indigo-500' : 'bg-white/10'}`}
+                                                    >
+                                                        <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-[3px] transition-all ${u.complianceCreationAuthorized ? 'left-[18px]' : 'left-1'}`} />
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
@@ -283,184 +310,6 @@ const SystemSettingsPage: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-
-                    {/* ── Task Creation Authorization (Master Admin only) ── */}
-                    <div className="glass-panel p-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03]">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-4">
-                            <div>
-                                <h3 className="text-lg font-bold text-white flex items-center">
-                                    <Key size={20} className="mr-2 text-amber-400" />
-                                    Task Creation Authorization
-                                </h3>
-                                <p className="text-xs text-gray-400 mt-1">
-                                    Grant specific staff or team leaders the ability to <strong className="text-white">create new tasks</strong> without changing their system role.
-                                    Authorized users <span className="text-amber-300 font-semibold">cannot</span> edit tasks they are not assigned to or did not create.
-                                </p>
-                            </div>
-                            {authorizedCount > 0 && (
-                                <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap">
-                                    {authorizedCount} user{authorizedCount !== 1 ? 's' : ''} authorized
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="relative w-full mb-4 mt-4">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search staff..."
-                                value={authSearchTerm}
-                                onChange={(e) => setAuthSearchTerm(e.target.value)}
-                                className="w-full bg-navy-900/50 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-amber-500/50 outline-none"
-                            />
-                        </div>
-
-                        {authEligibleUsers.length === 0 ? (
-                            <p className="text-center text-gray-500 text-sm py-6">No eligible staff members found.</p>
-                        ) : (
-                            <div className="divide-y divide-white/5">
-                                {authEligibleUsers.map(u => (
-                                    <div
-                                        key={u.uid}
-                                        className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-white/[0.02] transition-colors"
-                                    >
-                                        {/* User info */}
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                                {u.displayName.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-white text-sm flex items-center gap-2 flex-wrap">
-                                                    {u.displayName}
-                                                    {u.taskCreationAuthorized && (
-                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 tracking-wider">
-                                                            Authorized
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {u.position || u.role.replace('_', ' ')}
-                                                    {u.department ? ` · ${u.department}` : ''}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Grant / Revoke button */}
-                                        <div className="flex-shrink-0 ml-4">
-                                            {isAuthUpdating === u.uid ? (
-                                                <Loader2 className="animate-spin text-amber-400" size={18} />
-                                            ) : u.taskCreationAuthorized ? (
-                                                <button
-                                                    onClick={() => handleRevokeTaskCreation(u.uid)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
-                                                >
-                                                    <ShieldOff size={13} />
-                                                    Revoke
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleGrantTaskCreation(u.uid)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 transition-all"
-                                                >
-                                                    <Key size={13} />
-                                                    Grant Access
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* ── Compliance Event Creation Authorization (Master Admin only) ── */}
-                    <div className="glass-panel p-6 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.03]">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-4">
-                            <div>
-                                <h3 className="text-lg font-bold text-white flex items-center">
-                                    <ShieldCheck size={20} className="mr-2 text-indigo-400" />
-                                    Compliance Event Creation Authorization
-                                </h3>
-                                <p className="text-xs text-gray-400 mt-1">
-                                    Grant specific staff the ability to <strong className="text-white">create compliance events</strong>.
-                                    This allows specialized personnel to manage the firm's compliance calendar.
-                                </p>
-                            </div>
-                            {complianceAuthorizedCount > 0 && (
-                                <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 whitespace-nowrap">
-                                    {complianceAuthorizedCount} user{complianceAuthorizedCount !== 1 ? 's' : ''} authorized
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="relative w-full mb-4 mt-4">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search staff..."
-                                value={complianceAuthSearchTerm}
-                                onChange={(e) => setComplianceAuthSearchTerm(e.target.value)}
-                                className="w-full bg-navy-900/50 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500/50 outline-none"
-                            />
-                        </div>
-
-                        {complianceAuthEligibleUsers.length === 0 ? (
-                            <p className="text-center text-gray-500 text-sm py-6">No eligible staff members found.</p>
-                        ) : (
-                            <div className="divide-y divide-white/5">
-                                {complianceAuthEligibleUsers.map(u => (
-                                    <div
-                                        key={u.uid}
-                                        className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-white/[0.02] transition-colors"
-                                    >
-                                        {/* User info */}
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                                {u.displayName.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-white text-sm flex items-center gap-2 flex-wrap">
-                                                    {u.displayName}
-                                                    {u.complianceCreationAuthorized && (
-                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 tracking-wider">
-                                                            Authorized
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {u.position || u.role.replace('_', ' ')}
-                                                    {u.department ? ` · ${u.department}` : ''}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Grant / Revoke button */}
-                                        <div className="flex-shrink-0 ml-4">
-                                            {isComplianceAuthUpdating === u.uid ? (
-                                                <Loader2 className="animate-spin text-indigo-400" size={18} />
-                                            ) : u.complianceCreationAuthorized ? (
-                                                <button
-                                                    onClick={() => handleRevokeComplianceCreation(u.uid)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
-                                                >
-                                                    <ShieldOff size={13} />
-                                                    Revoke
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleGrantComplianceCreation(u.uid)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 transition-all"
-                                                >
-                                                    <ShieldCheck size={13} />
-                                                    Grant Access
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
                 </div>
 
