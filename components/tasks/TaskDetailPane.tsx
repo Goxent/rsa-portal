@@ -197,6 +197,31 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     });
 
+    // ── Sync form when task prop changes (e.g. after save or task switch) ──
+    useEffect(() => {
+        if (isOpen && task.id) {
+            reset({
+                title: task.title || '',
+                clientId: task.clientIds?.[0] || task.clientId || '',
+                fiscalYear: task.fiscalYear || '',
+                startDate: task.startDate || '',
+                dueDate: task.dueDate || '',
+                priority: task.priority || TaskPriority.MEDIUM,
+                status: task.status || TaskStatus.NOT_STARTED,
+                estimatedHours: task.totalTimeSpent || 0,
+                assignedTo: task.assignedTo || [],
+                teamLeaderId: task.teamLeaderId || '',
+                engagementReviewerId: task.engagementReviewerId || '',
+                signingPartnerId: task.signingPartnerId || '',
+                description: task.description || '',
+                auditPhase: task.auditPhase || AuditPhase.ONBOARDING,
+                teamLeadApprovedAt: task.teamLeadApprovedAt || '',
+                engagementReviewerApprovedAt: task.engagementReviewerApprovedAt || '',
+                signingPartnerApprovedAt: task.signingPartnerApprovedAt || '',
+            });
+        }
+    }, [task.id, isOpen, reset]);
+
     const watchedClientId = watch('clientId');
     const watchedFiscalYear = watch('fiscalYear');
 
@@ -696,8 +721,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const subtaskDocs = auditFiles.filter(f => f.subtaskId === st.id);
 
         return (
-            <div key={uniqueKey} className={`flex flex-col gap-1.5 px-6 py-4 rounded-[20px] transition-all duration-300 group/st bg-[#f1f3ee] dark:bg-[#0f1218] border border-[#d0dac8] dark:border-white/5 hover:bg-[#e8ece2] dark:hover:bg-white/[0.04] shadow-sm ${st.isNew ? 'ring-1 ring-brand-500/20' : ''}`}>
-                <div className="flex items-start gap-4">
+            <div key={uniqueKey} className={`flex flex-col gap-1 px-5 py-3 rounded-[16px] transition-all duration-300 group/st bg-[#f1f3ee] dark:bg-[#0f1218] border border-[#d0dac8] dark:border-white/5 hover:bg-[#e8ece2] dark:hover:bg-white/[0.04] shadow-sm ${st.isNew ? 'ring-1 ring-brand-500/20' : ''}`}>
+                <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-0.5">
                         <button
                             onClick={() => toggleSubtask(st.id)}
@@ -1203,11 +1228,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         <div className="flex-1 overflow-hidden bg-[#f8f9fa] dark:bg-[#080a0e] flex flex-col">
                             {activeDetailTab === 'OVERVIEW' && (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-[1240px] mx-auto p-8 space-y-8 pb-32">
+                                    <div className="max-w-[1600px] w-full mx-auto p-4 md:p-6 space-y-6 pb-32">
                                         
-                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                                             {/* Left Column: Core Identity (Read-only) */}
-                                            <div className="lg:col-span-2 space-y-6">
+                                            <div className="lg:col-span-3 space-y-6">
                                                 <div className="bg-white dark:bg-white/5 rounded-[32px] p-8 border border-black/5 dark:border-white/10 shadow-sm">
                                                     <div className="flex items-center gap-3 mb-8">
                                                         <div className="w-10 h-10 rounded-2xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
@@ -1342,7 +1367,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                             {activeDetailTab === 'PROCEDURES' && (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-[1240px] mx-auto p-8 space-y-8 pb-32">
+                                    <div className="max-w-[1600px] w-full mx-auto p-4 md:p-6 space-y-6 pb-32">
                                         
                                         {/* Engagement Stepper Redesigned */}
                                         <div className="bg-white dark:bg-white/5 rounded-[24px] p-2 flex items-center justify-between shadow-sm border border-black/5 dark:border-white/10 w-fit mx-auto">
@@ -1386,7 +1411,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 if (!isCurrent && !isPast) return null;
 
                                                 return (
-                                                    <div key={phase} className={`space-y-6 bg-white dark:bg-white/[0.02] border border-black/5 dark:border-white/10 rounded-[32px] p-8 shadow-sm ${!isCurrent ? 'opacity-80' : ''}`}>
+                                                    <div key={phase} className={`space-y-4 bg-white dark:bg-white/[0.02] border border-black/5 dark:border-white/10 rounded-[28px] p-6 shadow-sm ${!isCurrent ? 'opacity-80' : ''}`}>
                                                         {/* Phase Header */}
                                                         <div className="flex items-center justify-between mb-4 px-2">
                                                             <div className="flex items-center gap-4">
@@ -1672,8 +1697,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             )}
 
                             {activeDetailTab === 'OBSERVATIONS' && (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar p-10">
-                                    <div className="max-w-[1240px] mx-auto space-y-10">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
+                                    <div className="max-w-[1600px] w-full mx-auto space-y-6">
                                         <div className="flex items-center justify-between px-2">
                                             <div className="flex flex-col gap-2">
                                                 <h4 className="text-[15px] font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
@@ -1770,8 +1795,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             )}
 
                             {activeDetailTab === 'COMMENTS' && (
-                                <div className="flex-1 overflow-hidden flex flex-col p-10">
-                                    <div className="max-w-[1000px] w-full mx-auto flex-1 flex flex-col bg-[#0c1218] border border-white/5 rounded-[40px] overflow-hidden shadow-[0_24px_128px_rgba(0,0,0,0.6)]">
+                                <div className="flex-1 overflow-hidden flex flex-col p-4 md:p-6">
+                                    <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col bg-[#0c1218] border border-white/5 rounded-[40px] overflow-hidden shadow-[0_24px_128px_rgba(0,0,0,0.6)]">
                                         <div className="shrink-0 px-8 py-6 border-b border-white/[0.04] flex items-center justify-between bg-black/20">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
@@ -1795,11 +1820,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             )}
 
                             {activeDetailTab === 'SETTINGS' && (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar p-10">
-                                    <div className="max-w-4xl w-full mx-auto space-y-12 pb-32">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
+                                    <div className="max-w-[1600px] w-full mx-auto space-y-8 pb-32">
                                         
                                         {/* Main Form Fields Grouped */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10 py-10 px-10 bg-white/[0.02] border border-white/5 rounded-[40px] shadow-inner">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 p-6 md:p-8 bg-white/[0.02] border border-white/5 rounded-[32px] shadow-inner">
                                             <Field label="Assignment Title" icon={<FileText size={14} className="text-brand-400" />} span2>
                                                 <input
                                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[14px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
@@ -1869,7 +1894,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </div>
 
                                         {/* Quality Control Hierarchy Section */}
-                                        <div className="p-10 bg-[#0c1e18]/20 border border-emerald-500/10 rounded-[40px] shadow-inner space-y-10">
+                                        <div className="p-6 md:p-8 bg-[#0c1e18]/20 border border-emerald-500/10 rounded-[32px] shadow-inner space-y-8">
                                             <div className="flex items-center gap-4 border-b border-emerald-500/10 pb-4">
                                                 <ShieldCheck size={20} className="text-emerald-500" />
                                                 <h4 className="text-[13px] font-black text-gray-300 uppercase tracking-[0.3em]">Quality Control Hierarchy & Sign-offs</h4>
@@ -1909,7 +1934,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </div>
 
                                         {/* Engagement Framework Switcher */}
-                                        <div className="p-10 bg-white/[0.01] border border-white/5 rounded-[40px] space-y-8">
+                                        <div className="p-6 md:p-8 bg-white/[0.01] border border-white/5 rounded-[32px] space-y-6">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em] flex items-center gap-3">
                                                     <Shield size={14} className="text-brand-400" />
