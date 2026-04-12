@@ -199,26 +199,49 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     // ── Sync form when task prop changes (e.g. after save or task switch) ──
     useEffect(() => {
-        if (isOpen && task.id) {
-            reset({
-                title: task.title || '',
-                clientId: task.clientIds?.[0] || task.clientId || '',
-                fiscalYear: task.fiscalYear || '',
-                startDate: task.startDate || '',
-                dueDate: task.dueDate || '',
-                priority: task.priority || TaskPriority.MEDIUM,
-                status: task.status || TaskStatus.NOT_STARTED,
-                estimatedHours: task.totalTimeSpent || 0,
-                assignedTo: task.assignedTo || [],
-                teamLeaderId: task.teamLeaderId || '',
-                engagementReviewerId: task.engagementReviewerId || '',
-                signingPartnerId: task.signingPartnerId || '',
-                description: task.description || '',
-                auditPhase: task.auditPhase || AuditPhase.ONBOARDING,
-                teamLeadApprovedAt: task.teamLeadApprovedAt || '',
-                engagementReviewerApprovedAt: task.engagementReviewerApprovedAt || '',
-                signingPartnerApprovedAt: task.signingPartnerApprovedAt || '',
-            });
+        if (isOpen) {
+            if (!task.id) {
+                setActiveDetailTab('SETTINGS');
+                reset({
+                    title: '',
+                    clientId: '',
+                    fiscalYear: '',
+                    startDate: '',
+                    dueDate: '',
+                    priority: TaskPriority.MEDIUM,
+                    status: TaskStatus.NOT_STARTED,
+                    estimatedHours: 0,
+                    assignedTo: [],
+                    teamLeaderId: '',
+                    engagementReviewerId: '',
+                    signingPartnerId: '',
+                    description: '',
+                    auditPhase: AuditPhase.ONBOARDING,
+                    teamLeadApprovedAt: '',
+                    engagementReviewerApprovedAt: '',
+                    signingPartnerApprovedAt: '',
+                });
+            } else {
+                reset({
+                    title: task.title || '',
+                    clientId: task.clientIds?.[0] || task.clientId || '',
+                    fiscalYear: task.fiscalYear || '',
+                    startDate: task.startDate || '',
+                    dueDate: task.dueDate || '',
+                    priority: task.priority || TaskPriority.MEDIUM,
+                    status: task.status || TaskStatus.NOT_STARTED,
+                    estimatedHours: task.totalTimeSpent || 0,
+                    assignedTo: task.assignedTo || [],
+                    teamLeaderId: task.teamLeaderId || '',
+                    engagementReviewerId: task.engagementReviewerId || '',
+                    signingPartnerId: task.signingPartnerId || '',
+                    description: task.description || '',
+                    auditPhase: task.auditPhase || AuditPhase.ONBOARDING,
+                    teamLeadApprovedAt: task.teamLeadApprovedAt || '',
+                    engagementReviewerApprovedAt: task.engagementReviewerApprovedAt || '',
+                    signingPartnerApprovedAt: task.signingPartnerApprovedAt || '',
+                });
+            }
         }
     }, [task.id, isOpen, reset]);
 
@@ -1179,14 +1202,17 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         <div className="shrink-0 bg-white/80 dark:bg-[#0c0e12] border-b border-black/5 dark:border-white/[0.04] px-8 py-3 flex flex-wrap items-center justify-between gap-4 z-50">
                             {/* Main Tabs - Redesigned to match mockup */}
                             <div className="flex items-center gap-2 bg-gray-100 dark:bg-white/[0.03] p-1 rounded-full border border-black/5 dark:border-white/5 shadow-inner">
-                                {[
+                                {(task.id ? [
                                     { id: 'OVERVIEW', label: 'Overview', icon: <Activity size={14} /> },
                                     { id: 'PROCEDURES', label: 'Sub task', icon: <ClipboardCheck size={14} /> },
                                     { id: 'EVIDENCE', label: 'Evidence Repository', icon: <FolderOpen size={14} /> },
                                     { id: 'OBSERVATIONS', label: 'Engagement Findings', icon: <Eye size={14} /> },
                                     { id: 'COMMENTS', label: 'Collaborate', icon: <MessageSquare size={14} />, badge: (task.comments || []).length },
                                     { id: 'SETTINGS', label: 'Settings', icon: <Settings2 size={14} /> }
-                                ].map(tab => {
+                                ] : [
+                                    { id: 'SETTINGS', label: 'Task Detail', icon: <Settings2 size={14} /> },
+                                    { id: 'PROCEDURES', label: 'Sub task', icon: <ClipboardCheck size={14} /> }
+                                ]).map((tab: any) => {
                                     const isActive = activeDetailTab === tab.id;
                                     return (
                                         <button
@@ -1726,24 +1752,24 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 </div>
                                             ) : (
                                                 task.observations!.map((obs, idx) => (
-                                                    <div key={obs.id} className="bg-[#0f1218] border border-white/5 rounded-[32px] p-8 space-y-8 relative group/obs hover:border-amber-500/20 transition-all shadow-xl">
+                                                    <div key={obs.id} className="bg-[#0f1218] border border-white/5 rounded-[24px] p-6 space-y-5 relative group/obs hover:border-amber-500/20 transition-all shadow-xl">
                                                         <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-6">
-                                                                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
-                                                                    <ShieldAlert size={20} />
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
+                                                                    <ShieldAlert size={18} />
                                                                 </div>
                                                                 <input 
                                                                     value={obs.title} 
                                                                     onChange={e => handleUpdateObservation(obs.id, { title: e.target.value })}
-                                                                    className="bg-transparent text-xl font-bold text-white border-none outline-none placeholder:text-gray-800 tracking-tight"
+                                                                    className="bg-transparent text-[16px] font-bold text-white border-none outline-none placeholder:text-gray-800 tracking-tight"
                                                                     placeholder="Observation Title..."
                                                                 />
                                                             </div>
-                                                            <div className="flex items-center gap-4">
+                                                            <div className="flex items-center gap-3">
                                                                 <select 
                                                                     value={obs.severity} 
                                                                     onChange={e => handleUpdateObservation(obs.id, { severity: e.target.value as any })}
-                                                                    className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                                                    className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
                                                                         obs.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
                                                                         obs.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
                                                                         'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
@@ -1753,35 +1779,35 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     <option value="MEDIUM">Medium Risk</option>
                                                                     <option value="HIGH">High Risk</option>
                                                                 </select>
-                                                                <button onClick={() => handleRemoveObservation(obs.id)} className="p-2 text-gray-700 hover:text-rose-400 transition-all opacity-0 group-hover/obs:opacity-100"><Trash2 size={16} /></button>
+                                                                <button onClick={() => handleRemoveObservation(obs.id)} className="p-1.5 text-gray-700 hover:text-rose-400 transition-all opacity-0 group-hover/obs:opacity-100"><Trash2 size={14} /></button>
                                                             </div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                            <div className="space-y-4">
-                                                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] ml-2 flex items-center gap-2"><div className="w-1 h-3 bg-amber-500 rounded-full" /> Detail & Context</label>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                            <div className="space-y-2">
+                                                                <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] ml-1 flex items-center gap-2"><div className="w-1 h-2.5 bg-amber-500 rounded-full" /> Detail & Context</label>
                                                                 <textarea 
                                                                     value={obs.observation}
                                                                     onChange={e => handleUpdateObservation(obs.id, { observation: e.target.value })}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-[13px] text-gray-200 outline-none focus:border-amber-500/30 transition-all min-h-[120px] shadow-inner"
+                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-amber-500/30 transition-all min-h-[60px] shadow-inner resize-y"
                                                                     placeholder="Describe the finding in detail..."
                                                                 />
                                                             </div>
-                                                            <div className="space-y-4">
-                                                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] ml-2 flex items-center gap-2"><div className="w-1 h-3 bg-rose-500 rounded-full" /> Implication / Risk</label>
+                                                            <div className="space-y-2">
+                                                                <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] ml-1 flex items-center gap-2"><div className="w-1 h-2.5 bg-rose-500 rounded-full" /> Implication / Risk</label>
                                                                 <textarea 
                                                                     value={obs.implication}
                                                                     onChange={e => handleUpdateObservation(obs.id, { implication: e.target.value })}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-[13px] text-gray-200 outline-none focus:border-rose-500/30 transition-all min-h-[120px] shadow-inner"
+                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-rose-500/30 transition-all min-h-[60px] shadow-inner resize-y"
                                                                     placeholder="What is the potential impact of this issue?"
                                                                 />
                                                             </div>
-                                                            <div className="space-y-4 md:col-span-2">
-                                                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] ml-2 flex items-center gap-2"><div className="w-1 h-3 bg-brand-500 rounded-full" /> Audit Recommendation</label>
+                                                            <div className="space-y-2 md:col-span-2">
+                                                                <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] ml-1 flex items-center gap-2"><div className="w-1 h-2.5 bg-brand-500 rounded-full" /> Audit Recommendation</label>
                                                                 <textarea 
                                                                     value={obs.recommendation}
                                                                     onChange={e => handleUpdateObservation(obs.id, { recommendation: e.target.value })}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-[13px] text-gray-200 outline-none focus:border-brand-500/30 transition-all min-h-[100px] shadow-inner"
+                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-brand-500/30 transition-all min-h-[50px] shadow-inner resize-y"
                                                                     placeholder="Suggested management response or technical fix..."
                                                                 />
                                                             </div>
@@ -1994,7 +2020,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     className="px-8 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-full text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-3"
                                 >
                                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                    Commit All Evidence
+                                    {task.id ? 'Commit All Evidence' : 'Create Task'}
                                 </button>
                             </div>
                         </div>
