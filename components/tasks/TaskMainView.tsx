@@ -327,7 +327,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     // ── KANBAN VIEW ──────────────────────────────────────────────────────────
     const PHASE_ORDER = [AuditPhase.ONBOARDING, AuditPhase.PLANNING_AND_EXECUTION, AuditPhase.REVIEW_AND_CONCLUSION];
-    const STATUS_COLS = [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED];
+    const STATUS_COLS = [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED];
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
@@ -431,7 +431,6 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     {/* ── Phase Body: Status Sections ── */}
                                     <div className="flex-1 overflow-y-auto custom-scrollbar px-2.5 py-3 space-y-2">
                                         {STATUS_COLS
-                                            .filter(status => !(phase === AuditPhase.ONBOARDING && status === TaskStatus.UNDER_REVIEW))
                                             .map(status => {
                                                 const droppableId = `${phase}::${status}`;
                                                 const cfg = S[status];
