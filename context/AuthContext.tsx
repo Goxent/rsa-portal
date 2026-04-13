@@ -3,6 +3,10 @@ import { UserProfile } from '../types';
 import { AuthService, auth, db } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
+
+const SESSION_EXPIRY_DAYS = 15;
+const SESSION_EXPIRY_MS = SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -11,7 +15,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
   googleLogin: () => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (reason?: 'MANUAL' | 'SESSION_EXPIRED') => Promise<void>;
   refreshUser: () => Promise<void>;
   reloadUser: () => Promise<void>;
   isDemo: boolean;
@@ -44,6 +48,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (userDoc.exists()) {
             const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
+
+            // Enforce 15-day session limit
+            if (userData.sessionCreatedAt) {
+                const sessionAge = Date.now() - userData.sessionCreatedAt;
+                if (sessionAge > SESSION_EXPIRY_MS) {
+                    console.warn(`[Security] Session expired (Age: ${Math.round(sessionAge / 3600000)}h). Logging out.`);
+                    toast.error('Your session has expired for security reasons. Please login again.', { duration: 5000, id: 'session-expired' });
+                    await AuthService.logout('SESSION_EXPIRED');
+                    setUser(null);
+                    setLoading(false);
+                    return;
+                }
+            }
+
             setUser(userData);
             
             // Check if admin to perform background tasks
@@ -120,9 +138,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = async (reason: 'MANUAL' | 'SESSION_EXPIRED' = 'MANUAL') => {
     try {
-      await AuthService.logout();
+      await AuthService.logout(reason);
       setUser(null);
       setEmailVerified(false);
     } catch (error) {

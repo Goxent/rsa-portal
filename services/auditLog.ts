@@ -36,6 +36,7 @@ export enum AuditAction {
     LOGIN_SUCCESS = 'LOGIN_SUCCESS',
     LOGIN_FAILURE = 'LOGIN_FAILURE',
     LOGOUT = 'LOGOUT',
+    SESSION_EXPIRED = 'SESSION_EXPIRED',
 
     // Document & Risk Area Actions
     DOCUMENT_UPLOADED = 'DOCUMENT_UPLOADED',

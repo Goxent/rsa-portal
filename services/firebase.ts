@@ -476,7 +476,7 @@ export const AuthService = {
         }
     },
 
-    logout: async () => {
+    logout: async (reason: 'MANUAL' | 'SESSION_EXPIRED' = 'MANUAL') => {
         if (auth.currentUser) {
             const uid = auth.currentUser.uid;
             const userDoc = await getDoc(doc(db, 'users', uid));
@@ -495,11 +495,11 @@ export const AuthService = {
             await createAuditLog({
                 userId: uid,
                 userName: userName,
-                action: AuditAction.LOGOUT,
+                action: reason === 'SESSION_EXPIRED' ? AuditAction.SESSION_EXPIRED : AuditAction.LOGOUT,
                 targetType: 'system',
                 targetId: uid,
                 targetName: 'Auth',
-                details: {}
+                details: { reason }
             });
         }
         localStorage.removeItem('sessionId');
