@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Target, Trophy, X, Plus, Check } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
+import { Trophy, Target, Check, X, Plus } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { FocusGoal } from '../../../types';
+import { AuthService } from '../../../services/firebase';
 
 // ── CSS ────────────────────────────────────────────────────────────────────────
 const CELEBRATION_STYLE = `
@@ -23,49 +26,51 @@ function injectStyle() {
     styleInjected = true;
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface Goal {
-    id: string;
-    text: string;
-    completed: boolean;
-}
-
-
-const STORAGE_KEY_GOALS = 'daily_goals';
-const STORAGE_KEY_DATE  = 'daily_focus_date';
 const MAX_GOALS         = 5;
 
 // ── Main FocusWidget ──────────────────────────────────────────────────────────
 const FocusWidget: React.FC = () => {
-    const [goals, setGoals]             = useState<Goal[]>([]);
+    const { user }                      = useAuth();
+    const [goals, setGoals]             = useState<FocusGoal[]>([]);
     const [inputValue, setInputValue]   = useState('');
     const [inputFocused, setInputFocused] = useState(false);
     const [celebratingId, setCelebratingId] = useState<string | null>(null);
+    const [isSyncing, setIsSyncing]     = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => { injectStyle(); }, []);
 
-    // Load from localStorage — date guard
+    // Load from User Profile initially
     useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
-        const savedDate = localStorage.getItem(STORAGE_KEY_DATE);
-        if (savedDate === today) {
-            try {
-                const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY_GOALS) ?? '[]');
-                if (Array.isArray(parsed)) setGoals(parsed);
-            } catch { /* ignore */ }
-        } else {
-            localStorage.removeItem(STORAGE_KEY_GOALS);
-            localStorage.setItem(STORAGE_KEY_DATE, today);
-            setGoals([]);
+        if (user?.currentFocusGoals) {
+            setGoals(user.currentFocusGoals);
         }
-    }, []);
+    }, [user?.currentFocusGoals]);
 
-    const persist = useCallback((next: Goal[]) => {
+    const syncToFirestore = useCallback(async (nextGoals: FocusGoal[]) => {
+        if (!user) return;
+        setIsSyncing(true);
+        try {
+            await AuthService.updateUserProfile(user.uid, {
+                currentFocusGoals: nextGoals
+            });
+        } catch (error) {
+            console.error('Failed to sync goals:', error);
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [user]);
+
+    const persist = useCallback((next: FocusGoal[]) => {
         setGoals(next);
-        localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(next));
-        localStorage.setItem(STORAGE_KEY_DATE, new Date().toISOString().split('T')[0]);
-    }, []);
+        
+        // Debounce sync to Firestore
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(() => {
+            syncToFirestore(next);
+        }, 500);
+    }, [syncToFirestore]);
 
     const handleAddGoal = (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -110,7 +115,8 @@ const FocusWidget: React.FC = () => {
                             Today's Focus
                         </h3>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-gray-500 tabular-nums">{completedCount}/{goals.length}</span>
+                             {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse animate-duration-700" title="Syncing..." />}
+                             <span className="text-[10px] font-bold text-slate-500 dark:text-gray-500 tabular-nums">{completedCount}/{goals.length}</span>
                         </div>
                     </div>
                     <div className="mt-1.5 h-1 rounded-full bg-slate-200 dark:bg-white/[0.06] overflow-hidden">
@@ -136,7 +142,7 @@ const FocusWidget: React.FC = () => {
                         onClick={() => persist([])}
                         className="mt-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors underline underline-offset-2"
                     >
-                        Reset for tomorrow
+                        Clear Focus List
                     </button>
                 </div>
             ) : (

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Briefcase, Calendar, Plus, Search, Grid, List, Shield, X, Edit, Save, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Briefcase, Calendar, Plus, Search, Grid, List, Shield, X, Edit, Save, AlertCircle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { UserProfile, UserRole, StaffDirectoryProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
@@ -105,6 +105,29 @@ const StaffPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
+    const handleDeleteStaff = async (staff: UserProfile) => {
+        if (user?.role !== UserRole.MASTER_ADMIN) {
+            toast.error('Only Master Admins can delete staff members.');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to delete ${staff.displayName}? This will remove their record from the directory.`)) {
+
+        try {
+            setIsSaving(true);
+            await AuthService.deleteStaffUser(staff.uid, staff.email);
+            toast.success('Staff member deleted successfully');
+            // Refresh the list
+            setFullUsers(prev => prev.filter(u => u.uid !== staff.uid));
+            await refetch();
+        } catch (error) {
+            console.error('Error deleting staff:', error);
+            toast.error('Failed to delete staff member');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError('');
@@ -113,6 +136,19 @@ const StaffPage: React.FC = () => {
         setIsSaving(true);
 
         try {
+            // Validate unique email before proceeding
+            const emailToVerify = formData.email?.trim().toLowerCase();
+            if (emailToVerify) {
+                const isDuplicate = users.some(u => 
+                    u.email.toLowerCase() === emailToVerify && 
+                    u.uid !== selectedUser?.uid
+                );
+                
+                if (isDuplicate) {
+                    throw new Error('A staff member with this email address already exists.');
+                }
+            }
+
             if (isEditing && selectedUser) {
                 await AuthService.updateUserProfile(selectedUser.uid, formData);
                 if (formData.status === 'Inactive' && formData.email) {
@@ -311,13 +347,24 @@ const StaffPage: React.FC = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleOpenEdit(staff)}
-                                        className="p-1.5 opacity-0 group-hover:opacity-100 transition-all hover:bg-[var(--bg-surface)]"
-                                        style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }}
-                                    >
-                                        <Edit size={16} />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => handleOpenEdit(staff)}
+                                            className="p-1.5 transition-all text-gray-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg dark:hover:bg-white/5"
+                                            title="Edit Profile"
+                                        >
+                                            <Edit size={14} />
+                                        </button>
+                                        {user?.role === UserRole.MASTER_ADMIN && (
+                                            <button 
+                                                onClick={() => handleDeleteStaff(staff)}
+                                                className="p-1.5 transition-all text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg dark:hover:bg-rose-500/10"
+                                                title="Delete Staff"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -470,15 +517,23 @@ const StaffPage: React.FC = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <button
+                                    <div className="flex items-center justify-end gap-1 px-1">
+                                        <button 
                                             onClick={() => handleOpenEdit(staff)}
-                                            className="p-2 transition-colors opacity-0 group-hover:opacity-100"
-                                            style={{ color: 'var(--text-muted)' }}
-                                            disabled={staff.role === UserRole.MASTER_ADMIN && user?.role !== UserRole.MASTER_ADMIN}
+                                            className="p-1.5 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                                            title="Edit Profile"
                                         >
-                                            <Edit size={16} />
+                                            <Edit size={14} />
                                         </button>
+                                        {user?.role === UserRole.MASTER_ADMIN && (
+                                            <button 
+                                                onClick={() => handleDeleteStaff(staff)}
+                                                className="p-1.5 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                                                title="Delete Staff"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))

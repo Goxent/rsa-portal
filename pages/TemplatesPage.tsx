@@ -82,7 +82,7 @@ const TemplatesPage: React.FC = () => {
         [AuditPhase.REVIEW_AND_CONCLUSION]: []
     });
     
-    const [statusSubtaskMap, setStatusSubtaskMap] = useState<{ [key: string]: any[] }>({
+    const [statusSubtaskMap, setStatusSubtaskMap] = useState<Record<string, any[]>>({
         [TaskStatus.IN_PROGRESS]: [],
         [TaskStatus.UNDER_REVIEW]: [],
         [TaskStatus.HALTED]: [],
@@ -159,6 +159,7 @@ const TemplatesPage: React.FC = () => {
                 ...newTemplate,
                 subtaskDetails,
                 statusSubtasks: statusSubtaskMap,
+                reviewChecklist: reviewerChecklist,
                 nextTemplateId,
                 createdBy: user.uid
             };
@@ -248,6 +249,12 @@ const TemplatesPage: React.FC = () => {
             setStatusSubtaskMap(template.statusSubtasks);
         }
 
+        if (template.reviewChecklist) {
+            setReviewerChecklist(template.reviewChecklist);
+        } else {
+            setReviewerChecklist([]);
+        }
+
         setNextTemplateId(template.nextTemplateId || '');
         setIsModalOpen(true);
     };
@@ -256,6 +263,39 @@ const TemplatesPage: React.FC = () => {
         handleEditTemplate(template);
         setNewTemplate(prev => ({ ...prev, id: undefined, name: `${prev.name} (Copy)` }));
         toast.success('Template duplicated - make changes and save');
+    };
+
+    // Reviewer Checklist Handlers
+    const addReviewerItem = (role: 'TL' | 'ER' | 'SP') => {
+        const newItem: Partial<ReviewChecklistItem> = {
+            id: Math.random().toString(36).substring(2, 9),
+            title: '',
+            minimumRequirement: '',
+            priority: 'MEDIUM',
+            reviewerRole: role,
+            status: 'PENDING',
+            isCompleted: false,
+            isSectionHeader: false
+        };
+        setReviewerChecklist(prev => [...prev, newItem]);
+    };
+
+    const addReviewerSection = (role: 'TL' | 'ER' | 'SP') => {
+        const newItem: Partial<ReviewChecklistItem> = {
+            id: Math.random().toString(36).substring(2, 9),
+            title: '',
+            reviewerRole: role,
+            isSectionHeader: true
+        };
+        setReviewerChecklist(prev => [...prev, newItem]);
+    };
+
+    const updateReviewerItem = (id: string, field: string, value: any) => {
+        setReviewerChecklist(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+    };
+
+    const removeReviewerItem = (id: string) => {
+        setReviewerChecklist(prev => prev.filter(item => item.id !== id));
     };
 
     const addPhaseSubtask = (phase: AuditPhase) => {
@@ -1113,7 +1153,7 @@ const TemplatesPage: React.FC = () => {
                                     </AnimatePresence>
                                 </div>
 
-                                {/* SECTION 2: Status-based Automation (Auto-Checklists) */}
+                                 {/* SECTION 2: Status-based Automation (Auto-Checklists) */}
                                 <div className="col-span-2 border-t border-white/5 pt-4">
                                     <button type="button" onClick={() => toggleSection('statuses')}
                                         className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
@@ -1158,10 +1198,10 @@ const TemplatesPage: React.FC = () => {
                                                             {openStatusAccordions.includes(status) && (
                                                                 <div className="p-3 bg-black/10 space-y-2">
                                                                     {(statusSubtaskMap[status] || []).map((item, idx) => (
-                                                                        <div key={idx} className="flex gap-2 items-center bg-white/[0.03] p-2 px-3 rounded-lg border border-white/5">
+                                                                        <div key={idx} className="flex gap-2 items-center bg-white/[0.03] p-1.5 px-3 rounded-lg border border-white/5">
                                                                             <div className="flex-1">
-                                                                                <input type="text" placeholder="Checklist item (e.g. Verify Sign-offs)"
-                                                                                    className="w-full bg-transparent border-none text-[11px] text-white focus:ring-0 p-0 placeholder:text-gray-600 font-medium"
+                                                                                <input type="text" placeholder="Item..."
+                                                                                    className="w-full bg-transparent border-none text-[10px] text-white focus:ring-0 p-0 placeholder:text-gray-600 font-medium"
                                                                                     value={item.title} onChange={e => updateStatusSubtaskField(status, idx, 'title', e.target.value)} />
                                                                             </div>
                                                                             <button type="button" onClick={() => removeStatusSubtask(status, idx)} className="text-gray-600 hover:text-rose-500 p-1">
@@ -1177,6 +1217,107 @@ const TemplatesPage: React.FC = () => {
                                                             )}
                                                         </div>
                                                     ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* SECTION 3: Reviewer Checklist Protocol */}
+                                <div className="col-span-2 border-t border-white/5 pt-4">
+                                    <button type="button" onClick={() => toggleSection('workflow')}
+                                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
+                                        <div className="flex items-center gap-2 text-indigo-400">
+                                            <ShieldCheck size={18} />
+                                            <span className="text-sm font-black uppercase tracking-wider">Reviewer Sign-off Protocol</span>
+                                            <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
+                                                {reviewerChecklist.length} Requirements
+                                            </span>
+                                        </div>
+                                        {expandedSections.workflow ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {expandedSections.workflow && (
+                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                                <div className="p-4 space-y-4">
+                                                    <div className="flex gap-1 p-1 bg-black/20 rounded-xl">
+                                                        {[
+                                                            { id: 'TL', label: 'Team Leader' },
+                                                            { id: 'ER', label: 'Engagement Reviewer' },
+                                                            { id: 'SP', label: 'Signing Partner' }
+                                                        ].map(role => (
+                                                                <button key={role.id} type="button" onClick={() => setActiveReviewRole(role.id as any)}
+                                                                    className={`flex-1 px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${activeReviewRole === role.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                                                                    {role.label}
+                                                                </button>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        {reviewerChecklist.filter(item => item.reviewerRole === activeReviewRole).map((item) => (
+                                                            item.isSectionHeader ? (
+                                                                <div key={item.id} className="flex gap-2 items-center p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl group/sect">
+                                                                    <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+                                                                    <input type="text" placeholder="SECTION NAME (e.g. A | ENTITY IDENTITY)" required
+                                                                        className="flex-1 bg-transparent border-none text-[10px] text-indigo-400 focus:ring-0 p-0 placeholder:text-indigo-900/50 font-black uppercase tracking-widest"
+                                                                        value={item.title} onChange={e => updateReviewerItem(item.id!, 'title', e.target.value)} />
+                                                                    <button type="button" onClick={() => removeReviewerItem(item.id!)} className="p-1 rounded-lg text-indigo-900/50 hover:text-rose-500 transition-all opacity-0 group-hover/sect:opacity-100">
+                                                                        <Trash2 size={13} />
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <div key={item.id} className="flex flex-col gap-2 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] group hover:border-white/10 transition-all">
+                                                                    <div className="flex gap-4 items-center">
+                                                                        <div className="flex-1">
+                                                                            <input type="text" placeholder="Procedure title..." required
+                                                                                className="w-full bg-transparent border-none text-[12px] text-white focus:ring-0 p-0 placeholder:text-gray-700 font-bold"
+                                                                                value={item.title} onChange={e => updateReviewerItem(item.id!, 'title', e.target.value)} />
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex items-center gap-2">
+                                                                            {/* Priority Pill */}
+                                                                            <div className="relative group/sel">
+                                                                                <select
+                                                                                    value={item.priority || 'MEDIUM'}
+                                                                                    onChange={e => updateReviewerItem(item.id!, 'priority', e.target.value)}
+                                                                                    className={`appearance-none bg-white border border-slate-200 rounded-xl px-4 py-1 pr-8 text-[9px] font-black uppercase tracking-widest text-center focus:ring-2 focus:ring-brand-500/20 transition-all cursor-pointer ${
+                                                                                        item.priority === 'CRITICAL' ? 'text-rose-500 border-rose-200' : 
+                                                                                        item.priority === 'HIGH' ? 'text-amber-500 border-amber-200' : 'text-indigo-500 border-indigo-100'
+                                                                                    }`}
+                                                                                >
+                                                                                    <option value="MEDIUM">Medium</option>
+                                                                                    <option value="HIGH">High</option>
+                                                                                    <option value="CRITICAL">Critical</option>
+                                                                                </select>
+                                                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                                                    <ChevronDown size={10} strokeWidth={3} />
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <button type="button" onClick={() => removeReviewerItem(item.id!)} className="p-1.5 rounded-xl text-gray-700 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100">
+                                                                                <Trash2 size={13} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <input type="text" placeholder="Minimum compliance requirement (optional)..."
+                                                                        className="w-full bg-transparent border-none text-[10px] text-gray-500 focus:ring-0 p-0 placeholder:text-gray-800 italic"
+                                                                        value={item.minimumRequirement} onChange={e => updateReviewerItem(item.id!, 'minimumRequirement', e.target.value)} />
+                                                                </div>
+                                                            )
+                                                        ))}
+                                                        
+                                                        <div className="flex gap-2 pt-2">
+                                                            <button type="button" onClick={() => addReviewerSection(activeReviewRole)}
+                                                                className="flex-1 flex items-center justify-center py-2.5 rounded-xl border border-dashed border-indigo-500/20 text-indigo-600 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all text-[9px] font-black uppercase tracking-widest gap-2">
+                                                                <Plus size={12} strokeWidth={3} /> Add Section
+                                                            </button>
+                                                            <button type="button" onClick={() => addReviewerItem(activeReviewRole)}
+                                                                className="flex-[2] flex items-center justify-center py-2.5 rounded-xl border border-dashed border-white/5 text-gray-600 hover:text-white hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-widest gap-2">
+                                                                <Plus size={12} strokeWidth={3} /> Add {activeReviewRole} Requirement
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </motion.div>
                                         )}

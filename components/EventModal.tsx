@@ -48,6 +48,7 @@ const EventModal: React.FC<EventModalProps> = ({
         participants: [],
         rsvpRequired: false,
         isRecurring: false,
+        notifyOnEventDate: false,
     });
 
     const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>({
@@ -88,6 +89,7 @@ const EventModal: React.FC<EventModalProps> = ({
                 participants: [],
                 rsvpRequired: false,
                 isRecurring: false,
+                notifyOnEventDate: false,
                 createdBy: user.uid,
             });
             setSelectedTeamMembers([]);
@@ -408,18 +410,33 @@ const EventModal: React.FC<EventModalProps> = ({
                             )}
                         </div>
 
-                        {/* RSVP */}
-                        <div>
-                            <label className="flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.rsvpRequired}
-                                    onChange={e => setFormData({ ...formData, rsvpRequired: e.target.checked })}
-                                    className="mr-3"
-                                />
-                                <Users size={16} className="mr-2 text-brand-400" />
-                                <span className="text-sm font-semibold text-gray-300">Require RSVP</span>
-                            </label>
+                        {/* RSVP & Notification Options */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.rsvpRequired}
+                                        onChange={e => setFormData({ ...formData, rsvpRequired: e.target.checked })}
+                                        className="mr-3"
+                                    />
+                                    <Users size={16} className="mr-2 text-brand-400" />
+                                    <span className="text-sm font-semibold text-gray-300">Require RSVP</span>
+                                </label>
+                            </div>
+                            
+                            <div>
+                                <label className="flex items-center cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.notifyOnEventDate || false}
+                                        onChange={e => setFormData({ ...formData, notifyOnEventDate: e.target.checked })}
+                                        className="mr-3"
+                                    />
+                                    <Bell size={16} className="mr-2 text-brand-400 group-hover:animate-pulse" />
+                                    <span className="text-sm font-semibold text-gray-300">Notify exactly on Event Date</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

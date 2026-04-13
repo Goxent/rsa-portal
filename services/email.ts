@@ -140,12 +140,13 @@ export const EmailService = {
         `;
 
         const html = EmailService.getTemplateWrapper(content, 'Task Assignment', 'View Task Details', taskLink, 'green');
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendEventInvitation: async (toEmail: string, userName: string, eventTitle: string, eventDate: string, eventLink: string) => {
+    sendEventInvitation: async (toEmail: string, userName: string, eventTitle: string, eventDate: string, eventLink: string, eventType?: string) => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
-        const subject = `You're Invited: ${eventTitle} on ${eventDate}`;
+        const isHoliday = eventType === 'HOLIDAY';
+        const subject = isHoliday ? `Holiday Notice: ${eventTitle}` : `You're Invited: ${eventTitle} on ${eventDate}`;
 
         const d = new Date(eventDate + 'T00:00:00');
         const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
@@ -157,7 +158,9 @@ export const EmailService = {
                 Hi <strong>${userName}</strong>,
             </p>
             <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
-                You are invited to an upcoming session. Please mark your calendar accordingly.
+                ${isHoliday 
+                    ? `Please take note of the upcoming holiday: <strong>${eventTitle}</strong>. Our office will remain closed on this day.` 
+                    : `You are invited to an upcoming session. Please mark your calendar accordingly.`}
             </p>
 
             <!-- Event card — table based for compatibility -->
@@ -185,7 +188,7 @@ export const EmailService = {
         `;
 
         const html = EmailService.getTemplateWrapper(content, 'Calendar Invitation', 'Add to Calendar', eventLink, 'info');
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
     sendDueDateReminder: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string) => {
@@ -244,7 +247,7 @@ export const EmailService = {
         </html>
         `;
 
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
     sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, clientName: string, commentText: string, taskLink: string) => {
@@ -268,7 +271,7 @@ export const EmailService = {
         `;
 
         const html = EmailService.getTemplateWrapper(content, 'New Mention', 'Reply to Comment', taskLink, 'green');
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
     sendWorkflowStatusChange: async (toEmail: string, userName: string, taskTitle: string, oldStatus: string, newStatus: string, taskLink: string) => {
@@ -311,7 +314,7 @@ export const EmailService = {
         `;
 
         const html = EmailService.getTemplateWrapper(content, 'Workflow Update', 'View Task Progress', taskLink, 'green');
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
     sendLeaveStatusChange: async (toEmail: string, userName: string, leaveType: string, start: string, end: string, status: string, reason?: string) => {
@@ -353,7 +356,7 @@ export const EmailService = {
         `;
 
         const html = EmailService.getTemplateWrapper(content, 'Leave Decision', 'View My Leaves', `${window.location.origin}/#/leaves`, btnStyle as any);
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
     sendAttendanceStatusChange: async (toEmail: string, userName: string, date: string, status: string, reason?: string) => {
@@ -393,7 +396,7 @@ export const EmailService = {
         `;
 
         const html = EmailService.getTemplateWrapper(content, 'Attendance Update', 'View Attendance', `${window.location.origin}/#/attendance`, btnStyle as any);
-        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
     sendStaffInvitation: async (toEmail: string, userName: string, inviterName: string): Promise<boolean> => {

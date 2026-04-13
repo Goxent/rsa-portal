@@ -33,6 +33,7 @@ interface TaskMainViewProps {
     onOpenClientDetail?: (clientId: string) => void;
     sentinelRef?: React.RefObject<HTMLDivElement | null>;
     isFetchingNextPage?: boolean;
+    currentUser: UserProfile | null;
 }
 
 // ── Status column config ──────────────────────────────────────────────────────
@@ -124,7 +125,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode, tasks, onDragEnd, handleOpenEdit, usersList,
     collapsedColumns, toggleColumnCollapse, selectedTaskId,
     selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll, onOpenClientDetail,
-    sentinelRef, isFetchingNextPage
+    sentinelRef, isFetchingNextPage, currentUser
 }) => {
     const isMobile = useMedia('(max-width: 768px)', false);
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
@@ -325,7 +326,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     style={{ minHeight: 0 }}
                                 >
                                     {/* ── Phase Header ── */}
-                                    <div className={`relative flex-shrink-0 bg-[var(--bg-elevated)] border-b ${pm.border} px-5 pt-5 pb-4`}>
+                                    <div className={`relative flex-shrink-0 bg-[var(--bg-elevated)] border-b ${pm.border} px-4 pt-3.5 pb-2.5`}>
                                         {/* Gradient Background Layer */}
                                         <div className={`absolute inset-0 bg-gradient-to-r ${pm.headerGradient} opacity-50`} />
                                         
@@ -338,7 +339,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                             }}
                                         />
 
-                                        <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-start justify-between mb-2">
                                             <div className="flex items-center gap-2.5">
                                                 {/* Step number badge */}
                                                 <div
@@ -463,6 +464,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                             onToggleSelection={onToggleSelection}
                                                                             onClick={handleOpenEdit}
                                                                             onOpenClientDetail={onOpenClientDetail}
+                                                                            currentUser={currentUser}
                                                                         />
                                                                     ))}
                                                                     {prov.placeholder}

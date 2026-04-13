@@ -25,6 +25,7 @@ const SignupPage = lazy(() => import('./pages/SignupPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 
 const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage'));
 const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage'));
@@ -77,10 +78,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/verify-email" replace />;
   }
 
-  // Check if profile setup is complete
-  // Allow access to verify-email page even if setup is not complete
-  if (!user.isSetupComplete && location.pathname !== '/setup-profile') {
-    return <Navigate to="/setup-profile" replace />;
+  // Mandatory Onboarding for new staff
+  if (user.isOnboardingComplete === false && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
@@ -139,12 +139,13 @@ const App: React.FC = () => {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-                  {/* Profile Setup - Protected but doesn't require isSetupComplete */}
+
+
                   <Route
-                    path="/setup-profile"
+                    path="/onboarding"
                     element={
                       <ProfileSetupRoute>
-                        <ProfileSetupPage />
+                        <OnboardingPage />
                       </ProfileSetupRoute>
                     }
                   />

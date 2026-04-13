@@ -11,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import EmptyState from '../common/EmptyState';
 import { FileUploader } from '../common/FileUploader';
 import { StorageService } from '../../services/storage';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types';
 import { AuthService, auth } from '../../services/firebase';
 import { toast } from 'react-hot-toast';
 
@@ -36,6 +38,9 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
     onOpenTask
 }) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+    
     const [activeTab, setActiveTab] = useState<Tab>('OVERVIEW');
     const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
     const [isUploadMode, setIsUploadMode] = useState(false);
@@ -153,13 +158,15 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                             </div>
 
                             <div className="flex gap-2">
-                                <button
-                                    onClick={() => navigate(`/clients/${client.id}`)}
-                                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all flex items-center gap-2 text-sm font-bold border border-white/5"
-                                >
-                                    <ExternalLink size={18} />
-                                    Full Profile
-                                </button>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => navigate(`/clients/${client.id}`)}
+                                        className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all flex items-center gap-2 text-sm font-bold border border-white/5"
+                                    >
+                                        <ExternalLink size={18} />
+                                        Full Profile
+                                    </button>
+                                )}
                                 <button
                                     onClick={onClose}
                                     className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all border border-white/5"
@@ -292,12 +299,14 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className="flex justify-between items-center">
                                     <h3 className="text-xl font-bold text-white">Client Knowledge Base</h3>
-                                    <button 
-                                        onClick={() => setIsAddDocModalOpen(true)}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/20"
-                                    >
-                                        <Plus size={16} /> Add Document
-                                    </button>
+                                    {isAdmin && (
+                                        <button 
+                                            onClick={() => setIsAddDocModalOpen(true)}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/20"
+                                        >
+                                            <Plus size={16} /> Add Document
+                                        </button>
+                                    )}
                                 </div>
 
                                 {client.documents && client.documents.length > 0 ? (
@@ -317,12 +326,14 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                                     <a href={doc.url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all">
                                                         <ArrowRight size={18} />
                                                     </a>
-                                                    <button 
-                                                        onClick={() => handleDeleteDocument(doc.id)}
-                                                        className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 opacity-0 group-hover:opacity-100 transition-all"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    {isAdmin && (
+                                                        <button 
+                                                            onClick={() => handleDeleteDocument(doc.id)}
+                                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 opacity-0 group-hover:opacity-100 transition-all"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

@@ -6,6 +6,12 @@ export enum UserRole {
   STAFF = 'STAFF'
 }
 
+export interface FocusGoal {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -15,6 +21,10 @@ export interface UserProfile {
   photoURL?: string;
   phoneNumber?: string;
   isSetupComplete?: boolean;
+  isOnboardingComplete?: boolean;
+  registeredAt?: string;
+  registeredBy?: string;
+  pendingWorkLogs?: WorkLog[];
   // Extended Fields for Staff Directory
   address?: string;
   dateOfJoining?: string;
@@ -31,6 +41,10 @@ export interface UserProfile {
   // Session Security
   currentSessionId?: string;
   sessionCreatedAt?: number;
+
+  // New: Persistent Dashboard State
+  currentFocusGoals?: FocusGoal[];
+  pendingWorkLogs?: WorkLog[];
 }
 
 export interface StaffDirectoryProfile {
@@ -81,6 +95,7 @@ export interface WorkLog {
   description: string;
   duration: number;   // in hours
   billable: boolean;
+  locationTag?: 'Office' | 'Client Premises';
 }
 
 export enum TaskStatus {
@@ -155,6 +170,8 @@ export interface SubTask {
   queryReply?: string; // Staff response
   queryRaisedBy?: string; // UID
   queryRaisedAt?: string; // Timestamp
+  addedBy?: string; // UID of the user who manually added this
+  addedByName?: string; // Display name of the user who manually added this
 }
 
 // Audit folder key — defined here so Task interface can reference it
@@ -486,6 +503,7 @@ export interface CalendarEvent {
 
   // NEW: Reminders
   reminders?: EventReminder[];
+  notifyOnEventDate?: boolean; // Send email/notifications only on the date fixed for the event
 
   // NEW: Additional metadata
   color?: string; // Hex color for event category
@@ -501,7 +519,7 @@ export interface AppNotification {
   title: string;
   message: string;
   type: 'WARNING' | 'INFO' | 'SUCCESS';
-  category: 'TASK' | 'LEAVE' | 'EVENT' | 'SYSTEM';
+  category: 'TASK' | 'LEAVE' | 'EVENT' | 'SYSTEM' | 'ATTENDANCE';
   link?: string; // Optional navigation link (e.g., /tasks)
   read: boolean;
   createdAt: string; // ISO Timestamp
@@ -588,8 +606,7 @@ export interface TaskTemplate {
   content?: string;
   createdBy?: string;
   nextTemplateId?: string; // NEW: Trigger this template automatically when task completes
-  // ── Reviewer Checklist Fields ──────────────────────────────────────────
-  reviewerRole?: 'TL' | 'ER' | 'SP'; // Which reviewer layer this checklist is for
+  reviewChecklist?: Partial<ReviewChecklistItem>[];
 }
 
 export type Template = TaskTemplate;
@@ -599,11 +616,18 @@ export interface ReviewChecklistItem {
   id: string;
   title: string;
   minimumRequirement?: string;
-  isCompleted: boolean;
+  status: 'OK' | 'ISSUE' | 'PENDING';
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  notes?: string;
+  wpRef?: string;
+  comment?: string;
+  isCompleted: boolean; // Keep for backward compat, but status is primary
   completedBy?: string; // UID
+  completedByName?: string;
   completedAt?: string; // ISO timestamp
   reviewerRole: 'TL' | 'ER' | 'SP'; // Which reviewer layer owns this item
   templateId?: string; // Source template
+  isSectionHeader?: boolean; // NEW: If true, this item acts as a category header
 }
 
 export interface Category {

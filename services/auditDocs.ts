@@ -47,6 +47,7 @@ export interface AuditDocFile {
     uploadedByName: string;
     uploadedAt: string;      // ISO
     taskId?: string;         // Linked Task
+    taskType?: string;       // Linked Assignment Type (Statutory, Internal, etc)
     subtaskId?: string;      // Linked Procedure
 }
 
@@ -58,6 +59,8 @@ export interface AuditDocFolder {
     folderKey: AuditFolderKey;
     lineItem?: string;       // parent line item (for B folder)
     name: string;
+    taskId?: string;         // NEW: assignment link
+    taskType?: string;       // NEW: assignment type link
     createdBy: string;
     createdByName: string;
     createdAt: string;
@@ -117,7 +120,8 @@ export const AuditDocService = {
         clientId: string,
         fiscalYear: string,
         folderKey: AuditFolderKey,
-        lineItem?: string
+        lineItem?: string,
+        taskId?: string
     ): Promise<AuditDocFile[]> => {
         const constraints = [
             where('clientId', '==', clientId),
@@ -126,6 +130,7 @@ export const AuditDocService = {
             orderBy('uploadedAt', 'desc'),
         ];
         if (lineItem) constraints.splice(3, 0, where('lineItem', '==', lineItem));
+        if (taskId) constraints.splice(3, 0, where('taskId', '==', taskId));
 
         const q = query(collection(db, 'auditDocFiles'), ...constraints);
         const snap = await getDocs(q);
@@ -135,11 +140,16 @@ export const AuditDocService = {
     /**
      * Get ALL files for a client + fiscal year (for aggregate stats).
      */
-    getAllFiles: async (clientId: string, fiscalYear: string): Promise<AuditDocFile[]> => {
-        const q = query(
-            collection(db, 'auditDocFiles'),
+    getAllFiles: async (clientId: string, fiscalYear: string, taskId?: string): Promise<AuditDocFile[]> => {
+        const constraints = [
             where('clientId', '==', clientId),
             where('fiscalYear', '==', fiscalYear),
+        ];
+        if (taskId) constraints.push(where('taskId', '==', taskId));
+        
+        const q = query(
+            collection(db, 'auditDocFiles'),
+            ...constraints,
             orderBy('uploadedAt', 'desc')
         );
         const snap = await getDocs(q);
@@ -200,7 +210,8 @@ export const AuditDocService = {
         clientId: string,
         fiscalYear: string,
         folderKey: AuditFolderKey,
-        lineItem?: string
+        lineItem?: string,
+        taskId?: string
     ): Promise<AuditDocFolder[]> => {
         const constraints = [
             where('clientId', '==', clientId),
@@ -209,6 +220,7 @@ export const AuditDocService = {
             orderBy('createdAt', 'asc'),
         ];
         if (lineItem) constraints.splice(3, 0, where('lineItem', '==', lineItem));
+        if (taskId) constraints.splice(3, 0, where('taskId', '==', taskId));
 
         const q = query(collection(db, 'auditDocFolders'), ...constraints);
         const snap = await getDocs(q);

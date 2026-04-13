@@ -14,7 +14,7 @@ import ReviewRequestsModal from '../components/attendance/ReviewRequestsModal';
 import { 
     FileText, Download, Filter, Search, Calendar as CalendarIcon, 
     Users, CheckCircle, XCircle, Clock, AlertTriangle, Briefcase, 
-    ChevronRight, User, Edit2, Plus, LayoutGrid, List as ListIcon, 
+    ChevronRight, User, Edit2, Plus,
     ExternalLink, MapPin, TrendingUp, UserCheck, UserPlus, CalendarDays
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -113,7 +113,6 @@ const AttendancePage: React.FC = () => {
     const [filterEndDate, setFilterEndDate] = useState<string>('');
     const [useNepaliFrom, setUseNepaliFrom] = useState(false);
     const [useNepaliTo, setUseNepaliTo] = useState(false);
-    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<'ALL' | 'MY' | 'ADMIN'>('ALL');
 
@@ -121,17 +120,22 @@ const AttendancePage: React.FC = () => {
 
     useEffect(() => {
         const today = new Date();
-        const np = new NepaliDate(today);
+        const npNow = new NepaliDate();
 
-        // Start of Gregorian Month
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const startOfMonthAd = startOfMonth.toISOString().split('T')[0];
+        // Start of Nepali (BS) Month
+        const npFirstDay = new NepaliDate(npNow.getYear(), npNow.getMonth(), 1);
+        const jsDate = npFirstDay.toJsDate();
+        const startOfMonthAd = `${jsDate.getFullYear()}-${String(jsDate.getMonth() + 1).padStart(2, '0')}-${String(jsDate.getDate()).padStart(2, '0')}`;
 
         // End Date (Today)
-        const todayAd = today.toISOString().split('T')[0];
+        const todayAd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
         if (!filterStartDate) setFilterStartDate(startOfMonthAd);
         if (!filterEndDate) setFilterEndDate(todayAd);
+        
+        // Default to Nepali view
+        setUseNepaliFrom(true);
+        setUseNepaliTo(true);
 
         if (location.state?.filterUserId) {
             setFilterStaffId(location.state.filterUserId);
@@ -238,9 +242,9 @@ const AttendancePage: React.FC = () => {
                         userId: u.uid,
                         userName: u.displayName,
                         date: dateStr,
-                        status: holiday.title ? holiday.title.toUpperCase() : 'HOLIDAY',
-                        clientName: 'Holiday',
-                        notes: holiday.title,
+                        status: 'OFFICE CLOSED',
+                        clientName: holiday.title || 'Holiday',
+                        notes: 'Public Holiday',
                         type: 'HOLIDAY'
                     });
                     return;
@@ -391,7 +395,7 @@ const AttendancePage: React.FC = () => {
                     ? [...new Set(r.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].join(', ')
                     : '-',
                 r.workLogs?.length > 0
-                    ? r.workLogs.map((l: any) => `${l.clientName}: ${l.description}`).join('; ')
+                    ? r.workLogs.map((l: any) => `${l.clientName} (${l.locationTag || 'Office'}): ${l.description}`).join('; ')
                     : (r.clientName || '-')
             );
             return rowData;
@@ -588,7 +592,7 @@ const AttendancePage: React.FC = () => {
                 ? [...new Set(r.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].join('\n')
                 : '-';
             const description = r.workLogs?.length > 0
-                ? r.workLogs.map((l: any) => l.description).filter(Boolean).join('\n')
+                ? r.workLogs.map((l: any) => `[${l.locationTag || 'Office'}] ${l.description}`).filter(Boolean).join('\n')
                 : (r.notes && r.notes !== '-' ? r.notes : '-');
 
             const rowData: any = {
@@ -749,31 +753,6 @@ const AttendancePage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3 w-full lg:w-auto">
-                        <div 
-                            className="flex p-1 shadow-inner border"
-                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
-                        >
-                            <button 
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'shadow-lg' : 'hover:opacity-80'}`}
-                                style={{ 
-                                    background: viewMode === 'list' ? 'var(--bg-secondary)' : 'transparent',
-                                    color: viewMode === 'list' ? 'var(--text-heading)' : 'var(--text-muted)'
-                                }}
-                            >
-                                <ListIcon size={18} />
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'shadow-lg' : 'hover:opacity-80'}`}
-                                style={{ 
-                                    background: viewMode === 'grid' ? 'var(--bg-secondary)' : 'transparent',
-                                    color: viewMode === 'grid' ? 'var(--text-heading)' : 'var(--text-muted)'
-                                }}
-                            >
-                                <LayoutGrid size={18} />
-                            </button>
-                        </div>
                         <div className="h-8 w-px" style={{ background: 'var(--border)' }} />
                         <button 
                             onClick={handleExportPDF} 
@@ -1023,16 +1002,11 @@ const AttendancePage: React.FC = () => {
                         ))}
                 </div>
 
-                {/* ── Main Records Section ── */}
-                <AnimatePresence mode="wait">
-                        <motion.div 
-                            key="list"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="border overflow-hidden shadow-2xl relative"
-                            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)' }}
-                        >
+                {/* ── Main Records Section (List View) ── */}
+                <div 
+                    className="border overflow-hidden shadow-2xl relative animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)' }}
+                >
                             <div className="overflow-x-auto overflow-y-hidden">
                                 <table className="w-full text-left border-collapse min-w-[1000px]">
                                     <thead>
@@ -1193,116 +1167,7 @@ const AttendancePage: React.FC = () => {
                                     </tbody>
                                 </table>
                             </div>
-                        </motion.div>
-                    ) : (
-                        <motion.div 
-                            key="grid"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                        >
-                            {reportData.map((record) => (
-                                <div 
-                                    key={record.id} 
-                                    className="p-5 transition-all group relative overflow-hidden border"
-                                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-card)' }}
-                                >
-                                    <div className="absolute top-0 right-0 p-3">
-                                        <span 
-                                            className="px-2 py-0.5 border"
-                                            style={{ 
-                                                borderRadius: '99px',
-                                                fontSize: '0.625rem',
-                                                fontWeight: 800,
-                                                letterSpacing: '0.05em',
-                                                textTransform: 'uppercase',
-                                                background: 
-                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.15)' :
-                                                    record.status === 'LATE' ? 'rgba(201,138,42,0.12)' :
-                                                    record.status === 'ABSENT' ? 'rgba(196,68,90,0.12)' :
-                                                    'rgba(0,0,0,0.05)',
-                                                color:
-                                                    record.status === 'PRESENT' ? 'var(--accent)' :
-                                                    record.status === 'LATE' ? 'var(--color-warning)' :
-                                                    record.status === 'ABSENT' ? 'var(--color-danger)' :
-                                                    'var(--text-muted)',
-                                                borderColor:
-                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.25)' :
-                                                    record.status === 'LATE' ? 'rgba(201,138,42,0.2)' :
-                                                    record.status === 'ABSENT' ? 'rgba(196,68,90,0.2)' :
-                                                    'var(--border)'
-                                            }}
-                                        >
-                                            {record.status}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div 
-                                            className="w-12 h-12 flex items-center justify-center font-bold text-sm shadow-xl group-hover:scale-110 transition-transform border"
-                                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--accent)' }}
-                                        >
-                                            {record.userName.substring(0, 2).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-heading)' }}>{record.userName}</div>
-                                            <div style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }} className="mt-0.5">{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <div 
-                                            className="p-3 flex justify-between items-center transition-colors border"
-                                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
-                                        >
-                                            <div style={{ fontSize: '0.625rem', fontWeight: 800, color: 'var(--text-muted)' }} className="uppercase">Timing</div>
-                                            <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-body)', fontVariantNumeric: 'tabular-nums' }}>
-                                                {record.clockIn || '--:--'} <span className="mx-1" style={{ color: 'var(--border)' }}>/</span> {record.clockOut || '--:--'}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="min-h-[60px]">
-                                            <div style={{ fontSize: '0.625rem', fontWeight: 800, color: 'var(--text-muted)' }} className="uppercase mb-2">Activities</div>
-                                            {record.workLogs?.length > 0 ? (
-                                                <div className="space-y-1.5">
-                                                    {record.workLogs.slice(0, 2).map((log: any, i: number) => (
-                                                        <div key={i} className="italic line-clamp-1 border-l-2 pl-2" style={{ fontSize: '0.6875rem', color: 'var(--text-body)', borderLeftColor: 'var(--accent)' }}>
-                                                            {log.natureOfAssignment && <span style={{ fontSize: '0.5625rem', fontWeight: 800, color: 'var(--accent)' }} className="not-italic mr-1">[{log.natureOfAssignment}]</span>}
-                                                            {log.description}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }} className="italic">{record.notes || 'No activities logged.'}</div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {isAdmin && (
-                                        <button 
-                                            onClick={() => {
-                                                const userProfile = usersList.find(u => u.uid === record.userId);
-                                                if (userProfile) {
-                                                    setSelectedUserForEdit(userProfile);
-                                                    setSelectedDateForEdit(record.date);
-                                                    const realRecord = history.find(h => h.userId === record.userId && h.date === record.date);
-                                                    setSelectedRecord(realRecord || null);
-                                                    setIsEditModalOpen(true);
-                                                }
-                                            }}
-                                            className="mt-4 w-full py-2 transition-all border shadow-sm uppercase tracking-widest"
-                                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.625rem', fontWeight: 700 }}
-                                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; e.currentTarget.style.color = 'var(--text-heading)'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-                                        >
-                                            Modify Record
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                        </motion.div>
-                </AnimatePresence>
+                </div>
 
                 {/* ── Period Summary Bar ── */}
                 {!loading && reportData.length > 0 && (() => {

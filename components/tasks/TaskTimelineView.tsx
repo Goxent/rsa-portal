@@ -53,60 +53,73 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
         const groups: Record<string, any[]> = {};
 
         tasks.forEach((task) => {
-            const tStart = startOfDay(new Date(task.createdAt));
-            // Default 2 days length if no due date explicitly set to look good
-            const tEnd = task.dueDate ? endOfDay(new Date(task.dueDate)) : endOfDay(addDays(new Date(task.createdAt), 2));
+            // Refined duration logic: primarily use startDate, then fallback to createdAt
+            const tStartStr = task.startDate || task.createdAt;
+            const tStart = startOfDay(new Date(tStartStr));
+            
+            // Strictly follow dueDate if present, otherwise default to a small visual bar
+            const tEnd = task.dueDate ? endOfDay(new Date(task.dueDate)) : endOfDay(addDays(new Date(tStartStr), 1));
             
             // Skip tasks completely out of bounds
             if (tEnd.getTime() < startDate.getTime() || tStart.getTime() > endDate.getTime()) {
                 return;
             }
 
-            let groupLabel = 'All Tasks';
+            // Function to add task to a specific group
+            const addToGroup = (label: string) => {
+                if (!groups[label]) groups[label] = [];
+                
+                // Calc exact placement
+                const visualStart = tStart < startDate ? startDate : tStart;
+                const visualEnd = tEnd > endDate ? endDate : tEnd;
+                
+                const offsetDays = differenceInDays(visualStart, startDate);
+                const durationDays = Math.max(1, differenceInDays(visualEnd, visualStart) + 1);
+                
+                groups[label].push({
+                    task,
+                    visualStart,
+                    visualEnd,
+                    offsetDays: tStart < startDate ? 0 : differenceInDays(tStart, startDate),
+                    durationDays: Math.max(1, differenceInDays(tEnd, tStart) + 1),
+                    isCutStart: tStart < startDate,
+                    isCutEnd: tEnd > endDate
+                });
+            };
+
             if (groupBy === 'PHASE') {
-                groupLabel = task.auditPhase ? task.auditPhase.replace(/_/g, ' ') : 'No Phase';
+                const phaseLabel = task.auditPhase ? task.auditPhase.replace(/_/g, ' ') : 'No Phase';
+                addToGroup(phaseLabel);
             } else if (groupBy === 'ASSIGNEE') {
-                if (!task.assignedTo || task.assignedTo.length === 0) groupLabel = 'Unassigned';
-                else {
-                    const u = usersList.find(u => u.uid === task.assignedTo[0]);
-                    groupLabel = u?.displayName || 'Unknown Staff';
+                // Multi-assignee support: task appears in each assignee's row
+                if (!task.assignedTo || task.assignedTo.length === 0) {
+                    addToGroup('Unassigned');
+                } else {
+                    task.assignedTo.forEach(uid => {
+                        const u = usersList.find(u => u.uid === uid);
+                        const label = u?.displayName || 'Unknown Staff';
+                        addToGroup(label);
+                    });
                 }
             } else if (groupBy === 'AUDITOR') {
                 const tc = clientsList.find(c => task.clientIds?.includes(c.id));
-                groupLabel = tc?.signingAuthority || 'Unassigned Auditor';
+                const label = tc?.signingAuthority || 'Unassigned Auditor';
+                addToGroup(label);
             } else {
-                groupLabel = 'All Tasks';
+                addToGroup('All Tasks');
             }
-
-            if (!groups[groupLabel]) groups[groupLabel] = [];
-            
-            // Calc exact placement
-            // Cap start/end to visible bounds for calculating width smoothly
-            const visualStart = tStart < startDate ? startDate : tStart;
-            const visualEnd = tEnd > endDate ? endDate : tEnd;
-            
-            const offsetDays = differenceInDays(visualStart, startDate);
-            const durationDays = Math.max(1, differenceInDays(visualEnd, visualStart) + 1);
-            
-            groups[groupLabel].push({
-                task,
-                visualStart,
-                visualEnd,
-                offsetDays: tStart < startDate ? 0 : differenceInDays(tStart, startDate),
-                durationDays: Math.max(1, differenceInDays(tEnd, tStart) + 1),
-                isCutStart: tStart < startDate,
-                isCutEnd: tEnd > endDate
-            });
         });
 
-        // Sort groups alphabetically, then tasks by start date
-        const sortedGroups = Object.keys(groups).sort().map(k => ({
+        // Sort groups: Handle specifically for Phase order if needed, otherwise alphabetical
+        const sortedGroups = Object.keys(groups).sort((a, b) => {
+            // Custom order for phases if possible, or just default alphabetical
+            return a.localeCompare(b);
+        }).map(k => ({
             label: k,
             items: groups[k].sort((a, b) => {
-                if (groupBy === 'NONE') {
-                    return (a.task.title || '').localeCompare(b.task.title || '');
-                }
-                return new Date(a.task.createdAt).getTime() - new Date(b.task.createdAt).getTime();
+                const timeA = new Date(a.task.startDate || a.task.createdAt).getTime();
+                const timeB = new Date(b.task.startDate || b.task.createdAt).getTime();
+                return timeA - timeB;
             })
         }));
 

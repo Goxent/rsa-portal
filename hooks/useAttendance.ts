@@ -22,8 +22,8 @@ export const useAttendanceHistory = (userId: string | undefined) => {
 export const useClockIn = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data: { userId: string; method: 'WEB' | 'MOBILE'; location?: string; notes?: string }) =>
-            AuthService.clockIn(data.userId, data.method, data.location, data.notes),
+        mutationFn: (data: { userId: string; method: 'WEB' | 'MOBILE'; location?: string; notes?: string; workLogs?: any[] }) =>
+            AuthService.clockIn(data.userId, data.method, data.location, data.notes, data.workLogs),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: attendanceKeys.user(variables.userId) });
             toast.success('Clocked in successfully');

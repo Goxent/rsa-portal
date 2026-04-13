@@ -6,7 +6,7 @@ import {
     ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen, Activity as ActivityIcon,
     Zap, Flame, Clock
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, UserProfile, TaskType, AuditPhase } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserProfile, UserRole, TaskType, AuditPhase } from '../../types';
 import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../constants/taskTypeChecklists';
 import { getClientVisuals } from '../../utils/colorUtils';
 
@@ -70,9 +70,10 @@ export interface TaskCardProps {
     onToggleSelection: (id: string) => void;
     onClick: (task: Task) => void;
     onOpenClientDetail?: (clientId: string) => void;
+    currentUser: UserProfile | null;
 }
 
-const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, selectedTaskIds, onToggleSelection, onClick, onOpenClientDetail }) => {
+const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, selectedTaskIds, onToggleSelection, onClick, onOpenClientDetail, currentUser }) => {
     const isSelected  = selectedTaskIds.includes(task.id);
     const done        = task.subtasks?.filter(s => s.isCompleted).length ?? 0;
     const total       = task.subtasks?.length ?? 0;
@@ -84,8 +85,12 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
     const validAssignees = task.assignedTo.filter(uid => uid && typeof uid === 'string' && uid.trim() !== '');
     const IconComp = task.taskType ? ICON_MAP[TASK_TYPE_ICONS[task.taskType]] : null;
 
+    const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MASTER_ADMIN;
+    const isTL = currentUser?.uid === task.teamLeaderId;
+    const isDragDisabled = !(isAdmin || isTL);
+
     return (
-        <Draggable draggableId={task.id} index={index}>
+        <Draggable draggableId={task.id} index={index} isDragDisabled={isDragDisabled}>
             {(prov, snap) => {
                 const child = (
                     <div
@@ -157,11 +162,13 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                                             <IconComp size={11} className="text-slate-400" />
                                         </div>
                                     )}
-                                    <div
-                                        className="p-0.5 text-slate-700 hover:text-slate-400 transition-colors rounded hover:bg-white/5 opacity-50 group-hover/card:opacity-100"
-                                    >
-                                        <GripVertical size={11} />
-                                    </div>
+                                    {!isDragDisabled && (
+                                        <div
+                                            className="p-0.5 text-slate-700 hover:text-slate-400 transition-colors rounded hover:bg-white/5 opacity-50 group-hover/card:opacity-100"
+                                        >
+                                            <GripVertical size={11} />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

@@ -272,9 +272,9 @@ const LeavePage: React.FC = () => {
                     <div>
                         <h1 className="text-xl font-bold text-heading">Leave Management</h1>
                         <p className="text-sm text-muted">
-                            {user?.position === 'Article Trainee'
-                                ? `Articleship Leave Balance (120 Days Total)`
-                                : `Manage and track leave requests`
+                            {isArticleTrainee
+                                ? `Articleship Cumulative Quota (120 Days Total)`
+                                : `Manage and track leave requests — Annual Allowance`
                             }
                         </p>
                     </div>
@@ -295,9 +295,14 @@ const LeavePage: React.FC = () => {
                             {isAdmin && (
                                 <button
                                     onClick={() => setActiveTab('admin')}
-                                    className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'admin' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
+                                    className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'admin' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
                                 >
                                     Admin Panel
+                                    {leaves.filter(l => l.status === 'PENDING').length > 0 && (
+                                        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-brand-500 text-white text-[9px] font-black animate-in zoom-in duration-300">
+                                            {leaves.filter(l => l.status === 'PENDING').length}
+                                        </span>
+                                    )}
                                 </button>
                             )}
                         </div>
@@ -458,7 +463,7 @@ const LeavePage: React.FC = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                             
                             {/* Usage Card */}
-                            <div className="lg:col-span-5 bg-secondary p-6 rounded-2xl border border-border shadow-card relative overflow-hidden group">
+                            <div className={`${isArticleTrainee ? 'lg:col-span-12' : 'lg:col-span-5'} bg-secondary p-6 rounded-2xl border border-border shadow-card relative overflow-hidden group`}>
                                 <div className="absolute top-[-20px] right-[-20px] p-6 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700">
                                     <CalendarDays size={180} />
                                 </div>
@@ -481,22 +486,24 @@ const LeavePage: React.FC = () => {
                                     {isArticleTrainee ? (
                                         <div className="bg-surface p-4 rounded-xl border border-border">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <BookOpen size={14} className="text-accent" />
-                                                <span className="text-[10px] font-black text-accent uppercase tracking-wider">Articleship Period — Total 120 Days</span>
+                                                <div className="w-5 h-5 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-400">
+                                                    <BookOpen size={12} />
+                                                </div>
+                                                <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest">Articleship Allowance — 120 Days Total</span>
                                             </div>
                                             <div className="flex justify-between text-[11px] font-bold text-muted mb-3 uppercase tracking-wider">
-                                                <span>Leave Consumed</span>
+                                                <span>Total Consumed</span>
                                                 <span className={`${totalDaysTaken > 100 ? 'text-status-halted' : 'text-accent'}`}>
-                                                    {balanceRemaining} Days Remaining
+                                                    {balanceRemaining} Days Available
                                                 </span>
                                             </div>
-                                            <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+                                            <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden ring-1 ring-white/5">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-[2000ms] ${totalDaysTaken > 100 ? 'bg-status-halted' : 'bg-accent'} shadow-accent-glow`}
+                                                    className={`h-full rounded-full transition-all duration-[2000ms] ${totalDaysTaken > 100 ? 'bg-status-halted' : 'bg-brand-500'} shadow-[0_0_10px_rgba(16,185,129,0.3)]`}
                                                     style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
                                                 />
                                             </div>
-                                            <p className="text-[9px] text-muted italic mt-2">Cumulative across entire articleship period, not reset annually.</p>
+                                            <p className="text-[9px] text-muted italic mt-2 opacity-60">Cumulative across 3-year term. No annual reset for trainees.</p>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
@@ -512,24 +519,26 @@ const LeavePage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Breakdown Card */}
-                            <div className="lg:col-span-7 bg-surface p-6 rounded-2xl border border-border flex flex-col justify-between shadow-card">
-                                <div className="flex items-center justify-between mb-8">
-                                    <h3 className="text-[11px] font-black text-muted uppercase tracking-[0.15em]">Leave Type Analysis</h3>
-                                    <span className="text-[9px] bg-secondary px-2 py-1 rounded text-muted border border-border font-bold uppercase tracking-widest">Analytics</span>
+                            {/* Breakdown Card - Hidden for Article Trainees */}
+                            {!isArticleTrainee && (
+                                <div className="lg:col-span-7 bg-surface p-6 rounded-2xl border border-border flex flex-col justify-between shadow-card">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <h3 className="text-[11px] font-black text-muted uppercase tracking-[0.15em]">Leave Type Analysis</h3>
+                                        <span className="text-[9px] bg-secondary px-2 py-1 rounded text-muted border border-border font-bold uppercase tracking-widest">Analytics</span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                        <CircularProgress value={breakdown.Sick} max={12} color="var(--color-danger)" label="Sick" />
+                                        <CircularProgress value={breakdown.Casual} max={6} color="var(--color-warning)" label="Casual" />
+                                        <CircularProgress value={breakdown.Exam} max={15} color="#8b5cf6" label="Exam" />
+                                        <CircularProgress value={breakdown.Home + breakdown.Other} max={15} color="var(--accent)" label="Others" />
+                                    </div>
+                                    
+                                    <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
+                                        <p className="text-[9px] text-muted italic font-medium">Auto-derived from approved requests across the active period.</p>
+                                    </div>
                                 </div>
-                                
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <CircularProgress value={breakdown.Sick} max={12} color="var(--color-danger)" label="Sick" />
-                                    <CircularProgress value={breakdown.Casual} max={6} color="var(--color-warning)" label="Casual" />
-                                    <CircularProgress value={breakdown.Exam} max={isArticleTrainee ? 40 : 5} color="#8b5cf6" label="Exam" />
-                                    <CircularProgress value={breakdown.Home + breakdown.Other} max={15} color="var(--accent)" label="Others" />
-                                </div>
-                                
-                                <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
-                                    <p className="text-[9px] text-muted italic font-medium">Auto-derived from approved requests across the active period.</p>
-                                </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Recent History Section */}

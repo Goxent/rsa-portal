@@ -143,7 +143,6 @@ const OnboardingPage: React.FC = () => {
 
                 <div className="h-8" />
             </motion.div>
-            </motion.div>
         </div>
     );
 };

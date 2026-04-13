@@ -47,8 +47,8 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow create: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      // Allow deletion by MASTER_ADMIN, or allow migration flow to clean up pending_ placeholders
-      allow delete: if isAuthenticated() && (getUserRole() == 'MASTER_ADMIN' || userId.matches('^pending_.*'));
+      // Allow deletion by MASTER_ADMIN, or allow migration flow to clean up pending_ or invited_ placeholders
+      allow delete: if isAuthenticated() && (getUserRole() == 'MASTER_ADMIN' || userId.matches('^pending_.*') || userId.matches('^invited_.*'));
 
       // Allow users to manage their own settings (like dashboard layout)
       match /settings/{settingId} {

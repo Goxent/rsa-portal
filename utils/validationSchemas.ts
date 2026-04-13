@@ -37,6 +37,8 @@ export const subtaskSchema = z.object({
     queryStatus: z.enum(['OPEN', 'RESOLVED', 'CLEARED']).optional(),
     queryComment: z.string().optional(),
     queryReply: z.string().optional(),
+    addedBy: z.string().optional(),
+    addedByName: z.string().optional(),
 });
 
 export const clientSchema = z.object({

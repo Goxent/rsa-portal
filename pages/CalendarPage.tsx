@@ -53,8 +53,8 @@ const DraggableTask = ({ task, canDrag }: { task: Task, canDrag: boolean }) => {
             onClick={(e) => { e.stopPropagation(); }}
         >
             <div className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-            <div className="text-[10.5px] text-brand-50 truncate font-bold leading-none">
-                {task.title}
+            <div className="text-[10.5px] text-brand-900 dark:text-brand-50 truncate font-bold leading-none">
+                {task.clientName || task.title}
             </div>
         </div>
     );
@@ -100,6 +100,17 @@ const CalendarPage: React.FC = () => {
     const { data: allTasks = [] } = useTasks();
     const updateTaskMutation = useUpdateTask();
     const [activeDragTask, setActiveDragTask] = useState<Task | null>(null);
+
+    // Permission-based Task Filtering
+    const filteredTasks = React.useMemo(() => {
+        if (!user) return [];
+        // Admin and Master Admin see all tasks
+        if (user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN) {
+            return allTasks;
+        }
+        // Staff only see tasks where they are in the assignedTo list
+        return allTasks.filter(t => t.assignedTo?.includes(user.uid));
+    }, [allTasks, user]);
 
     // UI State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -323,7 +334,7 @@ const CalendarPage: React.FC = () => {
     const getItemsForDay = (day: number) => {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayEvents = events.filter(ev => ev.date === dateStr);
-        const dayTasks = allTasks.filter(t => t.dueDate === dateStr);
+        const dayTasks = filteredTasks.filter(t => t.dueDate === dateStr);
 
         return { events: dayEvents, tasks: dayTasks, dateStr };
     };
@@ -410,7 +421,7 @@ const CalendarPage: React.FC = () => {
                         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500 border border-blue-400 shadow-xl shadow-black/50 opacity-90 scale-105 rotate-2 cursor-grabbing pointer-events-none">
                             <div className="w-1.5 h-1.5 rounded-full bg-white shrink-0"></div>
                             <div className="text-[10px] text-white truncate font-medium leading-none">
-                                {activeDragTask.title}
+                                {activeDragTask.clientName || activeDragTask.title}
                             </div>
                         </div>
                     ) : null}
@@ -793,15 +804,15 @@ const CalendarPage: React.FC = () => {
                                                         <CheckCircle2 size={16} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">{task.title}</h4>
+                                                        <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">{task.clientName || task.title}</h4>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <span className="text-[10px] bg-amber-500/10 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/20 font-medium">TASK</span>
-                                                            <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.clientName}</span>
+                                                            <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/20 font-medium">TASK</span>
+                                                            <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.title}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <button
-                                                    onClick={() => addToGoogleCalendar(task.title, task.dueDate, `Client: ${task.clientName}`)}
+                                                    onClick={() => addToGoogleCalendar(task.clientName || task.title, task.dueDate, `Task: ${task.title}`)}
                                                     className="mt-1 text-xs flex items-center justify-center w-full py-2 bg-amber-600/10 hover:bg-amber-600/20 text-amber-300 rounded-lg border border-amber-500/20 transition-all font-bold hover:shadow-lg hover:shadow-blue-500/10"
                                                 >
                                                     <ExternalLink size={12} className="mr-2" /> Add to G-Cal

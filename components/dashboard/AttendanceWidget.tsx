@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee, Search, ChevronDown, Minimize2, Maximize2, ChevronUp, Loader2 } from 'lucide-react';
+import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee, Search, ChevronDown, Minimize2, Maximize2, ChevronUp, Loader2, MapPin, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceRecord, Client, UserRole, WorkLog } from '../../types';
 import { AuthService } from '../../services/firebase';
@@ -9,9 +9,12 @@ import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
 import SearchableClientSelect from './SearchableClientSelect';
+import SearchableSelect from '../common/SearchableSelect';
 import EmptyState from '../common/EmptyState';
-import { useAttendanceHistory, useClockIn, useClockOut } from '../../hooks/useAttendance';
+import ActionDetailEditor from '../common/ActionDetailEditor';
+import { useAttendanceHistory, useClockIn, useClockOut, attendanceKeys } from '../../hooks/useAttendance';
 import { useClients } from '../../hooks/useClients';
+import { useQueryClient } from '@tanstack/react-query';
 
 // SearchableClientSelect moved to standalone component file
 
@@ -30,6 +33,7 @@ const AttendanceWidget: React.FC = () => {
     const { data: attendanceHistory = [], isLoading: historyLoading } = useAttendanceHistory(user?.uid);
     const clockInMutation = useClockIn();
     const clockOutMutation = useClockOut();
+    const queryClient = useQueryClient();
 
     const loading = historyLoading || clockInMutation.isPending || clockOutMutation.isPending;
 
@@ -48,9 +52,24 @@ const AttendanceWidget: React.FC = () => {
     }, [clientsList]);
 
     // Modernized Work Logs
-    const [workLogs, setWorkLogs] = useState<WorkLog[]>([
-        { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: 'Internal Audit', description: '', duration: 0, billable: true }
-    ]);
+    const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
+    const [isSyncingLogs, setIsSyncingLogs] = useState(false);
+    const hasInitializedLogs = useRef(false);
+
+    // Initial log setup from pending OR default
+    useEffect(() => {
+        if (hasInitializedLogs.current) return;
+        
+        if (user?.pendingWorkLogs && user.pendingWorkLogs.length > 0) {
+            setWorkLogs(user.pendingWorkLogs);
+            hasInitializedLogs.current = true;
+        } else if (user) {
+            setWorkLogs([
+                { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: 'Internal Audit', description: '', duration: 0, billable: true, locationTag: 'Office' }
+            ]);
+            hasInitializedLogs.current = true;
+        }
+    }, [user]);
 
     // Effect: Sync state with fetched history
     useEffect(() => {
@@ -83,6 +102,28 @@ const AttendanceWidget: React.FC = () => {
         }
     }, [attendanceHistory]);
 
+    // Snapshot refs for unmount-save
+    const workLogsRef = useRef(workLogs);
+    const statusRef = useRef(status);
+    const currentRecordIdRef = useRef(currentRecordId);
+
+    useEffect(() => {
+        workLogsRef.current = workLogs;
+        statusRef.current = status;
+        currentRecordIdRef.current = currentRecordId;
+    }, [workLogs, status, currentRecordId]);
+
+    // Save on Unmount to prevent data loss if navigating away before debounce fires
+    useEffect(() => {
+        return () => {
+            if (statusRef.current === 'CLOCKED_IN' && currentRecordIdRef.current) {
+                AuthService.updateAttendance(currentRecordIdRef.current, { workLogs: workLogsRef.current }).catch(console.error);
+                // Invalidate so next time it mounts, it fetches fresh from DB just in case
+                queryClient.invalidateQueries({ queryKey: attendanceKeys.history(user?.uid || '') });
+            }
+        };
+    }, [queryClient, user?.uid]);
+
     // Timer & Late Check
     useEffect(() => {
         const timer = setInterval(() => {
@@ -107,17 +148,39 @@ const AttendanceWidget: React.FC = () => {
         return () => clearInterval(interval);
     }, [status]);
 
-    // Auto-save Work Logs when clocked in
+    // Auto-save Work Logs (Persistent cross-device)
     useEffect(() => {
-        if (status === 'CLOCKED_IN' && currentRecordId) {
-            const timeoutId = setTimeout(() => {
-                AuthService.updateAttendance(currentRecordId, { workLogs }).catch(err => {
-                    console.error("Auto-save failed", err);
-                });
-            }, 1000); // 1s debounce
-            return () => clearTimeout(timeoutId);
-        }
-    }, [workLogs, status, currentRecordId]);
+        if (!user) return;
+
+        const timeoutId = setTimeout(async () => {
+            if (status === 'CLOCKED_IN' && currentRecordId) {
+                // Case 1: Active session -> Save to daily record
+                try {
+                    await AuthService.updateAttendance(currentRecordId, { workLogs });
+                    queryClient.setQueryData(attendanceKeys.history(user.uid), (oldData: AttendanceRecord[] | undefined) => {
+                        if (!oldData) return oldData;
+                        return oldData.map(record => record.id === currentRecordId ? { ...record, workLogs } : record);
+                    });
+                } catch (err) {
+                    console.error("Auto-save to record failed", err);
+                }
+            } else if (status === 'CLOCKED_OUT') {
+                // Case 2: Not clocked in yet -> Save to User Profile
+                setIsSyncingLogs(true);
+                try {
+                    await AuthService.updateUserProfile(user.uid, {
+                        pendingWorkLogs: workLogs
+                    });
+                } catch (err) {
+                    console.error("Auto-save to profile failed", err);
+                } finally {
+                    setIsSyncingLogs(false);
+                }
+            }
+        }, 1500); // 1.5s debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [workLogs, status, currentRecordId, queryClient, user]);
 
     const formatTime = (totalSeconds: number) => {
         const h = Math.floor(totalSeconds / 3600);
@@ -137,7 +200,12 @@ const AttendanceWidget: React.FC = () => {
             await clockInMutation.mutateAsync({
                 userId: user.uid,
                 method: 'WEB',
-                notes: isLate ? `Late: ${lateReason}` : ''
+                notes: isLate ? `Late: ${lateReason}` : '',
+                workLogs: workLogs // Migrate current work logs to the record
+            });
+            // Clear pending logs in profile
+            await AuthService.updateUserProfile(user.uid, {
+                pendingWorkLogs: []
             });
             // State update handled by useEffect syncing with invalidated query
         } catch (error) {
@@ -169,7 +237,8 @@ const AttendanceWidget: React.FC = () => {
             natureOfAssignment: 'Internal Audit',
             description: '',
             duration: 0,
-            billable: true
+            billable: true,
+            locationTag: 'Office'
         }]);
     };
 
@@ -185,7 +254,11 @@ const AttendanceWidget: React.FC = () => {
                 const updated = { ...l, [field]: value };
                 if (field === 'clientId') {
                     const client = clients.find(c => c.id === value);
-                    if (client) updated.clientName = client.name;
+                    if (client) {
+                        updated.clientName = client.name;
+                        // Auto-set location based on internal vs client
+                        updated.locationTag = client.id === 'INTERNAL' ? 'Office' : 'Client Premises';
+                    }
                 }
                 return updated;
             }
@@ -260,6 +333,7 @@ const AttendanceWidget: React.FC = () => {
                             status === 'COMPLETED' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' :
                                 'bg-slate-100 border-slate-200 text-slate-600 dark:bg-gray-500/10 dark:border-gray-500/20 dark:text-gray-400'
                             }`}>
+                             {isSyncingLogs && <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse mr-2" title="Saving logs..." />}
                             {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}
                         </span>
                     </div>
@@ -360,52 +434,67 @@ const AttendanceWidget: React.FC = () => {
 
                             <div className="space-y-2">
                                 {workLogs.map((log, index) => (
-                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-xl p-3 flex flex-col xl:flex-row gap-3 group hover:border-brand-300 dark:hover:border-white/10 transition-colors">
-                                        {/* Client Select */}
-                                        <div className="w-full xl:w-1/4 min-w-[140px]">
-                                            <SearchableClientSelect
-                                                clients={clients}
-                                                value={log.clientId}
-                                                onChange={(val) => updateLog(log.id, 'clientId', val)}
-                                                disabled={status === 'COMPLETED'}
-                                            />
+                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-xl p-3 flex flex-col gap-4 group hover:border-brand-300 dark:hover:border-white/10 transition-colors">
+                                        
+                                        {/* Top Row: Client & Assignment */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client / Project</label>
+                                                <SearchableClientSelect
+                                                    clients={clients}
+                                                    value={log.clientId}
+                                                    onChange={(val) => updateLog(log.id, 'clientId', val)}
+                                                    disabled={status === 'COMPLETED'}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Nature of Engagement</label>
+                                                <SearchableSelect
+                                                    items={NATURE_OF_ASSIGNMENTS.map(n => ({ id: n, name: n, icon: <Briefcase size={12}/> }))}
+                                                    value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
+                                                    onChange={(val) => updateLog(log.id, 'natureOfAssignment', val)}
+                                                    disabled={status === 'COMPLETED'}
+                                                    placeholder="Select Assignment..."
+                                                />
+                                            </div>
                                         </div>
 
-                                        {/* Nature of Assignment */}
-                                        <div className="w-full xl:w-1/4">
-                                            <select
-                                                value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
-                                                onChange={(e) => updateLog(log.id, 'natureOfAssignment', e.target.value)}
-                                                disabled={status === 'COMPLETED'}
-                                                className="w-full bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-slate-800 dark:text-white focus:outline-none focus:border-brand-400 dark:focus:border-brand-500/50 focus:bg-brand-50 dark:focus:bg-brand-500/5 transition-all h-[38px] appearance-none"
-                                            >
-                                                {NATURE_OF_ASSIGNMENTS.map(n => (
-                                                    <option key={n} value={n} className="dark:bg-[#0d1526]">{n}</option>
-                                                ))}
-                                            </select>
+                                        {/* Bottom Row: Location & Description */}
+                                        <div className="flex flex-col md:flex-row gap-3">
+                                            <div className="w-full md:w-1/4 space-y-1">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Location</label>
+                                                <SearchableSelect
+                                                    items={[
+                                                        { id: 'Office', name: 'Office', icon: <Building2 size={12}/> },
+                                                        { id: 'Client Premises', name: 'Client Premises', icon: <MapPin size={12}/> }
+                                                    ]}
+                                                    value={log.locationTag || 'Office'}
+                                                    onChange={(val) => updateLog(log.id, 'locationTag', val)}
+                                                    disabled={status === 'COMPLETED'}
+                                                    placeholder="Select Location"
+                                                />
+                                            </div>
+                                            <div className="flex-1 space-y-1">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center justify-between">
+                                                    Work Description
+                                                    {status !== 'COMPLETED' && workLogs.length > 1 && (
+                                                        <button
+                                                            onClick={() => removeLog(log.id)}
+                                                            className="text-rose-500 hover:text-rose-600 font-bold transition-all flex items-center gap-1 opacity-0 group-hover:opacity-100 pr-1"
+                                                            title="Remove Task"
+                                                        >
+                                                            <Trash2 size={10} /> <span className="text-[8px]">Delete Row</span>
+                                                        </button>
+                                                    )}
+                                                </label>
+                                                <ActionDetailEditor
+                                                    value={log.description}
+                                                    onChange={(val) => updateLog(log.id, 'description', val)}
+                                                    disabled={status === 'COMPLETED'}
+                                                    placeholder="Describe your work. Use **bold** or bullet points (•)..."
+                                                />
+                                            </div>
                                         </div>
-
-                                        {/* Description */}
-                                        <div className="flex-1">
-                                            <input
-                                                type="text"
-                                                value={log.description}
-                                                onChange={(e) => updateLog(log.id, 'description', e.target.value)}
-                                                placeholder="What did you do?"
-                                                disabled={status === 'COMPLETED'}
-                                                className="w-full bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2.5 text-[11px] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:border-brand-400 dark:focus:border-brand-500/50 focus:bg-brand-50 dark:focus:bg-brand-500/5 transition-all h-[38px]"
-                                            />
-                                        </div>
-
-                                        {/* Actions */}
-                                        {status !== 'COMPLETED' && workLogs.length > 1 && (
-                                            <button
-                                                onClick={() => removeLog(log.id)}
-                                                className="p-2 text-slate-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all h-[38px] w-[38px] flex items-center justify-center opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        )}
                                     </div>
                                 ))}
                             </div>

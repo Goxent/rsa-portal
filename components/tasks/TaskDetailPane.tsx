@@ -7,15 +7,15 @@ import {
     Trash2, Save, Loader2, CheckCircle2, Check, Eye, Map,
     Sparkles, Book, ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen,
     Users, UserCheck, Shield, Lock, Unlock, ExternalLink, History, CloudUpload, FileText,
-    MessageSquare, Zap, Settings2
+    MessageSquare, Zap, Settings2, Folder
 } from 'lucide-react';
 import { AppwriteService } from '../../services/appwrite';
-import { Task, TaskStatus, TaskPriority, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation } from '../../types';
 import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../constants/taskTypeChecklists';
 import { useModal } from '../../context/ModalContext';
 import { KnowledgeService } from '../../services/knowledge';
 import { TemplateService } from '../../services/templates';
-import { AuditDocService, AuditDocFile } from '../../services/auditDocs';
+import { AuditDocService, AuditDocFile, AuditDocFolder } from '../../services/auditDocs';
 import { AUDIT_FOLDER_STRUCTURE, AuditFolderKey } from '../../types';
 import StaffSelect from '../StaffSelect';
 import ClientSelect from '../ClientSelect';
@@ -151,6 +151,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const fiscalYears = useMemo(() => generateFiscalYearOptions(2080), []);
     const [allResources, setAllResources] = useState<Resource[]>([]);
     const [templateFolders, setTemplateFolders] = useState<TemplateFolder[]>([]);
+    const [activeDetailTab, setActiveDetailTab] = useState<string>('SETTINGS');
+    const [activeReviewTab, setActiveReviewTab] = useState<'TL' | 'ER' | 'SP'>('TL');
     const [importPhase, setImportPhase] = useState<AuditPhase | null>(null);
     const [templateSearchQuery, setTemplateSearchQuery] = useState('');
     const [showAllFrameworks, setShowAllFrameworks] = useState(false);
@@ -161,7 +163,6 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         UNCATEGORIZED: ''
     });
 
-    const [activeDetailTab, setActiveDetailTab] = useState<'OVERVIEW' | 'PROCEDURES' | 'EVIDENCE' | 'OBSERVATIONS' | 'COMMENTS' | 'SETTINGS'>('OVERVIEW');
     const [auditFiles, setAuditFiles] = useState<AuditDocFile[]>([]);
     const [customFolders, setCustomFolders] = useState<AuditDocFolder[]>([]);
     const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -171,6 +172,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const [selectedLineItemForUpload, setSelectedLineItemForUpload] = useState('');
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
+    const [selectingFolderSubtaskId, setSelectingFolderSubtaskId] = useState<string | null>(null);
 
     const descRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -222,6 +224,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     signingPartnerApprovedAt: '',
                 });
             } else {
+                setActiveDetailTab('OVERVIEW'); // Default to first tab (Overview) when opening an existing task
                 reset({
                     title: task.title || '',
                     clientId: task.clientIds?.[0] || task.clientId || '',
@@ -341,7 +344,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     };
 
-    const handleFileUpload = async (files: FileList | null, subtaskId?: string) => {
+    const handleFileUpload = async (files: FileList | null, subtaskId?: string, folderKeyOverride?: AuditFolderKey, lineItemOverride?: string) => {
         if (!files || files.length === 0) return;
         
         // Use watched form values as they represent the current UI state
@@ -349,8 +352,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const watchedFiscalYear = watch('fiscalYear');
         const selectedClient = clientsList.find(c => c.id === watchedClientId);
         
-        // Default folder B for procedures, otherwise use selected
-        const targetFolder = subtaskId ? 'B' : selectedFolderForUpload;
+        // Default folder B for procedures, otherwise use selected or override
+        const targetFolder = folderKeyOverride || (subtaskId ? 'B' : selectedFolderForUpload);
         
         if (!targetFolder) {
             toast.error("Please select a target folder first.");
@@ -373,8 +376,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     clientName: selectedClient?.name || 'Unknown',
                     fiscalYear: watchedFiscalYear,
                     folderKey: targetFolder as AuditFolderKey,
-                    lineItem: selectedLineItemForUpload || undefined,
-                    lineItemLabel: selectedLineItemForUpload || undefined,
+                    lineItem: lineItemOverride || (lineItemOverride === undefined ? (selectedLineItemForUpload || undefined) : undefined),
+                    lineItemLabel: lineItemOverride || (lineItemOverride === undefined ? (selectedLineItemForUpload || undefined) : undefined),
                     uploadedBy: user?.uid || 'system',
                     uploadedByName: user?.displayName || 'System',
                     taskId: task.id,
@@ -398,6 +401,23 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             setUploadingSubtaskId(null);
         }
     };
+
+    // Role-based Access Control (RBAC) definitions
+    const isTaskCompleted = task.status === TaskStatus.COMPLETED;
+    const isTeamLeader = user?.uid === task.teamLeaderId;
+    const isMasterAdmin = user?.role === UserRole.MASTER_ADMIN;
+    const isAdminOrMaster = user?.role === UserRole.ADMIN || isMasterAdmin;
+    const canManageTeam = (isAdminOrMaster || isTeamLeader) && !isTaskCompleted;
+    
+    // Rule: Team Leader AND Admins can ADD subtasks
+    const canAddSubtasks = (isTeamLeader || isAdminOrMaster) && !isTaskCompleted;
+    
+    // Rule: ONLY Team Leader can DELETE subtasks (Admins cannot, unless they are also the Team Leader)
+    const canDeleteSubtasks = (isTeamLeader || isMasterAdmin) && !isTaskCompleted;
+
+    const isInOnboarding = currentPhase === AuditPhase.ONBOARDING;
+    const canChangeFramework = isMasterAdmin && isInOnboarding && !isTaskCompleted;
+
 
     // Snapshot task state whenever the pane opens
     useEffect(() => {
@@ -503,10 +523,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const toggleSubtask = (id: string, evidenceText?: string) => {
+        if (isTaskCompleted) return;
         const updated = [...(task.subtasks || [])];
         const idx = updated.findIndex(u => u.id === id);
         if (idx > -1) {
             const st = updated[idx];
+            
+            // RBAC: Only assigned users or Team Lead/Admin
+            const isAssigned = (st.assignedTo || []).includes(user?.uid || '');
+            if (!canManageTeam && !isAssigned) {
+                toast.error("Only assigned staff members or the Team Leader can complete this procedure.", { icon: '🔒' });
+                return;
+            }
+
             if (!st.isCompleted && st.isEvidenceMandatory && !st.evidenceProvided && !evidenceText) {
                 toast.error("Evidence is mandatory to mark this procedure as complete. Please provide it below.", { icon: '🛑' });
                 return;
@@ -521,26 +550,112 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     };
 
-    const toggleReviewItem = (id: string) => {
+    const toggleReviewItemStatus = (id: string, isLocked: boolean) => {
+        if (isLocked || isTaskCompleted) return;
         const updated = [...(task.reviewChecklist || [])];
         const idx = updated.findIndex(u => u.id === id);
         if (idx > -1) {
+            const currentStatus = updated[idx].status || 'PENDING';
+            let nextStatus: 'PENDING' | 'OK' | 'ISSUE' = 'OK';
+            if (currentStatus === 'OK') nextStatus = 'ISSUE';
+            else if (currentStatus === 'ISSUE') nextStatus = 'PENDING';
+            
             updated[idx] = {
                 ...updated[idx],
-                isCompleted: !updated[idx].isCompleted,
+                status: nextStatus as any,
+                isCompleted: nextStatus === 'OK',
                 completedBy: user?.uid,
+                completedByName: user?.displayName || 'Unknown',
                 completedAt: new Date().toISOString()
             };
             onChange({ reviewChecklist: updated });
         }
     };
 
+    const updateReviewItemField = (id: string, field: string, value: any, isLocked: boolean) => {
+        if (isLocked || isTaskCompleted) return;
+        const updated = [...(task.reviewChecklist || [])];
+        const idx = updated.findIndex(u => u.id === id);
+        if (idx > -1) {
+            updated[idx] = { ...updated[idx], [field]: value };
+            onChange({ reviewChecklist: updated });
+        }
+    };
+
+    const addReviewRow = (role: 'TL' | 'ER' | 'SP') => {
+        if (isTaskCompleted) return;
+        const newItem = {
+            id: `rc-manual-${Date.now()}`,
+            title: '',
+            status: 'PENDING' as const,
+            priority: 'MEDIUM' as const,
+            isCompleted: false,
+            reviewerRole: role,
+        };
+        const updated = [...(task.reviewChecklist || []), newItem];
+        onChange({ reviewChecklist: updated });
+    };
+
+    const removeReviewRow = (id: string, isLocked: boolean) => {
+        if (isLocked || isTaskCompleted) return;
+        const updated = (task.reviewChecklist || []).filter(i => i.id !== id);
+        onChange({ reviewChecklist: updated });
+    };
+
+    const handleReviewSignOff = (role: 'TL' | 'ER' | 'SP') => {
+        if (isTaskCompleted) return;
+        const isAdmin = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN';
+        const isTL = user?.uid === task.teamLeaderId;
+        const isER = user?.uid === task.engagementReviewerId;
+        const isSP = user?.uid === task.signingPartnerId;
+
+        // Permission check
+        const isAuthorized = isAdmin || (role === 'TL' && isTL) || (role === 'ER' && isER) || (role === 'SP' && isSP);
+        if (!isAuthorized) {
+            toast.error(`You are not authorized to sign off as ${role}.`);
+            return;
+        }
+
+        // Sequential Check
+        if (role === 'ER' && !task.teamLeadApprovedAt) {
+            toast.error("Team Lead sign-off required first.");
+            return;
+        }
+        if (role === 'SP' && !task.engagementReviewerApprovedAt) {
+            toast.error("Engagement Reviewer sign-off required first.");
+            return;
+        }
+
+        const itemsForLayer = (task.reviewChecklist || []).filter(i => i.reviewerRole === role);
+        const hasPending = itemsForLayer.some(i => i.status === 'PENDING' || !i.status);
+        const hasCritical = itemsForLayer.some(i => i.status === 'ISSUE' && i.priority === 'CRITICAL');
+
+        if (hasPending) {
+            toast.error(`Please complete all checklist items for the ${role} layer.`);
+            return;
+        }
+        if (hasCritical) {
+            toast.error(`Resolve all CRITICAL issues before sign-off.`);
+            return;
+        }
+
+        const updates: any = {};
+        if (role === 'TL') updates.teamLeadApprovedAt = new Date().toISOString();
+        if (role === 'ER') updates.engagementReviewerApprovedAt = new Date().toISOString();
+        if (role === 'SP') updates.signingPartnerApprovedAt = new Date().toISOString();
+
+        onChange(updates);
+        toast.success(`${role} Layer Sign-off Secured.`);
+    };
+
     const onRemoveSubtaskLocal = (id: string) => {
+        if (isTaskCompleted) return;
         const updated = (task.subtasks || []).filter(st => st.id !== id);
         onChange({ subtasks: updated });
     };
 
     const handleSubtaskAction = (id: string, action: 'RAISE_QUERY' | 'REPLY' | 'CLEAR', data?: string) => {
+        if (isTaskCompleted) return;
         const updated = [...(task.subtasks || [])];
         const idx = updated.findIndex(u => u.id === id);
         if (idx > -1) {
@@ -563,6 +678,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handleQuickAddSubtask = (phase: AuditPhase) => {
+        if (isTaskCompleted) return;
         const title = localSubtaskTitles[phase]?.trim();
         if (!title) return;
 
@@ -572,6 +688,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             isCompleted: false,
             createdAt: new Date().toISOString(),
             createdBy: user?.displayName || 'unknown',
+            addedBy: user?.uid,
+            addedByName: user?.displayName || 'unknown',
             phase: phase,
             assignedTo: [],
             isNew: true,
@@ -583,6 +701,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handleAddObservation = () => {
+        if (isTaskCompleted) return;
         const newObs: AuditObservation = {
             id: `obs-${Date.now()}`,
             title: 'Observation',
@@ -599,6 +718,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handleUpdateObservation = (id: string, updates: Partial<AuditObservation>) => {
+        if (isTaskCompleted) return;
         const currentObs = [...(task.observations || [])];
         const idx = currentObs.findIndex(o => o.id === id);
         if (idx > -1) {
@@ -608,32 +728,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handleRemoveObservation = (id: string) => {
+        if (isTaskCompleted) return;
         const currentObs = (task.observations || []).filter(o => o.id !== id);
         onChange({ observations: currentObs });
     };
 
     const handlePhaseSwitch = (newPhase: AuditPhase) => {
-        const currentOrder = PHASE_ORDER[currentPhase];
-        const newOrder = PHASE_ORDER[newPhase];
-
-        // Intelligence: Hard Phase Gates
-        if (newOrder > currentOrder) {
-            // Check incomplete subtasks
-            const incompleteInCurrent = (task.subtasks || []).filter(s => s.phase === currentPhase && !s.isCompleted);
-            if (incompleteInCurrent.length > 0) {
-                setShowPhaseWarning(newPhase);
-                return;
-            }
-        }
-
-
+        // Free navigation — users can jump to any phase at any time
+        // to view, add, or manage subtasks regardless of completion status
+        if (newPhase === currentPhase) return;
         setValue('auditPhase', newPhase);
         setShowPhaseWarning(null);
     };
 
     const handleFrameworkSelect = (tType: TaskType) => {
-        // Guard: Prevent re-injecting if the same framework is already selected
-        if (tType === task.taskType) return;
+        // Guard: Prevent re-injecting if the same framework is already selected or if user cannot change it
+        if (!canChangeFramework || tType === task.taskType) return;
 
         const applyFramework = () => {
             const updates: Partial<Task> = { taskType: tType, linkedFolderId: undefined };
@@ -749,7 +859,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     <div className="flex-shrink-0 mt-0.5">
                         <button
                             onClick={() => toggleSubtask(st.id)}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${st.isCompleted ? 'bg-brand-500 border-brand-500 text-white shadow-md' : 'border-gray-400 dark:border-slate-600 hover:border-gray-500 dark:hover:border-slate-500 bg-white dark:bg-transparent'}`}
+                            disabled={!canManageTeam && !(st.assignedTo || []).includes(user?.uid || '')}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                st.isCompleted 
+                                    ? 'bg-brand-500 border-brand-500 text-white shadow-md' 
+                                    : 'border-gray-400 dark:border-slate-600 hover:border-gray-500 dark:hover:border-slate-500 bg-white dark:bg-transparent'
+                            } ${(!canManageTeam && !(st.assignedTo || []).includes(user?.uid || '')) ? 'opacity-40 grayscale-[0.5] cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                             {st.isCompleted && <Check size={12} strokeWidth={4} />}
                         </button>
@@ -776,6 +891,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             <p className="text-[10px] text-gray-600 font-medium italic opacity-60 mt-0.5">"{st.minimumRequirement}"</p>
                         )}
 
+                        {st.addedByName && !st.isAutoGenerated && (
+                            <p className="text-[9px] text-emerald-500 font-bold tracking-widest mt-1 opacity-70">ADDED BY: {st.addedByName}</p>
+                        )}
+
                         {/* Attached Evidence Pills */}
                         {subtaskDocs.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -795,16 +914,97 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 opacity-0 group-hover/st:opacity-100 transition-opacity flex-shrink-0">
-                        {/* Attach Documentation Button */}
-                        <label className="p-1 px-1.5 text-gray-500 hover:text-brand-400 rounded transition-all cursor-pointer" title="Attach Documentation">
-                            <input 
-                                type="file" 
-                                className="hidden" 
-                                onChange={(e) => handleFileUpload(e.target.files, st.id)}
-                                disabled={uploadingSubtaskId === st.id}
-                            />
-                            {uploadingSubtaskId === st.id ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-                        </label>
+                        {/* Attach Documentation Button with Folder Selector */}
+                        <div className="relative">
+                            <button 
+                                onClick={() => setSelectingFolderSubtaskId(active => active === st.id ? null : st.id)}
+                                className={`p-1 px-1.5 rounded transition-all flex items-center justify-center ${selectingFolderSubtaskId === st.id ? 'bg-brand-500 text-white' : 'text-gray-500 hover:text-brand-400'}`}
+                                title="Sync Documentation to Repository"
+                            >
+                                {uploadingSubtaskId === st.id ? <Loader2 size={13} className="animate-spin" /> : <CloudUpload size={14} className="hover:scale-110 transition-transform" />}
+                            </button>
+
+                            <AnimatePresence>
+                                {selectingFolderSubtaskId === st.id && (
+                                    <>
+                                        {/* Backdrop for closing */}
+                                        <div className="fixed inset-0 z-[100]" onClick={() => setSelectingFolderSubtaskId(null)} />
+                                        
+                                        <motion.div 
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className="absolute bottom-full right-0 mb-3 w-72 p-2 bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl z-[101] backdrop-blur-3xl overflow-hidden"
+                                        >
+                                            <div className="px-3 py-2 border-b border-white/5 mb-2 flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest">Select Repository Path</span>
+                                                <X size={12} className="text-gray-600 cursor-pointer hover:text-white" onClick={() => setSelectingFolderSubtaskId(null)} />
+                                            </div>
+                                            <div className="max-h-[350px] overflow-y-auto custom-scrollbar space-y-1 pr-1">
+                                                {Object.entries(AUDIT_FOLDER_STRUCTURE).map(([key, def]) => {
+                                                    const hasLineItems = def.lineItems && def.lineItems.length > 0;
+                                                    
+                                                    return (
+                                                        <div key={key} className="space-y-1">
+                                                            <div className="group relative">
+                                                                <input 
+                                                                    type="file" 
+                                                                    id={`file-${st.id}-${key}`}
+                                                                    className="hidden" 
+                                                                    onChange={(e) => {
+                                                                        handleFileUpload(e.target.files, st.id, key as AuditFolderKey);
+                                                                        setSelectingFolderSubtaskId(null);
+                                                                    }}
+                                                                    disabled={uploadingSubtaskId === st.id}
+                                                                />
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        if (!hasLineItems) {
+                                                                            document.getElementById(`file-${st.id}-${key}`)?.click();
+                                                                        }
+                                                                    }}
+                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent transition-all text-left ${hasLineItems ? 'cursor-default' : 'cursor-pointer hover:bg-white/5 hover:border-white/10'}`}
+                                                                >
+                                                                    <div className="w-7 h-7 rounded-lg bg-brand-500/10 flex items-center justify-center text-[10px] font-black text-brand-400">
+                                                                        {key}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-[11px] font-bold text-gray-200 group-hover:text-white transition-colors">{def.label}</div>
+                                                                        <div className="text-[9px] text-gray-500 truncate">{def.description.substring(0, 40)}...</div>
+                                                                    </div>
+                                                                </button>
+                                                            </div>
+
+                                                            {hasLineItems && (
+                                                                <div className="ml-4 pl-4 border-l border-white/5 space-y-1 py-1">
+                                                                    {def.lineItems?.map(item => (
+                                                                        <label 
+                                                                            key={item}
+                                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.03] transition-all cursor-pointer group/item"
+                                                                        >
+                                                                            <input 
+                                                                                type="file" 
+                                                                                className="hidden" 
+                                                                                onChange={(e) => {
+                                                                                    handleFileUpload(e.target.files, st.id, key as AuditFolderKey, item);
+                                                                                    setSelectingFolderSubtaskId(null);
+                                                                                }}
+                                                                            />
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-700 group-hover/item:bg-brand-500 transition-colors" />
+                                                                            <span className="text-[10px] font-medium text-gray-500 group-hover/item:text-gray-300 truncate">{item}</span>
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
                         {(user?.role === 'ADMIN' || user?.uid === task.engagementReviewerId || user?.uid === task.signingPartnerId) && !isCleared && (
                             <button
@@ -839,9 +1039,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 <Award size={13} />
                             </button>
                         )}
-                        <button onClick={() => onRemoveSubtaskLocal(st.id)} className="text-gray-700 hover:text-rose-400 p-1 px-1.5 transition-all">
-                            <Trash2 size={13} />
-                        </button>
+                        {(isTeamLeader || user?.role === UserRole.MASTER_ADMIN) && (
+                            <button onClick={() => onRemoveSubtaskLocal(st.id)} className="text-gray-700 hover:text-rose-400 p-1 px-1.5 transition-all">
+                                <Trash2 size={13} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -857,12 +1059,13 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     </div>
                     <div className="w-full min-w-0">
                         <StaffSelect
-                            users={usersList}
+                            users={usersList.filter(u => (watch('assignedTo') || []).includes(u.uid))}
                             value={Array.isArray(st.assignedTo) ? st.assignedTo : (st.assignedTo ? [st.assignedTo] : [])}
                             onChange={(val) => handleUpdateSubtaskAssignee(st.id, val as string[])}
-                            placeholder="Assign staff members..."
+                            placeholder="Assign team members..."
                             multi
                             compact
+                            disabled={!canManageTeam}
                         />
                     </div>
                 </div>
@@ -941,86 +1144,349 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         return null;
     }, [user, task]);
 
-    const renderReviewChecklist = () => {
-        const reviewItems = task.reviewChecklist || [];
-        if (reviewItems.length === 0) return null;
-
-        // Filter items for the specific reviewer OR show all if ADMIN
-        const isAuthorizedReviewer = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN' || userRoleInTask !== null;
-        if (!isAuthorizedReviewer) return null;
-
-        const isAdmin = user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN';
-        const filteredItems = reviewItems.filter(item => isAdmin || item.reviewerRole === userRoleInTask);
-
-        if (filteredItems.length === 0) return null;
-
+    const renderReviewerChecklist = () => {
         return (
-            <div className="space-y-6 pt-12 border-t border-white/5">
-                <div className="flex items-center justify-between pb-4">
-                    <div className="flex flex-col gap-2">
-                        <h4 className="text-[13px] font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                            <ShieldCheck className="text-brand-400" size={18} />
-                            Review Compliance Checkpoint
-                        </h4>
-                        <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em]">Enforcing quality standards before final sign-off</p>
-                    </div>
+            <div className="space-y-6">
+                {/* Protocol Tabs */}
+                <div className="flex gap-1 p-1 bg-white/5 border border-white/5 rounded-2xl w-fit mx-auto shadow-2xl backdrop-blur-xl">
+                    {[
+                        { id: 'TL' as const, label: 'Team Leader', color: 'brand' },
+                        { id: 'ER' as const, label: 'Engagement Reviewer', color: 'purple' },
+                        { id: 'SP' as const, label: 'Signing Partner', color: 'rose' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveReviewTab(tab.id)}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center gap-2.5 ${
+                                activeReviewTab === tab.id 
+                                    ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20 active:scale-95` 
+                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <ShieldCheck size={14} />
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
 
-                <div className="grid grid-cols-1 gap-3">
-                    {filteredItems.map((item, idx) => {
-                        const isTL = item.reviewerRole === 'TL';
-                        const isER = item.reviewerRole === 'ER';
-                        const isSP = item.reviewerRole === 'SP';
-                        
-                        return (
-                            <div 
-                                key={item.id} 
-                                className={`flex items-start gap-5 p-5 rounded-[28px] border transition-all group ${
-                                    item.isCompleted 
-                                        ? 'bg-[#0c1e18] border-emerald-500/20' 
-                                        : 'bg-[#0f1218] border-white/5 hover:border-white/10 shadow-xl'
-                                }`}
-                            >
-                                <button
-                                    onClick={() => toggleReviewItem(item.id)}
-                                    className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 ${
-                                        item.isCompleted 
-                                            ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]' 
-                                            : 'bg-white/5 text-gray-700 hover:bg-white/10 hover:text-white border border-white/10'
-                                    }`}
-                                >
-                                    {item.isCompleted ? <Check size={20} strokeWidth={4} /> : <div className="w-2.5 h-2.5 rounded-full bg-current opacity-40" />}
-                                </button>
-                                
-                                <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-colors ${
-                                            isTL ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
-                                            isER ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                            'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                        }`}>
-                                            {item.reviewerRole === 'TL' ? 'Team Lead' : item.reviewerRole === 'ER' ? 'QC Review' : 'Partner Sign-off'}
-                                        </span>
-                                        <p className={`text-[13px] font-bold truncate uppercase tracking-tight transition-all ${item.isCompleted ? 'text-emerald-400/80 line-through' : 'text-white'}`}>
-                                            {item.title}
-                                        </p>
+                {[activeReviewTab].map((layer) => {
+                    const meta = {
+                        'TL': { title: 'Team Leader Protocol', color: 'brand', role: 'Team Leader' },
+                        'ER': { title: 'Engagement Reviewer Protocol', color: 'purple', role: 'Engagement Reviewer' },
+                        'SP': { title: 'Signing Partner Protocol', color: 'rose', role: 'Signing Partner' }
+                    }[layer];
+
+                    const items = (task.reviewChecklist || []).filter(i => i.reviewerRole === layer);
+                    const isSignedOff = !!{
+                        'TL': task.teamLeadApprovedAt,
+                        'ER': task.engagementReviewerApprovedAt,
+                        'SP': task.signingPartnerApprovedAt
+                    }[layer];
+
+                    const signOffDate = {
+                        'TL': task.teamLeadApprovedAt,
+                        'ER': task.engagementReviewerApprovedAt,
+                        'SP': task.signingPartnerApprovedAt
+                    }[layer];
+
+                    const canSignOff = (
+                        task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION &&
+                        task.status !== TaskStatus.COMPLETED &&
+                        ((layer === 'TL') || 
+                         (layer === 'ER' && !!task.teamLeadApprovedAt) ||
+                         (layer === 'SP' && !!task.engagementReviewerApprovedAt))
+                    );
+
+                    return (
+                        <div key={layer} className={`glass-pane border-white/5 bg-[#080a0e] rounded-[32px] overflow-hidden shadow-2xl relative transition-all duration-500 ${isSignedOff ? 'ring-1 ring-emerald-500/20' : ''}`}>
+                            <div className={`absolute top-0 left-0 w-1.5 h-full bg-${meta.color}-500 opacity-40`} />
+
+                            <div className="px-6 py-5 border-b border-white/[0.04] flex items-center justify-between bg-black/20">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-[18px] bg-${meta.color}-500/10 flex items-center justify-center border border-${meta.color}-500/20 text-${meta.color}-400 shadow-xl shadow-${meta.color}-500/5`}>
+                                        <ShieldCheck size={20} />
                                     </div>
-                                    {item.minimumRequirement && !item.isCompleted && (
-                                        <p className="text-[10px] text-gray-600 font-medium italic opacity-60 ml-0.5">"{item.minimumRequirement}"</p>
-                                    )}
-                                    {item.isCompleted && item.completedBy && (
-                                        <p className="text-[8px] text-emerald-500/40 font-black uppercase tracking-widest flex items-center gap-2">
-                                            <Check size={8} /> Verified by Reviewer at {item.completedAt ? new Date(item.completedAt).toLocaleString() : 'Just now'}
-                                        </p>
+                                    <div>
+                                        <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">{meta.title}</h3>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Protocol Execution Layer</span>
+                                            {isSignedOff && (
+                                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                                                    <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Verified & Locked</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                 <div className="flex items-center gap-3">
+                                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.uid === task.teamLeaderId) && !isSignedOff && !isTaskCompleted && (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center bg-[#0d1017] border border-white/10 rounded-xl p-0.5 shadow-inner mr-2">
+                                                <select 
+                                                    id={`templateSelect-${layer}`}
+                                                    className="bg-transparent outline-none border-none text-[9px] font-black uppercase tracking-widest text-brand-300/80 px-2 max-w-[140px] truncate"
+                                                >
+                                                    <option value="">Choose Template...</option>
+                                                    {templates.filter(t => t.category === 'TASK' && t.reviewChecklist && t.reviewChecklist.length > 0).map(t => (
+                                                        <option key={t.id} value={t.id}>{t.title} ({t.taskType})</option>
+                                                    ))}
+                                                </select>
+                                                <button 
+                                                    onClick={() => {
+                                                        const el = document.getElementById(`templateSelect-${layer}`) as HTMLSelectElement;
+                                                        if (!el || !el.value) { 
+                                                            toast.error("Please select a template to import first.", { icon: '⚠️' }); 
+                                                            return; 
+                                                        }
+                                                        
+                                                        const matchingTemplate = templates.find(t => t.id === el.value);
+                                                        if (matchingTemplate && matchingTemplate.reviewChecklist) {
+                                                            const mappedChecklist = matchingTemplate.reviewChecklist.map((item: any) => ({
+                                                                ...item,
+                                                                id: Math.random().toString(36).substring(2, 9),
+                                                                status: 'PENDING',
+                                                                reviewerRole: layer,
+                                                                isCompleted: false
+                                                            }));
+                                                            onChange({ reviewChecklist: [...(task.reviewChecklist || []), ...mappedChecklist] });
+                                                            toast.success(`Checklist integrated from ${matchingTemplate.title}`, { icon: '✨' });
+                                                            el.value = ""; // Reset selector
+                                                        }
+                                                    }}
+                                                    className="h-8 px-3 bg-brand-500/20 hover:bg-brand-500 border border-brand-500/30 hover:border-brand-500 text-brand-400 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-lg shadow-brand-500/10 active:scale-95"
+                                                    title="Import Selected Checklist into this Protocol Layer"
+                                                >
+                                                    <Download size={13} strokeWidth={2.5} /> Import
+                                                </button>
+                                            </div>
+
+                                            <button 
+                                                onClick={() => {
+                                                    const newSection: Partial<ReviewChecklistItem> = {
+                                                        id: Math.random().toString(36).substring(2, 9),
+                                                        title: '',
+                                                        reviewerRole: layer,
+                                                        isSectionHeader: true
+                                                    };
+                                                    onChange({ reviewChecklist: [...(task.reviewChecklist || []), newSection] });
+                                                }}
+                                                className="h-9 px-4 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-2 transition-all active:scale-95"
+                                            >
+                                                <Plus size={14} strokeWidth={3} /> Add Section
+                                            </button>
+                                            <button 
+                                                onClick={() => addReviewRow(layer)}
+                                                className="h-9 px-4 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 transition-all active:scale-95"
+                                            >
+                                                <Plus size={14} strokeWidth={3} /> Add Procedure
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
+
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-black/60 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">
+                                            <th className="px-4 py-3 border-b border-white/5 w-16 text-center">REF</th>
+                                            <th className="px-4 py-3 border-b border-white/5">PROTOCOL PROCEDURE / REQUIREMENT</th>
+                                            <th className="px-4 py-3 border-b border-white/5 w-32 text-center">STATUS</th>
+                                            <th className="px-4 py-3 border-b border-white/5 w-28 text-center">PRIORITY</th>
+                                            <th className="px-4 py-3 border-b border-white/5 min-w-[250px]">NOTES / WP REF</th>
+                                            {!isSignedOff && <th className="px-4 py-3 border-b border-white/5 w-16 text-center"></th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/[0.03]">
+                                        {items.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-20 text-center">
+                                                    <div className="flex flex-col items-center gap-6">
+                                                        <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-white/5 opacity-40">
+                                                            <ClipboardCheck size={32} />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white">No Protocol Loaded</p>
+                                                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Required for engagement sign-off</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            items.map((item, idx) => {
+                                                const isLocked = isTaskCompleted || (isSignedOff && user?.role !== UserRole.MASTER_ADMIN);
+                                                
+                                                return item.isSectionHeader ? (
+                                                    <tr key={item.id} className="bg-indigo-500/5 group">
+                                                        <td className="px-4 py-3 text-[11px] font-black text-indigo-500/50 text-center uppercase tracking-widest">
+                                                            {String.fromCharCode(65 + items.filter((it, i) => it.isSectionHeader && i <= items.indexOf(item)).length - 1)}
+                                                        </td>
+                                                        <td colSpan={4} className="px-4 py-3">
+                                                            <input 
+                                                                type="text" 
+                                                                value={item.title}
+                                                                onChange={(e) => updateReviewItemField(item.id, 'title', e.target.value, isLocked)}
+                                                                readOnly={isLocked}
+                                                                className="w-full bg-transparent border-none text-[10px] font-black text-indigo-400 placeholder:text-indigo-900/30 focus:outline-none focus:ring-0 p-0 uppercase tracking-widest"
+                                                                placeholder="SECTION NAME (e.g. A | GENERAL PROCEDURES)"
+                                                            />
+                                                        </td>
+                                                        {!isLocked && (
+                                                            <td className="px-4 py-3 text-center">
+                                                                <button 
+                                                                    onClick={() => removeReviewRow(item.id, isLocked)}
+                                                                    className="p-1 text-indigo-900/50 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100"
+                                                                >
+                                                                    <Trash2 size={13} />
+                                                                </button>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                ) : (
+                                                    <tr key={item.id} className={`group transition-all ${isLocked ? 'opacity-80 bg-black/5' : 'hover:bg-white/[0.02]'}`}>
+                                                        <td className="px-4 py-3 text-[11px] font-black text-gray-700 text-center">
+                                                            {(() => {
+                                                                const sectionsBefore = items.slice(0, items.indexOf(item)).filter(it => it.isSectionHeader);
+                                                                const currentSectionIdx = sectionsBefore.length;
+                                                                if (currentSectionIdx === 0) return idx + 1;
+                                                                
+                                                                const sectionChar = String.fromCharCode(64 + currentSectionIdx);
+                                                                const idxInSection = items.slice(items.indexOf(sectionsBefore[sectionsBefore.length - 1]) + 1, items.indexOf(item)).length + 1;
+                                                                return `${sectionChar}${idxInSection}`;
+                                                            })()}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <input 
+                                                                type="text" 
+                                                                value={item.title}
+                                                                onChange={(e) => updateReviewItemField(item.id, 'title', e.target.value, isLocked)}
+                                                                readOnly={isLocked}
+                                                                className="w-full bg-transparent border-none text-[12px] font-bold text-white placeholder:text-gray-800 focus:outline-none focus:ring-0 p-0"
+                                                                placeholder="Checking procedure..."
+                                                            />
+                                                            {item.minimumRequirement && (
+                                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mt-0.5 opacity-50">{item.minimumRequirement}</p>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <button 
+                                                                onClick={() => toggleReviewItemStatus(item.id, isLocked)}
+                                                                disabled={isLocked}
+                                                                className={`mx-auto h-8 px-4 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all border shadow-sm ${
+                                                                    item.status === 'OK' ? 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20' : 
+                                                                    item.status === 'ISSUE' ? 'bg-rose-500 text-white border-rose-600 shadow-rose-500/20' : 
+                                                                    'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                                                                }`}
+                                                            >
+                                                                {item.status === 'OK' && <CheckCircle2 size={12} strokeWidth={3} />}
+                                                                {item.status === 'ISSUE' && <AlertTriangle size={12} strokeWidth={3} />}
+                                                                {item.status || 'PENDING'}
+                                                            </button>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="relative group/sel mx-auto w-fit">
+                                                                <select
+                                                                    value={item.priority || 'MEDIUM'}
+                                                                    onChange={(e) => updateReviewItemField(item.id, 'priority', e.target.value, isLocked)}
+                                                                    disabled={isLocked}
+                                                                    className={`appearance-none bg-white border border-slate-200 rounded-xl px-4 py-1 pr-8 text-[10px] font-black uppercase tracking-widest text-center focus:ring-2 focus:ring-brand-500/20 transition-all cursor-pointer disabled:cursor-not-allowed ${
+                                                                        item.priority === 'CRITICAL' ? 'text-rose-500 border-rose-200' : 
+                                                                        item.priority === 'HIGH' ? 'text-amber-500 border-amber-200' : 'text-brand-500 border-indigo-100'
+                                                                    }`}
+                                                                >
+                                                                    <option value="CRITICAL">Critical</option>
+                                                                    <option value="HIGH">High</option>
+                                                                    <option value="MEDIUM">Medium</option>
+                                                                </select>
+                                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                                    <ChevronDown size={10} strokeWidth={3} />
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className={`border rounded-xl p-0.5 transition-all ${isLocked ? 'bg-black/5 border-transparent' : 'bg-white/5 border-white/5 focus-within:border-brand-500/30'}`}>
+                                                                <textarea 
+                                                                    rows={1}
+                                                                    value={item.notes || ''}
+                                                                    onChange={(e) => {
+                                                                        updateReviewItemField(item.id, 'notes', e.target.value, isLocked);
+                                                                        e.target.style.height = 'auto';
+                                                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                                                    }}
+                                                                    readOnly={isLocked}
+                                                                    className="w-full bg-transparent border-none text-[11px] font-bold text-gray-400 placeholder:text-gray-800 focus:outline-none focus:ring-0 px-3 py-1.5 resize-none custom-scrollbar"
+                                                                    placeholder="WP reference / review notes..."
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                        {!isLocked && (
+                                                            <td className="px-4 py-3 text-center">
+                                                                <button 
+                                                                    onClick={() => removeReviewRow(item.id, isLocked)}
+                                                                    className="p-1.5 text-gray-800 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100"
+                                                                >
+                                                                    <Trash2 size={13} />
+                                                                </button>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="px-8 py-6 bg-black/40 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 relative">
+                                <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                    <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className={`w-1 h-3 bg-${meta.color}-500 rounded-full`} />
+                                        Sign-off Execution Area
+                                    </h4>
+                                    <div className="text-lg font-black text-white italic truncate max-w-2xl">
+                                        {isSignedOff 
+                                            ? `Digital Protocol Verified & Sealed by ${meta.role}.` 
+                                            : !canSignOff && task.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION 
+                                                ? `Sign-off is only available during the ${AuditPhase.REVIEW_AND_CONCLUSION.replace(/_/g, ' ')} phase.`
+                                                : task.status === TaskStatus.COMPLETED
+                                                    ? `Task is already completed. Sign-off is no longer available.`
+                                                    : `I hereby certify that I have checked the items above in accordance with established Audit Standards.`}
+                                    </div>
+                                    {isSignedOff && (
+                                        <p className="text-[11px] font-bold text-emerald-400 flex items-center gap-2 mt-1">
+                                            <CheckCircle2 size={14} /> Signed on {new Date(signOffDate!).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <button 
+                                    onClick={() => handleReviewSignOff(layer)}
+                                    disabled={isSignedOff || !canSignOff}
+                                    className={`h-12 px-8 rounded-[16px] text-[12px] font-black uppercase tracking-[0.2em] flex items-center gap-3 transition-all shadow-xl relative overflow-hidden group/btn ${
+                                        isSignedOff 
+                                            ? 'bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/20 cursor-default shadow-emerald-500/5' 
+                                            : !canSignOff
+                                                ? 'bg-white/5 text-gray-700 border border-white/5 cursor-not-allowed grayscale'
+                                                : `bg-${meta.color}-500 text-white hover:bg-${meta.color}-600 active:scale-95 shadow-${meta.color}-500/30`
+                                    }`}
+                                >
+                                    {isSignedOff ? <CheckCircle2 size={18} strokeWidth={3} /> : <ShieldCheck size={18} strokeWidth={3} />}
+                                    <span>{isSignedOff ? 'SIGNED' : `SIGN AS ${layer}`}</span>
+                                    
+                                    {!isSignedOff && canSignOff && (
+                                        <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 pointer-events-none" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         );
     };
+
 
     const handleImportTemplate = (template: any) => {
         if (!importPhase) return;
@@ -1043,6 +1509,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 isCompleted: false,
                 createdAt: new Date().toISOString(),
                 createdBy: user?.displayName || 'System',
+                addedBy: user?.uid,
+                addedByName: user?.displayName || 'System',
                 phase: st.phase || importPhase, // Respect template phase or fallback to import context
                 isNew: true
             }));
@@ -1072,15 +1540,29 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 isCompleted: false,
                 createdAt: new Date().toISOString(),
                 createdBy: user?.displayName || 'System',
+                addedBy: user?.uid,
+                addedByName: user?.displayName || 'System',
                 phase: importPhase,
                 isNew: true
             }));
         }
 
         if (newSubtasks.length > 0) {
-            onChange({ subtasks: [...(task.subtasks || []), ...newSubtasks] });
+            const updates: any = { subtasks: [...(task.subtasks || []), ...newSubtasks] };
+            
+            // 3. NEW: If template has a reviewer checklist, import it too
+            if (template.reviewChecklist && template.reviewChecklist.length > 0) {
+                const mappedChecklist = template.reviewChecklist.map((item: any) => ({
+                    ...item,
+                    id: Math.random().toString(36).substring(2, 9),
+                    status: 'PENDING'
+                }));
+                updates.reviewChecklist = [...(task.reviewChecklist || []), ...mappedChecklist];
+            }
+
+            onChange(updates);
             if (newSubtasks.length > 0 && !toast.loading) {
-                toast.success(`Imported ${newSubtasks.length} requirements into engagement workspace`, { icon: '📥' });
+                toast.success(`Imported protocol requirements into engagement workspace`, { icon: '📥' });
             }
         } else {
             toast.error(`No protocol items found for this template mapping.`, { icon: '⚠️' });
@@ -1170,7 +1652,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="text-[15px] font-bold text-white tracking-tight leading-tight mt-0.5">{task.title || 'Untitled Engagement'}</h3>
+                                    <h3 className="text-[15px] font-bold text-white tracking-tight leading-tight mt-0.5">{watch('title') || task.title || 'Untitled Engagement'}</h3>
                                 </div>
                             </div>
 
@@ -1207,6 +1689,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     { id: 'PROCEDURES', label: 'Sub task', icon: <ClipboardCheck size={14} /> },
                                     { id: 'EVIDENCE', label: 'Evidence Repository', icon: <FolderOpen size={14} /> },
                                     { id: 'OBSERVATIONS', label: 'Engagement Findings', icon: <Eye size={14} /> },
+                                    { id: 'REVIEW_CHECKLIST', label: 'Reviewer Checklist', icon: <ShieldCheck size={14} /> },
                                     { id: 'COMMENTS', label: 'Collaborate', icon: <MessageSquare size={14} />, badge: (task.comments || []).length },
                                     { id: 'SETTINGS', label: 'Settings', icon: <Settings2 size={14} /> }
                                 ] : [
@@ -1292,6 +1775,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             </div>
                                                         </div>
                                                         <div className="space-y-1">
+                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Start Date</label>
+                                                            <p className="text-[14px] font-bold text-emerald-400">{task.startDate || '—'}</p>
+                                                        </div>
+                                                        <div className="space-y-1">
                                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Deadline</label>
                                                             <p className="text-[14px] font-bold text-rose-400">{task.dueDate}</p>
                                                         </div>
@@ -1374,6 +1861,34 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Activity</span>
                                                                 </div>
                                                                 <p className="text-xl font-black text-white">{(task.comments || []).length}</p>
+                                                            </div>
+
+                                                            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-indigo-500/20 transition-all cursor-pointer group col-span-2" onClick={() => setActiveDetailTab('REVIEW_CHECKLIST')}>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="p-1 rounded bg-indigo-500/10 text-indigo-400">
+                                                                            <ShieldCheck size={12} />
+                                                                        </div>
+                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Review Protocol</span>
+                                                                    </div>
+                                                                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">LAYER 1/2/3</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-3 mt-1">
+                                                                    {[
+                                                                        { label: 'TL', done: !!task.teamLeadApprovedAt, color: 'brand' },
+                                                                        { label: 'ER', done: !!task.engagementReviewerApprovedAt, color: 'indigo' },
+                                                                        { label: 'SP', done: !!task.signingPartnerApprovedAt, color: 'rose' }
+                                                                    ].map(lv => (
+                                                                        <div key={lv.label} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg border transition-all ${
+                                                                            lv.done 
+                                                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                                                                                : 'bg-white/5 border-white/5 text-gray-600'
+                                                                        }`}>
+                                                                            {lv.done ? <CheckCircle2 size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />}
+                                                                            <span className="text-[9px] font-black">{lv.label}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1475,13 +1990,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             )}
                                                         </div>
 
-                                                        {phase === AuditPhase.REVIEW_AND_CONCLUSION && isCurrent && (
-                                                            <div className="mt-8">
-                                                                {renderReviewChecklist()}
-                                                            </div>
-                                                        )}
 
-                                                        {isCurrent && (
+
+                                                        {isCurrent && canAddSubtasks && (
                                                             <div className="flex gap-4 items-center px-6 py-4 rounded-[24px] border border-white/5 bg-white/[0.02] mt-6 focus-within:border-brand-500/30 transition-all shadow-inner group">
                                                                 <Plus size={16} className="text-gray-600 group-focus-within:text-brand-400 transition-colors" />
                                                                 <input
@@ -1572,7 +2083,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     );
                                                                 })}
 
-                                                                {/* Custom Sub-folders */}
+                                                                {/* Custom Sub-folders — Read-only display */}
                                                                 {customFolders.filter(f => f.folderKey === key && (key !== 'B' || f.lineItem === selectedLineItemForUpload)).map(folder => (
                                                                     <div key={folder.id} className="flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-medium text-gray-400">
                                                                         <div className="flex items-center gap-2 truncate">
@@ -1582,36 +2093,6 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     </div>
                                                                 ))}
 
-                                                                {/* New Folder Action */}
-                                                                <div className="mt-2 px-3">
-                                                                    {isCreatingFolder ? (
-                                                                        <div className="flex flex-col gap-2 p-3 bg-white/[0.03] border border-white/10 rounded-xl animate-in fade-in duration-300">
-                                                                            <input
-                                                                                autoFocus
-                                                                                type="text"
-                                                                                value={newFolderName}
-                                                                                onChange={(e) => setNewFolderName(e.target.value)}
-                                                                                placeholder="Sub-folder name..."
-                                                                                className="w-full bg-black/40 border-none outline-none text-[10px] text-white p-1"
-                                                                                onKeyDown={(e) => {
-                                                                                    if (e.key === 'Enter') handleCreateFolder();
-                                                                                    if (e.key === 'Escape') setIsCreatingFolder(false);
-                                                                                }}
-                                                                            />
-                                                                            <div className="flex items-center gap-2">
-                                                                                <button onClick={handleCreateFolder} className="px-2 py-1 bg-brand-500 text-white text-[8px] font-black uppercase rounded">Create</button>
-                                                                                <button onClick={() => setIsCreatingFolder(false)} className="px-2 py-1 text-gray-500 text-[8px] font-black uppercase">Cancel</button>
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <button 
-                                                                            onClick={() => setIsCreatingFolder(true)}
-                                                                            className="flex items-center gap-2 text-[9px] font-black text-brand-500 hover:text-brand-400 transition-all uppercase tracking-widest py-1"
-                                                                        >
-                                                                            <Plus size={10} /> New Sub-folder
-                                                                        </button>
-                                                                    )}
-                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1686,7 +2167,21 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 }
 
                                                 return (
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                    <>
+                                                        {/* Read-Only Notice */}
+                                                        <div className="mb-5 flex items-start gap-3 px-4 py-3 rounded-2xl border"
+                                                            style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>
+                                                            <div className="shrink-0 mt-0.5">
+                                                                <ShieldCheck size={14} style={{ color: '#f59e0b' }} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f59e0b' }}>Read-Only View</p>
+                                                                <p className="text-[9px] font-medium mt-0.5" style={{ color: 'rgba(245,158,11,0.6)' }}>
+                                                                    Files displayed here are read-only references. To delete or reorganize files, use the <strong style={{ color: '#f59e0b' }}>Audit Documentation</strong> module with appropriate authorization.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                                         {currentFiles.map(file => (
                                                             <div key={file.id} className="group relative bg-[#0f1218] border border-white/5 rounded-2xl p-4 transition-all hover:bg-white/[0.03] hover:border-brand-500/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
                                                                 <div className="flex items-start justify-between mb-4">
@@ -1714,7 +2209,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 </div>
                                                             </div>
                                                         ))}
-                                                    </div>
+                                                        </div>
+                                                    </>
                                                 );
                                             })()}
                                         </div>
@@ -1735,12 +2231,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 </h4>
                                                 <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em]">Documentation of technical issues and internal control weaknesses</p>
                                             </div>
-                                            <button
-                                                onClick={handleAddObservation}
-                                                className="px-6 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all flex items-center gap-2 group"
-                                            >
-                                                <Plus size={14} /> Log New Observation
-                                            </button>
+                                            {!isTaskCompleted && (
+                                                <button
+                                                    onClick={handleAddObservation}
+                                                    className="px-6 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all flex items-center gap-2 group"
+                                                >
+                                                    <Plus size={14} /> Log New Observation
+                                                </button>
+                                            )}
                                         </div>
 
                                         <div className="space-y-6">
@@ -1761,6 +2259,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <input 
                                                                     value={obs.title} 
                                                                     onChange={e => handleUpdateObservation(obs.id, { title: e.target.value })}
+                                                                    readOnly={isTaskCompleted}
                                                                     className="bg-transparent text-[16px] font-bold text-white border-none outline-none placeholder:text-gray-800 tracking-tight"
                                                                     placeholder="Observation Title..."
                                                                 />
@@ -1769,6 +2268,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <select 
                                                                     value={obs.severity} 
                                                                     onChange={e => handleUpdateObservation(obs.id, { severity: e.target.value as any })}
+                                                                    disabled={isTaskCompleted}
                                                                     className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
                                                                         obs.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
                                                                         obs.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
@@ -1779,7 +2279,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     <option value="MEDIUM">Medium Risk</option>
                                                                     <option value="HIGH">High Risk</option>
                                                                 </select>
-                                                                <button onClick={() => handleRemoveObservation(obs.id)} className="p-1.5 text-gray-700 hover:text-rose-400 transition-all opacity-0 group-hover/obs:opacity-100"><Trash2 size={14} /></button>
+                                                                {!isTaskCompleted && (
+                                                                    <button onClick={() => handleRemoveObservation(obs.id)} className="p-1.5 text-gray-700 hover:text-rose-400 transition-all opacity-0 group-hover/obs:opacity-100"><Trash2 size={14} /></button>
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -1789,6 +2291,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <textarea 
                                                                     value={obs.observation}
                                                                     onChange={e => handleUpdateObservation(obs.id, { observation: e.target.value })}
+                                                                    readOnly={isTaskCompleted}
                                                                     className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-amber-500/30 transition-all min-h-[60px] shadow-inner resize-y"
                                                                     placeholder="Describe the finding in detail..."
                                                                 />
@@ -1798,6 +2301,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <textarea 
                                                                     value={obs.implication}
                                                                     onChange={e => handleUpdateObservation(obs.id, { implication: e.target.value })}
+                                                                    readOnly={isTaskCompleted}
                                                                     className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-rose-500/30 transition-all min-h-[60px] shadow-inner resize-y"
                                                                     placeholder="What is the potential impact of this issue?"
                                                                 />
@@ -1807,6 +2311,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <textarea 
                                                                     value={obs.recommendation}
                                                                     onChange={e => handleUpdateObservation(obs.id, { recommendation: e.target.value })}
+                                                                    readOnly={isTaskCompleted}
                                                                     className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-brand-500/30 transition-all min-h-[50px] shadow-inner resize-y"
                                                                     placeholder="Suggested management response or technical fix..."
                                                                 />
@@ -1819,6 +2324,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </div>
                                 </div>
                             )}
+
+                             {activeDetailTab === 'REVIEW_CHECKLIST' && (
+                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 bg-black/20">
+                                     <div className="max-w-[1600px] w-full mx-auto pb-32">
+                                         {renderReviewerChecklist()}
+                                     </div>
+                                 </div>
+                             )}
 
                             {activeDetailTab === 'COMMENTS' && (
                                 <div className="flex-1 overflow-hidden flex flex-col p-4 md:p-6">
@@ -1856,17 +2369,27 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[14px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
                                                     placeholder="Enter engagement title..."
                                                     {...register('title')}
+                                                    readOnly={!canManageTeam}
                                                 />
                                             </Field>
 
                                             <Field label="Target Client" icon={<Briefcase size={14} className="text-brand-400" />} error={!!errors.clientId}>
                                                 <Controller name="clientId" control={control} render={({ field }) => (
-                                                    <ClientSelect clients={clientsList} value={field.value} onChange={field.onChange} />
+                                                    <ClientSelect 
+                                                        clients={clientsList} 
+                                                        value={field.value} 
+                                                        onChange={field.onChange} 
+                                                        disabled={!canManageTeam}
+                                                    />
                                                 )} />
                                             </Field>
 
                                             <Field label="Fiscal Year (BS)" icon={<Calendar size={14} className="text-emerald-400" />} error={!!errors.fiscalYear}>
-                                                <select className={selectClass} {...register('fiscalYear')}>
+                                                <select 
+                                                    className={selectClass} 
+                                                    {...register('fiscalYear')}
+                                                    disabled={!canManageTeam}
+                                                >
                                                     <option value="" className="bg-navy-900">Select...</option>
                                                     {fiscalYears.map(fy => (
                                                         <option key={fy} value={fy} className="bg-navy-900 font-bold">{fy}</option>
@@ -1892,8 +2415,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                                             <Field label="Staff Team Assigned" icon={<Users size={14} className="text-brand-400" />} span2>
                                                 <Controller name="assignedTo" control={control} render={({ field }) => (
-                                                    <StaffSelect users={usersList} value={field.value || []} onChange={field.onChange} multi={true} userTasksCount={userTasksCount} />
+                                                    <StaffSelect users={usersList} value={field.value || []} onChange={field.onChange} multi={true} userTasksCount={userTasksCount} disabled={!canManageTeam} />
                                                 )} />
+                                            </Field>
+
+                                            <Field label="Start Date" icon={<Calendar size={14} className="text-emerald-400" />} error={!!errors.startDate}>
+                                                <Controller
+                                                    name="startDate"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <NepaliDatePicker
+                                                            value={field.value || ''}
+                                                            onChange={field.onChange}
+                                                            placeholder="Select start date..."
+                                                        />
+                                                    )}
+                                                />
                                             </Field>
 
                                             <Field label="Due Date" icon={<Clock size={14} className="text-rose-400" />} error={!!errors.dueDate}>
@@ -1933,7 +2470,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     extra={<ApprovalAction role="TL" assignedId={watch('teamLeaderId')} approvedAt={watch('teamLeadApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="teamLeaderId" control={control} render={({ field }) => (
-                                                        <StaffSelect users={usersList.filter(u => (watch('assignedTo') || []).includes(u.uid))} value={field.value || ''} onChange={field.onChange} placeholder="Select Team Leader..." disabled={!!watch('teamLeadApprovedAt')} compact />
+                                                        <StaffSelect users={usersList.filter(u => (watch('assignedTo') || []).includes(u.uid))} value={field.value || ''} onChange={field.onChange} placeholder="Select Team Leader..." disabled={!!watch('teamLeadApprovedAt') || !canManageTeam} compact />
                                                     )} />
                                                 </Field>
 
@@ -1943,7 +2480,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     extra={<ApprovalAction role="ER" assignedId={watch('engagementReviewerId')} approvedAt={watch('engagementReviewerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="engagementReviewerId" control={control} render={({ field }) => (
-                                                        <StaffSelect users={usersList} value={field.value || ''} onChange={field.onChange} placeholder="Select Reviewer..." disabled={!!watch('engagementReviewerApprovedAt')} compact />
+                                                        <StaffSelect 
+                                                            users={usersList} 
+                                                            value={field.value || ''} 
+                                                            onChange={field.onChange} 
+                                                            placeholder="Select Reviewer..." 
+                                                            disabled={!!watch('engagementReviewerApprovedAt') || !canManageTeam} 
+                                                            compact 
+                                                        />
                                                     )} />
                                                 </Field>
 
@@ -1953,7 +2497,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     extra={<ApprovalAction role="SP" assignedId={watch('signingPartnerId')} approvedAt={watch('signingPartnerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="signingPartnerId" control={control} render={({ field }) => (
-                                                        <StaffSelect users={usersList} value={field.value || ''} onChange={field.onChange} placeholder="Select Partner..." disabled={!!watch('signingPartnerApprovedAt')} compact />
+                                                        <StaffSelect 
+                                                            users={usersList} 
+                                                            value={field.value || ''} 
+                                                            onChange={field.onChange} 
+                                                            placeholder="Select Partner..." 
+                                                            disabled={!!watch('signingPartnerApprovedAt') || !canManageTeam} 
+                                                            compact 
+                                                        />
                                                     )} />
                                                 </Field>
                                             </div>
@@ -1966,6 +2517,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     <Shield size={14} className="text-brand-400" />
                                                     Framework Deployment
                                                 </h4>
+                                                {!!task.taskType && !canChangeFramework && (
+                                                    <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-full">
+                                                        <Lock size={10} className="text-gray-500" />
+                                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Locked to {TASK_TYPE_LABELS[task.taskType] || task.taskType}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                                 {Object.values(TaskType).filter(t => t !== TaskType.OTHER).map((tType) => {
@@ -1973,16 +2530,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     const iconName = TASK_TYPE_ICONS[tType] || 'FolderOpen';
                                                     const label = TASK_TYPE_LABELS[tType] || tType;
 
+                                                    const isLocked = !canChangeFramework && !!task.taskType;
+
                                                     return (
                                                         <button
                                                             key={tType}
-                                                            onClick={(e) => { e.preventDefault(); handleFrameworkSelect(tType); }}
-                                                            className={`p-4 rounded-2xl border transition-all flex items-center text-left gap-4 group ${isSelected ? 'bg-brand-500 border-brand-400 text-white' : 'bg-[#0f1218] border-white/5 hover:border-white/20'}`}
+                                                            onClick={(e) => { e.preventDefault(); !isLocked && handleFrameworkSelect(tType); }}
+                                                            disabled={!canManageTeam || (isLocked && !isSelected)}
+                                                            className={`p-4 rounded-2xl border transition-all flex items-center text-left gap-4 group ${isSelected ? 'bg-brand-500 border-brand-400 text-white' : 'bg-[#0f1218] border-white/5 hover:border-white/20'} ${(!canManageTeam || (isLocked && !isSelected)) ? 'opacity-40 cursor-not-allowed grayscale-[0.8]' : ''}`}
                                                         >
                                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${isSelected ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500 group-hover:text-brand-400'}`}>
-                                                                {ICON_MAP[iconName] ? React.cloneElement(ICON_MAP[iconName], { size: 14 }) : <FolderOpen size={14} />}
+                                                                {isSelected && isLocked ? <Lock size={14} className="text-white/40" /> : (ICON_MAP[iconName] ? React.cloneElement(ICON_MAP[iconName], { size: 14 }) : <FolderOpen size={14} />)}
                                                             </div>
                                                             <span className={`text-[10px] font-black leading-tight flex-1 uppercase tracking-tight ${isSelected ? 'text-white' : 'text-gray-400'}`}>{label}</span>
+                                                            {isSelected && isLocked && (
+                                                                <Check size={14} className="text-white/60" />
+                                                            )}
                                                         </button>
                                                     );
                                                 })}
@@ -1996,7 +2559,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         {/* Footer — Slim & High Density */}
                         <div className="shrink-0 px-8 py-3.5 border-t border-black/5 dark:border-white/[0.04] bg-gray-50/80 dark:bg-[#0c0e12] backdrop-blur-md flex justify-between items-center z-[60] rounded-b-3xl">
                             <div className="flex items-center gap-6">
-                                {isEditMode && canManageTask && (
+                                {isEditMode && canManageTask && !isTaskCompleted && (
                                     <button
                                         onClick={() => onDelete(task.id!)}
                                         className="text-gray-500 hover:text-rose-500 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
@@ -2014,14 +2577,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 >
                                     Exit Workspace
                                 </button>
-                                <button
-                                    onClick={handleSubmit(handleSave)}
-                                    disabled={isSaving}
-                                    className="px-8 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-full text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-3"
-                                >
-                                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                    {task.id ? 'Commit All Evidence' : 'Create Task'}
-                                </button>
+                                {!isTaskCompleted && (
+                                    <button
+                                        onClick={handleSubmit(handleSave)}
+                                        disabled={isSaving}
+                                        className="px-8 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-full text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                                    >
+                                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                        {task.id ? 'Save task' : 'Create Task'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </motion.div>
@@ -2031,21 +2596,21 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         {showDiscardBanner && (
                             <motion.div
                                 key="discard-banner"
-                                initial={{ opacity: 0, y: 100 }}
+                                initial={{ opacity: 0, y: 40 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 100 }}
-                                className="fixed inset-x-0 bottom-40 mx-auto w-max px-12 py-8 bg-amber-500 rounded-[48px] border-4 border-amber-400 flex items-center gap-16 shadow-[0_48px_128px_rgba(245,158,11,0.6)] z-[200]"
+                                exit={{ opacity: 0, y: 40 }}
+                                className="fixed inset-x-0 bottom-6 mx-auto w-max px-4 py-2.5 bg-amber-500 rounded-2xl border border-amber-400/80 flex items-center gap-4 shadow-[0_8px_32px_rgba(245,158,11,0.35)] z-[200]"
                             >
-                                <div className="flex items-center gap-8 text-navy-950">
-                                    <AlertTriangle size={48} strokeWidth={4} className="flex-shrink-0 animate-pulse" />
+                                <div className="flex items-center gap-2.5 text-navy-950">
+                                    <AlertTriangle size={16} strokeWidth={2.5} className="flex-shrink-0" />
                                     <div className="flex flex-col">
-                                        <span className="text-[14px] font-black uppercase tracking-[0.3em]">Unsaved Modifications</span>
-                                        <span className="text-[11px] font-bold opacity-80 uppercase tracking-widest mt-1">Found changes. Exit without updating?</span>
+                                        <span className="text-[11px] font-black uppercase tracking-widest leading-none">Unsaved Changes</span>
+                                        <span className="text-[9px] font-bold opacity-70 uppercase tracking-widest mt-0.5">Exit without saving?</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-6">
-                                    <button onClick={() => setShowDiscardBanner(false)} className="px-10 py-5 text-[11px] font-black uppercase tracking-widest text-navy-950 bg-white/20 hover:bg-white/40 rounded-[28px] transition-all border-2 border-navy-950/20 shadow-inner">Stay</button>
-                                    <button onClick={() => { setShowDiscardBanner(false); onClose(); }} className="px-10 py-5 text-[11px] font-black uppercase tracking-widest text-white bg-navy-950 hover:bg-black rounded-[28px] transition-all shadow-2xl shadow-black/80">Discard Changes</button>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setShowDiscardBanner(false)} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-navy-950 bg-white/25 hover:bg-white/40 rounded-xl transition-all border border-navy-950/10">Stay</button>
+                                    <button onClick={() => { setShowDiscardBanner(false); onClose(); }} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white bg-navy-950 hover:bg-black rounded-xl transition-all">Discard</button>
                                 </div>
                             </motion.div>
                         )}

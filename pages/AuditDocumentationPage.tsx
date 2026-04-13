@@ -6,7 +6,8 @@ import {
     CalendarDays, ServerCrash, Loader2, Edit2, Home,
     File, Image, FileSpreadsheet, Monitor, MoreVertical,
     CloudUpload, FolderX, FilePlus2, ArrowLeft, LayoutGrid,
-    List, CheckCircle2, Info, ChevronDown
+    List, CheckCircle2, Info, ChevronDown,
+    ClipboardCheck, CheckCircle, Clock, AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
@@ -23,6 +24,7 @@ import {
     UserRole,
     AUDIT_FOLDER_STRUCTURE,
     AuditFolderKey,
+    Task,
 } from '../types';
 import { toast } from 'react-hot-toast';
 import { useOfficeWifiCheck } from '../hooks/useOfficeWifiCheck';
@@ -345,6 +347,7 @@ interface FolderContentProps {
     fiscalYear: string;
     userId: string;
     userName: string;
+    taskId?: string;
     onEnterSubFolder: (folder: AuditDocFolder) => void;
     isGrid: boolean;
 }
@@ -352,7 +355,7 @@ interface FolderContentProps {
 const FolderContent: React.FC<FolderContentProps> = ({
     folderKey, lineItem, lineItemLabel, customFolderId,
     clientId, clientName, fiscalYear, userId, userName,
-    onEnterSubFolder, isGrid,
+    taskId, onEnterSubFolder, isGrid,
 }) => {
     const folder = AUDIT_FOLDER_STRUCTURE[folderKey];
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -375,8 +378,8 @@ const FolderContent: React.FC<FolderContentProps> = ({
         setLoading(true);
         try {
             const [fetchedFiles, fetchedFolders] = await Promise.all([
-                AuditDocService.getFiles(clientId, fiscalYear, folderKey, lineItem),
-                AuditDocService.getFolders(clientId, fiscalYear, folderKey, lineItem),
+                AuditDocService.getFiles(clientId, fiscalYear, folderKey, lineItem, taskId),
+                AuditDocService.getFolders(clientId, fiscalYear, folderKey, lineItem, taskId),
             ]);
             // Filter by customFolderId if inside a sub-folder
             setFiles(customFolderId
@@ -390,7 +393,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
         } finally {
             setLoading(false);
         }
-    }, [clientId, fiscalYear, folderKey, lineItem, customFolderId]);
+    }, [clientId, fiscalYear, folderKey, lineItem, customFolderId, taskId]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -678,6 +681,188 @@ const FolderContent: React.FC<FolderContentProps> = ({
     );
 };
 
+// ─── Folder E Governance Dashboard ───────────────────────────────────────────
+
+interface FolderEGovernanceProps {
+    task: Task | null;
+}
+
+const FolderEGovernance: React.FC<FolderEGovernanceProps> = ({ task }) => {
+    if (!task) {
+        return (
+            <div className="shrink-0 mx-5 mt-4 mb-2 rounded-2xl p-5 border border-dashed"
+                style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.04)' }}>
+                <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
+                    Select an engagement above to view its Reviewer Sign-Off dashboard.
+                </p>
+            </div>
+        );
+    }
+
+    const reviewChecklist = task.reviewChecklist || [];
+    const tlItems = reviewChecklist.filter(i => i.reviewerRole === 'TL');
+    const erItems = reviewChecklist.filter(i => i.reviewerRole === 'ER');
+    const spItems = reviewChecklist.filter(i => i.reviewerRole === 'SP');
+
+    const tlSignedOff  = !!task.teamLeadApprovedAt;
+    const erSignedOff  = !!task.engagementReviewerApprovedAt;
+    const spSignedOff  = !!task.signingPartnerApprovedAt;
+
+    const layerInfo = [
+        {
+            role: 'TL',
+            label: 'Team Lead Review',
+            items: tlItems,
+            signedOff: tlSignedOff,
+            signedAt: task.teamLeadApprovedAt,
+            color: '#3b82f6',
+            bg: 'rgba(59,130,246,0.08)',
+            border: 'rgba(59,130,246,0.25)',
+        },
+        {
+            role: 'ER',
+            label: 'Engagement Reviewer',
+            items: erItems,
+            signedOff: erSignedOff,
+            signedAt: task.engagementReviewerApprovedAt,
+            color: '#8b5cf6',
+            bg: 'rgba(139,92,246,0.08)',
+            border: 'rgba(139,92,246,0.25)',
+        },
+        {
+            role: 'SP',
+            label: 'Signing Partner',
+            items: spItems,
+            signedOff: spSignedOff,
+            signedAt: task.signingPartnerApprovedAt,
+            color: '#f59e0b',
+            bg: 'rgba(245,158,11,0.08)',
+            border: 'rgba(245,158,11,0.25)',
+        },
+    ];
+
+    const getStatusIcon = (status: string) => {
+        if (status === 'OK') return <CheckCircle size={12} style={{ color: '#4ade80' }} />;
+        if (status === 'ISSUE') return <AlertTriangle size={12} style={{ color: '#f87171' }} />;
+        return <Clock size={12} style={{ color: 'var(--text-muted)' }} />;
+    };
+
+    const getPriorityBadge = (priority: string) => {
+        const colors: Record<string, string> = { CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#f59e0b' };
+        return <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full" style={{ background: `${colors[priority]}22`, color: colors[priority] }}>{priority}</span>;
+    };
+
+    const overallComplete = tlSignedOff && erSignedOff && spSignedOff;
+
+    return (
+        <div className="shrink-0 mx-5 mt-4 mb-0 space-y-3">
+            {/* Header Banner */}
+            <div className="rounded-2xl p-4 flex items-center justify-between"
+                style={{ background: overallComplete ? 'rgba(74,222,128,0.08)' : 'rgba(239,68,68,0.06)', border: `1px solid ${overallComplete ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.25)'}` }}>
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                        style={{ background: overallComplete ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.12)' }}>
+                        <ShieldCheck size={18} style={{ color: overallComplete ? '#4ade80' : '#f87171' }} />
+                    </div>
+                    <div>
+                        <p className="text-xs font-black" style={{ color: 'var(--text-heading)' }}>
+                            Audit Governance: {overallComplete ? '✓ All Sign-Offs Complete' : 'Pending Sign-Offs'}
+                        </p>
+                        <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                            {task.title} · {task.clientName || 'Unknown Client'}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    {layerInfo.map(l => (
+                        <div key={l.role} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black"
+                            style={{ background: l.signedOff ? 'rgba(74,222,128,0.12)' : l.bg, border: `1px solid ${l.signedOff ? 'rgba(74,222,128,0.3)' : l.border}`, color: l.signedOff ? '#4ade80' : l.color }}>
+                            {l.signedOff ? <CheckCircle size={10} /> : <Clock size={10} />}
+                            {l.role}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Three-Layer Checklist Tables */}
+            {layerInfo.map((layer) => (
+                <div key={layer.role} className="rounded-2xl overflow-hidden"
+                    style={{ border: `1px solid ${layer.border}`, background: 'var(--bg-elevated)' }}>
+                    <div className="px-4 py-2.5 flex items-center justify-between"
+                        style={{ background: layer.bg, borderBottom: `1px solid ${layer.border}` }}>
+                        <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black" style={{ background: layer.color, color: '#fff' }}>{layer.role}</div>
+                            <p className="text-xs font-bold" style={{ color: 'var(--text-heading)' }}>{layer.label}</p>
+                            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                                {layer.items.filter(i => i.status === 'OK').length}/{layer.items.length} OK
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {layer.signedOff ? (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black" style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)' }}>
+                                    <CheckCircle size={10} /> Signed Off · {layer.signedAt && new Date(layer.signedAt).toLocaleDateString()}
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.10)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                    <Clock size={10} /> Awaiting Sign-Off
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {layer.items.length === 0 ? (
+                        <div className="py-4 text-center">
+                            <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No checklist items for this layer yet.</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-[11px]">
+                                <thead style={{ background: 'var(--bg-surface)' }}>
+                                    <tr className="text-left">
+                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)', width: '50%' }}>Checklist Item</th>
+                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Priority</th>
+                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Status</th>
+                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Verified By</th>
+                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {layer.items.map((item, idx) => (
+                                        <tr key={item.id}
+                                            style={{ borderTop: '1px solid var(--border)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                                            <td className="px-3 py-2.5" style={{ color: 'var(--text-body)' }}>
+                                                <p className="font-semibold">{item.title}</p>
+                                                {item.minimumRequirement && <p className="text-[10px] mt-0.5 italic" style={{ color: 'var(--text-muted)' }}>{item.minimumRequirement}</p>}
+                                            </td>
+                                            <td className="px-3 py-2.5">{getPriorityBadge(item.priority)}</td>
+                                            <td className="px-3 py-2.5">
+                                                <div className="flex items-center gap-1">
+                                                    {getStatusIcon(item.status)}
+                                                    <span style={{ color: item.status === 'OK' ? '#4ade80' : item.status === 'ISSUE' ? '#f87171' : 'var(--text-muted)' }}>
+                                                        {item.status}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-2.5" style={{ color: 'var(--text-muted)' }}>
+                                                {item.completedByName ? (
+                                                    <span>{item.completedByName}</span>
+                                                ) : <span className="italic text-[10px]">Pending</span>}
+                                            </td>
+                                            <td className="px-3 py-2.5 max-w-[200px]" style={{ color: 'var(--text-muted)' }}>
+                                                <p className="truncate">{item.comment || item.notes || '—'}</p>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+};
+
 // ─── Root View (5 folder cards) ───────────────────────────────────────────────
 
 interface RootViewProps {
@@ -835,6 +1020,9 @@ const AuditDocumentationPage: React.FC = () => {
     const [loadingClients, setLoadingClients] = useState(true);
     const [selectedClientId, setSelectedClientId] = useState('');
     const [selectedFY, setSelectedFY] = useState(NEPALI_FISCAL_YEARS[0]);
+    const [clientTasks, setClientTasks] = useState<Task[]>([]);
+    const [loadingTasks, setLoadingTasks] = useState(false);
+    const [selectedTaskId, setSelectedTaskId] = useState<string>('ALL');
 
     // Navigation stack — each step is a NavLevel
     const [navStack, setNavStack] = useState<NavLevel[]>([{ kind: 'root' }]);
@@ -867,11 +1055,24 @@ const AuditDocumentationPage: React.FC = () => {
     // Reload aggregate counts when client/FY changes
     useEffect(() => {
         if (!selectedClientId) return;
+        // Reset task selection on client/FY change
+        setSelectedTaskId('ALL');
         setNavStack([{ kind: 'root' }]);
+        
+        // Fetch tasks for this client/FY for Engagement Selector
+        setLoadingTasks(true);
+        AuthService.getAllTasks().then(allTasks => {
+            const matching = allTasks.filter(t =>
+                (t.clientIds?.includes(selectedClientId) || t.clientId === selectedClientId) &&
+                (!t.fiscalYear || t.fiscalYear === selectedFY)
+            );
+            setClientTasks(matching);
+        }).catch(() => { /* silent */ }).finally(() => setLoadingTasks(false));
+
         (async () => {
             try {
                 const [allFiles, allFolders] = await Promise.all([
-                    AuditDocService.getAllFiles(selectedClientId, selectedFY),
+                    AuditDocService.getAllFiles(selectedClientId, selectedFY, selectedTaskId !== 'ALL' ? selectedTaskId : undefined),
                     // We'll count sub-folders per main folder
                     Promise.all(
                         (['A', 'B', 'C', 'D', 'E'] as AuditFolderKey[]).map(k =>
@@ -901,7 +1102,7 @@ const AuditDocumentationPage: React.FC = () => {
                 // silently skip
             }
         })();
-    }, [selectedClientId, selectedFY]);
+    }, [selectedClientId, selectedFY, selectedTaskId]);
 
     const navigate = (index: number) => {
         setNavStack(prev => prev.slice(0, index + 1));
@@ -992,6 +1193,25 @@ const AuditDocumentationPage: React.FC = () => {
                     </select>
                 </div>
 
+                {/* Engagement / Task Selector */}
+                <div className="flex items-center gap-1.5">
+                    <ClipboardCheck size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <select
+                        value={selectedTaskId}
+                        onChange={e => { setSelectedTaskId(e.target.value); setNavStack([{ kind: 'root' }]); }}
+                        className="px-2.5 py-1.5 rounded-xl text-sm outline-none max-w-[220px]"
+                        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
+                        disabled={loadingTasks}
+                    >
+                        <option value="ALL">All Engagements</option>
+                        {clientTasks.map(t => (
+                            <option key={t.id} value={t.id}>
+                                {t.taskType ? `[${t.taskType}] ` : ''}{t.title}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="flex-1" />
 
                 {/* WiFi */}
@@ -1061,22 +1281,30 @@ const AuditDocumentationPage: React.FC = () => {
                 )}
 
                 {currentLevel.kind === 'main-folder' && currentLevel.folderKey !== 'B' && selectedClient && user && (
-                    <FolderContent
-                        key={`${selectedClientId}-${selectedFY}-${currentLevel.folderKey}`}
-                        folderKey={currentLevel.folderKey}
-                        clientId={selectedClientId}
-                        clientName={selectedClient.name}
-                        fiscalYear={selectedFY}
-                        userId={user.uid}
-                        userName={user.displayName}
-                        onEnterSubFolder={enterSubFolder}
-                        isGrid={isGrid}
-                    />
+                    <>
+                        {currentLevel.folderKey === 'E' && (
+                            <FolderEGovernance
+                                task={selectedTaskId !== 'ALL' ? (clientTasks.find(t => t.id === selectedTaskId) || null) : null}
+                            />
+                        )}
+                        <FolderContent
+                            key={`${selectedClientId}-${selectedFY}-${currentLevel.folderKey}-${selectedTaskId}`}
+                            folderKey={currentLevel.folderKey}
+                            clientId={selectedClientId}
+                            clientName={selectedClient.name}
+                            fiscalYear={selectedFY}
+                            userId={user.uid}
+                            userName={user.displayName}
+                            taskId={selectedTaskId !== 'ALL' ? selectedTaskId : undefined}
+                            onEnterSubFolder={enterSubFolder}
+                            isGrid={isGrid}
+                        />
+                    </>
                 )}
 
                 {currentLevel.kind === 'line-item' && selectedClient && user && (
                     <FolderContent
-                        key={`${selectedClientId}-${selectedFY}-B-${currentLevel.lineItem}`}
+                        key={`${selectedClientId}-${selectedFY}-B-${currentLevel.lineItem}-${selectedTaskId}`}
                         folderKey="B"
                         lineItem={currentLevel.lineItem}
                         lineItemLabel={currentLevel.lineItemLabel}
@@ -1085,6 +1313,7 @@ const AuditDocumentationPage: React.FC = () => {
                         fiscalYear={selectedFY}
                         userId={user.uid}
                         userName={user.displayName}
+                        taskId={selectedTaskId !== 'ALL' ? selectedTaskId : undefined}
                         onEnterSubFolder={enterSubFolder}
                         isGrid={isGrid}
                     />
@@ -1092,7 +1321,7 @@ const AuditDocumentationPage: React.FC = () => {
 
                 {currentLevel.kind === 'custom-folder' && selectedClient && user && (
                     <FolderContent
-                        key={`${selectedClientId}-${selectedFY}-${currentLevel.folderKey}-${currentLevel.lineItem}-${currentLevel.folderId}`}
+                        key={`${selectedClientId}-${selectedFY}-${currentLevel.folderKey}-${currentLevel.lineItem}-${currentLevel.folderId}-${selectedTaskId}`}
                         folderKey={currentLevel.folderKey}
                         lineItem={currentLevel.lineItem}
                         customFolderId={currentLevel.folderId}
@@ -1101,6 +1330,7 @@ const AuditDocumentationPage: React.FC = () => {
                         fiscalYear={selectedFY}
                         userId={user.uid}
                         userName={user.displayName}
+                        taskId={selectedTaskId !== 'ALL' ? selectedTaskId : undefined}
                         onEnterSubFolder={() => {}} // no deeper nesting
                         isGrid={isGrid}
                     />

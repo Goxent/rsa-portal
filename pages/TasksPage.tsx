@@ -758,33 +758,6 @@ const TasksPage: React.FC = () => {
                 comments: [...(prev.comments || []), comment]
             }));
 
-            // Notify mentioned users via email
-            if (comment.mentions && comment.mentions.length > 0) {
-                const mentionedUsers = usersList.filter(u => comment.mentions!.includes(u.uid) && u.email);
-                if (mentionedUsers.length > 0) {
-                    const emails = mentionedUsers.map(u => u.email);
-                    const taskTitle = currentTask.title || 'a task';
-                    const htmlContent = `
-                        <div style="font-family: system-ui, -apple-system, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px;">
-                            <h2 style="color: #0f172a; margin-top: 0;">You were mentioned in a task</h2>
-                            <p style="font-size: 15px; line-height: 1.5;"><strong>${user?.displayName || 'Someone'}</strong> mentioned you in a comment on task: <strong>${taskTitle}</strong>.</p>
-                            <div style="padding: 16px; border-left: 4px solid #f59e0b; background-color: #f8fafc; border-radius: 0 8px 8px 0; margin: 24px 0; font-size: 15px; color: #334155; white-space: pre-wrap;">${comment.text}</div>
-                            <p style="font-size: 14px; color: #64748b;">Please log in to the RSA System to view the task details and reply.</p>
-                        </div>
-                    `;
-
-                    fetch('/api/send-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            to: emails,
-                            subject: `Mentioned in ${taskTitle}`,
-                            html: htmlContent,
-                            fromName: 'RSA System Notifications'
-                        })
-                    }).catch(err => console.error('Failed to send mention email:', err));
-                }
-            }
         }
     };
 
@@ -1175,14 +1148,19 @@ const TasksPage: React.FC = () => {
                     const signOffsComplete = task.teamLeadApprovedAt && task.engagementReviewerApprovedAt && task.signingPartnerApprovedAt;
                     
                     if (!signOffsComplete) {
+                        const isInFinalPhase = task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION;
                         setConfirmModal({
                             open: true,
                             title: 'Compliance Gate Blocked',
-                            message: 'All 3 sign-offs (TL, Reviewer, Partner) are required to complete this assignment. Would you like to ask for an Engagement Review?',
+                            message: isInFinalPhase
+                                ? 'All 3 sign-offs (TL, Reviewer, Partner) are required to complete this assignment. Would you like to ask for an Engagement Review?'
+                                : 'All 3 sign-offs (TL, Reviewer, Partner) are required to complete this assignment.',
                             variant: 'indigo',
                             cancelLabel: 'Keep as is',
-                            secondaryLabel: 'Move to Review',
-                            onSecondaryConfirm: () => handleComplianceDecision(draggableId, 'REVIEW', task, templates),
+                            ...(isInFinalPhase ? {
+                                secondaryLabel: 'Move to Review',
+                                onSecondaryConfirm: () => handleComplianceDecision(draggableId, 'REVIEW', task, templates),
+                            } : {}),
                             showConfirm: isAdmin || isTL,
                             confirmLabel: 'Force Complete',
                             onConfirm: () => handleComplianceDecision(draggableId, 'PROCEED', task, templates)
@@ -1551,7 +1529,7 @@ const TasksPage: React.FC = () => {
                                 }`}
                             >
                                 <Filter size={13} className={activeFilterCount > 0 ? 'animate-pulse' : ''} />
-                                <span>Refine</span>
+                                <span>FILTERS</span>
                                 {activeFilterCount > 0 && (
                                     <div className="w-4 h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center ml-1">
                                         {activeFilterCount}
@@ -1791,6 +1769,7 @@ const TasksPage: React.FC = () => {
                             <TaskMainView
                                 viewMode={viewMode as 'LIST' | 'KANBAN'}
                                 tasks={filteredTasks}
+                                currentUser={user}
                                 onDragEnd={onDragEnd}
                                 handleOpenEdit={handleOpenEdit}
                                 onOpenClientDetail={handleOpenClientDetail}

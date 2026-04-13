@@ -3,9 +3,10 @@ import { AttendanceRecord, Client, UserProfile, WorkLog } from '../../types';
 import ClientSelect from '../ClientSelect';
 import StaffSelect from '../StaffSelect';
 import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
-import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users, Calendar } from 'lucide-react';
+import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users, Calendar, MapPin, Building2, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import NepaliDatePicker from '../NepaliDatePicker';
+import ActionDetailEditor from '../common/ActionDetailEditor';
 
 interface ManualAttendanceModalProps {
     isOpen: boolean;
@@ -63,7 +64,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     clockOut: '17:00',
                     clientIds: [],
                     workLogs: [
-                        { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: 'Internal Audit', description: '', duration: 0, billable: true }
+                        { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: 'Internal Audit', description: '', duration: 0, billable: true, locationTag: 'Office' }
                     ],
                     notes: ''
                 });
@@ -140,7 +141,8 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
             natureOfAssignment: 'Internal Audit',
             description: '',
             duration: 0,
-            billable: true
+            billable: true,
+            locationTag: 'Office'
         };
         setFormData({ ...formData, workLogs: [...(formData.workLogs || []), newLog] });
     };
@@ -155,7 +157,11 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 const updated = { ...l, [field]: value };
                 if (field === 'clientId') {
                     const client = clients.find(c => c.id === value);
-                    if (client) updated.clientName = client.name;
+                    if (client) {
+                        updated.clientName = client.name;
+                        // Auto-set location based on internal vs client
+                        updated.locationTag = client.id === 'INTERNAL' ? 'Office' : 'Client Premises';
+                    }
                 }
                 return updated;
             }
@@ -347,39 +353,65 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                         style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)' }}
                                     >
                                         <div className="space-y-3">
-                                            <div className="space-y-1">
-                                                <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Client</span>
-                                                <ClientSelect
-                                                    clients={clients}
-                                                    value={log.clientId}
-                                                    onChange={(val) => updateWorkLog(log.id, 'clientId', val as string)}
-                                                    placeholder="Select Client..."
-                                                    className="!h-9"
-                                                />
+                                            <div className="space-y-2">
+                                                <div className="space-y-1">
+                                                    <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Client / Assignment</span>
+                                                    <ClientSelect
+                                                        clients={clients}
+                                                        value={log.clientId}
+                                                        onChange={(val) => updateWorkLog(log.id, 'clientId', val as string)}
+                                                        placeholder="Select Client..."
+                                                        className="!h-9"
+                                                    />
+                                                </div>
+                                                
+                                                {/* Compact Location Select */}
+                                                <div className="relative">
+                                                    <select
+                                                        value={log.locationTag || 'Office'}
+                                                        onChange={(e) => updateWorkLog(log.id, 'locationTag', e.target.value as any)}
+                                                        className={`
+                                                            w-full border px-9 py-1.5 text-[10px] font-bold outline-none transition-all h-8
+                                                            ${(log.locationTag || 'Office') === 'Office' ? 'text-[var(--accent)]' : 'text-amber-500'}
+                                                        `}
+                                                        style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
+                                                    >
+                                                        <option value="Office">Office</option>
+                                                        <option value="Client Premises">Client Premises</option>
+                                                    </select>
+                                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70">
+                                                        {(log.locationTag || 'Office') === 'Office' ? <Building2 size={11} /> : <MapPin size={11} />}
+                                                    </div>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                                                        <ChevronDown size={10} />
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="space-y-1">
+
+                                            <div className="space-y-1 flex-1">
                                                 <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Nature of Assignment</span>
-                                                <select
-                                                    value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
-                                                    onChange={(e) => updateWorkLog(log.id, 'natureOfAssignment', e.target.value)}
-                                                    className="w-full border px-3 py-1.5 text-xs outline-none transition-all h-9"
-                                                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-heading)' }}
-                                                >
-                                                    {NATURE_OF_ASSIGNMENTS.map(n => (
-                                                        <option key={n} value={n}>{n}</option>
-                                                    ))}
-                                                </select>
+                                                <div className="relative">
+                                                    <select
+                                                        value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
+                                                        onChange={(e) => updateWorkLog(log.id, 'natureOfAssignment', e.target.value)}
+                                                        className="w-full border px-3 py-1.5 text-xs outline-none transition-all h-9 appearance-none"
+                                                        style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-heading)' }}
+                                                    >
+                                                        {NATURE_OF_ASSIGNMENTS.map(n => (
+                                                            <option key={n} value={n}>{n}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                                                        <ChevronDown size={10} />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                            <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Work Description</span>
-                                            <input
-                                                type="text"
+                                            <ActionDetailEditor
                                                 value={log.description}
-                                                onChange={(e) => updateWorkLog(log.id, 'description', e.target.value)}
-                                                placeholder="What did you do today?"
-                                                className="w-full border px-3 py-2 text-xs outline-none transition-all h-9"
-                                                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-heading)' }}
+                                                onChange={(val) => updateWorkLog(log.id, 'description', val)}
+                                                placeholder="Describe your actions here... Use **bold**, *italic*, or • bullets"
                                             />
                                         </div>
                                         {(formData.workLogs || []).length > 1 && (
