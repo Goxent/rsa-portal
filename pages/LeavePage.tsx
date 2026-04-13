@@ -550,6 +550,7 @@ const LeavePage: React.FC = () => {
                                 <table className="w-full text-left text-sm">
                                     <thead>
                                         <tr className="border-b border-border text-[10px] uppercase font-black tracking-widest text-muted bg-secondary/30">
+                                            {isAdmin && <th className="px-6 py-3">Staff</th>}
                                             <th className="px-6 py-3">Applied</th>
                                             <th className="px-6 py-3">Type</th>
                                             <th className="px-6 py-3">Period</th>
@@ -561,6 +562,11 @@ const LeavePage: React.FC = () => {
                                     <tbody className="divide-y divide-border/50">
                                         {leaves.map((leave) => (
                                             <tr key={leave.id} className="hover:bg-accent/5 transition-colors">
+                                                {isAdmin && (
+                                                    <td className="px-6 py-4 text-xs font-bold text-heading">
+                                                        {leave.userName}
+                                                    </td>
+                                                )}
                                                 <td className="px-6 py-4 text-xs font-medium text-muted font-mono">{leave.createdAt}</td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-secondary border border-border text-heading">{leave.type}</span>
@@ -577,7 +583,7 @@ const LeavePage: React.FC = () => {
                                         ))}
                                         {leaves.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-10 text-center text-muted text-xs italic">No activity recorded for this period.</td>
+                                                <td colSpan={isAdmin ? 7 : 6} className="px-6 py-10 text-center text-muted text-xs italic">No activity recorded for this period.</td>
                                             </tr>
                                         )}
                                     </tbody>

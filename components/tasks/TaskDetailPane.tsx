@@ -7,10 +7,10 @@ import {
     Trash2, Save, Loader2, CheckCircle2, Check, Eye, Map,
     Sparkles, Book, ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen,
     Users, UserCheck, Shield, Lock, Unlock, ExternalLink, History, CloudUpload, FileText,
-    MessageSquare, Zap, Settings2, Folder
+    MessageSquare, Zap, Settings2, Folder, Download, ChevronDown
 } from 'lucide-react';
 import { AppwriteService } from '../../services/appwrite';
-import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation } from '../../types';
+import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation, ReviewChecklistItem } from '../../types';
 import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../constants/taskTypeChecklists';
 import { useModal } from '../../context/ModalContext';
 import { KnowledgeService } from '../../services/knowledge';
@@ -33,6 +33,7 @@ interface TaskDetailPaneProps {
     onClose: () => void;
     onSave: (taskData: any) => void;
     onDelete: (id: string) => void;
+    onArchive?: (id: string) => void;
     onChange: (updates: Partial<Task>) => void;
     usersList: UserProfile[];
     clientsList: Client[];
@@ -124,6 +125,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     onClose,
     onSave,
     onDelete,
+    onArchive,
     onChange,
     usersList,
     clientsList,
@@ -407,7 +409,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const isTeamLeader = user?.uid === task.teamLeaderId;
     const isMasterAdmin = user?.role === UserRole.MASTER_ADMIN;
     const isAdminOrMaster = user?.role === UserRole.ADMIN || isMasterAdmin;
-    const canManageTeam = (isAdminOrMaster || isTeamLeader) && !isTaskCompleted;
+    const isEngagementReviewer = user?.uid === task.engagementReviewerId;
+    const isSigningPartner = user?.uid === task.signingPartnerId;
+    const canManageTeam = (isAdminOrMaster || isTeamLeader || !task.id) && !isTaskCompleted;
     
     // Rule: Team Leader AND Admins can ADD subtasks
     const canAddSubtasks = (isTeamLeader || isAdminOrMaster) && !isTaskCompleted;
@@ -529,10 +533,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         if (idx > -1) {
             const st = updated[idx];
             
-            // RBAC: Only assigned users or Team Lead/Admin
+            // RBAC: Only assigned users or Team Leader (Admins have task.teamLeaderId permission if assigned)
             const isAssigned = (st.assignedTo || []).includes(user?.uid || '');
-            if (!canManageTeam && !isAssigned) {
-                toast.error("Only assigned staff members or the Team Leader can complete this procedure.", { icon: '🔒' });
+            const isTaskTeamLeader = user?.uid === task.teamLeaderId;
+            
+            if (!isAssigned && !isTaskTeamLeader) {
+                toast.error("Only assigned staff members or the Task Team Leader can mark this procedure as complete.", { icon: '🔒' });
                 return;
             }
 
@@ -555,13 +561,26 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const updated = [...(task.reviewChecklist || [])];
         const idx = updated.findIndex(u => u.id === id);
         if (idx > -1) {
-            const currentStatus = updated[idx].status || 'PENDING';
+            const item = updated[idx];
+            
+            // RBAC: Respective assignee check
+            const isAuthorized = isAdminOrMaster || 
+                (item.reviewerRole === 'TL' && isTeamLeader) ||
+                (item.reviewerRole === 'ER' && isEngagementReviewer) ||
+                (item.reviewerRole === 'SP' && isSigningPartner);
+                
+            if (!isAuthorized) {
+                toast.error(`Only the assigned ${item.reviewerRole} can update this item.`, { icon: '🔒' });
+                return;
+            }
+
+            const currentStatus = item.status || 'PENDING';
             let nextStatus: 'PENDING' | 'OK' | 'ISSUE' = 'OK';
             if (currentStatus === 'OK') nextStatus = 'ISSUE';
             else if (currentStatus === 'ISSUE') nextStatus = 'PENDING';
             
             updated[idx] = {
-                ...updated[idx],
+                ...item,
                 status: nextStatus as any,
                 isCompleted: nextStatus === 'OK',
                 completedBy: user?.uid,
@@ -577,7 +596,20 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const updated = [...(task.reviewChecklist || [])];
         const idx = updated.findIndex(u => u.id === id);
         if (idx > -1) {
-            updated[idx] = { ...updated[idx], [field]: value };
+            const item = updated[idx];
+
+            // RBAC: Respective assignee check
+            const isAuthorized = isAdminOrMaster || 
+                (item.reviewerRole === 'TL' && isTeamLeader) ||
+                (item.reviewerRole === 'ER' && isEngagementReviewer) ||
+                (item.reviewerRole === 'SP' && isSigningPartner);
+                
+            if (!isAuthorized) {
+                toast.error(`Only the assigned ${item.reviewerRole} can modify this item.`, { icon: '🔒' });
+                return;
+            }
+
+            updated[idx] = { ...item, [field]: value };
             onChange({ reviewChecklist: updated });
         }
     };
@@ -598,8 +630,24 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     const removeReviewRow = (id: string, isLocked: boolean) => {
         if (isLocked || isTaskCompleted) return;
-        const updated = (task.reviewChecklist || []).filter(i => i.id !== id);
-        onChange({ reviewChecklist: updated });
+        const item = (task.reviewChecklist || []).find(i => i.id === id);
+        if (!item) return;
+
+        // RBAC: Engagement team (non-TL) cannot delete TL checklist. Others restrict to assignee.
+        const isAuthorized = isAdminOrMaster || 
+            (item.reviewerRole === 'TL' && isTeamLeader) ||
+            (item.reviewerRole === 'ER' && isEngagementReviewer) ||
+            (item.reviewerRole === 'SP' && isSigningPartner);
+
+        if (!isAuthorized) {
+            toast.error(`Action Restricted: Only the assigned ${item.reviewerRole} can delete this protocol item.`, { icon: '🔒' });
+            return;
+        }
+
+        if (window.confirm("Are you sure you want to remove this protocol item? This action cannot be undone.")) {
+            const updated = (task.reviewChecklist || []).filter(i => i.id !== id);
+            onChange({ reviewChecklist: updated });
+        }
     };
 
     const handleReviewSignOff = (role: 'TL' | 'ER' | 'SP') => {
@@ -650,8 +698,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     const onRemoveSubtaskLocal = (id: string) => {
         if (isTaskCompleted) return;
-        const updated = (task.subtasks || []).filter(st => st.id !== id);
-        onChange({ subtasks: updated });
+        if (window.confirm("Delete this procedure requirement?")) {
+            const updated = (task.subtasks || []).filter(st => st.id !== id);
+            onChange({ subtasks: updated });
+        }
     };
 
     const handleSubtaskAction = (id: string, action: 'RAISE_QUERY' | 'REPLY' | 'CLEAR', data?: string) => {
@@ -704,14 +754,15 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         if (isTaskCompleted) return;
         const newObs: AuditObservation = {
             id: `obs-${Date.now()}`,
-            title: 'Observation',
+            title: 'New Observation',
             observation: '',
             implication: '',
             recommendation: '',
             severity: 'MEDIUM',
             status: 'DRAFT',
             createdAt: new Date().toISOString(),
-            createdBy: user?.displayName || 'unknown'
+            createdBy: user?.uid,
+            createdByName: user?.displayName || 'unknown'
         };
         const currentObs = task.observations || [];
         onChange({ observations: [...currentObs, newObs] });
@@ -722,15 +773,43 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const currentObs = [...(task.observations || [])];
         const idx = currentObs.findIndex(o => o.id === id);
         if (idx > -1) {
-            currentObs[idx] = { ...currentObs[idx], ...updates };
+            const obs = currentObs[idx];
+            // RBAC: Only creator can edit. Engagement team cannot edit others'. Admin view only.
+            const isCreator = user?.uid === obs.createdBy;
+            if (!isCreator && !isAdminOrMaster) {
+                toast.error("Access Restricted: Only the creator can modify this observation.", { icon: '🔒' });
+                return;
+            }
+            if (isAdminOrMaster && !isCreator) {
+                toast.error("Admins have view-only access to audit observations.", { icon: '👁️' });
+                return;
+            }
+
+            currentObs[idx] = { ...obs, ...updates };
             onChange({ observations: currentObs });
         }
     };
 
     const handleRemoveObservation = (id: string) => {
         if (isTaskCompleted) return;
-        const currentObs = (task.observations || []).filter(o => o.id !== id);
-        onChange({ observations: currentObs });
+        const currentObs = task.observations || [];
+        const obs = currentObs.find(o => o.id === id);
+        if (!obs) return;
+
+        const isCreator = user?.uid === obs.createdBy;
+        if (!isCreator && !isAdminOrMaster) {
+            toast.error("Access Restricted: Only the creator can delete this observation.", { icon: '🔒' });
+            return;
+        }
+        if (isAdminOrMaster && !isCreator) {
+            toast.error("Admins cannot delete audit observations.", { icon: '🔒' });
+            return;
+        }
+
+        if (window.confirm("Delete this audit observation? This action cannot be undone.")) {
+            const updated = currentObs.filter(o => o.id !== id);
+            onChange({ observations: updated });
+        }
     };
 
     const handlePhaseSwitch = (newPhase: AuditPhase) => {
@@ -854,7 +933,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const subtaskDocs = auditFiles.filter(f => f.subtaskId === st.id);
 
         return (
-            <div key={uniqueKey} className={`flex flex-col gap-1 px-5 py-3 rounded-[16px] transition-all duration-300 group/st bg-[#f1f3ee] dark:bg-[#0f1218] border border-[#d0dac8] dark:border-white/5 hover:bg-[#e8ece2] dark:hover:bg-white/[0.04] shadow-sm ${st.isNew ? 'ring-1 ring-brand-500/20' : ''}`}>
+            <div key={uniqueKey} className={`flex flex-col gap-0.5 px-4 py-2 rounded-[16px] transition-all duration-300 group/st bg-[#f1f3ee] dark:bg-[#0f1218] border border-[#d0dac8] dark:border-white/5 hover:bg-[#e8ece2] dark:hover:bg-white/[0.04] shadow-sm ${st.isNew ? 'ring-1 ring-brand-500/20' : ''}`}>
                 <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-0.5">
                         <button
@@ -1105,11 +1184,13 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             {st.evidenceText}
                         </div>
                         <button onClick={() => {
-                            const updated = [...(task.subtasks || [])];
-                            const idx = updated.findIndex(u => u.id === st.id);
-                            if (idx > -1) {
-                                updated[idx] = { ...st, isCompleted: false, evidenceProvided: false, evidenceText: undefined };
-                                onChange({ subtasks: updated });
+                            if (window.confirm("Remove this evidence? This will also uncheck the requirement.")) {
+                                const updated = [...(task.subtasks || [])];
+                                const idx = updated.findIndex(u => u.id === st.id);
+                                if (idx > -1) {
+                                    updated[idx] = { ...st, isCompleted: false, evidenceProvided: false, evidenceText: undefined };
+                                    onChange({ subtasks: updated });
+                                }
                             }
                         }} className="text-gray-600 hover:text-rose-400 p-1 transition-all">
                             <Trash2 size={10} />
@@ -1218,57 +1299,53 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             )}
                                         </div>
                                     </div>
-                                </div>
-                                
-                                 <div className="flex items-center gap-3">
                                     {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.uid === task.teamLeaderId) && !isSignedOff && !isTaskCompleted && (
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center bg-[#0d1017] border border-white/10 rounded-xl p-0.5 shadow-inner mr-2">
                                                 <select 
                                                     id={`templateSelect-${layer}`}
-                                                    className="bg-transparent outline-none border-none text-[9px] font-black uppercase tracking-widest text-brand-300/80 px-2 max-w-[140px] truncate"
-                                                >
-                                                    <option value="">Choose Template...</option>
-                                                    {templates.filter(t => t.category === 'TASK' && t.reviewChecklist && t.reviewChecklist.length > 0).map(t => (
-                                                        <option key={t.id} value={t.id}>{t.title} ({t.taskType})</option>
-                                                    ))}
-                                                </select>
-                                                <button 
-                                                    onClick={() => {
-                                                        const el = document.getElementById(`templateSelect-${layer}`) as HTMLSelectElement;
-                                                        if (!el || !el.value) { 
-                                                            toast.error("Please select a template to import first.", { icon: '⚠️' }); 
-                                                            return; 
-                                                        }
+                                                    defaultValue=""
+                                                    onChange={(e) => {
+                                                        const templateId = e.target.value;
+                                                        if (!templateId) return;
                                                         
-                                                        const matchingTemplate = templates.find(t => t.id === el.value);
+                                                        const matchingTemplate = templates.find(t => t.id === templateId);
                                                         if (matchingTemplate && matchingTemplate.reviewChecklist) {
-                                                            const mappedChecklist = matchingTemplate.reviewChecklist.map((item: any) => ({
+                                                            const mappedChecklist = (matchingTemplate.reviewChecklist as any[]).map((item: any) => ({
+                                                                status: 'PENDING',
+                                                                priority: 'MEDIUM',
+                                                                isCompleted: false,
                                                                 ...item,
                                                                 id: Math.random().toString(36).substring(2, 9),
-                                                                status: 'PENDING',
-                                                                reviewerRole: layer,
-                                                                isCompleted: false
+                                                                reviewerRole: layer
                                                             }));
                                                             onChange({ reviewChecklist: [...(task.reviewChecklist || []), ...mappedChecklist] });
-                                                            toast.success(`Checklist integrated from ${matchingTemplate.title}`, { icon: '✨' });
-                                                            el.value = ""; // Reset selector
+                                                            toast.success(`Checklist integrated from ${matchingTemplate.name}`, { icon: '✨' });
+                                                            e.target.value = ""; // Reset selector
                                                         }
                                                     }}
-                                                    className="h-8 px-3 bg-brand-500/20 hover:bg-brand-500 border border-brand-500/30 hover:border-brand-500 text-brand-400 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-lg shadow-brand-500/10 active:scale-95"
-                                                    title="Import Selected Checklist into this Protocol Layer"
+                                                    className="bg-transparent outline-none border-none text-[9px] font-black uppercase tracking-widest text-brand-300/80 px-2 max-w-[180px] truncate cursor-pointer"
                                                 >
-                                                    <Download size={13} strokeWidth={2.5} /> Import
-                                                </button>
+                                                    <option value="">Quick Import Template...</option>
+                                                    {templates.filter(t => (t.category === 'REVIEWER_CHECKLIST' || t.category === 'TASK') && t.reviewChecklist && t.reviewChecklist.length > 0).map(t => (
+                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="px-2 text-gray-700">
+                                                    <Download size={11} strokeWidth={3} />
+                                                </div>
                                             </div>
 
                                             <button 
                                                 onClick={() => {
-                                                    const newSection: Partial<ReviewChecklistItem> = {
+                                                    const newSection: ReviewChecklistItem = {
                                                         id: Math.random().toString(36).substring(2, 9),
                                                         title: '',
                                                         reviewerRole: layer,
-                                                        isSectionHeader: true
+                                                        isSectionHeader: true,
+                                                        status: 'PENDING',
+                                                        priority: 'MEDIUM',
+                                                        isCompleted: false
                                                     };
                                                     onChange({ reviewChecklist: [...(task.reviewChecklist || []), newSection] });
                                                 }}
@@ -1767,10 +1844,13 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             <p className="text-[14px] font-bold text-emerald-400">FY {task.fiscalYear}</p>
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Status</label>
-                                                            <div className="flex">
+                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Status & Phase</label>
+                                                            <div className="flex flex-wrap items-center gap-2">
                                                                 <span className="px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-black uppercase tracking-widest border border-brand-500/20">
                                                                     {task.status?.replace('_', ' ')}
+                                                                </span>
+                                                                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                                                    {(PHASE_LABELS_FULL as any)[task.auditPhase as AuditPhase] || task.auditPhase}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1908,7 +1988,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                             {activeDetailTab === 'PROCEDURES' && (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-[1600px] w-full mx-auto p-4 md:p-6 space-y-6 pb-32">
+                                    <div className="max-w-[1600px] w-full mx-auto p-3 md:p-4 space-y-4 pb-32">
                                         
                                         {/* Engagement Stepper Redesigned */}
                                         <div className="bg-white dark:bg-white/5 rounded-[24px] p-2 flex items-center justify-between shadow-sm border border-black/5 dark:border-white/10 w-fit mx-auto">
@@ -1993,14 +2073,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
 
                                                         {isCurrent && canAddSubtasks && (
-                                                            <div className="flex gap-4 items-center px-6 py-4 rounded-[24px] border border-white/5 bg-white/[0.02] mt-6 focus-within:border-brand-500/30 transition-all shadow-inner group">
-                                                                <Plus size={16} className="text-gray-600 group-focus-within:text-brand-400 transition-colors" />
+                                                            <div className="flex gap-3 items-center px-4 py-2 rounded-[20px] border border-white/5 bg-white/[0.02] mt-4 focus-within:border-brand-500/30 transition-all shadow-inner group">
+                                                                <Plus size={14} className="text-gray-600 group-focus-within:text-brand-400 transition-colors" />
                                                                 <input
                                                                     type="text"
                                                                     value={localSubtaskTitles[phase] || ''}
                                                                     onChange={(e) => setLocalSubtaskTitles(prev => ({ ...prev, [phase]: e.target.value }))}
                                                                     placeholder={`Add sub-task to ${PHASE_LABELS_FULL[phase]}...`}
-                                                                    className="flex-1 bg-transparent text-[13px] text-white outline-none font-bold placeholder:text-gray-700"
+                                                                    className="flex-1 bg-transparent text-[12px] text-white outline-none font-bold placeholder:text-gray-700"
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter') {
                                                                             e.preventDefault();
@@ -2250,40 +2330,46 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 </div>
                                             ) : (
                                                 task.observations!.map((obs, idx) => (
-                                                    <div key={obs.id} className="bg-[#0f1218] border border-white/5 rounded-[24px] p-6 space-y-5 relative group/obs hover:border-amber-500/20 transition-all shadow-xl">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
-                                                                    <ShieldAlert size={18} />
-                                                                </div>
-                                                                <input 
-                                                                    value={obs.title} 
-                                                                    onChange={e => handleUpdateObservation(obs.id, { title: e.target.value })}
-                                                                    readOnly={isTaskCompleted}
-                                                                    className="bg-transparent text-[16px] font-bold text-white border-none outline-none placeholder:text-gray-800 tracking-tight"
-                                                                    placeholder="Observation Title..."
-                                                                />
-                                                            </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <select 
-                                                                    value={obs.severity} 
-                                                                    onChange={e => handleUpdateObservation(obs.id, { severity: e.target.value as any })}
-                                                                    disabled={isTaskCompleted}
-                                                                    className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
-                                                                        obs.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                                                                        obs.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                                                        'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                                                    }`}
-                                                                >
-                                                                    <option value="LOW">Low Risk</option>
-                                                                    <option value="MEDIUM">Medium Risk</option>
-                                                                    <option value="HIGH">High Risk</option>
-                                                                </select>
-                                                                {!isTaskCompleted && (
-                                                                    <button onClick={() => handleRemoveObservation(obs.id)} className="p-1.5 text-gray-700 hover:text-rose-400 transition-all opacity-0 group-hover/obs:opacity-100"><Trash2 size={14} /></button>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                     <div key={obs.id} className="bg-[#0f1218] border border-white/5 rounded-[24px] p-6 space-y-5 relative group/obs hover:border-amber-500/20 transition-all shadow-xl">
+                                                         <div className="flex items-center justify-between">
+                                                             <div className="flex-1 flex items-center gap-4">
+                                                                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
+                                                                     <ShieldAlert size={18} />
+                                                                 </div>
+                                                                 <div className="flex-1 flex flex-col">
+                                                                    <input 
+                                                                        value={obs.title} 
+                                                                        onChange={e => handleUpdateObservation(obs.id, { title: e.target.value })}
+                                                                        readOnly={isTaskCompleted || (isAdminOrMaster && user?.uid !== obs.createdBy)}
+                                                                        className="bg-transparent text-[16px] font-bold text-white border-none outline-none placeholder:text-gray-800 tracking-tight w-full"
+                                                                        placeholder="Observation Title..."
+                                                                    />
+                                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                                        <span className="text-[9px] font-black text-gray-700 uppercase tracking-widest">Created by:</span>
+                                                                        <span className="text-[9px] font-black text-amber-500/60 uppercase tracking-widest">{obs.createdByName || 'Unknown'}</span>
+                                                                    </div>
+                                                                 </div>
+                                                             </div>
+                                                             <div className="flex items-center gap-3">
+                                                                 <select 
+                                                                     value={obs.severity} 
+                                                                     onChange={e => handleUpdateObservation(obs.id, { severity: e.target.value as any })}
+                                                                     disabled={isTaskCompleted || (isAdminOrMaster && user?.uid !== obs.createdBy)}
+                                                                     className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
+                                                                         obs.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                                                         obs.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                                         'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                                     }`}
+                                                                 >
+                                                                     <option value="LOW">Low Risk</option>
+                                                                     <option value="MEDIUM">Medium Risk</option>
+                                                                     <option value="HIGH">High Risk</option>
+                                                                 </select>
+                                                                 {!isTaskCompleted && (user?.uid === obs.createdBy) && (
+                                                                     <button onClick={() => handleRemoveObservation(obs.id)} className="p-1.5 text-gray-700 hover:text-rose-400 transition-all opacity-0 group-hover/obs:opacity-100"><Trash2 size={14} /></button>
+                                                                 )}
+                                                             </div>
+                                                         </div>
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                                             <div className="space-y-2">
@@ -2292,7 +2378,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     value={obs.observation}
                                                                     onChange={e => handleUpdateObservation(obs.id, { observation: e.target.value })}
                                                                     readOnly={isTaskCompleted}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-amber-500/30 transition-all min-h-[60px] shadow-inner resize-y"
+                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-amber-500/30 transition-all min-h-[50px] shadow-inner resize-y"
                                                                     placeholder="Describe the finding in detail..."
                                                                 />
                                                             </div>
@@ -2302,7 +2388,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     value={obs.implication}
                                                                     onChange={e => handleUpdateObservation(obs.id, { implication: e.target.value })}
                                                                     readOnly={isTaskCompleted}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-rose-500/30 transition-all min-h-[60px] shadow-inner resize-y"
+                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-rose-500/30 transition-all min-h-[50px] shadow-inner resize-y"
                                                                     placeholder="What is the potential impact of this issue?"
                                                                 />
                                                             </div>
@@ -2334,20 +2420,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                              )}
 
                             {activeDetailTab === 'COMMENTS' && (
-                                <div className="flex-1 overflow-hidden flex flex-col p-4 md:p-6">
-                                    <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col bg-[#0c1218] border border-white/5 rounded-[40px] overflow-hidden shadow-[0_24px_128px_rgba(0,0,0,0.6)]">
-                                        <div className="shrink-0 px-8 py-6 border-b border-white/[0.04] flex items-center justify-between bg-black/20">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                                                    <MessageSquare size={18} className="text-amber-500" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-[14px] font-black text-white uppercase tracking-[0.2em]">Activity Ledger</h3>
-                                                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-1 italic">Real-time collaboration for engagement members</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 overflow-hidden p-8">
+                                <div className="flex-1 overflow-hidden flex flex-col p-2">
+                                    <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col bg-[#0c1218]/40 border border-white/5 rounded-[32px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all">
+                                        <div className="flex-1 overflow-hidden p-4 md:p-6">
                                             <TaskComments 
                                                 comments={task.comments} 
                                                 users={usersList} 
@@ -2428,6 +2503,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             value={field.value || ''}
                                                             onChange={field.onChange}
                                                             placeholder="Select start date..."
+                                                            disabled={!canManageTeam}
                                                         />
                                                     )}
                                                 />
@@ -2442,6 +2518,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             value={field.value || ''}
                                                             onChange={field.onChange}
                                                             placeholder="Select due date..."
+                                                            disabled={!canManageTeam}
                                                         />
                                                     )}
                                                 />
@@ -2557,23 +2634,41 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         </div>
 
                         {/* Footer — Slim & High Density */}
-                        <div className="shrink-0 px-8 py-3.5 border-t border-black/5 dark:border-white/[0.04] bg-gray-50/80 dark:bg-[#0c0e12] backdrop-blur-md flex justify-between items-center z-[60] rounded-b-3xl">
+                        <div className="shrink-0 px-8 py-2 border-t border-black/5 dark:border-white/[0.04] bg-gray-50/80 dark:bg-[#0c0e12] backdrop-blur-md flex justify-between items-center z-[60] rounded-b-3xl">
                             <div className="flex items-center gap-6">
                                 {isEditMode && canManageTask && !isTaskCompleted && (
-                                    <button
-                                        onClick={() => onDelete(task.id!)}
-                                        className="text-gray-500 hover:text-rose-500 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
-                                    >
-                                        <Trash2 size={16} strokeWidth={3} />
-                                        Abort Engagement
-                                    </button>
+                                    <div className="flex items-center gap-6">
+                                        <button
+                                            onClick={() => onDelete(task.id!)}
+                                            className="text-gray-500 hover:text-rose-500 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
+                                        >
+                                            <Trash2 size={16} strokeWidth={3} />
+                                            Abort Engagement
+                                        </button>
+                                    </div>
+                                )}
+
+                                {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN) && 
+                                  isTaskCompleted && 
+                                  task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION && 
+                                  task.status !== TaskStatus.ARCHIVED && (
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
+                                        <button
+                                            onClick={() => onArchive && onArchive(task.id!)}
+                                            className="text-gray-500 hover:text-purple-500 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
+                                        >
+                                            <History size={16} strokeWidth={3} />
+                                            Archive Engagement
+                                        </button>
+                                    </div>
                                 )}
                             </div>
 
                             <div className="flex gap-4">
                                 <button
                                     onClick={handleCloseAttempt}
-                                    className="px-8 py-3 bg-gray-200/50 hover:bg-gray-200 text-gray-700 dark:bg-transparent dark:text-gray-500 dark:hover:text-white dark:hover:bg-white/5 text-[11px] font-black uppercase tracking-[0.2em] rounded-full transition-all border border-gray-300/50 dark:border-white/5 active:scale-95 shadow-sm"
+                                    className="px-8 py-2 bg-gray-200/50 hover:bg-gray-200 text-gray-700 dark:bg-transparent dark:text-gray-500 dark:hover:text-white dark:hover:bg-white/5 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all border border-gray-300/50 dark:border-white/5 active:scale-95 shadow-sm"
                                 >
                                     Exit Workspace
                                 </button>
@@ -2581,7 +2676,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     <button
                                         onClick={handleSubmit(handleSave)}
                                         disabled={isSaving}
-                                        className="px-8 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-full text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                                        className="px-8 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-3"
                                     >
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                                         {task.id ? 'Save task' : 'Create Task'}

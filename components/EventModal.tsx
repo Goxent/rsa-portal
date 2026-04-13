@@ -49,6 +49,8 @@ const EventModal: React.FC<EventModalProps> = ({
         rsvpRequired: false,
         isRecurring: false,
         notifyOnEventDate: false,
+        scheduledNotificationDate: '',
+        scheduledNotificationTime: '',
     });
 
     const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>({
@@ -90,6 +92,8 @@ const EventModal: React.FC<EventModalProps> = ({
                 rsvpRequired: false,
                 isRecurring: false,
                 notifyOnEventDate: false,
+                scheduledNotificationDate: '',
+                scheduledNotificationTime: '',
                 createdBy: user.uid,
             });
             setSelectedTeamMembers([]);
@@ -167,7 +171,7 @@ const EventModal: React.FC<EventModalProps> = ({
 
     const visibilityOptions: EventVisibility[] =
         isAdmin
-            ? ['PRIVATE', 'TEAM', 'DEPARTMENT', 'PUBLIC']
+            ? ['PRIVATE', 'TEAM', 'PUBLIC']
             : ['PRIVATE', 'TEAM'];
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -409,11 +413,10 @@ const EventModal: React.FC<EventModalProps> = ({
                                 </div>
                             )}
                         </div>
-
                         {/* RSVP & Notification Options */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="flex items-center cursor-pointer">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                            <div className="space-y-4">
+                                <label className="flex items-center cursor-pointer mt-1">
                                     <input
                                         type="checkbox"
                                         checked={formData.rsvpRequired}
@@ -425,17 +428,72 @@ const EventModal: React.FC<EventModalProps> = ({
                                 </label>
                             </div>
                             
-                            <div>
+                            <div className="space-y-3">
                                 <label className="flex items-center cursor-pointer group">
                                     <input
                                         type="checkbox"
                                         checked={formData.notifyOnEventDate || false}
-                                        onChange={e => setFormData({ ...formData, notifyOnEventDate: e.target.checked })}
+                                        onChange={e => {
+                                            setFormData({ 
+                                                ...formData, 
+                                                notifyOnEventDate: e.target.checked,
+                                                scheduledNotificationDate: '',
+                                                scheduledNotificationTime: ''
+                                            });
+                                        }}
                                         className="mr-3"
                                     />
                                     <Bell size={16} className="mr-2 text-brand-400 group-hover:animate-pulse" />
                                     <span className="text-sm font-semibold text-gray-300">Notify exactly on Event Date</span>
                                 </label>
+                                
+                                <div className="pl-7">
+                                    <div className="text-[10px] text-gray-500 mb-2 uppercase font-bold tracking-wider">OR</div>
+                                    <label className="flex items-center cursor-pointer group mb-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!formData.scheduledNotificationDate}
+                                            onChange={e => {
+                                                if (e.target.checked) {
+                                                    setFormData({ 
+                                                        ...formData, 
+                                                        scheduledNotificationDate: getLocalDateString(), 
+                                                        scheduledNotificationTime: '10:00',
+                                                        notifyOnEventDate: false 
+                                                    });
+                                                } else {
+                                                    setFormData({ ...formData, scheduledNotificationDate: '', scheduledNotificationTime: '' });
+                                                }
+                                            }}
+                                            className="mr-3"
+                                        />
+                                        <span className="text-sm font-semibold text-gray-400">Schedule Custom Notification</span>
+                                    </label>
+                                    
+                                    {!!formData.scheduledNotificationDate && (
+                                        <div className="grid grid-cols-2 gap-3 mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div>
+                                                <label className="block text-[10px] text-gray-400 mb-1 uppercase font-semibold">Notification Date</label>
+                                                <input
+                                                    type="date"
+                                                    className="w-full glass-input rounded-md px-2 py-1.5 text-xs text-gray-300"
+                                                    value={formData.scheduledNotificationDate}
+                                                    onChange={e => setFormData({ ...formData, scheduledNotificationDate: e.target.value })}
+                                                    max={formData.date}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-gray-400 mb-1 uppercase font-semibold">Time</label>
+                                                <input
+                                                    type="time"
+                                                    className="w-full glass-input rounded-md px-2 py-1.5 text-xs text-gray-300"
+                                                    value={formData.scheduledNotificationTime}
+                                                    onChange={e => setFormData({ ...formData, scheduledNotificationTime: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

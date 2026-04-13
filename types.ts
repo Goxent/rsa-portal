@@ -44,7 +44,6 @@ export interface UserProfile {
 
   // New: Persistent Dashboard State
   currentFocusGoals?: FocusGoal[];
-  pendingWorkLogs?: WorkLog[];
 }
 
 export interface StaffDirectoryProfile {
@@ -329,6 +328,7 @@ export interface AuditObservation {
   status: 'DRAFT' | 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
   createdAt?: string;
   createdBy?: string;
+  createdByName?: string;
 }
 
 export interface TaskComment {
@@ -504,6 +504,8 @@ export interface CalendarEvent {
   // NEW: Reminders
   reminders?: EventReminder[];
   notifyOnEventDate?: boolean; // Send email/notifications only on the date fixed for the event
+  scheduledNotificationDate?: string; // YYYY-MM-DD
+  scheduledNotificationTime?: string; // HH:MM
 
   // NEW: Additional metadata
   color?: string; // Hex color for event category

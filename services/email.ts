@@ -58,9 +58,13 @@ export const EmailService = {
             <div style="max-width: 600px; margin: 32px auto; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #edf0e8;">
                 <!-- Header Block -->
                 <div style="background: linear-gradient(to bottom right, #1c2216, #111a0b); padding: 36px 32px 30px; text-align: center;">
-                    <div style="width:64px; height:44px; background:linear-gradient(135deg,#659a2b,#3f6018); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
-                        <span style="color:#fff; font-size:18px; font-weight:800; line-height:44px; font-family:${fontStack}; letter-spacing: 0.05em;">RSA</span>
-                    </div>
+                    <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 14px; border-collapse: collapse;">
+                        <tr>
+                            <td align="center" valign="middle" style="width:64px; height:44px; background:linear-gradient(135deg,#659a2b,#3f6018); border-radius:10px; color:#ffffff; font-size:18px; font-weight:800; font-family:${fontStack}; letter-spacing: 0.05em;">
+                                RSA
+                            </td>
+                        </tr>
+                    </table>
                     <p style="color:#ffffff; font-size:19px; font-weight:700; letter-spacing:-0.3px; margin:0 0 10px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
                     <span style="display:inline-block; background:rgba(101,154,43,0.22); color:#b8d98a; border:1px solid rgba(101,154,43,0.38); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">${typePill}</span>
                 </div>
@@ -205,9 +209,13 @@ export const EmailService = {
             <div style="max-width: 600px; margin: 32px auto; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #edf0e8;">
                 <!-- Red Alert Header -->
                 <div style="background: linear-gradient(to bottom right, #1e1414, #120a0a); padding: 36px 32px 30px; text-align: center;">
-                    <div style="width:64px; height:44px; background:linear-gradient(135deg,#c4445a,#8a2e3e); border-radius:10px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; margin-left: auto; margin-right: auto;">
-                        <span style="color:#fff; font-size:18px; font-weight:800; line-height:44px; font-family:${fontStack}; letter-spacing: 0.05em;">RSA</span>
-                    </div>
+                    <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 14px; border-collapse: collapse;">
+                        <tr>
+                            <td align="center" valign="middle" style="width:64px; height:44px; background:linear-gradient(135deg,#c4445a,#8a2e3e); border-radius:10px; color:#ffffff; font-size:18px; font-weight:800; font-family:${fontStack}; letter-spacing: 0.05em;">
+                                RSA
+                            </td>
+                        </tr>
+                    </table>
                     <p style="color:#ffffff; font-size:19px; font-weight:700; letter-spacing:-0.3px; margin:0 0 10px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
                     <span style="display:inline-block; background:rgba(196,68,90,0.20); color:#e89aa8; border:1px solid rgba(196,68,90,0.35); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">Due Date Reminder</span>
                 </div>
@@ -270,7 +278,7 @@ export const EmailService = {
             </div>
         `;
 
-        const html = EmailService.getTemplateWrapper(content, 'New Mention', 'Reply to Comment', taskLink, 'green');
+        const html = EmailService.getTemplateWrapper(content, 'DISCUSSION MENTION', 'View Discussion', taskLink, 'green');
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 

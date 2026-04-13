@@ -27,6 +27,7 @@ import StaffSelect from '../components/StaffSelect';
 import TaskComments from '../components/TaskComments';
 import TaskMainView from '../components/tasks/TaskMainView';
 import NepaliDatePicker from '../components/NepaliDatePicker';
+import { getNepaliFiscalYear } from '../utils/nepaliDate';
 import TaskDetailPane from '../components/tasks/TaskDetailPane';
 import TaskTimelineView from '../components/tasks/TaskTimelineView';
 import ClientDetailModal from "../components/tasks/ClientDetailModal";
@@ -369,6 +370,8 @@ const TasksPage: React.FC = () => {
 
     // Permissions check
     const isAdminOrManager = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
+    const isFullAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+    
     // Master Admin can grant task-creation rights to any user via System Settings
     const canCreateTask = isAdminOrManager || user?.taskCreationAuthorized === true;
     const canManageTask = isAdminOrManager;
@@ -406,6 +409,14 @@ const TasksPage: React.FC = () => {
         localStorage.setItem('rsa_filter_tasktype', filterTaskType);
     }, [filterPriority, filterStatus, filterClient, groupBy, filterStaff, filterAuditor, filterTaskType]);
 
+    const allSelectedArchivable = useMemo(() => {
+        if (selectedTaskIds.length === 0) return false;
+        return selectedTaskIds.every(id => {
+            const t = tasks.find(task => task.id === id);
+            return t && t.status === TaskStatus.COMPLETED && t.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION;
+        });
+    }, [selectedTaskIds, tasks]);
+
     // Global Filter Reset Listener
     useEffect(() => {
         const handleClearAll = () => {
@@ -423,6 +434,9 @@ const TasksPage: React.FC = () => {
     }, []);
 
     const filteredTasks = tasks.filter(t => {
+        // Exclude archived tasks from 'ALL' view by default
+        if (filterStatus === 'ALL' && t.status === TaskStatus.ARCHIVED) return false;
+
         if (filterStatus !== 'ALL' && t.status !== filterStatus) return false;
         if (filterPriority !== 'ALL' && t.priority !== filterPriority) return false;
         if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase()) && !t.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -646,6 +660,30 @@ const TasksPage: React.FC = () => {
             toast.error('Failed to save task');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleArchiveTask = async (taskId: string) => {
+        if (!isFullAdmin) {
+            toast.error('Only Admins can archive engagements');
+            return;
+        }
+
+        try {
+            await updateTaskMutation.mutateAsync({
+                id: taskId,
+                updates: { 
+                    status: TaskStatus.ARCHIVED,
+                    archivedAt: new Date().toISOString(),
+                    archivedBy: user?.uid,
+                    archivedFiscalYear: getNepaliFiscalYear(new Date())
+                }
+            });
+            toast.success('Engagement archived successfully');
+            setSelectedTaskId(undefined);
+        } catch (error) {
+            console.error('Error archiving task:', error);
+            toast.error('Failed to archive engagement');
         }
     };
 
@@ -1270,6 +1308,7 @@ const TasksPage: React.FC = () => {
             IN_PROGRESS: filteredTasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
             UNDER_REVIEW: filteredTasks.filter(t => t.status === TaskStatus.UNDER_REVIEW).length,
             COMPLETED: filteredTasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+            ARCHIVED: filteredTasks.filter(t => t.status === TaskStatus.ARCHIVED).length,
         };
         return stats;
     }, [filteredTasks]);
@@ -1299,7 +1338,7 @@ const TasksPage: React.FC = () => {
     return (
         <div className="relative h-full w-full flex flex-col overflow-hidden bg-surface">
             {/* --- REFINED UNIFIED TOOLBAR --- */}
-            <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-30 transition-colors duration-300">
+            <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-50 transition-colors duration-300">
                 <div className="flex flex-col border-b border-border/50">
                     <div className="flex items-center gap-3 px-4 py-3">
                         {/* LEFT: View Mode Toggle */}
@@ -1433,14 +1472,17 @@ const TasksPage: React.FC = () => {
                                                 exit={{ opacity: 0, y: 8 }}
                                                 className="absolute top-full left-0 mt-2 w-44 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl"
                                             >
-                                                {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED].map((status) => (
+                                                {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.ARCHIVED].filter(s => {
+                                                    if (s !== TaskStatus.ARCHIVED) return true;
+                                                    return isFullAdmin && allSelectedArchivable;
+                                                }).map((status) => (
                                                     <button
                                                         key={status}
                                                         onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
                                                         className="w-full px-4 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-between group"
                                                     >
                                                         {status.replace(/_/g, ' ')}
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/40 group-hover:bg-indigo-400" />
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${status === TaskStatus.ARCHIVED ? 'bg-purple-500/40 group-hover:bg-purple-400' : 'bg-indigo-500/40 group-hover:bg-indigo-400'}`} />
                                                     </button>
                                                 ))}
                                             </motion.div>
@@ -1655,7 +1697,7 @@ const TasksPage: React.FC = () => {
                                         className="appearance-none w-full h-auto py-1.5 bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] rounded-lg text-[10px] font-bold text-gray-300 pl-2.5 pr-6 focus:outline-none cursor-pointer transition-all"
                                     >
                                         <option value="ALL">Status: All</option>
-                                        {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                                        {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED, TaskStatus.COMPLETED, TaskStatus.ARCHIVED].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
                                     </select>
                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={10} />
                                 </div>
@@ -1671,6 +1713,7 @@ const TasksPage: React.FC = () => {
                                         { key: 'UNDER_REVIEW', label: 'Review', count: statusStats.UNDER_REVIEW, activeColor: 'bg-amber-500/15 border-amber-400/30 text-amber-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-amber-400', dotGlow: 'shadow-[0_0_6px_rgba(251,191,36,0.4)]' },
                                         { key: 'HALTED', label: 'Halted', count: statusStats.HALTED, activeColor: 'bg-rose-500/15 border-rose-400/30 text-rose-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-rose-400', dotGlow: 'shadow-[0_0_6px_rgba(251,113,133,0.4)]' },
                                         { key: 'COMPLETED', label: 'Done', count: statusStats.COMPLETED, activeColor: 'bg-brand-500/15 border-brand-400/30 text-brand-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-brand-400', dotGlow: 'shadow-[0_0_6_rgba(52,211,153,0.4)]' },
+                                        { key: 'ARCHIVED', label: 'Archived', count: statusStats.ARCHIVED, activeColor: 'bg-purple-500/15 border-purple-400/30 text-purple-300', inactiveColor: 'bg-white/[0.02] border-white/[0.06] text-slate-400', dot: 'bg-purple-400', dotGlow: 'shadow-[0_0_6px_rgba(168,85,247,0.4)]' },
                                     ] as const).map(({ key, label, count, activeColor, inactiveColor, dot, dotGlow }) => {
                                         const isActive = filterStatus === key;
                                         return (
@@ -1832,6 +1875,7 @@ const TasksPage: React.FC = () => {
                 }}
                 onSave={handleSaveTask}
                 onDelete={handleDeleteTask}
+                onArchive={handleArchiveTask}
                 onChange={(updates) => setCurrentTask({ ...currentTask, ...updates })}
                 usersList={usersList}
                 clientsList={clientsList}

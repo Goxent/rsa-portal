@@ -16,6 +16,9 @@ const statusColors: Record<TaskStatus, string> = {
     [TaskStatus.NOT_STARTED]: '#64748B',  // slate-500
     [TaskStatus.IN_PROGRESS]: '#3B82F6',  // blue-500
     [TaskStatus.COMPLETED]: '#10B981',    // emerald-500
+    [TaskStatus.UNDER_REVIEW]: '#8B5CF6', // purple-500
+    [TaskStatus.HALTED]: '#EF4444',       // red-500
+    [TaskStatus.ARCHIVED]: '#94A3B8',     // slate-400
 };
 
 const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
@@ -163,9 +166,9 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                 <div className="min-w-max pb-24" style={{ width: SIDEBAR_WIDTH + daysInterval.length * DAY_WIDTH }}>
                     
                     {/* Header Row (Dates) */}
-                    <div className="sticky top-0 z-30 flex bg-slate-50/95 dark:bg-[#0a0f1e]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.06] shadow-sm">
+                    <div className="sticky top-0 z-10 flex bg-slate-50/95 dark:bg-[#0a0f1e]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.06] shadow-sm">
                         <div 
-                            className="flex-shrink-0 border-r border-slate-200 dark:border-white/[0.06] px-5 py-3 flex items-end sticky left-0 z-40 bg-slate-50/95 dark:bg-[#0a0f1e]/95 backdrop-blur-xl" 
+                            className="flex-shrink-0 border-r border-slate-200 dark:border-white/[0.06] px-5 py-3 flex items-end sticky left-0 z-20 bg-slate-50/95 dark:bg-[#0a0f1e]/95 backdrop-blur-xl" 
                             style={{ width: SIDEBAR_WIDTH }}
                         >
                             <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Task Details</span>

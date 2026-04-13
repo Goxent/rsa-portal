@@ -9,7 +9,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { 
     Template, UserRole, Resource, Category, TemplateFolder, AuditPhase, 
-    TaskStatus, SubTask, TaskType 
+    TaskStatus, SubTask, TaskType, ReviewChecklistItem
 } from '../types';
 import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../constants/taskTypeChecklists';
 import { TemplateService } from '../services/templates';
@@ -94,6 +94,8 @@ const TemplatesPage: React.FC = () => {
     const [expandedSections, setExpandedSections] = useState({ phases: false, statuses: false, workflow: false });
     const [nextTemplateId, setNextTemplateId] = useState<string>('');
     const [openStatusAccordions, setOpenStatusAccordions] = useState<string[]>([]);
+    const [activeReviewRole, setActiveReviewRole] = useState<'TL' | 'ER' | 'SP'>('TL');
+    const [reviewerChecklist, setReviewerChecklist] = useState<ReviewChecklistItem[]>([]);
 
     // ── Knowledge Base state ───────────────────────────────────────────────────
     const [resources, setResources] = useState<Resource[]>([]);
@@ -977,10 +979,7 @@ const TemplatesPage: React.FC = () => {
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Category</label>
                                     <select className="w-full glass-input rounded-lg px-3 py-2 text-sm"
                                         value={newTemplate.category} onChange={e => setNewTemplate({ ...newTemplate, category: e.target.value as any })}>
-                                        <option value="TASK">Task</option>
-                                        <option value="CHECKLIST">Checklist</option>
-                                        <option value="DOCUMENT">Document</option>
-                                        <option value="WORKFLOW">Workflow</option>
+                                        <option value="TASK">Task (Audit Procedured / Subtasks)</option>
                                         <option value="REVIEWER_CHECKLIST">Reviewer Checklist</option>
                                     </select>
                                 </div>
@@ -1009,7 +1008,9 @@ const TemplatesPage: React.FC = () => {
                                         </div>
                                     </div>
                                 )}
-                                <div>
+                                {newTemplate.category === 'TASK' && (
+                                    <>
+                                        <div>
                                     <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Type / Tag</label>
                                     <input type="text" className="w-full glass-input rounded-lg px-3 py-2 text-sm"
                                         value={newTemplate.type} onChange={e => setNewTemplate({ ...newTemplate, type: e.target.value })}
@@ -1095,26 +1096,27 @@ const TemplatesPage: React.FC = () => {
                                                     <div className={`p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-white/5'}`}>
                                                         <IconComponent size={16} />
                                                     </div>
-                                                    <span className="text-[10px] font-bold truncate w-full text-center">{TASK_TYPE_LABELS[type]}</span>
                                                 </button>
                                             );
                                         })}
                                     </div>
                                 </div>
+                                </>
+                            )}
 
-                                {/* SECTION 1: Phase-wise Subtasks */}
-                                <div className="col-span-2 border-t border-white/5 pt-4">
-                                    <button type="button" onClick={() => toggleSection('phases')}
-                                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
-                                        <div className="flex items-center gap-2 text-amber-500">
-                                            <ListTodo size={18} />
-                                            <span className="text-sm font-black uppercase tracking-wider">Phase-wise Subtasks</span>
-                                            <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
-                                                {Object.values(phaseSubtasks).flat().length} items
-                                            </span>
-                                        </div>
-                                        {expandedSections.phases ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
-                                    </button>
+                                {newTemplate.category === 'TASK' && (
+                                    <div className="col-span-2 border-t border-white/5 pt-4">
+                                        <button type="button" onClick={() => toggleSection('phases')}
+                                            className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
+                                            <div className="flex items-center gap-2 text-amber-500">
+                                                <ListTodo size={16} />
+                                                <span className="text-sm font-black uppercase tracking-wider">Audit Procedures / Subtasks</span>
+                                                <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
+                                                    {Object.values(phaseSubtasks).flat().length} items
+                                                </span>
+                                            </div>
+                                            {expandedSections.phases ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
+                                        </button>
 
                                     <AnimatePresence>
                                         {expandedSections.phases && (
@@ -1151,21 +1153,22 @@ const TemplatesPage: React.FC = () => {
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
-                                </div>
+                                    </div>
+                                )}
 
-                                 {/* SECTION 2: Status-based Automation (Auto-Checklists) */}
-                                <div className="col-span-2 border-t border-white/5 pt-4">
-                                    <button type="button" onClick={() => toggleSection('statuses')}
-                                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
-                                        <div className="flex items-center gap-2 text-purple-400">
-                                            <Sparkles size={18} />
-                                            <span className="text-sm font-black uppercase tracking-wider">Auto-Checklists on Status Change</span>
-                                            <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
-                                                {Object.values(statusSubtaskMap).flat().length} Automations
-                                            </span>
-                                        </div>
-                                        {expandedSections.statuses ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
-                                    </button>
+                                {newTemplate.category === 'TASK' && (
+                                    <div className="col-span-2 border-t border-white/5 pt-4">
+                                        <button type="button" onClick={() => toggleSection('statuses')}
+                                            className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
+                                            <div className="flex items-center gap-2 text-purple-400">
+                                                <Sparkles size={16} />
+                                                <span className="text-sm font-black uppercase tracking-wider">Auto-Checklists on Status Change</span>
+                                                <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
+                                                    {Object.values(statusSubtaskMap).flat().length} Automations
+                                                </span>
+                                            </div>
+                                            {expandedSections.statuses ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
+                                        </button>
 
                                     <AnimatePresence>
                                         {expandedSections.statuses && (
@@ -1221,21 +1224,22 @@ const TemplatesPage: React.FC = () => {
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
-                                </div>
+                                    </div>
+                                )}
 
-                                {/* SECTION 3: Reviewer Checklist Protocol */}
-                                <div className="col-span-2 border-t border-white/5 pt-4">
-                                    <button type="button" onClick={() => toggleSection('workflow')}
-                                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
-                                        <div className="flex items-center gap-2 text-indigo-400">
-                                            <ShieldCheck size={18} />
-                                            <span className="text-sm font-black uppercase tracking-wider">Reviewer Sign-off Protocol</span>
-                                            <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
-                                                {reviewerChecklist.length} Requirements
-                                            </span>
-                                        </div>
-                                        {expandedSections.workflow ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
-                                    </button>
+                                {newTemplate.category === 'REVIEWER_CHECKLIST' && (
+                                    <div className="col-span-2 border-t border-white/5 pt-4">
+                                        <button type="button" onClick={() => toggleSection('workflow')}
+                                            className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-all group">
+                                            <div className="flex items-center gap-2 text-indigo-400">
+                                                <ShieldCheck size={16} />
+                                                <span className="text-sm font-black uppercase tracking-wider">Reviewer Checklist Requirements</span>
+                                                <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full ml-2">
+                                                    {reviewerChecklist.length} Requirements
+                                                </span>
+                                            </div>
+                                            {expandedSections.workflow ? <ChevronDown size={18} className="text-gray-500" /> : <ChevronRight size={18} className="text-gray-500" />}
+                                        </button>
 
                                     <AnimatePresence>
                                         {expandedSections.workflow && (
@@ -1322,7 +1326,8 @@ const TemplatesPage: React.FC = () => {
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
-                                </div>
+                                    </div>
+                                )}
 
                             </div>
                         </div>

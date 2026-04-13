@@ -163,7 +163,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute z-[2100] top-full left-0 right-0 mt-2 bg-navy-950/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+                        className="absolute z-[2100] top-full left-0 right-0 mt-2 bg-[#0a0f16] border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] overflow-hidden"
                     >
                         <div className="p-2 border-b border-white/10">
                             <div className="relative">

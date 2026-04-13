@@ -90,17 +90,7 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
     };
 
     return (
-        <div className="flex flex-col h-full max-h-[500px]">
-            <div className="flex items-center gap-2 mb-3 text-slate-300 px-1">
-                <MessageSquare size={14} className="text-amber-500" />
-                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Comments & Activity</h3>
-                {comments.length > 0 && (
-                    <span className="text-[10px] font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded-full text-slate-300">
-                        {comments.length}
-                    </span>
-                )}
-            </div>
-
+        <div className="flex flex-col h-full">
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 mb-4 pr-1 px-1">
                 {comments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 opacity-60">

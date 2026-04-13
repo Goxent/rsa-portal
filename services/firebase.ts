@@ -1242,7 +1242,8 @@ export const AuthService = {
         }
 
         // --- AUTO-ARCHIVING LOGIC (NEW) ---
-        // If task is COMPLETED in Phase 3, check if it's past its Assigned Fiscal Year
+        // Auto-archiving was removed as per user request to provide manual/bulk control to admins
+        /*
         try {
             const finalTaskDoc = await getDoc(doc(db, 'tasks', taskId));
             const task = finalTaskDoc.data() as Task;
@@ -1252,20 +1253,18 @@ export const AuthService = {
                 task.fiscalYear) {
                 
                 const currentFY = getNepaliFiscalYear(new Date());
-                // Simple string comparison: if currentFY > assigned FY, archive it.
-                // Multi-year comparison logic: "2080-81" < "2081-82" works as string comparison.
                 if (currentFY > task.fiscalYear) {
                     await updateDoc(doc(db, 'tasks', taskId), {
                         status: TaskStatus.ARCHIVED,
                         archivedFiscalYear: task.fiscalYear,
                         archivedAt: new Date().toISOString()
                     });
-                    console.log(`Task ${taskId} auto-archived as it belongs to past fiscal year ${task.fiscalYear}`);
                 }
             }
         } catch (archErr) {
             console.error("Auto-archiving check failed:", archErr);
         }
+        */
 
         if (auth.currentUser) {
             const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -2207,12 +2206,18 @@ export const AuthService = {
     getArchivedTasks: async (fiscalYear: string): Promise<Task[]> => {
         const q = query(
             collection(db, 'tasks'), 
-            where('status', '==', TaskStatus.ARCHIVED),
-            where('archivedFiscalYear', '==', fiscalYear),
-            orderBy('completedAt', 'desc')
+            where('status', '==', TaskStatus.ARCHIVED)
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
+        const tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
+        
+        return tasks
+            .filter(t => t.archivedFiscalYear === fiscalYear)
+            .sort((a, b) => {
+                const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+                const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+                return dateB - dateA;
+            });
     },
 
     // --- NOTIFICATIONS ---

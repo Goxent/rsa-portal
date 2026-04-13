@@ -111,7 +111,7 @@ const StaffPage: React.FC = () => {
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to delete ${staff.displayName}? This will remove their record from the directory.`)) {
+        if (!window.confirm(`Are you sure you want to delete ${staff.displayName}? This will remove their record from the directory.`)) return;
 
         try {
             setIsSaving(true);

@@ -30,7 +30,7 @@ const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
     >
         <div>
             <p style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="uppercase mb-1 flex items-center gap-1.5">
-                <Icon size={12} className={color} /> {title}
+                <Icon size={11} className={color} /> {title}
             </p>
             <h3 style={{ fontSize: '1.625rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-heading)' }} className="leading-tight">{value}</h3>
             {trend && (
@@ -41,10 +41,10 @@ const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
             )}
         </div>
         <div 
-            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-md)]"
+            className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)]"
             style={{ background: 'var(--accent-dim)' }}
         >
-            <Icon size={18} style={{ color: 'var(--accent)' }} />
+            <Icon size={13} style={{ color: 'var(--accent)' }} />
         </div>
     </div>
 );
@@ -77,8 +77,8 @@ const ClockWidget = () => {
             >
                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
             </div>
-            <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }} className="flex items-center gap-3">
-                <span className="flex items-center gap-1"><CalendarIcon size={11} /> {time.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }} className="flex items-center gap-3">
+                <span className="flex items-center gap-1"><CalendarIcon size={10} /> {time.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
                 <span>{np.format('DD MMMM, YYYY')} BS</span>
             </div>
@@ -731,16 +731,16 @@ const AttendancePage: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar relative pb-20" style={{ background: 'var(--bg-main)', color: 'var(--text-body)' }}>
-            <div className="max-w-[1600px] mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-6 animate-in fade-in duration-500">
+            <div className="max-w-[1600px] mx-auto space-y-6 px-4 sm:px-6 lg:px-8 py-5 animate-in fade-in duration-500">
                 
                 {/* ── Top Bar (Navigation & Actions) ── */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                     <div className="flex items-center gap-4">
                         <div 
-                            className="w-12 h-12 flex items-center justify-center shadow-lg"
+                            className="w-10 h-10 flex items-center justify-center shadow-lg"
                             style={{ background: 'var(--accent-dim)', border: '1px solid var(--border-accent)', borderRadius: 'var(--radius-lg)' }}
                         >
-                            <Users style={{ color: 'var(--accent)' }} size={24} />
+                            <Users style={{ color: 'var(--accent)' }} size={20} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2" style={{ fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
@@ -761,7 +761,7 @@ const AttendancePage: React.FC = () => {
                             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
                             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
                         >
-                            <FileText size={16} className="text-rose-400" /> PDF
+                            <FileText size={14} className="text-rose-400" /> PDF
                         </button>
                         <button 
                             onClick={handleExportExcel} 
@@ -770,7 +770,7 @@ const AttendancePage: React.FC = () => {
                             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
                             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
                         >
-                            <Download size={16} style={{ color: 'var(--accent)' }} /> Excel
+                            <Download size={14} style={{ color: 'var(--accent)' }} /> Excel
                         </button>
                     </div>
                 </div>
@@ -798,7 +798,7 @@ const AttendancePage: React.FC = () => {
                     {/* Top Row: Search & Manual Log */}
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
                         <div className="relative w-full sm:max-w-md">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} size={16} />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} size={14} />
                             <input 
                                 type="text"
                                 placeholder="Search team member or status..."
@@ -830,7 +830,7 @@ const AttendancePage: React.FC = () => {
                                         fontSize: '0.6875rem'
                                     }}
                                 >
-                                    <Clock size={16} className="group-hover:rotate-12 transition-transform" /> 
+                                    <Clock size={14} className="group-hover:rotate-12 transition-transform" /> 
                                     <span>Review Requests</span>
                                     {pendingRequestsCount > 0 && (
                                         <span 
@@ -862,7 +862,7 @@ const AttendancePage: React.FC = () => {
                                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
                             >
-                                <Plus size={16} style={{ color: 'var(--accent)' }} className="group-hover:scale-110 transition-transform" /> 
+                                <Plus size={14} style={{ color: 'var(--accent)' }} className="group-hover:scale-110 transition-transform" /> 
                                 <span>{isAdmin ? 'Manual Log' : 'Request Manual Log'}</span>
                             </button>
                         </div>
@@ -1011,14 +1011,14 @@ const AttendancePage: React.FC = () => {
                                 <table className="w-full text-left border-collapse min-w-[1000px]">
                                     <thead>
                                         <tr className="border-b" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase w-12 text-center">SN</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Date & Staff</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase w-20">Day</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Timing</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Status</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Nature of Assignment</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase">Clients & Work Logs</th>
-                                            {isAdmin && <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-4 uppercase text-right">Actions</th>}
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase w-12 text-center">SN</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Date & Staff</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase w-20">Day</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Timing</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Status</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Nature of Assignment</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Clients & Work Logs</th>
+                                            {isAdmin && <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase text-right">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
@@ -1034,19 +1034,19 @@ const AttendancePage: React.FC = () => {
                                         ) : (
                                             reportData.map((record, idx) => (
                                                 <tr key={record.id} className="hover:bg-[var(--bg-surface)] transition-all group/row">
-                                                    <td className="px-4 py-4 text-center">
+                                                    <td className="px-4 py-2 text-center">
                                                         <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{idx + 1}</span>
                                                     </td>
-                                                    <td className="px-4 py-5">
-                                                        <div className="flex items-center gap-3">
+                                                    <td className="px-4 py-2">
+                                                        <div className="flex items-center gap-2.5">
                                                             <div 
-                                                                className="w-9 h-9 flex items-center justify-center font-bold shadow-inner border"
-                                                                style={{ background: 'var(--bg-main)', borderColor: 'var(--border-mid)', borderRadius: '99px', color: 'var(--text-muted)', fontSize: '0.625rem' }}
+                                                                className="w-7 h-7 flex items-center justify-center font-bold shadow-inner border"
+                                                                style={{ background: 'var(--bg-main)', borderColor: 'var(--border-mid)', borderRadius: '99px', color: 'var(--text-muted)', fontSize: '0.55rem' }}
                                                             >
                                                                 {record.userName.substring(0, 2).toUpperCase()}
                                                             </div>
                                                             <div>
-                                                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-heading)' }} className="leading-tight">{record.userName}</div>
+                                                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-heading)' }} className="leading-tight">{record.userName}</div>
                                                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                                     <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                                                     <span className="w-1 h-1 rounded-full" style={{ background: 'var(--border)' }} />
@@ -1058,7 +1058,7 @@ const AttendancePage: React.FC = () => {
                                                     <td className="px-4 py-4">
                                                         <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)' }}>{(() => { try { return new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }); } catch { return '-'; } })()}</span>
                                                     </td>
-                                                    <td className="px-4 py-5">
+                                                    <td className="px-4 py-3">
                                                         {record.clockIn ? (
                                                             <div className="space-y-1.5">
                                                                 <div className="flex items-center gap-2 tabular-nums" style={{ fontSize: '0.6875rem', color: 'var(--text-body)', fontWeight: 600 }}>
@@ -1079,7 +1079,7 @@ const AttendancePage: React.FC = () => {
                                                             <div style={{ color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em', fontSize: '0.625rem' }}>UNTRACKED</div>
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-5">
+                                                    <td className="px-4 py-3">
                                                         <span 
                                                             className="px-2.5 py-1 uppercase tracking-widest shadow-sm border"
                                                             style={{ 
@@ -1109,7 +1109,7 @@ const AttendancePage: React.FC = () => {
                                                             {record.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-5">
+                                                    <td className="px-4 py-3">
                                                         {record.workLogs?.length > 0 ? (
                                                             <div className="space-y-1">
                                                                 {[...new Set(record.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].map((nature: string, i: number) => (
@@ -1120,7 +1120,7 @@ const AttendancePage: React.FC = () => {
                                                             <span style={{ color: 'var(--text-muted)', fontSize: '0.625rem' }} className="italic">—</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-5">
+                                                    <td className="px-4 py-3">
                                                         {record.workLogs?.length > 0 ? (
                                                             <div className="flex flex-wrap gap-2">
                                                                 {record.workLogs.slice(0, 3).map((log: any, i: number) => (
@@ -1157,7 +1157,7 @@ const AttendancePage: React.FC = () => {
                                                                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
                                                                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                                                             >
-                                                                <Edit2 size={16} />
+                                                                <Edit2 size={14} />
                                                             </button>
                                                         </td>
                                                     )}
