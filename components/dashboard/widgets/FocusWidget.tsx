@@ -133,80 +133,103 @@ const FocusWidget: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── All-done state ──────────────────────────────────────── */}
-            {allCompleted ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-2 py-4">
-                    <p className="text-2xl">🎯</p>
-                    <p className="text-sm font-bold text-brand-400">All done! Great focus today.</p>
-                    <button
-                        onClick={() => persist([])}
-                        className="mt-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors underline underline-offset-2"
-                    >
-                        Clear Focus List
-                    </button>
-                </div>
-            ) : (
-                <>
-                    {/* Goal list */}
-                    <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
-                        {goals.map(goal => (
-                            <div key={goal.id} className="flex items-center gap-2.5 group/item rounded-lg px-1.5 py-1 hover:bg-brand-50 dark:hover:bg-white/[0.03] transition-colors">
-                                <div
-                                    onClick={() => toggleGoal(goal.id)}
-                                    className={`w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200 ${celebratingId === goal.id ? 'fw-pop' : ''} ${goal.completed ? 'bg-brand-500 border-brand-500' : 'border-slate-300 dark:border-slate-600 bg-transparent hover:border-brand-400 dark:hover:border-indigo-400'}`}
-                                >
-                                    {goal.completed && <Check size={11} className="text-white" strokeWidth={3} />}
-                                </div>
-                                <p
-                                    onClick={() => toggleGoal(goal.id)}
-                                    className={`flex-1 text-sm cursor-pointer transition-all duration-200 truncate leading-none ${goal.completed ? 'text-slate-400 dark:text-gray-500 line-through decoration-slate-300 dark:decoration-gray-600' : 'text-slate-800 dark:text-gray-200 hover:text-brand-900 dark:hover:text-white font-medium'}`}
-                                    title={goal.text}
-                                >
-                                    {goal.text}
-                                </p>
-                                <button
-                                    onClick={() => deleteGoal(goal.id)}
-                                    className="opacity-0 group-hover/item:opacity-100 p-1 rounded text-gray-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all flex-shrink-0"
-                                >
-                                    <X size={12} />
-                                </button>
-                            </div>
-                        ))}
-                        {goals.length === 0 && !inputFocused && (
-                            <p className="text-xs text-slate-500 dark:text-gray-600 text-center py-3 italic">No focus items yet — add one below</p>
-                        )}
+            {/* ── List & Input ── */}
+            <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
+                {goals.map(goal => (
+                    <div key={goal.id} className="flex items-center gap-2.5 group/item rounded-lg px-1.5 py-1 hover:bg-brand-50 dark:hover:bg-white/[0.03] transition-colors">
+                        <div
+                            onClick={() => toggleGoal(goal.id)}
+                            className={`w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200 ${celebratingId === goal.id ? 'fw-pop' : ''} ${goal.completed ? 'bg-brand-500 border-brand-500' : 'border-slate-300 dark:border-slate-600 bg-transparent hover:border-brand-400 dark:hover:border-indigo-400'}`}
+                        >
+                            {goal.completed && <Check size={11} className="text-white" strokeWidth={3} />}
+                        </div>
+                        <p
+                            onClick={() => toggleGoal(goal.id)}
+                            className={`flex-1 text-sm cursor-pointer transition-all duration-200 truncate leading-none ${goal.completed ? 'text-slate-400 dark:text-gray-500 line-through decoration-slate-300 dark:decoration-gray-600' : 'text-slate-800 dark:text-gray-200 hover:text-brand-900 dark:hover:text-white font-medium'}`}
+                            title={goal.text}
+                        >
+                            {goal.text}
+                        </p>
+                        <button
+                            onClick={() => deleteGoal(goal.id)}
+                            className="opacity-0 group-hover/item:opacity-100 p-1 rounded text-gray-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all flex-shrink-0"
+                        >
+                            <X size={12} />
+                        </button>
                     </div>
+                ))}
+                
+                {goals.length === 0 && !inputFocused && (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-2 py-4 animate-in fade-in duration-500">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                            <Plus size={14} className="text-slate-400" />
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-gray-600 text-center italic">
+                            No focus items yet — stay sharp!
+                        </p>
+                    </div>
+                )}
+            </div>
 
-                    {/* Inline add */}
-                    <div className="pt-1 border-t border-slate-100 dark:border-white/[0.05]">
-                        {atLimit ? (
-                            <p className="text-[10px] text-slate-500 dark:text-gray-600 text-center py-1">5 max — complete or remove an item to add more</p>
-                        ) : (
-                            <form onSubmit={handleAddGoal}>
-                                <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${inputFocused ? 'bg-white dark:bg-white/[0.04] border border-brand-300 dark:border-brand-500/30 shadow-sm' : 'border border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03]'}`}>
-                                    <Plus size={13} className={`flex-shrink-0 transition-colors ${inputFocused ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-gray-600'}`} />
-                                    <input
-                                        ref={inputRef}
-                                        type="text"
-                                        value={inputValue}
-                                        onChange={e => setInputValue(e.target.value)}
-                                        onFocus={() => setInputFocused(true)}
-                                        onBlur={() => setInputFocused(false)}
-                                        onKeyDown={e => { if (e.key === 'Escape') { setInputValue(''); setInputFocused(false); e.currentTarget.blur(); } }}
-                                        placeholder="+ Add focus item..."
-                                        className="flex-1 bg-transparent text-xs text-slate-800 dark:text-gray-300 placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:placeholder-slate-300 dark:focus:placeholder-gray-500"
-                                    />
-                                    {inputValue.trim() && (
-                                        <button type="submit" className="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex-shrink-0 transition-colors">
-                                            Add
-                                        </button>
-                                    )}
-                                </div>
-                            </form>
-                        )}
+            {/* Inline add */}
+            <div className="pt-2 border-t border-slate-100 dark:border-white/[0.05]">
+                {atLimit ? (
+                    <div className="flex flex-col items-center gap-1.5 py-1">
+                        <p className="text-[10px] text-slate-500 dark:text-gray-600 text-center">
+                            Limit reached (5 goals)
+                        </p>
+                        <button 
+                            onClick={() => persist(goals.filter(g => !g.completed))}
+                            className="text-[9px] font-black uppercase tracking-wider text-brand-600 hover:text-brand-700 transition-colors"
+                        >
+                            Clear Completed
+                        </button>
                     </div>
-                </>
-            )}
+                ) : (
+                    <form onSubmit={handleAddGoal}>
+                        <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${inputFocused ? 'bg-white dark:bg-white/[0.04] border border-brand-300 dark:border-brand-500/30 shadow-sm' : 'border border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03]'}`}>
+                            <Plus size={13} className={`flex-shrink-0 transition-colors ${inputFocused ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-gray-600'}`} />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={inputValue}
+                                onChange={e => setInputValue(e.target.value)}
+                                onFocus={() => setInputFocused(true)}
+                                onBlur={() => setInputFocused(false)}
+                                onKeyDown={e => { if (e.key === 'Escape') { setInputValue(''); setInputFocused(false); e.currentTarget.blur(); } }}
+                                placeholder="+ Add focus item..."
+                                className="flex-1 bg-transparent text-xs text-slate-800 dark:text-gray-300 placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:placeholder-slate-300 dark:focus:placeholder-gray-500"
+                            />
+                            {inputValue.trim() && (
+                                <button type="submit" className="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex-shrink-0 transition-colors">
+                                    Add
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                )}
+                
+                {goals.length > 0 && (
+                    <div className="mt-2 flex items-center justify-center gap-4 border-t border-slate-50 dark:border-white/[0.02] pt-2">
+                        {completedCount > 0 && (
+                            <button
+                                onClick={() => persist(goals.filter(g => !g.completed))}
+                                className="text-[9px] font-bold text-slate-400 hover:text-brand-500 transition-colors"
+                            >
+                                Clear Completed
+                            </button>
+                        )}
+                        <button
+                            onClick={() => {
+                                if (window.confirm('Reset your focus list?')) persist([]);
+                            }}
+                            className="text-[9px] font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                        >
+                            Reset All
+                        </button>
+                    </div>
+                )}
+            </div>
 
         </div>
     );
