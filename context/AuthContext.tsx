@@ -45,13 +45,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
             const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
             setUser(userData);
+            
+            // Check if admin to perform background tasks
+            if (AuthService.isAdmin(userData.role)) {
+                // Background task: Audit Log Cleanup (Throttled to once per day)
+                const today = new Date().toISOString().split('T')[0];
+                const lastCleanup = AuthService.getLastAuditCleanup();
+                
+                if (lastCleanup !== today) {
+                    AuthService.cleanupOldAuditLogs().then(() => {
+                        AuthService.setLastAuditCleanup(today);
+                    }).catch(console.error);
+                }
+            }
+            
           } else {
             console.warn('User authenticated but no profile found in Firestore. Waiting for creation or invalid user.');
             // Do NOT create default profile. Rigid security.
           }
 
           // Cleanup old notifications (non-blocking)
-          AuthService.cleanupOldNotifications(firebaseUser.uid).catch(console.error);
+          AuthService.cleanupOldNotifications(firebaseUser.uid, AuthService.isAdmin(userData.role)).catch(console.error);
 
         } catch (err) {
           console.error("Error fetching/creating user profile:", err);

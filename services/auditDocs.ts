@@ -127,14 +127,14 @@ export const AuditDocService = {
             where('clientId', '==', clientId),
             where('fiscalYear', '==', fiscalYear),
             where('folderKey', '==', folderKey),
-            orderBy('uploadedAt', 'desc'),
         ];
-        if (lineItem) constraints.splice(3, 0, where('lineItem', '==', lineItem));
-        if (taskId) constraints.splice(3, 0, where('taskId', '==', taskId));
+        if (lineItem) constraints.push(where('lineItem', '==', lineItem));
+        if (taskId) constraints.push(where('taskId', '==', taskId));
 
         const q = query(collection(db, 'auditDocFiles'), ...constraints);
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditDocFile));
+        const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditDocFile));
+        return results.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
     },
 
     /**
@@ -147,13 +147,10 @@ export const AuditDocService = {
         ];
         if (taskId) constraints.push(where('taskId', '==', taskId));
         
-        const q = query(
-            collection(db, 'auditDocFiles'),
-            ...constraints,
-            orderBy('uploadedAt', 'desc')
-        );
+        const q = query(collection(db, 'auditDocFiles'), ...constraints);
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditDocFile));
+        const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditDocFile));
+        return results.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
     },
 
     /**
@@ -217,14 +214,14 @@ export const AuditDocService = {
             where('clientId', '==', clientId),
             where('fiscalYear', '==', fiscalYear),
             where('folderKey', '==', folderKey),
-            orderBy('createdAt', 'asc'),
         ];
-        if (lineItem) constraints.splice(3, 0, where('lineItem', '==', lineItem));
-        if (taskId) constraints.splice(3, 0, where('taskId', '==', taskId));
+        if (lineItem) constraints.push(where('lineItem', '==', lineItem));
+        if (taskId) constraints.push(where('taskId', '==', taskId));
 
         const q = query(collection(db, 'auditDocFolders'), ...constraints);
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditDocFolder));
+        const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditDocFolder));
+        return results.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     },
 
     /**

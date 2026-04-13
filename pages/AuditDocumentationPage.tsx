@@ -65,6 +65,58 @@ function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+interface UploadQueueItem {
+    id: string;
+    fileName: string;
+    status: 'pending' | 'uploading' | 'completed' | 'error';
+    error?: string;
+}
+
+const StatusPanel: React.FC<{ items: UploadQueueItem[]; onClear: () => void }> = ({ items, onClear }) => {
+    if (items.length === 0) return null;
+    const completedCount = items.filter(i => i.status === 'completed').length;
+    const errorCount = items.filter(i => i.status === 'error').length;
+    const totalCount = items.length;
+    const isFinished = (completedCount + errorCount) === totalCount;
+
+    return (
+        <div className="fixed bottom-6 right-6 z-[60] w-80 rounded-2xl shadow-2xl overflow-hidden border animate-in slide-in-from-bottom-5"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-mid)', backdropFilter: 'blur(12px)' }}>
+            <div className="px-4 py-3 flex items-center justify-between border-b" style={{ borderColor: 'var(--border)' }}>
+                <div className="flex items-center gap-2">
+                    {isFinished ? <CheckCircle size={16} className="text-emerald-500" /> : <Loader2 size={16} className="animate-spin text-brand-500" />}
+                    <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-heading)' }}>
+                        {isFinished ? 'Uploads Complete' : 'Uploading Session'}
+                    </h4>
+                </div>
+                {isFinished && (
+                    <button onClick={onClear} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                        <X size={14} style={{ color: 'var(--text-muted)' }} />
+                    </button>
+                )}
+            </div>
+            <div className="max-h-60 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                {items.map(item => (
+                    <div key={item.id} className="flex items-center gap-3 p-2 rounded-xl" style={{ background: 'var(--bg-surface)' }}>
+                        <div className="shrink-0">
+                            {item.status === 'completed' && <CheckCircle2 size={14} className="text-emerald-500" />}
+                            {item.status === 'error' && <AlertTriangle size={14} className="text-rose-500" />}
+                            {(item.status === 'uploading' || item.status === 'pending') && <Loader2 size={14} className="animate-spin text-brand-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-medium truncate" style={{ color: 'var(--text-heading)' }}>{item.fileName}</p>
+                            {item.error && <p className="text-[9px] text-rose-500 truncate mt-0.5">{item.error}</p>}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="px-4 py-2 text-[10px] font-bold text-center border-t" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                {completedCount} of {totalCount} succeeded {errorCount > 0 && `· ${errorCount} failed`}
+            </div>
+        </div>
+    );
+};
+
 // ─── WiFi Gate ────────────────────────────────────────────────────────────────
 
 const WifiGate: React.FC<{ retry: () => void }> = ({ retry }) => (
@@ -294,11 +346,12 @@ const SubFolderItem: React.FC<SubFolderItemProps> = ({ folder, isGrid, onClick, 
                     {folder.name}
                 </p>
                 <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{formatDate(folder.createdAt)}</p>
+                <div className="flex-1" />
                 <button
                     onClick={e => { e.stopPropagation(); onDelete(); }}
-                    className="self-center opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-500/20"
+                    className="shrink-0 p-1.5 rounded-lg transition-all hover:bg-rose-500/20 active:scale-90"
                     style={{ color: 'var(--text-muted)' }}>
-                    <Trash2 size={11} />
+                    <Trash2 size={12} className="group-hover:text-rose-400" />
                 </button>
             </button>
         );
@@ -397,10 +450,24 @@ const FolderContent: React.FC<FolderContentProps> = ({
 
     useEffect(() => { load(); }, [load]);
 
+    const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+
     const doUpload = async (selectedFiles: File[]) => {
+        const newItems: UploadQueueItem[] = selectedFiles.map(f => ({
+            id: Math.random().toString(36).substr(2, 9),
+            fileName: f.name,
+            status: 'pending'
+        }));
+
+        setUploadQueue(prev => [...prev, ...newItems]);
         setUploading(true);
-        let ok = 0;
-        for (const file of selectedFiles) {
+
+        for (let i = 0; i < selectedFiles.length; i++) {
+            const file = selectedFiles[i];
+            const queueItem = newItems[i];
+
+            setUploadQueue(prev => prev.map(q => q.id === queueItem.id ? { ...q, status: 'uploading' } : q));
+
             try {
                 await AuditDocService.uploadFile(file, {
                     clientId, clientName, fiscalYear,
@@ -410,16 +477,16 @@ const FolderContent: React.FC<FolderContentProps> = ({
                     customFolderId,
                     uploadedBy: userId,
                     uploadedByName: userName,
+                    taskId,
                 });
-                ok++;
+                setUploadQueue(prev => prev.map(q => q.id === queueItem.id ? { ...q, status: 'completed' } : q));
             } catch (e: any) {
+                setUploadQueue(prev => prev.map(q => q.id === queueItem.id ? { ...q, status: 'error', error: e.message } : q));
                 toast.error(`"${file.name}" failed: ${e.message}`);
             }
         }
-        if (ok > 0) {
-            toast.success(`${ok} file${ok > 1 ? 's' : ''} uploaded`);
-            await load();
-        }
+
+        await load();
         setUploading(false);
     };
 
@@ -677,6 +744,8 @@ const FolderContent: React.FC<FolderContentProps> = ({
                     </div>
                 </div>
             )}
+
+            <StatusPanel items={uploadQueue} onClear={() => setUploadQueue([])} />
         </div>
     );
 };
@@ -943,69 +1012,113 @@ interface BFolderViewProps {
     fileCounts: Record<string, number>;
     onEnter: (lineItem: string, label: string) => void;
     isGrid: boolean;
+
+    clientId: string;
+    clientName: string;
+    fiscalYear: string;
+    userId: string;
+    userName: string;
+    taskId?: string;
+    onEnterSubFolder: (folder: AuditDocFolder) => void;
 }
 
-const BFolderView: React.FC<BFolderViewProps> = ({ fileCounts, onEnter, isGrid }) => {
+const BFolderView: React.FC<BFolderViewProps> = ({
+    fileCounts, onEnter, isGrid,
+    clientId, clientName, fiscalYear, userId, userName, taskId, onEnterSubFolder
+}) => {
     const folder = AUDIT_FOLDER_STRUCTURE['B'];
+
     return (
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
-            {isGrid ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {(folder.lineItems || []).map((li, idx) => {
-                        const lineCode = `B.${idx + 1}`;
-                        const count = fileCounts[`B-${lineCode}`] || 0;
-                        return (
-                            <button
-                                key={lineCode}
-                                onClick={() => onEnter(lineCode, li)}
-                                className="group text-left rounded-xl p-4 flex flex-col gap-2.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg"
-                                style={{ background: 'var(--bg-elevated)', border: `1px solid ${folder.borderColor}` }}
-                            >
-                                <div className="w-10 h-10 rounded-lg flex items-center justify-center"
-                                    style={{ background: folder.bgColor, border: `1px solid ${folder.borderColor}` }}>
-                                    <span className="text-xs font-black" style={{ color: folder.color }}>{lineCode}</span>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-semibold leading-snug" style={{ color: 'var(--text-heading)' }}>
+        <div className="flex-1 flex flex-col min-h-0">
+            {/* Standard Line Items */}
+            <div className="shrink-0 px-5 pt-5 pb-2">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+                    Standard Audit Sections (B.1 - B.15)
+                </h3>
+            </div>
+            <div className="shrink-0 overflow-y-auto custom-scrollbar px-5 py-2 max-h-[350px]">
+                {isGrid ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        {(folder.lineItems || []).map((li, idx) => {
+                            const lineCode = `B.${idx + 1}`;
+                            const count = fileCounts[`B-${lineCode}`] || 0;
+                            return (
+                                <button
+                                    key={lineCode}
+                                    onClick={() => onEnter(lineCode, li)}
+                                    className="group text-left rounded-xl p-4 flex flex-col gap-2.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg"
+                                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${folder.borderColor}` }}
+                                >
+                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center"
+                                        style={{ background: folder.bgColor, border: `1px solid ${folder.borderColor}` }}>
+                                        <span className="text-xs font-black" style={{ color: folder.color }}>{lineCode}</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold leading-snug" style={{ color: 'var(--text-heading)' }}>
+                                            {li.replace(/^B\.\d+\. /, '')}
+                                        </p>
+                                        <p className="text-[10px] mt-1" style={{ color: count > 0 ? folder.color : 'var(--text-muted)' }}>
+                                            {count > 0 ? `${count} file${count !== 1 ? 's' : ''}` : 'Empty'}
+                                        </p>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="space-y-1 max-w-2xl">
+                        {(folder.lineItems || []).map((li, idx) => {
+                            const lineCode = `B.${idx + 1}`;
+                            const count = fileCounts[`B-${lineCode}`] || 0;
+                            return (
+                                <button
+                                    key={lineCode}
+                                    onClick={() => onEnter(lineCode, li)}
+                                    className="group w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-100"
+                                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                                >
+                                    <div className="shrink-0 w-12 text-xs font-black text-center py-1 rounded-lg"
+                                        style={{ background: folder.bgColor, color: folder.color, border: `1px solid ${folder.borderColor}` }}>
+                                        {lineCode}
+                                    </div>
+                                    <span className="flex-1 text-sm" style={{ color: 'var(--text-heading)' }}>
                                         {li.replace(/^B\.\d+\. /, '')}
-                                    </p>
-                                    <p className="text-[10px] mt-1" style={{ color: count > 0 ? folder.color : 'var(--text-muted)' }}>
+                                    </span>
+                                    <span className="shrink-0 text-xs" style={{ color: count > 0 ? folder.color : 'var(--text-muted)' }}>
                                         {count > 0 ? `${count} file${count !== 1 ? 's' : ''}` : 'Empty'}
-                                    </p>
-                                </div>
-                            </button>
-                        );
-                    })}
+                                    </span>
+                                    <ChevronRight size={14} className="shrink-0 opacity-0 group-hover:opacity-60 transition-opacity"
+                                        style={{ color: 'var(--text-muted)' }} />
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            <div className="shrink-0 px-5 pt-6 pb-1">
+                <div className="h-px w-full" style={{ background: 'var(--border)' }} />
+            </div>
+
+            {/* General Documents (Folder B Root) */}
+            <div className="flex-1 flex flex-col min-h-0">
+                <div className="shrink-0 px-5 pt-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+                        General Sub-folders & Root Documents
+                    </h3>
                 </div>
-            ) : (
-                <div className="space-y-1 max-w-2xl">
-                    {(folder.lineItems || []).map((li, idx) => {
-                        const lineCode = `B.${idx + 1}`;
-                        const count = fileCounts[`B-${lineCode}`] || 0;
-                        return (
-                            <button
-                                key={lineCode}
-                                onClick={() => onEnter(lineCode, li)}
-                                className="group w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-100"
-                                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                            >
-                                <div className="shrink-0 w-12 text-xs font-black text-center py-1 rounded-lg"
-                                    style={{ background: folder.bgColor, color: folder.color, border: `1px solid ${folder.borderColor}` }}>
-                                    {lineCode}
-                                </div>
-                                <span className="flex-1 text-sm" style={{ color: 'var(--text-heading)' }}>
-                                    {li.replace(/^B\.\d+\. /, '')}
-                                </span>
-                                <span className="shrink-0 text-xs" style={{ color: count > 0 ? folder.color : 'var(--text-muted)' }}>
-                                    {count > 0 ? `${count} file${count !== 1 ? 's' : ''}` : 'Empty'}
-                                </span>
-                                <ChevronRight size={14} className="shrink-0 opacity-0 group-hover:opacity-60 transition-opacity"
-                                    style={{ color: 'var(--text-muted)' }} />
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+                <FolderContent
+                    folderKey="B"
+                    clientId={clientId}
+                    clientName={clientName}
+                    fiscalYear={fiscalYear}
+                    userId={userId}
+                    userName={userName}
+                    taskId={taskId}
+                    onEnterSubFolder={onEnterSubFolder}
+                    isGrid={isGrid}
+                />
+            </div>
         </div>
     );
 };
@@ -1272,11 +1385,18 @@ const AuditDocumentationPage: React.FC = () => {
                     />
                 )}
 
-                {currentLevel.kind === 'main-folder' && currentLevel.folderKey === 'B' && (
+                {currentLevel.kind === 'main-folder' && currentLevel.folderKey === 'B' && selectedClient && user && (
                     <BFolderView
                         fileCounts={fileCounts}
                         onEnter={enterLineItem}
                         isGrid={isGrid}
+                        clientId={selectedClientId}
+                        clientName={selectedClient.name}
+                        fiscalYear={selectedFY}
+                        userId={user.uid}
+                        userName={user.displayName}
+                        taskId={selectedTaskId !== 'ALL' ? selectedTaskId : undefined}
+                        onEnterSubFolder={enterSubFolder}
                     />
                 )}
 

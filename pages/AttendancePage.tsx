@@ -242,7 +242,7 @@ const AttendancePage: React.FC = () => {
                         userId: u.uid,
                         userName: u.displayName,
                         date: dateStr,
-                        status: 'OFFICE CLOSED',
+                        status: 'HOLIDAY',
                         clientName: holiday.title || 'Holiday',
                         notes: 'Public Holiday',
                         type: 'HOLIDAY'
@@ -406,6 +406,8 @@ const AttendancePage: React.FC = () => {
             if (status === 'LATE') return [254, 243, 199];
             if (status === 'ABSENT') return [254, 226, 226];
             if (status === 'ON LEAVE') return [219, 234, 254];
+            if (status === 'HOLIDAY') return [237, 233, 254]; // Purple-ish
+            if (status === 'WEEKEND') return [241, 245, 249]; // Gray
             return [245, 245, 250];
         };
 
@@ -1091,18 +1093,24 @@ const AttendancePage: React.FC = () => {
                                                                     record.status === 'LATE' ? 'rgba(201,138,42,0.12)' :
                                                                     record.status === 'ABSENT' ? 'rgba(196,68,90,0.12)' :
                                                                     record.status === 'ON LEAVE' ? 'rgba(61,130,201,0.12)' :
+                                                                    record.status === 'HOLIDAY' ? 'rgba(139,92,246,0.12)' :
+                                                                    record.status === 'WEEKEND' ? 'rgba(100,116,139,0.08)' :
                                                                     'var(--bg-main)',
                                                                 color:
                                                                     record.status === 'PRESENT' ? 'var(--accent)' :
                                                                     record.status === 'LATE' ? 'var(--color-warning)' :
                                                                     record.status === 'ABSENT' ? 'var(--color-danger)' :
                                                                     record.status === 'ON LEAVE' ? 'var(--color-info)' :
+                                                                    record.status === 'HOLIDAY' ? '#8b5cf6' :
+                                                                    record.status === 'WEEKEND' ? 'var(--text-muted)' :
                                                                     'var(--text-muted)',
                                                                 borderColor:
                                                                     record.status === 'PRESENT' ? 'rgba(101,154,43,0.25)' :
                                                                     record.status === 'LATE' ? 'rgba(201,138,42,0.2)' :
                                                                     record.status === 'ABSENT' ? 'rgba(196,68,90,0.2)' :
                                                                     record.status === 'ON LEAVE' ? 'rgba(61,130,201,0.2)' :
+                                                                    record.status === 'HOLIDAY' ? 'rgba(139,92,246,0.2)' :
+                                                                    record.status === 'WEEKEND' ? 'rgba(100,116,139,0.15)' :
                                                                     'var(--border)'
                                                             }}
                                                         >

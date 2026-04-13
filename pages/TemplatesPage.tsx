@@ -912,11 +912,6 @@ const TemplatesPage: React.FC = () => {
                                                     {getResourceIcon(resource.type)}
                                                 </div>
                                                 <div className="flex space-x-2 items-center">
-                                                    {resource.reviewDate && new Date(resource.reviewDate) < new Date() && (
-                                                        <div className="flex items-center text-xs font-bold text-red-400 bg-red-500/10 px-2 py-1 rounded">
-                                                            <AlertTriangle size={12} className="mr-1" /> Expired
-                                                        </div>
-                                                    )}
                                                     {isAdmin && (
                                                         <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button onClick={e => handleEditResource(resource, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><FileText size={13} /></button>
@@ -1552,13 +1547,6 @@ const TemplatesPage: React.FC = () => {
                                 <input required className="w-full glass-input rounded-lg px-3 py-2 text-sm"
                                     value={currentResource.title || ''} onChange={e => setCurrentResource({ ...currentResource, title: e.target.value })}
                                     placeholder="e.g. Audit Standard 2024" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">Review / Expiry Date</label>
-                                <input type="date" className="w-full glass-input rounded-lg px-3 py-2 text-sm"
-                                    value={currentResource.reviewDate || ''} onChange={e => setCurrentResource({ ...currentResource, reviewDate: e.target.value })}
-                                />
-                                <p className="text-[10px] text-gray-500 mt-1">Leave empty if document does not expire.</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

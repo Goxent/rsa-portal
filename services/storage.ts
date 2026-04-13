@@ -13,7 +13,8 @@ export const StorageService = {
      */
     upload: async (file: File): Promise<{ success: boolean; data?: StorageFile; error?: string }> => {
         try {
-            const fileId = await AppwriteService.uploadFile(file);
+            const uploadedFile = await AppwriteService.uploadFile(file);
+            const fileId = uploadedFile.$id;
             const viewUrl = AppwriteService.getFileView(fileId);
 
             let type: StorageFile['type'] = 'other';

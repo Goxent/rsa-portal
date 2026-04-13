@@ -2259,25 +2259,76 @@ export const AuthService = {
     /**
      * Delete notifications older than 30 days
      */
-    cleanupOldNotifications: async (userId: string) => {
+    cleanupOldNotifications: async (userId: string, isAdmin: boolean = false) => {
         try {
             const date = new Date();
             date.setDate(date.getDate() - 30);
             const cutoffDate = date.toISOString();
 
-            // Query specifically for this user's old notifications
-            // Note: Composite index (userId, createdAt) might be required by Firestore
-            const q = query(
+            // 1. Query for this user's old notifications
+            const qUser = query(
                 collection(db, 'notifications'),
                 where('userId', '==', userId),
                 where('createdAt', '<', cutoffDate)
+            );
+
+            // 2. If admin, also scan for shared 'ALL' notifications to keep the feed clean
+            let qAll = null;
+            if (isAdmin) {
+                qAll = query(
+                    collection(db, 'notifications'),
+                    where('userId', '==', 'ALL'),
+                    where('createdAt', '<', cutoffDate)
+                );
+            }
+
+            const [userSnap, allSnap] = await Promise.all([
+                getDocs(qUser),
+                qAll ? getDocs(qAll) : Promise.resolve({ docs: [], empty: true })
+            ]);
+
+            const allDocs = [...userSnap.docs, ...(allSnap as any).docs];
+            if (allDocs.length === 0) return;
+
+            console.log(`[NotificationCleanup] Purging ${allDocs.length} notifications older than 30 days.`);
+
+            const batchSize = 500;
+            for (let i = 0; i < allDocs.length; i += batchSize) {
+                const chunk = allDocs.slice(i, i + batchSize);
+                const batch = writeBatch(db);
+                chunk.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+            }
+        } catch (error: any) {
+            // Silently ignore permission errors for background cleanup tasks
+            if (error.code !== 'permission-denied') {
+                console.error("Failed to cleanup old notifications:", error);
+            }
+        }
+    },
+
+    /**
+     * Delete audit logs older than 90 days.
+     * Uses batching to overcome Firestore transaction limits.
+     */
+    cleanupOldAuditLogs: async () => {
+        try {
+            const date = new Date();
+            date.setDate(date.getDate() - 90);
+            const cutoffDate = date.toISOString();
+
+            const q = query(
+                collection(db, 'auditLogs'),
+                where('timestamp', '<', cutoffDate)
             );
 
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) return;
 
-            console.log(`Cleaning up ${snapshot.size} old notifications for user ${userId}`);
+            console.log(`Cleaning up ${snapshot.size} old audit logs`);
 
             const batchSize = 500;
             const batches = [];
@@ -2296,11 +2347,18 @@ export const AuthService = {
 
             await Promise.all(batches);
         } catch (error: any) {
-            // Silently ignore permission errors for background cleanup tasks
             if (error.code !== 'permission-denied') {
-                console.error("Failed to cleanup old notifications:", error);
+                console.error("Failed to cleanup old audit logs:", error);
             }
         }
+    },
+
+    getLastAuditCleanup: (): string | null => {
+        return localStorage.getItem('lastAuditCleanupDate');
+    },
+
+    setLastAuditCleanup: (dateStr: string) => {
+        localStorage.setItem('lastAuditCleanupDate', dateStr);
     },
 
     // Real-time listener
