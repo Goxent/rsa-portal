@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../../services/firebase';
 import toast from 'react-hot-toast';
 import { Trophy, Target, Check, X, Plus } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
@@ -41,12 +43,24 @@ const FocusWidget: React.FC = () => {
 
     useEffect(() => { injectStyle(); }, []);
 
-    // Load from User Profile initially
+    // Real-time listener for Focus Goals
     useEffect(() => {
-        if (user?.currentFocusGoals) {
-            setGoals(user.currentFocusGoals);
-        }
-    }, [user?.currentFocusGoals]);
+        if (!user?.uid) return;
+
+        const userRef = doc(db, 'users', user.uid);
+        const unsubscribe = onSnapshot(userRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                if (data.currentFocusGoals) {
+                    setGoals(data.currentFocusGoals);
+                }
+            }
+        }, (error) => {
+            console.error("Focus sync error:", error);
+        });
+
+        return () => unsubscribe();
+    }, [user?.uid]);
 
     const syncToFirestore = useCallback(async (nextGoals: FocusGoal[]) => {
         if (!user) return;
