@@ -121,19 +121,34 @@ const docConverter = <T>(doc: any): T => {
     return { ...data, id: doc.id } as T;
 };
 
+// Helper to classify device for session control
+const getDeviceType = (): 'MOBILE' | 'DESKTOP' => {
+    const ua = navigator.userAgent;
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'MOBILE';
+    if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/i.test(ua)) {
+        return 'MOBILE';
+    }
+    return 'DESKTOP';
+};
+
 // Helper to set up a new session on login
 const setupUserSession = async (uid: string, email: string, method: string) => {
-    // Generate new session (auto-invalidates any previous session across devices)
     const sessionId = crypto.randomUUID();
     const sessionCreatedAt = Date.now();
+    const deviceType = getDeviceType();
     
-    // Store locally
+    // Store locally for cross-reference
     localStorage.setItem('sessionId', sessionId);
+    localStorage.setItem('deviceType', deviceType);
 
-    // Store in Firestore
+    // Update specific slot in Firestore
     await updateDoc(doc(db, 'users', uid), {
-        currentSessionId: sessionId,
-        sessionCreatedAt
+        currentSessionId: sessionId, // Keep for backward compatibility/legacy check
+        sessionCreatedAt,
+        [`activeSessions.${deviceType}`]: {
+            sessionId,
+            lastActive: sessionCreatedAt
+        }
     });
 
     // Log login
@@ -144,7 +159,7 @@ const setupUserSession = async (uid: string, email: string, method: string) => {
         targetType: 'system',
         targetId: uid,
         targetName: 'Auth',
-        details: { method, newSessionId: sessionId }
+        details: { method, newSessionId: sessionId, deviceType }
     });
 
     return { currentSessionId: sessionId, sessionCreatedAt };
@@ -476,16 +491,16 @@ export const AuthService = {
         }
     },
 
-    logout: async (reason: 'MANUAL' | 'SESSION_EXPIRED' = 'MANUAL') => {
+    logout: async (reason: 'MANUAL' | 'SESSION_EXPIRED' | 'SESSION_TERMINATED' = 'MANUAL') => {
         if (auth.currentUser) {
             const uid = auth.currentUser.uid;
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
+            const deviceType = localStorage.getItem('deviceType') || 'DESKTOP';
             
-            // Clear session data from Firestore explicitly to invalidate all clients
+            // Clear specific session slot in Firestore
             try {
                 await updateDoc(doc(db, 'users', uid), {
-                    currentSessionId: null,
+                    [`activeSessions.${deviceType}`]: null,
+                    currentSessionId: null, // Backward compatibility
                     sessionCreatedAt: null
                 });
             } catch (e) {
@@ -494,15 +509,17 @@ export const AuthService = {
 
             await createAuditLog({
                 userId: uid,
-                userName: userName,
-                action: reason === 'SESSION_EXPIRED' ? AuditAction.SESSION_EXPIRED : AuditAction.LOGOUT,
+                userName: auth.currentUser.email || 'User',
+                action: reason === 'SESSION_EXPIRED' ? AuditAction.SESSION_EXPIRED : 
+                        reason === 'SESSION_TERMINATED' ? AuditAction.SESSION_EXPIRED : AuditAction.LOGOUT,
                 targetType: 'system',
                 targetId: uid,
                 targetName: 'Auth',
-                details: { reason }
+                details: { reason, deviceType }
             });
         }
         localStorage.removeItem('sessionId');
+        localStorage.removeItem('deviceType');
         await signOut(auth);
     },
 
@@ -702,13 +719,35 @@ export const AuthService = {
     getAllUsers: async (): Promise<UserProfile[]> => {
         const q = query(collection(db, 'users'));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => docConverter<UserProfile>(d));
+        return snapshot.docs
+            .map(d => docConverter<UserProfile>(d))
+            .filter(u => u.role !== UserRole.MASTER_ADMIN)
+            .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
     },
 
     getAllStaff: async (): Promise<UserProfile[]> => {
         const q = query(collection(db, 'users'), where('role', '!=', UserRole.ADMIN));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => docConverter<UserProfile>(d));
+        return snapshot.docs
+            .map(d => docConverter<UserProfile>(d))
+            .filter(u => u.role !== UserRole.MASTER_ADMIN && u.role !== UserRole.ADMIN)
+            .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+    },
+
+    updateClientPermissions: async (clientId: string, staffIds: string[]) => {
+        await updateDoc(doc(db, 'clients', clientId), { permittedStaff: staffIds });
+        if (auth.currentUser) {
+            const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
+            await logClientAction(
+                AuditAction.CLIENT_UPDATED,
+                auth.currentUser.uid,
+                adminName,
+                clientId,
+                'Client Permissions',
+                { permittedStaff: staffIds }
+            );
+        }
     },
 
     updateUserRole: async (uid: string, role: UserRole) => {

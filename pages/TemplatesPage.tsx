@@ -365,6 +365,16 @@ const TemplatesPage: React.FC = () => {
 
     const handleDeleteTemplateFolder = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
+        
+        // Restriction: Only Master Admin can delete folders
+        if (user?.role !== UserRole.MASTER_ADMIN) {
+            toast.error('Permission Denied: Only Master Admin can delete folders.', {
+                icon: '🛡️',
+                style: { borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', color: 'var(--text-heading)', border: '1px solid var(--border-mid)' }
+            });
+            return;
+        }
+
         openModal('CONFIRMATION', {
             title: 'Delete Folder',
             message: 'Templates in this folder will not be deleted but will lose their folder association.',

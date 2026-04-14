@@ -225,7 +225,7 @@ const Dashboard: React.FC = () => {
 
                 {/* 3. Main Widget Ecosystem */}
                 <div className="flex flex-col gap-6">
-                    <AttendanceWidget />
+                    {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
                     
                     {user && (
                         <WidgetContainer

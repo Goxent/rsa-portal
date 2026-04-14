@@ -227,8 +227,8 @@ const ResourcePlanningPage: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [selectedDept, setSelectedDept] = useState<string>('All');
     const [reassignTarget, setReassignTarget] = useState<Task | null>(null);
-    const [sortKey, setSortKey] = useState<SortKey>('totalTasks');
-    const [sortAsc, setSortAsc] = useState(false);
+    const [sortKey, setSortKey] = useState<SortKey>('name');
+    const [sortAsc, setSortAsc] = useState(true);
     const [filter, setFilter] = useState<FilterKey>('all');
     const [search, setSearch] = useState('');
     const [showHeatmap, setShowHeatmap] = useState(true);
@@ -494,10 +494,10 @@ const ResourcePlanningPage: React.FC = () => {
                             <Filter size={11} />
                             <span>Sort:</span>
                             {([
+                                { key: 'name', label: 'Name' },
                                 { key: 'totalTasks', label: 'Tasks' },
                                 { key: 'overdue', label: 'Overdue' },
                                 { key: 'highRisk', label: 'Risk' },
-                                { key: 'name', label: 'Name' },
                             ] as { key: SortKey; label: string }[]).map(s => (
                                 <button
                                     key={s.key}
@@ -513,7 +513,7 @@ const ResourcePlanningPage: React.FC = () => {
 
                         {/* Department Tabs */}
                         <div className="flex items-center gap-1.5 bg-white/5 border border-white/8 rounded-xl p-1 overflow-x-auto">
-                            {['All', 'Audit', 'Tax', 'Admin', 'Consulting'].map(dept => (
+                            {['All', 'Audit', 'Tax', 'Admin', 'Consulting', 'R. SAPKOTA & ASSOCIATES'].map(dept => (
                                 <button
                                     key={dept}
                                     onClick={() => setSelectedDept(dept)}

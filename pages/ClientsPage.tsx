@@ -3,7 +3,7 @@ import {
     Users, Plus, Search, Filter, FileText, MoreVertical,
     Edit, Trash2, Phone, Mail, MapPin, BadgeCheck, Building2,
     Briefcase, Calendar, X, Save, ChevronDown, CheckCircle2, User,
-    Download, FileSpreadsheet, AlertTriangle
+    Download, FileSpreadsheet, AlertTriangle, ShieldCheck, Check
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -37,7 +37,8 @@ const ClientsPage: React.FC = () => {
     const [filterAuditorFirm, setFilterAuditorFirm] = useState('ALL');
     const [filterCategory, setFilterCategory] = useState('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeModalTab, setActiveModalTab] = useState<'BASIC' | 'CONTACT' | 'ASSIGNMENT'>('BASIC');
+    const [activeModalTab, setActiveModalTab] = useState<'BASIC' | 'CONTACT' | 'ASSIGNMENT' | 'PERMISSIONS'>('BASIC');
+    const [permissionSaving, setPermissionSaving] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
 
@@ -191,7 +192,7 @@ const ClientsPage: React.FC = () => {
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(22);
             doc.setFont('helvetica', 'bold');
-            doc.text('R. Sapkota & Associates', 105, 15, { align: 'center' });
+            doc.text('R. SAPKOTA & ASSOCIATES', 105, 15, { align: 'center' });
 
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
@@ -247,7 +248,7 @@ const ClientsPage: React.FC = () => {
         } else {
             // Excel Export
             const workbook = new ExcelJS.Workbook();
-            workbook.creator = 'R. Sapkota & Associates';
+            workbook.creator = 'R. SAPKOTA & ASSOCIATES';
             workbook.created = new Date();
 
             const sheet = workbook.addWorksheet('Clients', {
@@ -257,7 +258,7 @@ const ClientsPage: React.FC = () => {
             // Company Header
             sheet.mergeCells('A1:F1');
             const titleCell = sheet.getCell('A1');
-            titleCell.value = 'R. Sapkota & Associates';
+            titleCell.value = 'R. SAPKOTA & ASSOCIATES';
             titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
             titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
             titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
@@ -614,15 +615,15 @@ const ClientsPage: React.FC = () => {
                         </div>
 
                         {/* Tab Strip */}
-                        <div className="flex px-6 pt-4 gap-6 border-b border-white/10 shrink-0">
-                            {(['BASIC', 'CONTACT', 'ASSIGNMENT'] as const).map(tab => (
+                        <div className="flex px-6 pt-4 gap-6 border-b border-white/10 shrink-0 overflow-x-auto">
+                            {(['BASIC', 'CONTACT', 'ASSIGNMENT', ...(editingId ? ['PERMISSIONS'] : [])] as const).map(tab => (
                                 <button
                                     key={tab}
                                     type="button"
-                                    onClick={() => setActiveModalTab(tab)}
-                                    className={`pb-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${activeModalTab === tab ? 'text-amber-400 border-amber-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
+                                    onClick={() => setActiveModalTab(tab as any)}
+                                    className={`pb-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 whitespace-nowrap ${activeModalTab === tab ? 'text-amber-400 border-amber-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
                                 >
-                                    {tab === 'BASIC' ? 'Basic Info' : tab === 'CONTACT' ? 'Contact & Tax' : 'Assignment'}
+                                    {tab === 'BASIC' ? 'Basic Info' : tab === 'CONTACT' ? 'Contact & Tax' : tab === 'PERMISSIONS' ? '🔐 Audit Docs Access' : 'Assignment'}
                                 </button>
                             ))}
                         </div>
@@ -819,6 +820,66 @@ const ClientsPage: React.FC = () => {
                             </div>
                             </div>
                             )}
+
+                            {activeModalTab === 'PERMISSIONS' && editingId && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <ShieldCheck size={16} /> Audit Documentation Access
+                                </h3>
+                                <p className="text-xs text-gray-400 leading-relaxed">
+                                    Select which staff members can <span className="text-white font-semibold">view audit documentation</span> for this client. Staff will see this client in their Audit Docs page in read-only mode.
+                                </p>
+                                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-2 pr-1 mt-3">
+                                    {staffList.filter(s => s.role === UserRole.STAFF).map(staff => {
+                                        const client = clients.find(c => c.id === editingId);
+                                        const isPermitted = client?.permittedStaff?.includes(staff.uid) || false;
+                                        return (
+                                            <button
+                                                key={staff.uid}
+                                                type="button"
+                                                disabled={permissionSaving}
+                                                onClick={async () => {
+                                                    setPermissionSaving(true);
+                                                    const currentPerms = client?.permittedStaff || [];
+                                                    const newPerms = isPermitted
+                                                        ? currentPerms.filter(id => id !== staff.uid)
+                                                        : [...currentPerms, staff.uid];
+                                                    try {
+                                                        await AuthService.updateClientPermissions(editingId, newPerms);
+                                                        setClients(prev => prev.map(c => c.id === editingId ? { ...c, permittedStaff: newPerms } : c));
+                                                        toast.success(`${isPermitted ? 'Removed' : 'Granted'} access for ${staff.displayName}`);
+                                                    } catch {
+                                                        toast.error('Failed to update permissions');
+                                                    } finally {
+                                                        setPermissionSaving(false);
+                                                    }
+                                                }}
+                                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
+                                                    isPermitted
+                                                        ? 'bg-amber-500/10 border-amber-500/30'
+                                                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-gray-300">
+                                                        {staff.displayName?.[0] || '?'}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-xs font-semibold text-white">{staff.displayName}</p>
+                                                        <p className="text-[10px] text-gray-500">{staff.department || 'Staff'}</p>
+                                                    </div>
+                                                </div>
+                                                {isPermitted && <Check size={16} className="text-amber-400" />}
+                                            </button>
+                                        );
+                                    })}
+                                    {staffList.filter(s => s.role === UserRole.STAFF).length === 0 && (
+                                        <p className="text-center text-xs text-gray-500 py-8">No staff members found.</p>
+                                    )}
+                                </div>
+                            </div>
+                            )}
+
 
                             <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>

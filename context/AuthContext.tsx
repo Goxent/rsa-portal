@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { AuthService, auth, db } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 const SESSION_EXPIRY_DAYS = 15;
@@ -38,9 +38,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Note: inactivity auto-logout is handled exclusively by useAutoLogout hook
   // in components/Layout.tsx — do not add a second timer here.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribeSnapshot: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clean up previous snapshot listener if any
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
       if (firebaseUser) {
-        // User is signed in, fetch their profile from Firestore
         setEmailVerified(firebaseUser.emailVerified);
         try {
           const userRef = doc(db, 'users', firebaseUser.uid);
@@ -49,27 +56,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
             const userData = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
 
-            // Enforce 15-day session limit
+            // 1. Initial expiry check (15 days)
             if (userData.sessionCreatedAt) {
-                const sessionAge = Date.now() - userData.sessionCreatedAt;
-                if (sessionAge > SESSION_EXPIRY_MS) {
-                    console.warn(`[Security] Session expired (Age: ${Math.round(sessionAge / 3600000)}h). Logging out.`);
-                    toast.error('Your session has expired for security reasons. Please login again.', { duration: 5000, id: 'session-expired' });
-                    await AuthService.logout('SESSION_EXPIRED');
-                    setUser(null);
-                    setLoading(false);
-                    return;
-                }
+              const sessionAge = Date.now() - userData.sessionCreatedAt;
+              if (sessionAge > SESSION_EXPIRY_MS) {
+                await AuthService.logout('SESSION_EXPIRED');
+                setUser(null);
+                setLoading(false);
+                return;
+              }
             }
 
             setUser(userData);
-            
-            // Check if admin to perform background tasks
+
+            // 2. Real-time Session Monitoring
+            unsubscribeSnapshot = onSnapshot(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data() as UserProfile;
+                    const localSessionId = localStorage.getItem('sessionId');
+                    const deviceType = localStorage.getItem('deviceType') || 'DESKTOP';
+                    const activeSessionId = data.activeSessions?.[deviceType]?.sessionId;
+
+                    if (localSessionId && activeSessionId && localSessionId !== activeSessionId) {
+                        console.warn(`[Security] Session invalidated by another ${deviceType} login.`);
+                        toast.error(`You have been logged out because your account was accessed from another ${deviceType.toLowerCase()} device or browser.`, { duration: 6000, id: 'multi-login' });
+                        AuthService.logout('SESSION_TERMINATED').then(() => {
+                            setUser(null);
+                        });
+                    }
+                }
+            });
+
+            // 3. Admin background tasks
             if (AuthService.isAdmin(userData.role)) {
-                // Background task: Audit Log Cleanup (Throttled to once per day)
                 const today = new Date().toISOString().split('T')[0];
                 const lastCleanup = AuthService.getLastAuditCleanup();
-                
                 if (lastCleanup !== today) {
                     AuthService.cleanupOldAuditLogs().then(() => {
                         AuthService.setLastAuditCleanup(today);
@@ -77,26 +98,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             }
             
-          } else {
-            console.warn('User authenticated but no profile found in Firestore. Waiting for creation or invalid user.');
-            // Do NOT create default profile. Rigid security.
+            AuthService.cleanupOldNotifications(firebaseUser.uid, AuthService.isAdmin(userData.role)).catch(console.error);
           }
-
-          // Cleanup old notifications (non-blocking)
-          AuthService.cleanupOldNotifications(firebaseUser.uid, AuthService.isAdmin(userData.role)).catch(console.error);
-
         } catch (err) {
-          console.error("Error fetching/creating user profile:", err);
+          console.error("Error fetching user profile:", err);
         }
       } else {
-        // User is signed out
         setUser(null);
         setEmailVerified(false);
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribeAuth();
+        if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   const login = async (email: string, pass: string) => {

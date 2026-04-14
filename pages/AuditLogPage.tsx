@@ -39,7 +39,7 @@ const AuditLogPage: React.FC = () => {
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
     useEffect(() => {
-        const canViewLogs = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+        const canViewLogs = user?.role === UserRole.MASTER_ADMIN;
         if (!canViewLogs) {
             setLoading(false);
             return;

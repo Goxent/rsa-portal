@@ -41,6 +41,12 @@ export interface UserProfile {
   // Session Security
   currentSessionId?: string;
   sessionCreatedAt?: number;
+  activeSessions?: {
+    [deviceType: string]: {
+      sessionId: string;
+      lastActive: number;
+    }
+  };
 
   // New: Persistent Dashboard State
   currentFocusGoals?: FocusGoal[];
@@ -408,6 +414,9 @@ export interface Client {
 
   // Billing Notes (NEW)
   billingNotes?: string;
+
+  // New: Audit Documentation Permissions
+  permittedStaff?: string[]; // Array of User UIDs allowed to view audit docs for this client
 }
 
 export interface RiskAreaDocument {

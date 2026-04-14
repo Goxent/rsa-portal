@@ -186,7 +186,7 @@ const PerformancePage: React.FC = () => {
         doc.setFontSize(24);
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.text("R. Sapkota & Associates", 105, 18, { align: "center" });
+        doc.text("R. SAPKOTA & ASSOCIATES", 105, 18, { align: "center" });
 
         doc.setFontSize(10);
         doc.setTextColor(233, 213, 255); // Light violet

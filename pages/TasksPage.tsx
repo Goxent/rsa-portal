@@ -836,7 +836,7 @@ const TasksPage: React.FC = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
-        doc.text('R. Sapkota & Associates', 105, 14, { align: 'center' });
+        doc.text('R. SAPKOTA & ASSOCIATES', 105, 14, { align: 'center' });
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(180, 200, 230);
@@ -892,7 +892,7 @@ const TasksPage: React.FC = () => {
             doc.setPage(i);
             doc.setFontSize(7);
             doc.setTextColor(150, 160, 175);
-            doc.text('R. Sapkota & Associates â€” Confidential', 14, doc.internal.pageSize.height - 8);
+            doc.text('R. SAPKOTA & ASSOCIATES — Confidential', 14, doc.internal.pageSize.height - 8);
             doc.text(`Page ${i} of ${pageCount} `, 196, doc.internal.pageSize.height - 8, { align: 'right' });
         }
 
@@ -905,7 +905,7 @@ const TasksPage: React.FC = () => {
 
 
         const workbook = new ExcelJS.Workbook();
-        workbook.creator = 'R. Sapkota & Associates';
+        workbook.creator = 'R. SAPKOTA & ASSOCIATES';
         workbook.created = new Date();
 
         const sheet = workbook.addWorksheet('Tasks Report', {
@@ -919,7 +919,7 @@ const TasksPage: React.FC = () => {
         const titleCell = sheet.getCell('A1');
 
 
-        titleCell.value = 'R. Sapkota & Associates';
+        titleCell.value = 'R. SAPKOTA & ASSOCIATES';
         titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };

@@ -42,8 +42,8 @@ const ALL_NAV_ITEMS = [
     { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true, managerAllowed: true },
     { id: 'templates', to: '/templates', icon: Library, label: 'Resources' },
     { id: 'archived-tasks', to: '/archived-tasks', icon: Archive, label: 'Archived Tasks', adminOnly: true },
-    { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', adminOnly: true },
-    { id: 'audit-docs', to: '/audit-docs', icon: FolderArchive, label: 'Audit Documentation', adminOnly: true },
+    { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', masterAdminOnly: true },
+    { id: 'audit-docs', to: '/audit-docs', icon: FolderArchive, label: 'Audit Documentation' },
     { id: 'settings', to: '/settings', icon: Settings, label: 'Settings', masterAdminOnly: true }
 ];
 

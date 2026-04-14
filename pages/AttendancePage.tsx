@@ -117,6 +117,7 @@ const AttendancePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'ALL' | 'MY' | 'ADMIN'>('ALL');
 
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
+    const isMasterAdmin = user?.role === UserRole.MASTER_ADMIN;
 
     useEffect(() => {
         const today = new Date();
@@ -139,6 +140,12 @@ const AttendancePage: React.FC = () => {
 
         if (location.state?.filterUserId) {
             setFilterStaffId(location.state.filterUserId);
+        }
+
+        const isMasterAdmin = user?.role === UserRole.MASTER_ADMIN;
+        if (isMasterAdmin) {
+            setActiveTab('ALL');
+            setFilterStaffId('ALL');
         }
 
         loadData();
@@ -310,11 +317,19 @@ const AttendancePage: React.FC = () => {
 
     // ── Helper Functions for Exports ─────────────────────────────────
     const formatDateAD = (dateStr: string) => {
-        try { return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }); }
+        if (!dateStr) return '-';
+        try { 
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
         catch { return dateStr; }
     };
     const formatDateBS = (dateStr: string) => {
-        try { return new NepaliDate(new Date(dateStr + 'T00:00:00')).format('DD MMM, YYYY'); }
+        if (!dateStr) return '-';
+        try { return new NepaliDate(new Date(dateStr + 'T00:00:00')).format('DD/MM/YYYY'); }
         catch { return '-'; }
     };
     const getDayOfWeek = (dateStr: string) => {
@@ -341,7 +356,7 @@ const AttendancePage: React.FC = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
-        doc.text('R. Sapkota & Associates', pageW / 2, 14, { align: 'center' });
+        doc.text('R. SAPKOTA & ASSOCIATES', pageW / 2, 14, { align: 'center' });
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(180, 200, 230);
@@ -413,7 +428,7 @@ const AttendancePage: React.FC = () => {
 
         const headRow = ['SN', 'Date (AD)', 'Date (BS)', 'Day'];
         if (!isSingleStaff) headRow.push('Staff');
-        headRow.push('Status', 'In', 'Out', 'Hrs', 'Nature of Assignment', 'Client & Work Description');
+        headRow.push('Status', 'In', 'Out', 'Hrs', 'Nature of Assignment', 'Client & R. SAPKOTA & ASSOCIATES');
 
         const statusIdx = isSingleStaff ? 4 : 5;
         const colStyles: any = {
@@ -448,7 +463,18 @@ const AttendancePage: React.FC = () => {
 
         // ── Summary Stats ───────────────────────────────────────────────
         const pStats = getPeriodStats();
-        const finalY = (doc as any).lastAutoTable.finalY + 8;
+        let finalY = (doc as any).lastAutoTable.finalY + 8;
+        
+        // Prevent overlapping with footer: if summary block + signature block exceeds page height
+        const summaryBlockHeight = 22;
+        const signatureBlockHeight = 45; // sigY offset + text
+        const totalFooterSpace = 75; // summary + signature + footer margin
+        
+        if (finalY + totalFooterSpace > doc.internal.pageSize.height) {
+            doc.addPage();
+            finalY = 20; // reset for new page
+        }
+
         doc.setFillColor(241, 245, 249);
         doc.roundedRect(14, finalY, pageW - 28, 22, 2, 2, 'F');
         doc.setFontSize(8);
@@ -476,7 +502,7 @@ const AttendancePage: React.FC = () => {
             doc.setPage(i);
             doc.setFontSize(7);
             doc.setTextColor(150, 160, 175);
-            doc.text('R. Sapkota & Associates — Confidential', 14, doc.internal.pageSize.height - 8);
+            doc.text('R. SAPKOTA & ASSOCIATES — Confidential', 14, doc.internal.pageSize.height - 8);
             doc.text(`Page ${i} of ${pageCount}`, pageW - 14, doc.internal.pageSize.height - 8, { align: 'right' });
         }
 
@@ -485,7 +511,7 @@ const AttendancePage: React.FC = () => {
 
     const handleExportExcel = async () => {
         const workbook = new ExcelJS.Workbook();
-        workbook.creator = 'R. Sapkota & Associates';
+        workbook.creator = 'R. SAPKOTA & ASSOCIATES';
         workbook.created = new Date();
 
         const sheet = workbook.addWorksheet('Attendance Report', {
@@ -502,7 +528,7 @@ const AttendancePage: React.FC = () => {
         // ── Company Header Block ────────────────────────────────────────
         sheet.mergeCells(`A1:${lastColLetter}1`);
         const titleCell = sheet.getCell('A1');
-        titleCell.value = 'R. Sapkota & Associates';
+        titleCell.value = 'R. SAPKOTA & ASSOCIATES';
         titleCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
@@ -559,7 +585,7 @@ const AttendancePage: React.FC = () => {
             { header: 'Hours', key: 'hours', width: 9 },
             { header: 'Client Name', key: 'client', width: 25 },
             { header: 'Nature of Assignment', key: 'nature', width: 22 },
-            { header: 'Work Description', key: 'description', width: 45 },
+            { header: 'R. SAPKOTA & ASSOCIATES', key: 'description', width: 45 },
         );
         sheet.columns = COLS;
 
@@ -779,15 +805,17 @@ const AttendancePage: React.FC = () => {
 
                 {/* ── Dashboard Stats Row ── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="lg:col-span-2">
-                        <ClockWidget />
-                    </div>
+                    {!isMasterAdmin && (
+                        <div className="lg:col-span-2">
+                            <ClockWidget />
+                        </div>
+                    )}
                     {isAdmin && (
-                        <>
+                        <div className={isMasterAdmin ? "lg:col-span-5 grid grid-cols-1 md:grid-cols-3 gap-4" : "lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4"}>
                             <StatCard title="Total Present" value={stats.present} icon={UserCheck} color="text-brand-400" trend={`${stats.late} delayed`} />
                             <StatCard title="Absentees" value={stats.absent} icon={XCircle} color="text-rose-400" />
                             <StatCard title="Personal Leave" value={stats.onLeave} icon={UserPlus} color="text-sky-400" />
-                        </>
+                        </div>
                     )}
                 </div>
 
@@ -845,28 +873,30 @@ const AttendancePage: React.FC = () => {
                                 </button>
                             )}
 
-                            <button 
-                                onClick={() => {
-                                    const currentUserProfile = !isAdmin ? usersList.find(u => u.uid === user?.uid) : null;
-                                    setSelectedUserForEdit(currentUserProfile || null);
-                                    setSelectedDateForEdit(getCurrentDateUTC());
-                                    setSelectedRecord(null);
-                                    setIsEditModalOpen(true);
-                                }}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 transition-all font-bold uppercase tracking-widest shadow-lg border group shrink-0"
-                                style={{ 
-                                    background: 'var(--bg-surface)', 
-                                    color: 'var(--text-heading)', 
-                                    borderColor: 'var(--border-mid)',
-                                    borderRadius: 'var(--radius-md)',
-                                    fontSize: '0.6875rem'
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
-                            >
-                                <Plus size={14} style={{ color: 'var(--accent)' }} className="group-hover:scale-110 transition-transform" /> 
-                                <span>{isAdmin ? 'Manual Log' : 'Request Manual Log'}</span>
-                            </button>
+                            {!isMasterAdmin && (
+                                <button 
+                                    onClick={() => {
+                                        const currentUserProfile = !isAdmin ? usersList.find(u => u.uid === user?.uid) : null;
+                                        setSelectedUserForEdit(currentUserProfile || null);
+                                        setSelectedDateForEdit(getCurrentDateUTC());
+                                        setSelectedRecord(null);
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 transition-all font-bold uppercase tracking-widest shadow-lg border group shrink-0"
+                                    style={{ 
+                                        background: 'var(--bg-surface)', 
+                                        color: 'var(--text-heading)', 
+                                        borderColor: 'var(--border-mid)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontSize: '0.6875rem'
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; }}
+                                >
+                                    <Plus size={14} style={{ color: 'var(--accent)' }} className="group-hover:scale-110 transition-transform" /> 
+                                    <span>{isAdmin ? 'Manual Log' : 'Request Manual Log'}</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -979,6 +1009,7 @@ const AttendancePage: React.FC = () => {
                 >
                     {(['ALL', 'MY', 'ADMIN'] as const)
                         .filter(tab => {
+                            if (isMasterAdmin) return tab === 'ALL';
                             if (tab === 'MY') return true;
                             return isAdmin;
                         })
@@ -1050,9 +1081,9 @@ const AttendancePage: React.FC = () => {
                                                             <div>
                                                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-heading)' }} className="leading-tight">{record.userName}</div>
                                                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                                                    <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                                    <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{formatDateAD(record.date)}</span>
                                                                     <span className="w-1 h-1 rounded-full" style={{ background: 'var(--border)' }} />
-                                                                    <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--accent)' }}>{(() => { try { return new NepaliDate(new Date(record.date + 'T00:00:00')).format('DD MMM, YYYY'); } catch { return '-'; } })()}</span>
+                                                                    <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--accent)' }}>{formatDateBS(record.date)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>

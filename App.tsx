@@ -218,9 +218,7 @@ const App: React.FC = () => {
                       </AdminRoute>
                     } />
                     <Route path="audit-docs" element={
-                      <AdminRoute>
-                        <LazyPage><AuditDocumentationPage /></LazyPage>
-                      </AdminRoute>
+                      <LazyPage><AuditDocumentationPage /></LazyPage>
                     } />
                     <Route path="compliance" element={<LazyPage><CompliancePage /></LazyPage>} />
                     <Route path="templates" element={<LazyPage><TemplatesPage /></LazyPage>} />
