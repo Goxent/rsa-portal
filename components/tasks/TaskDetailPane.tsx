@@ -420,7 +420,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const canDeleteSubtasks = (isTeamLeader || isMasterAdmin) && !isTaskCompleted;
 
     const isInOnboarding = currentPhase === AuditPhase.ONBOARDING;
-    const canChangeFramework = isMasterAdmin && isInOnboarding && !isTaskCompleted;
+    const canChangeFramework = (isAdminOrMaster || !task.id) && isInOnboarding && !isTaskCompleted;
 
 
     // Snapshot task state whenever the pane opens
