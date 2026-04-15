@@ -81,6 +81,20 @@ const AttendanceWidget: React.FC = () => {
     const [clockOutTime, setClockOutTime] = useState<string | null>(null);
     const [totalWorkHours, setTotalWorkHours] = useState<number | null>(null);
 
+    const formatToAMPM = (timeStr: string | null) => {
+        if (!timeStr) return '--:-- --';
+        try {
+            const [h, m] = timeStr.split(':').map(Number);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const hours = h % 12 || 12;
+            const formattedHrs = hours.toString().padStart(2, '0');
+            const formattedMins = m.toString().padStart(2, '0');
+            return `${formattedHrs}:${formattedMins} ${ampm}`;
+        } catch {
+            return timeStr;
+        }
+    };
+
     // React Query Hooks
     const { data: clientsList = [] } = useClients();
     const { data: attendanceHistory = [], isLoading: historyLoading } = useAttendanceHistory(user?.uid);
@@ -410,39 +424,51 @@ const AttendanceWidget: React.FC = () => {
 
             {/* Main Content Area */}
             <div className="p-6 pt-0 relative z-10">
-                {/* Time Stats Bar */}
+                {/* Time Stats Bar - Premium Overhaul */}
                 {(status === 'CLOCKED_IN' || status === 'COMPLETED') && (
-                    <div className="mb-6 p-4 rounded-2xl bg-brand-50/50 dark:bg-brand-500/5 border border-brand-100 dark:border-brand-500/10 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
-                        <div className="flex items-center gap-6">
-                            <div className="space-y-0.5">
-                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-bold uppercase tracking-widest">Clocked In At</p>
-                                <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                                    <Timer size={14} className="text-brand-500" />
-                                    {clockInTime || '--:--'}
+                    <div className="mb-8 flex flex-col md:flex-row gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                        {/* Clocked In Card */}
+                        <div className="flex-1 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-2xl p-4 flex items-center gap-4 group/stat hover:border-brand-500/30 transition-all shadow-sm">
+                            <div className="w-11 h-11 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500 group-hover/stat:bg-brand-500 group-hover/stat:text-white transition-all duration-300">
+                                <Timer size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest mb-0.5">Clocked In</p>
+                                <p className="text-lg font-black text-slate-900 dark:text-white tracking-tighter">
+                                    {formatToAMPM(clockInTime)}
                                 </p>
                             </div>
-                            {status === 'COMPLETED' && clockOutTime && (
-                                <div className="space-y-0.5 border-l border-slate-200 dark:border-white/10 pl-6">
-                                    <p className="text-[10px] text-slate-500 dark:text-gray-400 font-bold uppercase tracking-widest">Clocked Out At</p>
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                                        <Square size={12} className="text-rose-500 fill-current" />
-                                        {clockOutTime}
-                                    </p>
-                                </div>
-                            )}
                         </div>
 
-                        <div className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-black/20 rounded-xl border border-brand-200/50 dark:border-white/5 shadow-sm">
-                            <Activity size={14} className={`${status === 'CLOCKED_IN' ? 'text-brand-500 animate-pulse' : 'text-slate-400'}`} />
-                            <div className="flex flex-col">
-                                <p className="text-[9px] text-slate-500 dark:text-gray-500 font-black uppercase tracking-tighter">
-                                    {status === 'CLOCKED_IN' ? 'Live Working Time' : 'Total Work Time'}
+                        {/* Clocked Out / Status Card */}
+                        <div className={`flex-1 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-2xl p-4 flex items-center gap-4 transition-all shadow-sm ${status === 'CLOCKED_IN' ? 'border-l-4 border-l-brand-500/40' : 'border-l-4 border-l-rose-500/40'}`}>
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${status === 'CLOCKED_IN' ? 'bg-brand-500/10 text-brand-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                {status === 'CLOCKED_IN' ? <Activity size={20} className="animate-pulse" /> : <Square size={18} className="fill-current" />}
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest mb-0.5">
+                                    {status === 'CLOCKED_IN' ? 'Current Status' : 'Clocked Out'}
                                 </p>
-                                <div className="text-sm font-bold text-slate-900 dark:text-white font-mono leading-none mt-0.5">
+                                <p className="text-lg font-black text-slate-900 dark:text-white tracking-tighter">
+                                    {status === 'CLOCKED_IN' ? <span className="text-brand-600 dark:text-brand-400">On Duty</span> : formatToAMPM(clockOutTime)}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Duration Card */}
+                        <div className="flex-1 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-2xl p-4 flex items-center gap-4 group/stat hover:border-indigo-500/30 transition-all shadow-sm">
+                            <div className="w-11 h-11 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover/stat:bg-indigo-500 group-hover/stat:text-white transition-all duration-300">
+                                <Clock size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest mb-0.5">
+                                    {status === 'CLOCKED_IN' ? 'Live Progress' : 'Shift Total'}
+                                </p>
+                                <div className="text-lg font-black text-slate-900 dark:text-white font-mono leading-none tracking-tighter">
                                     {status === 'CLOCKED_IN' ? (
-                                        <SessionTimer initialSeconds={sessionSeconds} isRunning={true} className="text-sm font-bold text-slate-900 dark:text-white font-mono leading-none" />
+                                        <SessionTimer initialSeconds={sessionSeconds} isRunning={true} className="text-lg font-black font-mono text-indigo-600 dark:text-indigo-400" />
                                     ) : (
-                                        <span>{totalWorkHours ? `${Math.floor(totalWorkHours)}h ${Math.round((totalWorkHours % 1) * 60)}m` : '--'}</span>
+                                        <span className="text-indigo-600 dark:text-indigo-400">{totalWorkHours ? `${Math.floor(totalWorkHours)}h ${Math.round((totalWorkHours % 1) * 60)}m` : '--'}</span>
                                     )}
                                 </div>
                             </div>
@@ -600,9 +626,18 @@ const AttendanceWidget: React.FC = () => {
                         )}
 
                         {status === 'COMPLETED' && (
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
-                                <p className="text-green-400 font-bold mb-1">Work Day Completed</p>
-                                <p className="text-green-400/60 text-xs">Great job! See you tomorrow.</p>
+                            <div className="mt-8 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-3xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group shadow-lg">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-green-500/5 blur-3xl rounded-full -mr-20 -mt-20 group-hover:bg-green-500/10 transition-all duration-700" />
+                                <div className="w-16 h-16 rounded-2xl bg-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)] flex items-center justify-center text-white mb-6 animate-bounce-slow">
+                                    <CheckCircle2 size={32} />
+                                </div>
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Work Day Completed</h3>
+                                <p className="text-slate-500 dark:text-gray-400 text-sm font-medium max-w-[240px]">
+                                    Excellent work today! Your logs are saved and synced. Relax and recharge for tomorrow.
+                                </p>
+                                <div className="mt-6 flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                                    Status: All Synced
+                                </div>
                             </div>
                         )}
                     </div>

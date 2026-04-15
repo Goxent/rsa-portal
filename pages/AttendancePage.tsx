@@ -410,8 +410,11 @@ const AttendancePage: React.FC = () => {
                     ? [...new Set(r.workLogs.map((l: any) => l.natureOfAssignment).filter(Boolean))].join(', ')
                     : '-',
                 r.workLogs?.length > 0
-                    ? r.workLogs.map((l: any) => `${l.clientName} (${l.locationTag || 'Office'}): ${l.description}`).join('; ')
-                    : (r.clientName || '-')
+                    ? [...new Set(r.workLogs.map((l: any) => l.clientName).filter(Boolean))].join(', ')
+                    : (r.clientName && r.clientName !== '-' ? r.clientName : '-'),
+                r.workLogs?.length > 0
+                    ? r.workLogs.map((l: any) => `[${l.locationTag || 'Office'}] ${l.description}`).filter(Boolean).join('; ')
+                    : (r.notes && r.notes !== '-' ? r.notes : '-')
             );
             return rowData;
         });
@@ -428,20 +431,22 @@ const AttendancePage: React.FC = () => {
 
         const headRow = ['SN', 'Date (AD)', 'Date (BS)', 'Day'];
         if (!isSingleStaff) headRow.push('Staff');
-        headRow.push('Status', 'In', 'Out', 'Hrs', 'Nature of Assignment', 'Client & R. SAPKOTA & ASSOCIATES');
+        headRow.push('Status', 'In', 'Out', 'Hrs', 'Nature of Assignment', 'Client', 'Work Description');
 
         const statusIdx = isSingleStaff ? 4 : 5;
         const colStyles: any = {
-            0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 24 },
-            2: { cellWidth: 24 },
-            3: { cellWidth: 12 },
+            0: { cellWidth: 8, halign: 'center' },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 20 },
+            3: { cellWidth: 10 },
         };
-        colStyles[statusIdx] = { cellWidth: 16, halign: 'center' };
-        colStyles[statusIdx + 1] = { cellWidth: 12 };
-        colStyles[statusIdx + 2] = { cellWidth: 12 };
-        colStyles[statusIdx + 3] = { cellWidth: 10, halign: 'center' };
-        colStyles[statusIdx + 5] = { cellWidth: 'auto' };
+        colStyles[statusIdx] = { cellWidth: 15, halign: 'center' };
+        colStyles[statusIdx + 1] = { cellWidth: 10 };
+        colStyles[statusIdx + 2] = { cellWidth: 10 };
+        colStyles[statusIdx + 3] = { cellWidth: 8, halign: 'center' };
+        colStyles[statusIdx + 4] = { cellWidth: 35 }; // Nature
+        colStyles[statusIdx + 5] = { cellWidth: 35 }; // Client
+        colStyles[statusIdx + 6] = { cellWidth: 'auto' }; // Work Description
 
         autoTable(doc, {
             head: [headRow],
@@ -583,9 +588,9 @@ const AttendancePage: React.FC = () => {
             { header: 'Clock In', key: 'in', width: 11 },
             { header: 'Clock Out', key: 'out', width: 11 },
             { header: 'Hours', key: 'hours', width: 9 },
-            { header: 'Client Name', key: 'client', width: 25 },
             { header: 'Nature of Assignment', key: 'nature', width: 22 },
-            { header: 'R. SAPKOTA & ASSOCIATES', key: 'description', width: 45 },
+            { header: 'Client Name', key: 'client', width: 25 },
+            { header: 'Work Description', key: 'description', width: 45 },
         );
         sheet.columns = COLS;
 
