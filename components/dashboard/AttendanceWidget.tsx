@@ -16,6 +16,9 @@ import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import NepaliDate from 'nepali-date-converter';
 import { toBS } from '../../utils/dates';
+import SearchableClientSelect from './SearchableClientSelect';
+import SearchableSelect from '../common/SearchableSelect';
+import ActionDetailEditor from '../common/ActionDetailEditor';
 
 // Timer Component to prevent full AttendanceWidget re-renders
 const SessionTimer = React.memo(({ initialSeconds, isRunning }: { initialSeconds: number, isRunning: boolean }) => {
