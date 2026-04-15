@@ -1,3 +1,19 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+    MapPin, Clock, Calendar, ChevronRight, 
+    Play, Square, Plus, Trash2, Save, 
+    Cloud, CheckCircle2, AlertTriangle, 
+    ListFilter, Activity, Timer 
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useClockIn, useClockOut, useAttendanceHistory } from '../../hooks/useAttendance';
+import { useClients } from '../../hooks/useClients';
+import { useQueryClient } from '@tanstack/react-query';
+import { Client, WorkLog } from '../../types';
+import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import NepaliDate from 'nepali-date-converter';
+import { toBS } from '../../utils/dates';
 
 // Timer Component to prevent full AttendanceWidget re-renders
 const SessionTimer = React.memo(({ initialSeconds, isRunning }: { initialSeconds: number, isRunning: boolean }) => {
