@@ -1376,7 +1376,6 @@ const TasksPage: React.FC = () => {
                             })}
                         </div>
 
-                        </div>
 
                         {/* CENTER: Search & Workflow Dropdown */}
                         <div className="flex items-center gap-2 flex-1 min-w-full md:min-w-0 md:max-w-xl order-3 md:order-2">
@@ -1589,7 +1588,6 @@ const TasksPage: React.FC = () => {
                                 <Plus size={16} strokeWidth={3} />
                                 <span className="hidden sm:inline">Create</span>
                             </button>
-                        </div>
                     </div>
                 </div>
             </header>
