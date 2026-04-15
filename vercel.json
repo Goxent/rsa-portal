@@ -50,7 +50,7 @@
     ],
     "rewrites": [
         {
-            "source": "/((?!api/).*)",
+            "source": "/((?!api/|assets/|sw\\.js|manifest\\.json|.*\\.(?:ico|png|svg|jpg)).*)",
             "destination": "/index.html"
         }
     ]
