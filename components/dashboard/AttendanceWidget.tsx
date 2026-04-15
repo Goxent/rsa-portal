@@ -3,7 +3,9 @@ import {
     MapPin, Clock, Calendar, ChevronRight, 
     Play, Square, Plus, Trash2, Save, 
     Cloud, CheckCircle2, AlertTriangle, 
-    ListFilter, Activity, Timer 
+    ListFilter, Activity, Timer, Minimize2, 
+    Maximize2, Briefcase, Building2, Loader2, 
+    ChevronUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useClockIn, useClockOut, useAttendanceHistory } from '../../hooks/useAttendance';
