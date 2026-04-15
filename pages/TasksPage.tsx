@@ -1590,7 +1590,8 @@ const TasksPage: React.FC = () => {
                             </button>
                     </div>
                 </div>
-            </header>
+            </div>
+        </header>
 
             {/* Active Filter Chips */}
             {activeFilterCount > 0 && (
