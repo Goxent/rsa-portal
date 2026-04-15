@@ -716,7 +716,6 @@ const CompliancePage: React.FC = () => {
                                 title="No clients found"
                                 description="No clients match your search or filters."
                                 className="py-12"
-                                iconSize={40}
                             />
                         )}
                     </div>

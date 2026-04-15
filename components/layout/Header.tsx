@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({
                             borderRadius: 'var(--radius-md)'
                         }}
                     >
-                        <span style={{ fontWeight: 800, fontSize: '0.75rem', tracking: '0.05em' }}>RSA</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.05em' }}>RSA</span>
                     </div>
                 </div>
             </div>

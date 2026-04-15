@@ -279,7 +279,7 @@ const TemplatesPage: React.FC = () => {
             isCompleted: false,
             isSectionHeader: false
         };
-        setReviewerChecklist(prev => [...prev, newItem]);
+        setReviewerChecklist(prev => [...prev, newItem as ReviewChecklistItem]);
     };
 
     const addReviewerSection = (role: 'TL' | 'ER' | 'SP') => {
@@ -289,7 +289,7 @@ const TemplatesPage: React.FC = () => {
             reviewerRole: role,
             isSectionHeader: true
         };
-        setReviewerChecklist(prev => [...prev, newItem]);
+        setReviewerChecklist(prev => [...prev, newItem as ReviewChecklistItem]);
     };
 
     const updateReviewerItem = (id: string, field: string, value: any) => {

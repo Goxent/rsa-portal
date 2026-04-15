@@ -69,8 +69,8 @@ const LoginPage: React.FC = () => {
       if (error.code === 'auth/user-not-found' || error.message.includes('not found')) {
         try {
           // Quick check in firestore to see if they are a "Pending" invited user
-          const { checkInvitationStatus } = await import('../services/firebase');
-          const statusResult = await checkInvitationStatus(data.email);
+          const { AuthService } = await import('../services/firebase');
+          const statusResult = await AuthService.checkInvitationStatus(data.email);
           
           if (statusResult.isInvited && !statusResult.isRegistered) {
             setRateLimitError("You have an active invitation but haven't set up your account yet.");
@@ -156,7 +156,7 @@ const LoginPage: React.FC = () => {
           <div className="space-y-1.5">
             <div className="flex justify-between items-center ml-1">
               <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Password</label>
-              <Link to="/forgot-password" size="sm" className="text-[9px] font-black text-brand-400 hover:text-brand-300 uppercase tracking-widest transition-colors">Recover Access</Link>
+              <Link to="/forgot-password"  className="text-[9px] font-black text-brand-400 hover:text-brand-300 uppercase tracking-widest transition-colors">Recover Access</Link>
             </div>
             <div className="relative group">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-brand-400 transition-colors z-10" size={16} />
