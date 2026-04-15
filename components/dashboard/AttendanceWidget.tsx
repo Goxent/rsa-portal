@@ -626,16 +626,16 @@ const AttendanceWidget: React.FC = () => {
                         )}
 
                         {status === 'COMPLETED' && (
-                            <div className="mt-8 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-3xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group shadow-lg">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-green-500/5 blur-3xl rounded-full -mr-20 -mt-20 group-hover:bg-green-500/10 transition-all duration-700" />
-                                <div className="w-16 h-16 rounded-2xl bg-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)] flex items-center justify-center text-white mb-6 animate-bounce-slow">
-                                    <CheckCircle2 size={32} />
+                            <div className="mt-4 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-green-500/10 transition-all duration-700" />
+                                <div className="w-12 h-12 rounded-xl bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] flex items-center justify-center text-white mb-4 animate-bounce-slow">
+                                    <CheckCircle2 size={24} />
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Work Day Completed</h3>
-                                <p className="text-slate-500 dark:text-gray-400 text-sm font-medium max-w-[240px]">
-                                    Excellent work today! Your logs are saved and synced. Relax and recharge for tomorrow.
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-1 uppercase tracking-tight">Shift Completed</h3>
+                                <p className="text-slate-500 dark:text-gray-400 text-xs font-medium">
+                                    Logs synced. Recharge for tomorrow.
                                 </p>
-                                <div className="mt-6 flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/20 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                                <div className="mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 text-green-600 dark:text-green-400 text-[9px] font-black uppercase tracking-widest">
                                     Status: All Synced
                                 </div>
                             </div>
