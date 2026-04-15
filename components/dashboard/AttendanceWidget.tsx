@@ -32,7 +32,7 @@ const NATURE_OF_ASSIGNMENTS = [
 ];
 
 // Timer Component to prevent full AttendanceWidget re-renders
-const SessionTimer = React.memo(({ initialSeconds, isRunning }: { initialSeconds: number, isRunning: boolean }) => {
+const SessionTimer = React.memo(({ initialSeconds, isRunning, className }: { initialSeconds: number, isRunning: boolean, className?: string }) => {
     const [seconds, setSeconds] = useState(initialSeconds);
     const lastInitialSeconds = useRef(initialSeconds);
 
@@ -62,7 +62,7 @@ const SessionTimer = React.memo(({ initialSeconds, isRunning }: { initialSeconds
     };
 
     return (
-        <p className="text-xl font-mono font-bold text-brand-600 dark:text-brand-400 leading-none drop-shadow-sm transition-all duration-300">
+        <p className={className || "text-xl font-mono font-bold text-brand-600 dark:text-brand-400 leading-none drop-shadow-sm transition-all duration-300"}>
             {formatTime(seconds)}
         </p>
     );
@@ -77,6 +77,9 @@ const AttendanceWidget: React.FC = () => {
     const [isLate, setIsLate] = useState(false);
     const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
     const [isFloating, setIsFloating] = useState(false);
+    const [clockInTime, setClockInTime] = useState<string | null>(null);
+    const [clockOutTime, setClockOutTime] = useState<string | null>(null);
+    const [totalWorkHours, setTotalWorkHours] = useState<number | null>(null);
 
     // React Query Hooks
     const { data: clientsList = [] } = useClients();
@@ -132,6 +135,9 @@ const AttendanceWidget: React.FC = () => {
             if (!todayRecord.clockOut) {
                 setStatus('CLOCKED_IN');
                 setCurrentRecordId(todayRecord.id);
+                setClockInTime(todayRecord.clockIn);
+                setClockOutTime(null);
+                setTotalWorkHours(null);
 
                 // Recover session time
                 const [h, m, s] = todayRecord.clockIn.split(':').map(Number);
@@ -143,6 +149,9 @@ const AttendanceWidget: React.FC = () => {
             } else {
                 setStatus('COMPLETED');
                 setCurrentRecordId(todayRecord.id);
+                setClockInTime(todayRecord.clockIn);
+                setClockOutTime(todayRecord.clockOut);
+                setTotalWorkHours(todayRecord.workHours);
                 if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
             }
         } else {
@@ -400,7 +409,46 @@ const AttendanceWidget: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="p-6 relative z-10">
+            <div className="p-6 pt-0 relative z-10">
+                {/* Time Stats Bar */}
+                {(status === 'CLOCKED_IN' || status === 'COMPLETED') && (
+                    <div className="mb-6 p-4 rounded-2xl bg-brand-50/50 dark:bg-brand-500/5 border border-brand-100 dark:border-brand-500/10 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="flex items-center gap-6">
+                            <div className="space-y-0.5">
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-bold uppercase tracking-widest">Clocked In At</p>
+                                <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    <Timer size={14} className="text-brand-500" />
+                                    {clockInTime || '--:--'}
+                                </p>
+                            </div>
+                            {status === 'COMPLETED' && clockOutTime && (
+                                <div className="space-y-0.5 border-l border-slate-200 dark:border-white/10 pl-6">
+                                    <p className="text-[10px] text-slate-500 dark:text-gray-400 font-bold uppercase tracking-widest">Clocked Out At</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                        <Square size={12} className="text-rose-500 fill-current" />
+                                        {clockOutTime}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-black/20 rounded-xl border border-brand-200/50 dark:border-white/5 shadow-sm">
+                            <Activity size={14} className={`${status === 'CLOCKED_IN' ? 'text-brand-500 animate-pulse' : 'text-slate-400'}`} />
+                            <div className="flex flex-col">
+                                <p className="text-[9px] text-slate-500 dark:text-gray-500 font-black uppercase tracking-tighter">
+                                    {status === 'CLOCKED_IN' ? 'Live Working Time' : 'Total Work Time'}
+                                </p>
+                                <div className="text-sm font-bold text-slate-900 dark:text-white font-mono leading-none mt-0.5">
+                                    {status === 'CLOCKED_IN' ? (
+                                        <SessionTimer initialSeconds={sessionSeconds} isRunning={true} className="text-sm font-bold text-slate-900 dark:text-white font-mono leading-none" />
+                                    ) : (
+                                        <span>{totalWorkHours ? `${Math.floor(totalWorkHours)}h ${Math.round((totalWorkHours % 1) * 60)}m` : '--'}</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Late Arrival Input */}
                 {/* Late Arrival Alert Card */}
                 {isLate && status === 'CLOCKED_OUT' && (
