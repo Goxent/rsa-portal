@@ -1046,7 +1046,7 @@ const AttendancePage: React.FC = () => {
                     style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)' }}
                 >
                             <div className="overflow-x-auto overflow-y-hidden">
-                                <table className="w-full text-left border-collapse min-w-[1000px]">
+                                <table className="w-full text-left border-collapse min-w-[1200px]">
                                     <thead>
                                         <tr className="border-b" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                                             <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase w-12 text-center">SN</th>
@@ -1054,21 +1054,22 @@ const AttendancePage: React.FC = () => {
                                             <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase w-20">Day</th>
                                             <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Timing</th>
                                             <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Status</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Nature of Assignment</th>
-                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Clients & Work Logs</th>
-                                            {isAdmin && <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase text-right">Actions</th>}
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase w-48">Nature of Assignment</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase w-48">Client</th>
+                                            <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase">Work Description</th>
+                                            {isAdmin && <th style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="px-4 py-3 uppercase text-right w-24">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
                                         {loading ? (
-                                            <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center">
+                                            <tr><td colSpan={isAdmin ? 9 : 8} className="p-32 text-center">
                                                 <div className="flex flex-col items-center gap-4">
                                                     <div className="w-10 h-10 border-4 border-t-[var(--accent)] rounded-full animate-spin" style={{ borderColor: 'var(--accent-dim)' }} />
                                                     <span style={{ color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.6875rem' }} className="uppercase">Synchronizing Records...</span>
                                                 </div>
                                             </td></tr>
                                         ) : reportData.length === 0 ? (
-                                            <tr><td colSpan={isAdmin ? 8 : 7} className="p-32 text-center text-gray-500 font-bold italic tracking-wide">No attendance records found for the selected criteria.</td></tr>
+                                            <tr><td colSpan={isAdmin ? 9 : 8} className="p-32 text-center text-gray-500 font-bold italic tracking-wide">No attendance records found for the selected criteria.</td></tr>
                                         ) : (
                                             reportData.map((record, idx) => (
                                                 <tr key={record.id} className="hover:bg-[var(--bg-surface)] transition-all group/row">
@@ -1166,20 +1167,31 @@ const AttendancePage: React.FC = () => {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {record.workLogs?.length > 0 ? (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {record.workLogs.slice(0, 3).map((log: any, i: number) => (
-                                                                    <div key={i} className="px-2 py-1 transition-colors max-w-[140px] border shadow-sm" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}>
-                                                                        <div style={{ fontSize: '0.5625rem', fontWeight: 800, color: 'var(--accent)' }} className="truncate uppercase">{log.clientName || 'TASK'}</div>
-                                                                        <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }} className="truncate mt-0.5">{log.description}</div>
-                                                                    </div>
+                                                            <div className="space-y-1.5">
+                                                                {[...new Set(record.workLogs.map((l: any) => l.clientName).filter(Boolean))].map((client: string, i: number) => (
+                                                                    <div key={i} style={{ fontSize: '0.625rem', fontWeight: 800, color: 'var(--accent)' }} className="uppercase tracking-tight bg-[var(--accent-dim)] px-2 py-0.5 rounded-sm border border-[var(--border-accent)] w-fit">{client}</div>
                                                                 ))}
-                                                                {record.workLogs.length > 3 && (
-                                                                    <div style={{ fontSize: '0.5625rem', fontWeight: 800, color: 'var(--text-muted)' }} className="mt-2 text-center">+{record.workLogs.length - 3} MORE</div>
-                                                                )}
                                                             </div>
                                                         ) : (
-                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} className="italic leading-relaxed">
-                                                                {record.clientName || record.notes || '—'}
+                                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.625rem' }} className="italic">{record.clientName && record.clientName !== '-' ? record.clientName : '—'}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {record.workLogs?.length > 0 ? (
+                                                            <div className="space-y-2">
+                                                                {record.workLogs.map((log: any, i: number) => (
+                                                                    <div key={i} className="flex items-start gap-2">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] mt-1.5 shrink-0 opacity-40" />
+                                                                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-body)' }} className="leading-relaxed">
+                                                                            <span className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-tighter mr-1.5">[{log.locationTag || 'OFFICE'}]</span>
+                                                                            {log.description}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }} className="italic leading-relaxed">
+                                                                {record.notes && record.notes !== '-' ? record.notes : '—'}
                                                             </div>
                                                         )}
                                                     </td>
