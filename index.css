@@ -1088,6 +1088,7 @@
         -webkit-overflow-scrolling: touch;
     }
 }
+}
 
 /* Bottom Sheet Animation */
 @keyframes slide-up-sheet {
