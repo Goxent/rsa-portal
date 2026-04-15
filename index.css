@@ -986,3 +986,70 @@
     border-radius: 50%;
     animation: pulse-green 2s infinite;
 }
+
+/* ============================================================
+   PREMIUM MOBILE & NATIVE UI REFINEMENTS
+   ============================================================ */
+
+/* iPhone Safe Areas */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+    padding-top: env(safe-area-inset-top);
+}
+
+/* Premium Glass Elevation */
+.premium-glass {
+    @apply backdrop-blur-3xl border transition-all duration-500;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%), rgba(12,12,14,0.6);
+    border-color: rgba(255,255,255,0.06);
+    box-shadow: 
+        0 4px 24px -1px rgba(0, 0, 0, 0.3),
+        0 0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+
+.light .premium-glass {
+    background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%), rgba(255,255,255,0.9);
+    border-color: rgba(0,0,0,0.05);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+/* Native-style tap highlight removal */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Premium Navigation Active State */
+.nav-link-active {
+    @apply text-accent font-bold;
+    text-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Mobile Typography Refinements */
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 1.25rem;
+        letter-spacing: -0.01em;
+    }
+    
+    .glass-card {
+        @apply rounded-2xl; /* Softer corners for mobile */
+    }
+
+    /* Smoother scrolling on iOS */
+    .overflow-y-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Bottom Sheet Animation */
+@keyframes slide-up-sheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.animate-slide-up-sheet {
+    animation: slide-up-sheet 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}

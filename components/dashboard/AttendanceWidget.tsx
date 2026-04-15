@@ -1,22 +1,40 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Play, Square, Timer, AlertTriangle, Check, X, Clock, Briefcase, Plus, Trash2, Calendar, Coffee, Search, ChevronDown, Minimize2, Maximize2, ChevronUp, Loader2, MapPin, Building2 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { AttendanceRecord, Client, UserRole, WorkLog } from '../../types';
-import { AuthService } from '../../services/firebase';
-import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
-import NepaliDate from 'nepali-date-converter';
-import { toast } from 'react-hot-toast';
-import SearchableClientSelect from './SearchableClientSelect';
-import SearchableSelect from '../common/SearchableSelect';
-import EmptyState from '../common/EmptyState';
-import ActionDetailEditor from '../common/ActionDetailEditor';
-import { useAttendanceHistory, useClockIn, useClockOut, attendanceKeys } from '../../hooks/useAttendance';
-import { useClients } from '../../hooks/useClients';
-import { useQueryClient } from '@tanstack/react-query';
+// Timer Component to prevent full AttendanceWidget re-renders
+const SessionTimer = React.memo(({ initialSeconds, isRunning }: { initialSeconds: number, isRunning: boolean }) => {
+    const [seconds, setSeconds] = useState(initialSeconds);
+    const lastInitialSeconds = useRef(initialSeconds);
 
-// SearchableClientSelect moved to standalone component file
+    // Sync if initialSeconds changes significantly (e.g. on mount/sync)
+    useEffect(() => {
+        if (Math.abs(initialSeconds - seconds) > 2) {
+            setSeconds(initialSeconds);
+        }
+        lastInitialSeconds.current = initialSeconds;
+    }, [initialSeconds]);
+
+    useEffect(() => {
+        let interval: any;
+        if (isRunning) {
+            interval = setInterval(() => {
+                setSeconds(s => s + 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isRunning]);
+
+    const formatTime = (totalSeconds: number) => {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <p className="text-xl font-mono font-bold text-brand-600 dark:text-brand-400 leading-none drop-shadow-sm transition-all duration-300">
+            {formatTime(seconds)}
+        </p>
+    );
+});
 
 const AttendanceWidget: React.FC = () => {
     const { user } = useAuth();
@@ -139,15 +157,6 @@ const AttendanceWidget: React.FC = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // Session Timer
-    useEffect(() => {
-        let interval: any;
-        if (status === 'CLOCKED_IN') {
-            interval = setInterval(() => setSessionSeconds(s => s + 1), 1000);
-        }
-        return () => clearInterval(interval);
-    }, [status]);
-
     // Auto-save Work Logs (Persistent cross-device)
     useEffect(() => {
         if (!user) return;
@@ -181,13 +190,6 @@ const AttendanceWidget: React.FC = () => {
 
         return () => clearTimeout(timeoutId);
     }, [workLogs, status, currentRecordId, queryClient, user]);
-
-    const formatTime = (totalSeconds: number) => {
-        const h = Math.floor(totalSeconds / 3600);
-        const m = Math.floor((totalSeconds % 3600) / 60);
-        const s = totalSeconds % 60;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
 
     const handleClockIn = async () => {
         if (!user || loading) return;
@@ -288,9 +290,13 @@ const AttendanceWidget: React.FC = () => {
                             </button>
                         </div>
                         <div className="flex items-baseline gap-2 mt-0.5">
-                            <p className="text-xl font-bold text-slate-900 dark:text-white font-mono">
-                                {status === 'CLOCKED_IN' ? formatTime(sessionSeconds) : currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                            <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">
+                                {status === 'CLOCKED_IN' ? (
+                                    <SessionTimer initialSeconds={sessionSeconds} isRunning={true} />
+                                ) : (
+                                    <p>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                )}
+                            </div>
                             {status === 'CLOCKED_IN' && (
                                 <span className="text-xs text-green-600 dark:text-green-400 font-medium">Recorded</span>
                             )}
@@ -355,9 +361,7 @@ const AttendanceWidget: React.FC = () => {
                     {status === 'CLOCKED_IN' && (
                         <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-sm dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]">
                             <p className="text-[10px] text-brand-600 dark:text-brand-400/80 uppercase tracking-widest font-bold mb-1">Session Timer</p>
-                            <p className="text-xl font-mono font-bold text-brand-600 dark:text-brand-400 leading-none drop-shadow-sm">
-                                {formatTime(sessionSeconds)}
-                            </p>
+                            <SessionTimer initialSeconds={sessionSeconds} isRunning={true} />
                         </div>
                     )}
                 </div>
@@ -529,3 +533,4 @@ const AttendanceWidget: React.FC = () => {
 };
 
 export default AttendanceWidget;
+
