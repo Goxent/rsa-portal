@@ -1588,10 +1588,10 @@ const TasksPage: React.FC = () => {
                                 <Plus size={16} strokeWidth={3} />
                                 <span className="hidden sm:inline">Create</span>
                             </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </header>
+            </header>
 
             {/* Active Filter Chips */}
             {activeFilterCount > 0 && (
