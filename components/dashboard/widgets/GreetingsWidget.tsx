@@ -52,9 +52,16 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        // Randomize quote on mount
-        const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
-        setRandomQuote(MOTIVATIONAL_QUOTES[randomIndex]);
+        
+        // Consistent Quote of the Day: Use date-based seeding
+        const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        let seed = 0;
+        for (let i = 0; i < dateStr.length; i++) {
+            seed += dateStr.charCodeAt(i);
+        }
+        
+        const quoteIndex = seed % MOTIVATIONAL_QUOTES.length;
+        setRandomQuote(MOTIVATIONAL_QUOTES[quoteIndex]);
         
         return () => clearInterval(timer);
     }, []);

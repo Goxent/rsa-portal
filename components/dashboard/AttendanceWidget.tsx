@@ -20,6 +20,17 @@ import SearchableClientSelect from './SearchableClientSelect';
 import SearchableSelect from '../common/SearchableSelect';
 import ActionDetailEditor from '../common/ActionDetailEditor';
 
+const NATURE_OF_ASSIGNMENTS = [
+    'Statutory Audit',
+    'Internal Audit',
+    'Taxation',
+    'Consultancy',
+    'Accounting/Bookkeeping',
+    'VAT/TDS Filing',
+    'Company Secretarial',
+    'Other'
+];
+
 // Timer Component to prevent full AttendanceWidget re-renders
 const SessionTimer = React.memo(({ initialSeconds, isRunning }: { initialSeconds: number, isRunning: boolean }) => {
     const [seconds, setSeconds] = useState(initialSeconds);
