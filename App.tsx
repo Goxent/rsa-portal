@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -145,7 +145,7 @@ const App: React.FC = () => {
           <ThemeProvider>
             <ModalProvider>
               <NotificationManager />
-              <BrowserRouter>
+              <HashRouter>
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
@@ -251,7 +251,7 @@ const App: React.FC = () => {
                 {/* Global Toast Notifications */}
                 <ThemedToaster />
                 <ModalManager />
-              </BrowserRouter>
+              </HashRouter>
             </ModalProvider>
           </ThemeProvider>
         </AuthProvider>

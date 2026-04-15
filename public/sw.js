@@ -23,8 +23,8 @@ self.addEventListener('message', (event) => {
         const { title, body } = event.data;
         self.registration.showNotification(title, {
             body,
-            icon: '/https://cdn-icons-png.flaticon.com/512/3652/3652191.png',
-            badge: 'https://cdn-icons-png.flaticon.com/512/3652/3652191.png',
+            icon: '/rsa-favicon.svg',
+            badge: '/rsa-favicon.svg',
             vibrate: [200, 100, 200]
         });
     }

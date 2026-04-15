@@ -38,14 +38,25 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
     return skeletons[0];
 };
 
+import RSALogo from '../common/RSALogo';
+
 /**
- * Full page loading state with centered spinner
+ * Full page loading state with premium brand entrance
  */
 export const PageLoader: React.FC = () => (
-    <div className="flex h-screen items-center justify-center bg-main">
-        <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[var(--accent)]/20 border-t-[var(--accent)] rounded-full animate-spin mb-4 mx-auto" />
-            <p className="text-muted text-xs font-bold uppercase tracking-widest animate-pulse">Synchronizing Workspace...</p>
+    <div className="flex flex-col h-screen items-center justify-center bg-main animate-in fade-in duration-500">
+        <div className="text-center space-y-8">
+            <RSALogo size="lg" animated className="mx-auto scale-125" />
+            <div className="space-y-3">
+                <p className="text-accent text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">
+                    R. Sapkota & Associates
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce" />
+                </div>
+            </div>
         </div>
     </div>
 );

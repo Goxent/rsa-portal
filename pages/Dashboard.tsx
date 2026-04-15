@@ -214,7 +214,12 @@ const Dashboard: React.FC = () => {
                     onViewTask={handleViewTask} 
                 />
 
-                {/* 2. Top Row: Greetings & Focus */}
+                {/* 2. Mobile-Only Priority: Attendance Widget (Visible only on mobile at top) */}
+                <div className="block xl:hidden">
+                    {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
+                </div>
+
+                {/* 3. Top Row: Greetings & Focus */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     <GreetingsWidget 
                         pendingCount={myOpenTasks} 
@@ -223,9 +228,12 @@ const Dashboard: React.FC = () => {
                     <FocusWidget />
                 </div>
 
-                {/* 3. Main Widget Ecosystem */}
+                {/* 4. Main Widget Ecosystem */}
                 <div className="flex flex-col gap-6">
-                    {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
+                    {/* Desktop-Only: Attendance Widget (Visible only on larger screens here) */}
+                    <div className="hidden xl:block">
+                        {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
+                    </div>
                     
                     {user && (
                         <WidgetContainer

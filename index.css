@@ -16,6 +16,12 @@
         --s-8: 3rem;
         --s-10: 4rem;
         --s-12: 6rem;
+
+        /* Safe Area Padding */
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
     }
 
     body, 
@@ -791,13 +797,54 @@
 
     /* Skeleton loaders */
     .light .skeleton {
-        background: linear-gradient(90deg,
-            rgba(0,0,0,0.03) 25%,
-            rgba(0,0,0,0.07) 50%,
-            rgba(0,0,0,0.03) 75%) !important;
-        background-size: 200% 100% !important;
         animation: shimmer 1.6s ease-in-out infinite !important;
     }
+
+    /* ============================================================
+       MOBILE OPTIMIZATIONS & UTILITIES
+       ============================================================ */
+    .mobile-safe-top { padding-top: calc(var(--safe-top) + 1rem); }
+    .mobile-safe-bottom { padding-bottom: calc(var(--safe-bottom) + 5rem); } /* extra for MobileTabs */
+
+    /* Force horizontal scroll with hidden but functional scrollbar */
+    .overflow-touch-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .overflow-touch-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Mobile Action Sheet (Bottom Drawer) Base Styles */
+    .mobile-action-sheet {
+        @apply fixed bottom-0 left-0 right-0 z-[100] transform transition-transform duration-300 ease-out;
+        padding-bottom: var(--safe-bottom);
+    }
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes logo-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(101,154,43,0.3); }
+    50% { box-shadow: 0 0 40px rgba(101,154,43,0.6); }
+}
+
+.animate-logo-reveal {
+    animation: float 6s ease-in-out infinite, pulse-glow 4s ease-in-out infinite;
+}
 
     /* ============================================================
        UTILITY CLASSES

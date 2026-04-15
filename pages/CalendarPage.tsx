@@ -15,6 +15,7 @@ import NepaliDate from 'nepali-date-converter';
 import * as XLSX from 'xlsx';
 import { DndContext, useDraggable, useDroppable, DragEndEvent, DragStartEvent, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { useTasks, useUpdateTask } from '../hooks/useTasks';
+import { useMedia } from 'react-use';
 
 // Helpers
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -85,6 +86,7 @@ const DroppableDay = ({ dateStr, isToday, isSelected, onClick, children }: any) 
 
 const CalendarPage: React.FC = () => {
     const { user } = useAuth();
+    const isMobile = useMedia('(max-width: 768px)', false);
 
     // Core Calendar State
     const [month, setMonth] = useState(new Date().getMonth());
@@ -347,6 +349,123 @@ const CalendarPage: React.FC = () => {
         const blanks = Array(firstDay).fill(null);
         const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
         const totalSlots = [...blanks, ...days];
+
+        if (isMobile) {
+            return (
+                <div className="flex flex-col gap-6">
+                    {/* Horizontal Day Strip */}
+                    <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar px-1 -mx-4 md:mx-0 sm:px-4">
+                        {days.map((day) => {
+                            const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+                            const isSelected = day === selectedDate;
+                            const { events: dayEvents, tasks: dayTasks } = getItemsForDay(day);
+                            const hasItems = dayEvents.length > 0 || dayTasks.length > 0;
+
+                            return (
+                                <button
+                                    key={`strip-${day}`}
+                                    onClick={() => setSelectedDate(day)}
+                                    className={`flex-shrink-0 w-12 h-16 rounded-2xl flex flex-col items-center justify-center transition-all border ${
+                                        isSelected 
+                                            ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/20 scale-110' 
+                                            : isToday
+                                                ? 'bg-brand-500/20 border-brand-500/50 text-brand-400'
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                    }`}
+                                >
+                                    <span className="text-[10px] font-bold uppercase opacity-60">
+                                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(year, month, day).getDay()]}
+                                    </span>
+                                    <span className="text-lg font-black">{day}</span>
+                                    {hasItems && !isSelected && (
+                                        <div className="w-1 h-1 rounded-full bg-amber-500 mt-1" />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Selected Day Agenda */}
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                <span className="w-1.5 h-6 bg-amber-500 rounded-full" />
+                                {selectedDate ? `${monthNames[month]} ${selectedDate}, ${year}` : 'Select a date'}
+                            </h3>
+                            <button
+                                onClick={() => handleOpenEventModal(selectedDate || undefined)}
+                                className="w-10 h-10 rounded-xl bg-brand-500 text-white flex items-center justify-center shadow-lg shadow-brand-500/20 active:scale-95 transition-transform"
+                            >
+                                <Plus size={20} />
+                            </button>
+                        </div>
+
+                        {selectedDate && (
+                            <div className="space-y-3">
+                                {[...selectedDayTasks, ...selectedDayEvents].length === 0 ? (
+                                    <div className="py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center px-6">
+                                        <CalendarIcon size={32} className="text-gray-600 mb-3 opacity-20" />
+                                        <p className="text-sm text-gray-400 font-medium">No schedule for this day</p>
+                                        <button 
+                                            onClick={() => handleOpenEventModal(selectedDate)}
+                                            className="mt-4 text-[11px] font-black text-amber-500 uppercase tracking-widest hover:underline"
+                                        >
+                                            Add Entry
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {selectedDayTasks.map((task) => (
+                                            <div 
+                                                key={task.id}
+                                                className="p-4 bg-gradient-to-br from-brand-900/40 to-black/40 border border-brand-500/20 rounded-2xl flex items-center gap-4 group"
+                                            >
+                                                <div className="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400 border border-brand-500/30">
+                                                    <CheckCircle2 size={18} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-brand-400 mb-0.5">Task Assignment</p>
+                                                    <h4 className="font-bold text-white truncate">{task.title}</h4>
+                                                    {task.clientName && <p className="text-[11px] text-gray-500 truncate">{task.clientName}</p>}
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Due</p>
+                                                    <p className="text-[11px] font-bold text-white">{task.dueDate?.split('-').slice(1).join('/')}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {selectedDayEvents.map((ev) => (
+                                            <div 
+                                                key={ev.id}
+                                                onClick={(e) => handleEditEvent(ev, e)}
+                                                className="p-4 bg-gradient-to-br from-white/5 to-black/20 border border-white/10 rounded-2xl flex items-center gap-4 group active:scale-[0.98] transition-all"
+                                            >
+                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: `${ev.color}15`, borderColor: `${ev.color}30`, color: ev.color }}>
+                                                    <Clock size={18} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: ev.color }}>{ev.type}</p>
+                                                        {ev.isRecurring && <Repeat size={10} className="text-gray-500" />}
+                                                    </div>
+                                                    <h4 className="font-bold text-white truncate">{ev.title}</h4>
+                                                    {ev.time && <p className="text-[11px] text-gray-500 font-medium">{ev.time}</p>}
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <button onClick={(e) => handleDeleteEvent(ev, e)} className="p-2 text-gray-600 hover:text-red-400 transition-colors">
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
 
         return (
             <DndContext

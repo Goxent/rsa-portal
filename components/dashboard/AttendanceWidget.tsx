@@ -407,16 +407,16 @@ const AttendanceWidget: React.FC = () => {
                     <button
                         onClick={handleClockIn}
                         disabled={loading || (isLate && !lateReason)}
-                        className="w-full py-4 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-2xl font-black shadow-xl shadow-[var(--accent-dim)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 group relative overflow-hidden"
+                        className="w-full py-6 md:py-4 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-2xl font-black shadow-xl shadow-[var(--accent-dim)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 group relative overflow-hidden"
                     >
                         {/* Shimmer effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
                         
-                        <div className="flex items-center gap-2 relative z-10 uppercase tracking-[0.15em] text-[13px]">
-                            {loading ? <Loader2 className="animate-spin" size={20} /> : <Play size={20} className="fill-current group-hover:scale-110 transition-transform" />}
+                        <div className="flex items-center gap-3 relative z-10 uppercase tracking-[0.2em] text-[15px] md:text-[13px]">
+                            {loading ? <Loader2 className="animate-spin" size={24} /> : <Play size={24} className="fill-current group-hover:scale-110 transition-transform md:w-5 md:h-5" />}
                             Start Work Day
                         </div>
-                        <span className="text-[9px] opacity-60 font-medium lowercase tracking-normal relative z-10 group-disabled:hidden">
+                        <span className="text-[10px] md:text-[9px] opacity-60 font-medium lowercase tracking-normal relative z-10 group-disabled:hidden">
                             Click to log your arrival time
                         </span>
                     </button>
@@ -436,13 +436,13 @@ const AttendanceWidget: React.FC = () => {
                                 )}
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                                 {workLogs.map((log, index) => (
-                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-xl p-3 flex flex-col gap-4 group hover:border-brand-300 dark:hover:border-white/10 transition-colors">
+                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl p-4 md:p-3 flex flex-col gap-5 md:gap-4 group hover:border-brand-300 dark:hover:border-white/10 transition-colors shadow-sm md:shadow-none">
                                         
                                         {/* Top Row: Client & Assignment */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div className="space-y-1">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3">
+                                            <div className="space-y-1.5 md:space-y-1">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client / Project</label>
                                                 <SearchableClientSelect
                                                     clients={clients}
@@ -451,7 +451,7 @@ const AttendanceWidget: React.FC = () => {
                                                     disabled={status === 'COMPLETED'}
                                                 />
                                             </div>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5 md:space-y-1">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Nature of Engagement</label>
                                                 <SearchableSelect
                                                     items={NATURE_OF_ASSIGNMENTS.map(n => ({ id: n, name: n, icon: <Briefcase size={12}/> }))}
@@ -464,8 +464,8 @@ const AttendanceWidget: React.FC = () => {
                                         </div>
 
                                         {/* Bottom Row: Location & Description */}
-                                        <div className="flex flex-col md:flex-row gap-3">
-                                            <div className="w-full md:w-1/4 space-y-1">
+                                        <div className="flex flex-col md:flex-row gap-4 md:gap-3">
+                                            <div className="w-full md:w-1/4 space-y-1.5 md:space-y-1">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Location</label>
                                                 <SearchableSelect
                                                     items={[
@@ -478,16 +478,16 @@ const AttendanceWidget: React.FC = () => {
                                                     placeholder="Select Location"
                                                 />
                                             </div>
-                                            <div className="flex-1 space-y-1">
+                                            <div className="flex-1 space-y-1.5 md:space-y-1">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center justify-between">
                                                     Work Description
                                                     {status !== 'COMPLETED' && workLogs.length > 1 && (
                                                         <button
                                                             onClick={() => removeLog(log.id)}
-                                                            className="text-rose-500 hover:text-rose-600 font-bold transition-all flex items-center gap-1 opacity-0 group-hover:opacity-100 pr-1"
+                                                            className="text-rose-500 hover:text-rose-600 font-bold transition-all flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 pr-1"
                                                             title="Remove Task"
                                                         >
-                                                            <Trash2 size={10} /> <span className="text-[8px]">Delete Row</span>
+                                                            <Trash2 size={12} className="md:w-3 md:h-3" /> <span className="text-[10px] md:text-[8px]">Delete Row</span>
                                                         </button>
                                                     )}
                                                 </label>
@@ -502,17 +502,18 @@ const AttendanceWidget: React.FC = () => {
                                     </div>
                                 ))}
                             </div>
+
                         </div>
 
-                        {/* Clock Out Button */}
+                         {/* Clock Out Button */}
                         {status === 'CLOCKED_IN' && (
-                            <div className="pt-4 border-t border-slate-200/50 dark:border-white/[0.05]">
+                            <div className="pt-6 md:pt-4 border-t border-slate-200/50 dark:border-white/[0.05]">
                                 <button
                                     onClick={handleClockOut}
                                     disabled={loading}
-                                    className="w-full py-3.5 glass-panel hover-lift border border-rose-500/30 hover:bg-rose-500/10 hover:border-rose-500/50 text-rose-600 dark:text-rose-400 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group shadow-sm text-sm"
+                                    className="w-full py-5 md:py-3.5 glass-panel hover-lift border border-rose-500/30 hover:bg-rose-500/10 hover:border-rose-500/50 text-rose-600 dark:text-rose-400 rounded-2xl md:rounded-xl font-bold transition-all flex items-center justify-center gap-2 group shadow-sm text-base md:text-sm"
                                 >
-                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current" size={18} />}
+                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current w-5 h-5 md:w-4.5 md:h-4.5" size={20} />}
                                     Clock Out & Save Logs
                                 </button>
                             </div>

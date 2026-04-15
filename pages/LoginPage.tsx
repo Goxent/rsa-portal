@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormValues } from '../utils/validationSchemas';
 import { motion } from 'framer-motion';
 
+import RSALogo from '../components/common/RSALogo';
+
 const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
@@ -106,22 +108,20 @@ const LoginPage: React.FC = () => {
 
       {/* LOGIN CARD */}
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full max-w-[420px] relative z-10 glass-card p-10 border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,1)]"
       >
         {/* Brand Header */}
-        <div className="flex flex-col items-center mb-12 text-center">
-            <div className="h-10 px-4 flex items-center justify-center mb-4 bg-brand-500 rounded-xl shadow-lg shadow-brand-500/20">
-                <span className="text-white font-[900] text-[1.1rem] tracking-tight">RSA</span>
-            </div>
-            <h1 className="text-[13px] font-black uppercase tracking-[0.3em] text-gray-500 mb-8">
-                Official Workspace
-            </h1>
+        <div className="flex flex-col items-center mb-10 text-center">
+            <RSALogo size="md" className="mb-6 scale-110" />
             
-            <h2 className="text-3xl font-black text-white tracking-tighter">Sign In</h2>
-            <p className="text-gray-500 text-[13px] mt-2 font-medium">Authorized personnel only.</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-500/80 mb-2">
+                Unified Portal
+            </p>
+            <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Login To Identity</h2>
+            <p className="text-gray-500 text-[12px] font-medium leading-relaxed">Authorized RSA Personnel Only.</p>
         </div>
 
         {rateLimitError && (

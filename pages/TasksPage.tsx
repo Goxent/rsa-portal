@@ -1340,7 +1340,7 @@ const TasksPage: React.FC = () => {
             {/* --- REFINED UNIFIED TOOLBAR --- */}
             <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-50 transition-colors duration-300">
                 <div className="flex flex-col border-b border-border/50">
-                    <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-3 px-4 py-3 md:flex-nowrap">
                         {/* LEFT: View Mode Toggle */}
                         <div
                             className="flex-shrink-0 inline-flex"
@@ -1376,8 +1376,10 @@ const TasksPage: React.FC = () => {
                             })}
                         </div>
 
+                        </div>
+
                         {/* CENTER: Search & Workflow Dropdown */}
-                        <div className="flex items-center gap-2 flex-1 max-w-xl">
+                        <div className="flex items-center gap-2 flex-1 min-w-full md:min-w-0 md:max-w-xl order-3 md:order-2">
                             {/* NEW: Workflow Selector Dropdown */}
                             <div className="relative" ref={workflowMenuRef}>
                                 <button
@@ -1544,15 +1546,15 @@ const TasksPage: React.FC = () => {
                         )}
 
                         {/* RIGHT ACTIONS */}
-                        <div className="flex items-center gap-2 ml-auto">
+                        <div className="flex items-center gap-2 ml-auto order-2 md:order-3">
                             {/* Templates */}
                             <button
                                 onClick={() => setIsTemplateModalOpen(true)}
                                 disabled={!canCreateTask}
-                                className="h-[38px] px-4 bg-secondary border border-border rounded-xl flex items-center gap-2 text-[10px] font-black tracking-widest text-muted hover:text-heading transition-all disabled:opacity-50"
+                                className="h-[38px] px-3 md:px-4 bg-secondary border border-border rounded-xl flex items-center gap-2 text-[10px] font-black tracking-widest text-muted hover:text-heading transition-all disabled:opacity-50"
                             >
                                 <Sparkles size={13} className="text-accent" />
-                                <span className={isMobile ? 'sr-only' : ''}>PRESETS</span>
+                                <span className="hidden sm:inline">PRESETS</span>
                             </button>
 
                             {/* Export Group */}
@@ -1564,14 +1566,14 @@ const TasksPage: React.FC = () => {
                             {/* Filters Button */}
                             <button
                                 onClick={() => setShowFilterPanel(!showFilterPanel)}
-                                className={`h-[38px] px-4 flex items-center gap-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                                className={`h-[38px] px-3 md:px-4 flex items-center gap-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
                                     showFilterPanel || activeFilterCount > 0
                                         ? 'bg-accent/15 border-accent/40 text-accent shadow-accent-glow'
                                         : 'bg-secondary border-border text-muted hover:text-heading'
                                 }`}
                             >
                                 <Filter size={13} className={activeFilterCount > 0 ? 'animate-pulse' : ''} />
-                                <span>FILTERS</span>
+                                <span className="hidden sm:inline">FILTERS</span>
                                 {activeFilterCount > 0 && (
                                     <div className="w-4 h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center ml-1">
                                         {activeFilterCount}
@@ -1582,10 +1584,10 @@ const TasksPage: React.FC = () => {
                             <button
                                 onClick={handleOpenCreate}
                                 disabled={!canCreateTask}
-                                className="h-[38px] px-5 bg-accent hover:bg-accent-light text-white rounded-xl text-[10px] font-black uppercase tracking-[0.14em] flex items-center gap-2 transition-all shadow-accent-glow disabled:opacity-50 active:scale-95"
+                                className="h-[38px] px-4 md:px-5 bg-accent hover:bg-accent-light text-white rounded-xl text-[10px] font-black uppercase tracking-[0.14em] flex items-center gap-2 transition-all shadow-accent-glow disabled:opacity-50 active:scale-95"
                             >
                                 <Plus size={16} strokeWidth={3} />
-                                <span className={isMobile ? 'sr-only' : ''}>Create New</span>
+                                <span className="hidden sm:inline">Create</span>
                             </button>
                         </div>
                     </div>

@@ -360,66 +360,63 @@ const ClientsPage: React.FC = () => {
         <div className="min-h-full p-4 md:p-6 bg-transparent">
             <div className="space-y-6 animate-in fade-in duration-500 pb-32 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
+            <div className="flex flex-wrap md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="min-w-full md:min-w-0">
                     <h1 className="text-2xl font-bold text-white flex items-center">
                         <Building2 className="mr-3 text-amber-400" /> Client Directory
                     </h1>
                     <p className="text-gray-400 text-sm mt-1">Manage audit clients, tax filings, and contact details</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
                     {isAdmin && (
                         <div className="flex gap-2">
                             <button
                                 onClick={() => handleExport('pdf')}
-                                className="p-2.5 rounded-xl text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-rose-900/10"
+                                className="p-3 md:p-2.5 rounded-xl text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-rose-900/10"
                                 title="Export PDF"
                             >
-                                <FileText size={18} />
+                                <FileText size={20} />
                             </button>
                             <button
                                 onClick={() => handleExport('excel')}
-                                className="p-2.5 rounded-xl text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-/10"
+                                className="p-3 md:p-2.5 rounded-xl text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-/10"
                                 title="Export Excel"
                             >
-                                <FileSpreadsheet size={18} />
+                                <FileSpreadsheet size={20} />
                             </button>
                         </div>
                     )}
                     {isAdmin && (
-                        <div className="flex items-center gap-2">
-
-                            <button
-                                onClick={() => {
-                                    setEditingId(null);
-                                    setFormData(initialFormState);
-                                    setActiveModalTab('BASIC');
-                                    setIsModalOpen(true);
-                                }}
-                                className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl font-medium flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105"
-                            >
-                                <Plus size={18} className="mr-2" /> Add Client
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => {
+                                setEditingId(null);
+                                setFormData(initialFormState);
+                                setActiveModalTab('BASIC');
+                                setIsModalOpen(true);
+                            }}
+                            className="bg-amber-600 hover:bg-amber-500 text-white px-5 md:px-4 py-3 md:py-2.5 rounded-xl font-bold flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95 flex-1 md:flex-none justify-center"
+                        >
+                            <Plus size={18} className="mr-2" /> <span className="text-[13px] md:text-sm">Add Client</span>
+                        </button>
                     )}
                 </div>
             </div>
 
             {/* Toolbar */}
-            <div className="glass-panel p-4 rounded-xl flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="relative w-full md:w-80">
+            <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-xl">
+                <div className="relative w-full md:w-80 order-2 md:order-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
                         type="text"
                         placeholder="Search clients by name, code, or PAN..."
-                        className="w-full pl-10 pr-4 py-2 bg-black/20 border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                        className="w-full pl-10 pr-4 py-3 md:py-2 bg-black/20 border border-white/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-amber-500 outline-none transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 custom-scrollbar order-1 md:order-2">
                     <select
-                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-amber-500"
+                        className="bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:py-2 text-[12px] md:text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 shrink-0"
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
                     >
@@ -430,7 +427,7 @@ const ClientsPage: React.FC = () => {
                     </select>
 
                     <select
-                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-amber-500"
+                        className="bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:py-2 text-[12px] md:text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 shrink-0"
                         value={filterService}
                         onChange={(e) => setFilterService(e.target.value)}
                     >
@@ -444,7 +441,7 @@ const ClientsPage: React.FC = () => {
                     </select>
 
                     <select
-                        className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-amber-500"
+                        className="bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:py-2 text-[12px] md:text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 shrink-0"
                         value={filterAuditorFirm}
                         onChange={(e) => setFilterAuditorFirm(e.target.value)}
                     >
