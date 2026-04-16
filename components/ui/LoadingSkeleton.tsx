@@ -3,7 +3,7 @@ import React from 'react';
 
 interface LoadingSkeletonProps {
     className?: string;
-    variant?: 'text-sm' | 'text-lg' | 'card' | 'row' | 'avatar';
+    variant?: 'text' | 'text-sm' | 'text-lg' | 'card' | 'row' | 'avatar' | 'button';
     count?: number;
 }
 
@@ -13,11 +13,13 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
     count = 1
 }) => {
     const variantClasses = {
+        'text': 'h-4 w-full rounded-md',
         'text-sm': 'h-3.5 w-full rounded-full',
         'text-lg': 'h-5 w-[60%] rounded-full',
         card: 'h-[120px] w-full rounded-[var(--radius-lg)]',
         row: 'h-[44px] w-full rounded-[var(--radius-md)]',
-        avatar: 'h-9 w-9 rounded-full'
+        avatar: 'h-9 w-9 rounded-full',
+        button: 'h-10 w-full rounded-xl'
     };
 
     const skeletons = Array.from({ length: count }, (_, i) => (

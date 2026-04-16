@@ -723,9 +723,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
 
         const updates: any = {};
-        if (role === 'TL') updates.teamLeadApprovedAt = new Date().toISOString();
-        if (role === 'ER') updates.engagementReviewerApprovedAt = new Date().toISOString();
-        if (role === 'SP') updates.signingPartnerApprovedAt = new Date().toISOString();
+        const now = new Date().toISOString();
+        if (role === 'TL') {
+            updates.teamLeadApprovedAt = now;
+            setValue('teamLeadApprovedAt', now);
+        }
+        if (role === 'ER') {
+            updates.engagementReviewerApprovedAt = now;
+            setValue('engagementReviewerApprovedAt', now);
+        }
+        if (role === 'SP') {
+            updates.signingPartnerApprovedAt = now;
+            setValue('signingPartnerApprovedAt', now);
+        }
 
         onChange(updates);
         toast.success(`${role} Layer Sign-off Secured.`);
@@ -1308,6 +1318,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     const canSignOff = (
                         task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION &&
                         task.status !== TaskStatus.COMPLETED &&
+                        (isAdminOrMaster || 
+                         (layer === 'TL' && isTeamLeader) ||
+                         (layer === 'ER' && isEngagementReviewer) ||
+                         (layer === 'SP' && isSigningPartner)) &&
                         ((layer === 'TL') || 
                          (layer === 'ER' && !!task.teamLeadApprovedAt) ||
                          (layer === 'SP' && !!task.engagementReviewerApprovedAt))

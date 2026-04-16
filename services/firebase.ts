@@ -131,6 +131,16 @@ const getDeviceType = (): 'MOBILE' | 'DESKTOP' => {
     return 'DESKTOP';
 };
 
+// Helper for persistent device identification (cleared only on browser data wipe)
+const getDeviceId = (): string => {
+    let id = localStorage.getItem('rsa_device_id');
+    if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem('rsa_device_id', id);
+    }
+    return id;
+};
+
 // Helper to get a friendly device name from user-agent
 const getDeviceName = (): string => {
     const ua = navigator.userAgent;
@@ -173,6 +183,7 @@ const getDeviceName = (): string => {
         model = match[1].split(';')[0].trim();
     }
 
+    // Enhanced identification: Add browser detail to distinguish multiple sessions on same OS
     return model ? `${model} (${browser})` : `${browser} on ${os}`;
 };
 
@@ -202,9 +213,11 @@ const setupUserSession = async (uid: string, email: string, method: string, forc
 
     // If already ≥2 valid sessions and no forced removal, block and expose session list
     if (sessionList.length >= 2 && !forceSessionId) {
+        const currentDeviceId = getDeviceId();
         throw new SessionLimitError(
             sessionList.map((s: any) => ({
                 sessionId: s.sessionId,
+                deviceId: s.deviceId, // Include deviceId for UI identification
                 deviceName: s.deviceName || s.deviceType || 'Unknown Device',
                 deviceType: s.deviceType || 'DESKTOP',
                 loggedInAt: s.loggedInAt || s.lastActive || Date.now(),
@@ -225,8 +238,10 @@ const setupUserSession = async (uid: string, email: string, method: string, forc
         }
     }
     // Add new session keyed by sessionId
+    const currentDeviceId = getDeviceId();
     updatedSessions[sessionId] = {
         sessionId,
+        deviceId: currentDeviceId,
         deviceName,
         deviceType,
         loggedInAt: sessionCreatedAt,

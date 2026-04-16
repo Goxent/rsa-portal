@@ -5,6 +5,7 @@ import { AuthService } from '../services/firebase';
 
 interface SessionInfo {
     sessionId: string;
+    deviceId?: string; // Added for persistent identification
     deviceName: string;
     deviceType: string;
     loggedInAt: number;
@@ -28,7 +29,7 @@ const timeAgo = (ts: number): string => {
 };
 
 const DeviceChooserModal: React.FC<DeviceChooserModalProps> = ({
-    isOpen, sessions, uid, email, password, onSuccess, onCancel
+    isOpen, sessions, uid, onSuccess, onCancel
 }) => {
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -85,41 +86,66 @@ const DeviceChooserModal: React.FC<DeviceChooserModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Sessions */}
-                        <div className="p-4 space-y-3">
+                        <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-1">Active Sessions</p>
                             {sessions.map((session) => {
                                 const isMobile = session.deviceType === 'MOBILE' || /Android|iPhone|iPad/.test(session.deviceName);
                                 const isLoading = loadingId === session.sessionId;
+                                const isCurrentDevice = session.deviceId === localStorage.getItem('rsa_device_id');
+                                
                                 return (
                                     <motion.div
                                         key={session.sessionId}
                                         layout
-                                        className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-all"
+                                        className={`flex items-start gap-4 p-4 rounded-xl transition-all border ${
+                                            isCurrentDevice 
+                                                ? 'bg-brand-500/5 border-brand-500/20 ring-1 ring-brand-500/10' 
+                                                : 'bg-white/[0.03] border-white/5 hover:border-white/10'
+                                        }`}
                                     >
                                         {/* Device icon */}
-                                        <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                            isCurrentDevice ? 'bg-brand-500/10' : 'bg-white/5'
+                                        }`}>
                                             {isMobile
-                                                ? <Smartphone size={18} className="text-blue-400" />
-                                                : <Monitor size={18} className="text-purple-400" />
+                                                ? <Smartphone size={18} className={isCurrentDevice ? 'text-brand-400' : 'text-blue-400'} />
+                                                : <Monitor size={18} className={isCurrentDevice ? 'text-brand-400' : 'text-purple-400'} />
                                             }
                                         </div>
-
+ 
                                         {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-white text-sm font-bold break-words">{session.deviceName}</p>
-                                            <p className="text-gray-500 text-[11px] mt-0.5">
-                                                Last active {timeAgo(session.lastActive)}
-                                                <span className="mx-1 opacity-40">·</span>
-                                                Signed in {timeAgo(session.loggedInAt)}
-                                            </p>
+                                        <div className="flex-1 min-w-0 pr-2">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-white text-sm font-bold leading-tight">{session.deviceName}</p>
+                                                    {isCurrentDevice && (
+                                                        <span className="px-2 py-0.5 rounded-full bg-brand-500 text-[8px] font-black text-white uppercase tracking-tighter">
+                                                            This Device
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-gray-500 text-[11px] font-medium">
+                                                    Last active {timeAgo(session.lastActive)}
+                                                    <span className="mx-1 opacity-40">·</span>
+                                                    Signed in {timeAgo(session.loggedInAt)}
+                                                </p>
+                                                {isCurrentDevice && (
+                                                    <p className="text-brand-400/60 text-[9px] font-black uppercase tracking-widest mt-0.5 animate-pulse">
+                                                        Active Session Instance
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
-
+ 
                                         {/* Disconnect button */}
                                         <button
                                             onClick={() => handleDisconnect(session.sessionId)}
                                             disabled={!!loadingId}
-                                            className="shrink-0 flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/50 transition-all disabled:opacity-40"
+                                            className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all disabled:opacity-40 ${
+                                                isCurrentDevice
+                                                    ? 'border-gray-500/30 text-gray-400 hover:bg-white/5 hover:text-white'
+                                                    : 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/50'
+                                            }`}
                                         >
                                             {isLoading
                                                 ? <Loader2 size={12} className="animate-spin" />
