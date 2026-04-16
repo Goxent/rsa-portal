@@ -168,12 +168,12 @@ const setupUserSession = async (uid: string, email: string, method: string, forc
     const deviceType = getDeviceType();
     const deviceName = getDeviceName();
 
-    // Check current sessions
+    // Check current sessions — filter out nulls from legacy schema (old code set sessions to null on logout)
     const userSnap = await getDoc(doc(db, 'users', uid));
     const existingSessions = userSnap.exists() ? (userSnap.data().activeSessions || {}) : {};
-    const sessionList = Object.values(existingSessions) as any[];
+    const sessionList = Object.values(existingSessions).filter(Boolean) as any[];
 
-    // If already ≥2 sessions and no forced removal, block and expose session list
+    // If already ≥2 valid sessions and no forced removal, block and expose session list
     if (sessionList.length >= 2 && !forceSessionId) {
         throw new SessionLimitError(
             sessionList.map((s: any) => ({
