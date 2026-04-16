@@ -136,17 +136,44 @@ const getDeviceName = (): string => {
     const ua = navigator.userAgent;
     let browser = 'Browser';
     let os = 'Unknown OS';
-    if (/Chrome\//.test(ua) && !/Chromium\/|Edg\/|OPR\//.test(ua)) browser = 'Chrome';
+
+    // Detect browser
+    if (/SamsungBrowser\//.test(ua)) browser = 'Samsung Internet';
+    else if (/wv/.test(ua) || /App/.test(ua)) browser = 'App/Webview';
+    else if (/Chrome\//.test(ua) && !/Chromium\/|Edg\/|OPR\//.test(ua)) browser = 'Chrome';
     else if (/Firefox\//.test(ua)) browser = 'Firefox';
     else if (/Edg\//.test(ua)) browser = 'Edge';
     else if (/OPR\/|Opera\//.test(ua)) browser = 'Opera';
     else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = 'Safari';
-    if (/Windows/.test(ua)) os = 'Windows';
-    else if (/Macintosh|Mac OS/.test(ua)) os = 'Mac';
-    else if (/Android/.test(ua)) os = 'Android';
-    else if (/iPhone|iPad/.test(ua)) os = 'iOS';
-    else if (/Linux/.test(ua)) os = 'Linux';
-    return `${browser} on ${os}`;
+
+    // Detect OS & handle desktop mode spoofing on mobile devices
+    const isTouch = navigator.maxTouchPoints && navigator.maxTouchPoints > 0;
+    
+    if (/Android/.test(ua)) {
+        os = 'Android';
+    } else if (/iPhone|iPad|iPod/.test(ua) || (isTouch && /Macintosh/.test(ua))) {
+        os = 'iOS';
+    } else if (/Windows/.test(ua)) {
+        // If it claims Windows but has touch and narrow screen, it's likely a mobile phone requesting desktop site
+        if (isTouch && window.innerWidth < 800) {
+            os = 'Mobile (Desktop Mode)';
+        } else {
+            os = 'Windows';
+        }
+    } else if (/Macintosh|Mac OS/.test(ua)) {
+        os = 'Mac';
+    } else if (/Linux/.test(ua)) {
+        os = 'Linux';
+    }
+
+    // Attempt to grab device model (for Androids)
+    let model = '';
+    const match = ua.match(/\(Linux; U; Android.+; (.+?) Build/i) || ua.match(/\(Linux; Android.+; (.+?) Build/i);
+    if (match && match[1]) {
+        model = match[1].split(';')[0].trim();
+    }
+
+    return model ? `${model} (${browser})` : `${browser} on ${os}`;
 };
 
 // Custom error class for session limit
