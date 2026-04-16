@@ -430,11 +430,17 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     // Role-based Access Control (RBAC) definitions
     const isTaskCompleted = task.status === TaskStatus.COMPLETED;
-    const isTeamLeader = user?.uid === task.teamLeaderId;
     const isMasterAdmin = user?.role === UserRole.MASTER_ADMIN;
     const isAdminOrMaster = user?.role === UserRole.ADMIN || isMasterAdmin;
-    const isEngagementReviewer = user?.uid === task.engagementReviewerId;
-    const isSigningPartner = user?.uid === task.signingPartnerId;
+    
+    // Use watched values for live UI response if they change the reviewer in settings
+    const currentTLId = watch('teamLeaderId') || task.teamLeaderId;
+    const currentERId = watch('engagementReviewerId') || task.engagementReviewerId;
+    const currentSPId = watch('signingPartnerId') || task.signingPartnerId;
+
+    const isTeamLeader = user?.uid === currentTLId;
+    const isEngagementReviewer = user?.uid === currentERId;
+    const isSigningPartner = user?.uid === currentSPId;
     const canManageTeam = (isAdminOrMaster || isTeamLeader || !task.id) && !isTaskCompleted;
     
     // Rule: Team Leader AND Admins can ADD subtasks
@@ -1318,10 +1324,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     const canSignOff = (
                         task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION &&
                         task.status !== TaskStatus.COMPLETED &&
-                        (isAdminOrMaster || 
+                        (
                          (layer === 'TL' && isTeamLeader) ||
                          (layer === 'ER' && isEngagementReviewer) ||
-                         (layer === 'SP' && isSigningPartner)) &&
+                         (layer === 'SP' && isSigningPartner) ||
+                         isMasterAdmin // Preserve God-mode for Master Admin only
+                        ) &&
                         ((layer === 'TL') || 
                          (layer === 'ER' && !!task.teamLeadApprovedAt) ||
                          (layer === 'SP' && !!task.engagementReviewerApprovedAt))
