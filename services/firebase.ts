@@ -229,10 +229,12 @@ const setupUserSession = async (uid: string, email: string, method: string, forc
         updatedSessions[s.sessionId] = s;
     }
 
-    // If there are already ≥2 ACTIVE sessions and the user hasn't chosen to remove one, block.
+    // [REMOVED] Device limit enforcement disabled per request
+    /*
     if (activeSessions.length >= 2 && !forceSessionId) {
         throw new SessionLimitError(activeSessions, uid);
     }
+    */
 
     // If user chose to kick a specific session, remove it
     if (forceSessionId) {

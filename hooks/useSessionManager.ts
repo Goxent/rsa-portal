@@ -18,9 +18,8 @@ export const useSessionManager = () => {
                 const userData = docSnap.data() as UserProfile;
                 const localSessionId = localStorage.getItem('sessionId');
                 
-                // 1. Check for Concurrent Logins
-                // If the user's document has a currentSessionId and it doesn't match the local one,
-                // it means they logged in from another device.
+                // [REMOVED] Concurrent Login Check disabled per request
+                /*
                 if (userData.currentSessionId && localSessionId && userData.currentSessionId !== localSessionId) {
                     toast.error('You were logged out because your account was accessed from another device.', {
                         duration: 8000,
@@ -31,6 +30,7 @@ export const useSessionManager = () => {
                     await logout();
                     return;
                 }
+                */
 
                 // 2. Check for Session Expiration (30 Days)
                 if (userData.sessionCreatedAt) {

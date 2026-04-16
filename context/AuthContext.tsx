@@ -69,22 +69,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             setUser(userData);
 
-            // 2. Real-time Session Monitoring
             unsubscribeSnapshot = onSnapshot(userRef, (snapshot) => {
+                // Real-time updates for user profile data (e.g. role changes, profile updates)
                 if (snapshot.exists()) {
                     const data = snapshot.data() as UserProfile;
-                    // New schema: sessions are keyed by sessionId, not deviceType
-                    const localSessionId = localStorage.getItem('sessionId');
-                    if (localSessionId) {
-                        const sessionExists = data.activeSessions && Object.values(data.activeSessions).some((s: any) => s && s.sessionId === localSessionId);
-                        if (!sessionExists) {
-                            console.warn('[Security] Session was removed by another login.');
-                            toast.error('You have been logged out because your account was signed in on another device.', { duration: 6000, id: 'multi-login' });
-                            AuthService.logout('SESSION_TERMINATED').then(() => {
-                                setUser(null);
-                            });
-                        }
-                    }
+                    setUser(data);
                 }
             });
 

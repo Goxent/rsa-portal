@@ -539,22 +539,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         setShowDiscardBanner(false);
     };
 
-    const handleApprove = (role: 'TL' | 'ER' | 'SP') => {
-        const now = new Date().toISOString();
-        if (role === 'TL') {
-            setValue('teamLeadApprovedAt', now);
-            onChange({ teamLeadApprovedAt: now });
-            toast.success("Execution Phase Approved by Team Lead", { icon: '✅' });
-        } else if (role === 'ER') {
-            setValue('engagementReviewerApprovedAt', now);
-            onChange({ engagementReviewerApprovedAt: now });
-            toast.success("Engagement Quality Review Approved", { icon: '✅' });
-        } else if (role === 'SP') {
-            setValue('signingPartnerApprovedAt', now);
-            onChange({ signingPartnerApprovedAt: now });
-            toast.success("Final Partner Sign-off Recorded", { icon: '🏆' });
-        }
-    };
+    // NOTE: Sign-offs are ONLY performed via the Reviewer Checklist tab.
+    // handleApprove was removed to eliminate the duplicate, unsecured path in Settings.
+    // All approval logic now lives in handleReviewSignOff below.
+
 
     const toggleSubtask = (id: string, evidenceText?: string) => {
         if (isTaskCompleted) return;
@@ -698,10 +686,15 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const isER = user?.uid === task.engagementReviewerId;
         const isSP = user?.uid === task.signingPartnerId;
 
-        // Permission check
-        const isAuthorized = isAdmin || (role === 'TL' && isTL) || (role === 'ER' && isER) || (role === 'SP' && isSP);
+        // Permission check: STRICT as requested by user.
+        // Rule: Only the specifically assigned reviewer OR Master Admin can sign off.
+        const isAuthorized = isMasterAdmin || 
+                             (role === 'TL' && isTeamLeader) || 
+                             (role === 'ER' && isEngagementReviewer) || 
+                             (role === 'SP' && isSigningPartner);
+
         if (!isAuthorized) {
-            toast.error(`You are not authorized to sign off as ${role}.`);
+            toast.error(`Strict Security: Only the assigned ${role} can perform this sign-off.`, { icon: '🛡️' });
             return;
         }
 
@@ -744,7 +737,18 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
 
         onChange(updates);
-        toast.success(`${role} Layer Sign-off Secured.`);
+        
+        // IMMEDIATE PERSISTENCE: Sign-offs are critical security events.
+        // We trigger an auto-save immediately to ensure the state is persisted to Firestore.
+        toast.promise(
+            Promise.resolve(onSave(updates)),
+            {
+                loading: `Sealing ${role} Protocol...`,
+                success: `${role} Sign-off Secured and Persisted!`,
+                error: `Failed to persist ${role} sign-off. Please try again.`,
+            },
+            { icon: '🔒' }
+        );
     };
 
     const onRemoveSubtaskLocal = (id: string) => {
@@ -1324,11 +1328,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     const canSignOff = (
                         task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION &&
                         task.status !== TaskStatus.COMPLETED &&
+                        items.length > 0 && // Must have checklist items loaded — no blank sign-offs
                         (
                          (layer === 'TL' && isTeamLeader) ||
                          (layer === 'ER' && isEngagementReviewer) ||
                          (layer === 'SP' && isSigningPartner) ||
-                         isMasterAdmin // Preserve God-mode for Master Admin only
+                         isMasterAdmin
                         ) &&
                         ((layer === 'TL') || 
                          (layer === 'ER' && !!task.teamLeadApprovedAt) ||
@@ -1717,17 +1722,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     const selectClass = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 transition-all text-[13px] text-left text-gray-200 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer";
 
-    // Helper to render Approval UI
-    const ApprovalAction = ({ role, assignedId, approvedAt, isInFinalPhase }: { role: 'TL' | 'ER' | 'SP', assignedId?: string, approvedAt?: string, isInFinalPhase: boolean }) => {
+    // Helper to render read-only approval status in the Settings tab.
+    // Sign-off can ONLY be performed via the Reviewer Checklist tab by the assigned reviewer.
+    const ApprovalStatusBadge = ({ approvedAt, isInFinalPhase }: { approvedAt?: string; isInFinalPhase: boolean }) => {
         if (approvedAt) {
             return (
                 <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 size={12} className="text-emerald-400" />
-                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Verified</span>
+                    <CheckCircle2 size={11} className="text-emerald-400" />
+                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                        Signed · {new Date(approvedAt).toLocaleDateString()}
+                    </span>
                 </div>
             );
         }
-
         if (!isInFinalPhase) {
             return (
                 <div className="flex items-center gap-1.5 text-[9px] text-gray-700 uppercase tracking-widest font-black px-1.5">
@@ -1735,23 +1742,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 </div>
             );
         }
-
-        const isAuthorized = user?.uid === assignedId || user?.role === 'ADMIN' || user?.role === 'MASTER_ADMIN';
-        if (!isAuthorized) {
-            return (
-                <div className="flex items-center gap-1.5 text-[9px] text-gray-600 uppercase tracking-widest font-black px-1.5">
-                    <History size={12} /> Pending
-                </div>
-            );
-        }
-
         return (
-            <button
-                onClick={(e) => { e.preventDefault(); handleApprove(role); }}
-                className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-emerald-500/20 border border-amber-500/30 hover:border-emerald-500/30 px-3 py-1 rounded-full text-amber-400 hover:text-emerald-400 text-[9px] font-black uppercase tracking-widest transition-all shadow-lg"
-            >
-                <Unlock size={11} /> {role === 'TL' ? 'Verify Phase' : 'Apply Sign-off'}
-            </button>
+            <div className="flex items-center gap-1.5 text-[9px] text-amber-600 uppercase tracking-widest font-black px-1.5">
+                <History size={11} className="text-amber-700" /> Awaiting Sign-off
+            </div>
         );
     };
 
@@ -2648,18 +2642,23 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             </Field>
                                         </div>
 
-                                        {/* Quality Control Hierarchy Section */}
+                                         {/* Quality Control Hierarchy Section */}
                                         <div className="p-6 md:p-8 bg-[#0c1e18]/20 border border-emerald-500/10 rounded-[32px] shadow-inner space-y-8">
                                             <div className="flex items-center gap-4 border-b border-emerald-500/10 pb-4">
                                                 <ShieldCheck size={20} className="text-emerald-500" />
-                                                <h4 className="text-[13px] font-black text-gray-300 uppercase tracking-[0.3em]">Quality Control Hierarchy & Sign-offs</h4>
+                                                <div>
+                                                    <h4 className="text-[13px] font-black text-gray-300 uppercase tracking-[0.3em]">Quality Control Hierarchy</h4>
+                                                    <p className="text-[9px] text-amber-600/80 font-bold uppercase tracking-widest mt-0.5">
+                                                        Sign-offs are performed exclusively in the Reviewer Checklist tab
+                                                    </p>
+                                                </div>
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                 <Field 
                                                     label="Team Leader" 
                                                     icon={<UserCheck size={14} className="text-emerald-400" />}
-                                                    extra={<ApprovalAction role="TL" assignedId={watch('teamLeaderId')} approvedAt={watch('teamLeadApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
+                                                    extra={<ApprovalStatusBadge approvedAt={watch('teamLeadApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="teamLeaderId" control={control} render={({ field }) => (
                                                         <StaffSelect users={usersList.filter(u => (watch('assignedTo') || []).includes(u.uid))} value={field.value || ''} onChange={field.onChange} placeholder="Select Team Leader..." disabled={!!watch('teamLeadApprovedAt') || !canManageTeam} compact />
@@ -2669,7 +2668,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <Field 
                                                     label="QC Reviewer" 
                                                     icon={<Shield size={14} className="text-purple-400" />}
-                                                    extra={<ApprovalAction role="ER" assignedId={watch('engagementReviewerId')} approvedAt={watch('engagementReviewerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
+                                                    extra={<ApprovalStatusBadge approvedAt={watch('engagementReviewerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="engagementReviewerId" control={control} render={({ field }) => (
                                                         <StaffSelect 
@@ -2686,7 +2685,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <Field 
                                                     label="Signing Partner" 
                                                     icon={<Award size={14} className="text-rose-400" />}
-                                                    extra={<ApprovalAction role="SP" assignedId={watch('signingPartnerId')} approvedAt={watch('signingPartnerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
+                                                    extra={<ApprovalStatusBadge approvedAt={watch('signingPartnerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="signingPartnerId" control={control} render={({ field }) => (
                                                         <StaffSelect 
