@@ -638,7 +638,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     };
 
-    const addReviewRow = (role: 'TL' | 'ER' | 'SP') => {
+    const addReviewRow = (role: 'TL' | 'ER' | 'SP', insertAfterId?: string) => {
         if (isTaskCompleted) return;
         const newItem = {
             id: `rc-manual-${Date.now()}`,
@@ -648,7 +648,18 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             isCompleted: false,
             reviewerRole: role,
         };
-        const updated = [...(task.reviewChecklist || []), newItem];
+        const updated = [...(task.reviewChecklist || [])];
+        if (insertAfterId) {
+            const index = updated.findIndex(u => u.id === insertAfterId);
+            if (index > -1) {
+                let targetIndex = index + 1;
+                for (let i = index + 1; i < updated.length; i++) {
+                    if (updated[i].reviewerRole === role && updated[i].isSectionHeader) break;
+                    targetIndex = i + 1;
+                }
+                updated.splice(targetIndex, 0, newItem);
+            } else updated.push(newItem);
+        } else updated.push(newItem);
         onChange({ reviewChecklist: updated });
     };
 
@@ -1251,8 +1262,30 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     const renderReviewerChecklist = () => {
         return (
-            <div className="space-y-8">
-                {(['TL', 'ER', 'SP'] as const).map((layer) => {
+            <div className="space-y-6">
+                {/* Protocol Tabs */}
+                <div className="flex gap-1 p-1 bg-white/5 border border-white/5 rounded-2xl w-fit mx-auto shadow-2xl backdrop-blur-xl">
+                    {[
+                        { id: 'TL' as const, label: 'Team Leader', color: 'brand' },
+                        { id: 'ER' as const, label: 'Engagement Reviewer', color: 'purple' },
+                        { id: 'SP' as const, label: 'Signing Partner', color: 'rose' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveReviewTab(tab.id)}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center gap-2.5 ${
+                                activeReviewTab === tab.id 
+                                    ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20 active:scale-95` 
+                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <ShieldCheck size={14} />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {[activeReviewTab].map((layer) => {
                     const meta = {
                         'TL': { title: 'Team Leader Protocol', color: 'brand', role: 'Team Leader' },
                         'ER': { title: 'Engagement Reviewer Protocol', color: 'purple', role: 'Engagement Reviewer' },
@@ -1416,12 +1449,20 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                         </td>
                                                         {!isLocked && (
                                                             <td className="px-4 py-3 text-center">
-                                                                <button 
-                                                                    onClick={() => removeReviewRow(item.id, isLocked)}
-                                                                    className="p-1 text-indigo-900/50 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100"
-                                                                >
-                                                                    <Trash2 size={13} />
-                                                                </button>
+                                                                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                                    <button 
+                                                                        onClick={() => addReviewRow(layer, item.id)}
+                                                                        className="p-1 px-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg flex items-center gap-1.5 text-[9px] font-black tracking-widest"
+                                                                    >
+                                                                        <Plus size={12} /> ADD ITEM
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => removeReviewRow(item.id, isLocked)}
+                                                                        className="p-1 text-indigo-900/50 hover:text-rose-500"
+                                                                    >
+                                                                        <Trash2 size={13} />
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         )}
                                                     </tr>
