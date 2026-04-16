@@ -9,7 +9,7 @@ import {
     Users, UserCheck, Shield, Lock, Unlock, ExternalLink, History, CloudUpload, FileText,
     MessageSquare, Zap, Settings2, Folder, Download, ChevronDown
 } from 'lucide-react';
-import { AppwriteService } from '../../services/appwrite';
+import { GoogleDriveService } from '../../services/googleDrive';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation, ReviewChecklistItem } from '../../types';
 import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../constants/taskTypeChecklists';
 import { useModal } from '../../context/ModalContext';
@@ -980,7 +980,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 {subtaskDocs.map(doc => (
                                     <a 
                                         key={doc.id}
-                                        href={AppwriteService.getFileView(doc.appwriteFileId)}
+                                        href={GoogleDriveService.getFileView(doc.appwriteFileId)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-brand-500/10 border border-brand-500/20 rounded-md text-brand-400 text-[9px] font-black uppercase tracking-tight hover:bg-brand-500/20 transition-all"
@@ -2269,7 +2269,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                         {file.mimeType.includes('image') ? <ExternalLink size={18} /> : <FileText size={18} />}
                                                                     </div>
                                                                     <button 
-                                                                        onClick={() => window.open(AppwriteService.getFileView(file.appwriteFileId), '_blank')}
+                                                                        onClick={() => window.open(GoogleDriveService.getFileView(file.appwriteFileId), '_blank')}
                                                                         className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-white hover:bg-brand-500 transition-all opacity-0 group-hover:opacity-100"
                                                                     >
                                                                         <ExternalLink size={14} />

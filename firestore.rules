@@ -65,7 +65,8 @@ service cloud.firestore {
     // CLIENTS COLLECTION
     match /clients/{clientId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid in resource.data.get('permittedStaff', []));
     }
 
     // ATTENDANCE COLLECTION

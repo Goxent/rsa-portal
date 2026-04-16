@@ -18,7 +18,7 @@ import {
     formatBytes,
     getMimeLabel,
 } from '../services/auditDocs';
-import { AppwriteService } from '../services/appwrite';
+import { GoogleDriveService } from '../services/googleDrive';
 import {
     Client,
     UserRole,
@@ -247,8 +247,8 @@ interface FileRowProps {
 
 const FileItem: React.FC<FileRowProps> = ({ file, isGrid, onDelete, onEditNotes }) => {
     const MimeIcon = getMimeIcon(file.mimeType);
-    const viewUrl = AppwriteService.getFileView(file.appwriteFileId);
-    const downloadUrl = AppwriteService.getFileDownload(file.appwriteFileId);
+    const viewUrl = GoogleDriveService.getFileView(file.appwriteFileId);
+    const downloadUrl = GoogleDriveService.getFileDownload(file.appwriteFileId);
     const canPreview = file.mimeType.startsWith('image/') || file.mimeType === 'application/pdf';
 
     if (isGrid) {

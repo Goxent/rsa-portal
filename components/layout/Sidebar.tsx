@@ -33,7 +33,7 @@ interface SidebarProps {
 const ALL_NAV_ITEMS = [
     { id: 'dashboard', to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'tasks', to: '/tasks', icon: CheckSquare, label: 'Tasks & Workflow' },
-    { id: 'clients', to: '/clients', icon: Building2, label: 'Clients', adminOnly: true },
+    { id: 'clients', to: '/clients', icon: Building2, label: 'Clients' },
     { id: 'calendar', to: '/calendar', icon: Calendar, label: 'Calendar' },
     { id: 'attendance', to: '/attendance', icon: Clock, label: 'Attendance' },
     { id: 'compliance', to: '/compliance', icon: AlertCircle, label: 'Compliance' },

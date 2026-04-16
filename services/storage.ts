@@ -1,4 +1,4 @@
-import { AppwriteService } from './appwrite';
+import { GoogleDriveService } from './googleDrive';
 
 export interface StorageFile {
     id: string;
@@ -13,9 +13,9 @@ export const StorageService = {
      */
     upload: async (file: File): Promise<{ success: boolean; data?: StorageFile; error?: string }> => {
         try {
-            const uploadedFile = await AppwriteService.uploadFile(file);
+            const uploadedFile = await GoogleDriveService.uploadFile(file);
             const fileId = uploadedFile.$id;
-            const viewUrl = AppwriteService.getFileView(fileId);
+            const viewUrl = GoogleDriveService.getFileView(fileId);
 
             let type: StorageFile['type'] = 'other';
             if (file.type.startsWith('image/')) type = 'image';
@@ -42,7 +42,7 @@ export const StorageService = {
      */
     getViewUrl: (fileId: string): string => {
         try {
-            return AppwriteService.getFileView(fileId);
+            return GoogleDriveService.getFileView(fileId);
         } catch (error) {
             console.error("Storage getViewUrl error:", error);
             return '';
@@ -54,7 +54,7 @@ export const StorageService = {
      */
     getDownloadUrl: (fileId: string): string => {
         try {
-            return AppwriteService.getFileDownload(fileId);
+            return GoogleDriveService.getFileDownload(fileId);
         } catch (error) {
             console.error("Storage getDownloadUrl error:", error);
             return '';
@@ -66,7 +66,7 @@ export const StorageService = {
      */
     delete: async (fileId: string): Promise<{ success: boolean; error?: string }> => {
         try {
-            await AppwriteService.deleteFile(fileId);
+            await GoogleDriveService.deleteFile(fileId);
             return { success: true };
         } catch (error: any) {
             console.error("Storage delete error:", error);

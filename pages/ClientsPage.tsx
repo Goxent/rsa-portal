@@ -23,6 +23,7 @@ const ClientsPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+    const isStaff = user?.role === UserRole.STAFF;
 
     // Data State
     const [clients, setClients] = useState<Client[]>([]);
@@ -356,6 +357,18 @@ const ClientsPage: React.FC = () => {
         [UserRole.MASTER_ADMIN, UserRole.ADMIN, UserRole.MANAGER].includes(s.role)
     );
 
+    const canEditClient = (client: Client) => {
+        if (!user) return false;
+        if (isAdmin || user.role === UserRole.MANAGER) return true;
+        
+        // Staff edit access
+        if (isStaff) {
+            return client.permittedStaff?.includes(user.uid);
+        }
+
+        return false;
+    };
+
     return (
         <div className="min-h-full p-4 md:p-6 bg-transparent">
             <div className="space-y-6 animate-in fade-in duration-500 pb-32 max-w-7xl mx-auto">
@@ -368,7 +381,7 @@ const ClientsPage: React.FC = () => {
                     <p className="text-gray-400 text-sm mt-1">Manage audit clients, tax filings, and contact details</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                    {isAdmin && (
+                    {!isStaff && (
                         <div className="flex gap-2">
                             <button
                                 onClick={() => handleExport('pdf')}
@@ -386,7 +399,7 @@ const ClientsPage: React.FC = () => {
                             </button>
                         </div>
                     )}
-                    {isAdmin && (
+                    {!isStaff && (
                         <button
                             onClick={() => {
                                 setEditingId(null);
@@ -528,21 +541,24 @@ const ClientsPage: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {isAdmin && (
-
+                                    {(canEditClient(client) || isAdmin) && (
                                         <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-1 transform translate-x-2 group-hover:translate-x-0">
-                                            <button
-                                                onClick={() => handleEdit(client)}
-                                                className="p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-colors backdrop-blur-md"
-                                            >
-                                                <Edit size={14} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(client.id)}
-                                                className="p-2 hover:bg-rose-500/20 rounded-lg text-white/70 hover:text-rose-400 transition-colors backdrop-blur-md"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {canEditClient(client) && (
+                                                <button
+                                                    onClick={() => handleEdit(client)}
+                                                    className="p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-colors backdrop-blur-md"
+                                                >
+                                                    <Edit size={14} />
+                                                </button>
+                                            )}
+                                            {isAdmin && (
+                                                <button
+                                                    onClick={() => handleDelete(client.id)}
+                                                    className="p-2 hover:bg-rose-500/20 rounded-lg text-white/70 hover:text-rose-400 transition-colors backdrop-blur-md"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>

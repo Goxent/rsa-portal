@@ -370,7 +370,8 @@ const TasksPage: React.FC = () => {
 
     // Permissions check
     const isAdminOrManager = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
-    const isFullAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+    const isFullAdmin = user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.ADMIN;
+    const isStaff = user?.role === UserRole.STAFF;
     
     // Master Admin can grant task-creation rights to any user via System Settings
     const canCreateTask = isAdminOrManager || user?.taskCreationAuthorized === true;
@@ -1557,10 +1558,12 @@ const TasksPage: React.FC = () => {
                             </button>
 
                             {/* Export Group */}
-                            <div className="flex items-center gap-1 bg-secondary border border-border p-1 rounded-xl h-[38px]">
-                                <button onClick={handleExportPDF} title="Export PDF" className="w-[30px] h-full flex items-center justify-center hover:bg-status-halted/10 text-status-halted rounded-lg transition-all"><FileText size={14} /></button>
-                                <button onClick={() => handleExportExcel()} title="Export Excel" className="w-[30px] h-full flex items-center justify-center hover:bg-status-completed/10 text-status-completed rounded-lg transition-all"><FileSpreadsheet size={14} /></button>
-                            </div>
+                            {!isStaff && (
+                                <div className="flex items-center gap-1 bg-secondary border border-border p-1 rounded-xl h-[38px]">
+                                    <button onClick={handleExportPDF} title="Export PDF" className="w-[30px] h-full flex items-center justify-center hover:bg-status-halted/10 text-status-halted rounded-lg transition-all"><FileText size={14} /></button>
+                                    <button onClick={() => handleExportExcel()} title="Export Excel" className="w-[30px] h-full flex items-center justify-center hover:bg-status-completed/10 text-status-completed rounded-lg transition-all"><FileSpreadsheet size={14} /></button>
+                                </div>
+                            )}
 
                             {/* Filters Button */}
                             <button

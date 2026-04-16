@@ -193,14 +193,10 @@ const App: React.FC = () => {
                     <Route path="dashboard" element={<LazyPage><Dashboard /></LazyPage>} />
                     <Route path="attendance" element={<LazyPage><AttendancePage /></LazyPage>} />
                     <Route path="clients" element={
-                      <AdminRoute>
-                        <LazyPage><ClientsPage /></LazyPage>
-                      </AdminRoute>
+                      <LazyPage><ClientsPage /></LazyPage>
                     } />
                     <Route path="clients/:clientId" element={
-                      <AdminRoute>
-                        <LazyPage><ClientDetailPage /></LazyPage>
-                      </AdminRoute>
+                      <LazyPage><ClientDetailPage /></LazyPage>
                     } />
                     <Route path="tasks" element={<LazyPage><TasksPage /></LazyPage>} />
                     <Route path="archived-tasks" element={<AdminRoute><LazyPage><ArchivedTasksPage /></LazyPage></AdminRoute>} />
