@@ -53,18 +53,21 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         
-        // Consistent Quote of the Day: Use date-based seeding
+        // Consistent Quote of the Day: Unique per user, stable for the day
         const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const userHashStr = user?.uid || user?.email || 'guest';
+        const combinedStr = `${dateStr}-${userHashStr}`;
+        
         let seed = 0;
-        for (let i = 0; i < dateStr.length; i++) {
-            seed += dateStr.charCodeAt(i);
+        for (let i = 0; i < combinedStr.length; i++) {
+            seed += combinedStr.charCodeAt(i);
         }
         
         const quoteIndex = seed % MOTIVATIONAL_QUOTES.length;
         setRandomQuote(MOTIVATIONAL_QUOTES[quoteIndex]);
         
         return () => clearInterval(timer);
-    }, []);
+    }, [user?.uid, user?.email]);
 
     const hour = currentTime.getHours();
 
