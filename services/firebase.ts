@@ -46,6 +46,7 @@ import { getCurrentDateUTC } from '../utils/dates';
 import { EmailService } from './email';
 import { toast } from 'react-hot-toast';
 import { logClientAction, logUserAction, logTaskAction, logLeaveAction, AuditAction, AuditLog, createAuditLog } from './auditLog';
+import { fetchClientIPInfo, getActiveSessions, getStaleSessions, SessionMetadata } from './sessionService';
 
 // Load Config from Environment Variables
 const firebaseConfig = {
@@ -187,11 +188,11 @@ const getDeviceName = (): string => {
     return model ? `${model} (${browser})` : `${browser} on ${os}`;
 };
 
-// Custom error class for session limit
+// Custom error class for session limit — now includes full session metadata
 export class SessionLimitError extends Error {
-    sessions: Array<{ sessionId: string; deviceName: string; deviceType: string; loggedInAt: number; lastActive: number }>;
+    sessions: Array<SessionMetadata>;
     uid: string;
-    constructor(sessions: any[], uid: string) {
+    constructor(sessions: SessionMetadata[], uid: string) {
         super('SESSION_LIMIT_REACHED');
         this.name = 'SessionLimitError';
         this.sessions = sessions;
@@ -205,61 +206,66 @@ const setupUserSession = async (uid: string, email: string, method: string, forc
     const sessionCreatedAt = Date.now();
     const deviceType = getDeviceType();
     const deviceName = getDeviceName();
+    const deviceId = getDeviceId();
 
-    // Check current sessions — filter out nulls from legacy schema (old code set sessions to null on logout)
+    // Fetch IP + geolocation (non-blocking, best-effort)
+    const ipInfo = await fetchClientIPInfo();
+
+    // Read existing sessions from Firestore
     const userSnap = await getDoc(doc(db, 'users', uid));
-    const existingSessions = userSnap.exists() ? (userSnap.data().activeSessions || {}) : {};
-    const sessionList = Object.values(existingSessions).filter(Boolean) as any[];
+    const existingSessions: Record<string, SessionMetadata> = userSnap.exists()
+        ? (userSnap.data().activeSessions || {})
+        : {};
 
-    // If already ≥2 valid sessions and no forced removal, block and expose session list
-    if (sessionList.length >= 2 && !forceSessionId) {
-        const currentDeviceId = getDeviceId();
-        throw new SessionLimitError(
-            sessionList.map((s: any) => ({
-                sessionId: s.sessionId,
-                deviceId: s.deviceId, // Include deviceId for UI identification
-                deviceName: s.deviceName || s.deviceType || 'Unknown Device',
-                deviceType: s.deviceType || 'DESKTOP',
-                loggedInAt: s.loggedInAt || s.lastActive || Date.now(),
-                lastActive: s.lastActive || Date.now(),
-            })),
-            uid
-        );
+    // --- Stale session pruning ---
+    // Sessions whose tab was closed (no heartbeat for >5 min) are removed automatically.
+    // This is the key mechanism that prevents old closed tabs from blocking new logins.
+    const stale = getStaleSessions(existingSessions);
+    const activeSessions = getActiveSessions(existingSessions);
+
+    // Build the updated sessions map, starting by removing all stale ones
+    const updatedSessions: Record<string, SessionMetadata> = {};
+    for (const s of activeSessions) {
+        updatedSessions[s.sessionId] = s;
     }
 
-    // Build new sessions map (remove forceSessionId if specified)
-    const updatedSessions: Record<string, any> = { ...existingSessions };
+    // If there are already ≥2 ACTIVE sessions and the user hasn't chosen to remove one, block.
+    if (activeSessions.length >= 2 && !forceSessionId) {
+        throw new SessionLimitError(activeSessions, uid);
+    }
+
+    // If user chose to kick a specific session, remove it
     if (forceSessionId) {
-        // Remove the session the user chose to kick
-        for (const key of Object.keys(updatedSessions)) {
-            if (updatedSessions[key]?.sessionId === forceSessionId) {
-                delete updatedSessions[key];
-            }
-        }
+        delete updatedSessions[forceSessionId];
     }
-    // Add new session keyed by sessionId
-    const currentDeviceId = getDeviceId();
-    updatedSessions[sessionId] = {
+
+    // Register the new session
+    const newSession: SessionMetadata = {
         sessionId,
-        deviceId: currentDeviceId,
+        deviceId,
         deviceName,
         deviceType,
+        ip: ipInfo.ip,
+        city: ipInfo.city,
+        region: ipInfo.region,
+        country: ipInfo.country,
         loggedInAt: sessionCreatedAt,
         lastActive: sessionCreatedAt,
     };
+    updatedSessions[sessionId] = newSession;
 
-    // Store locally for cross-reference
+    // Persist locally so heartbeat and logout can reference it
     localStorage.setItem('sessionId', sessionId);
     localStorage.setItem('deviceType', deviceType);
 
-    // Update Firestore
+    // Write to Firestore
     await updateDoc(doc(db, 'users', uid), {
         currentSessionId: sessionId,
         sessionCreatedAt,
         activeSessions: updatedSessions,
     });
 
-    // Log login
+    // Audit log
     await createAuditLog({
         userId: uid,
         userName: email,
@@ -267,7 +273,7 @@ const setupUserSession = async (uid: string, email: string, method: string, forc
         targetType: 'system',
         targetId: uid,
         targetName: 'Auth',
-        details: { method, newSessionId: sessionId, deviceType, deviceName }
+        details: { method, newSessionId: sessionId, deviceType, deviceName, ip: ipInfo.ip, city: ipInfo.city, country: ipInfo.country }
     });
 
     return { currentSessionId: sessionId, sessionCreatedAt };
@@ -620,28 +626,40 @@ export const AuthService = {
     logout: async (reason: 'MANUAL' | 'SESSION_EXPIRED' | 'SESSION_TERMINATED' = 'MANUAL') => {
         if (auth.currentUser) {
             const uid = auth.currentUser.uid;
-            const deviceType = localStorage.getItem('deviceType') || 'DESKTOP';
+            const sessionId = localStorage.getItem('sessionId');
             
-            // Clear specific session slot in Firestore
-            try {
-                await updateDoc(doc(db, 'users', uid), {
-                    [`activeSessions.${deviceType}`]: null,
-                    currentSessionId: null, // Backward compatibility
-                    sessionCreatedAt: null
-                });
-            } catch (e) {
-                console.error("Failed to clear session from DB during logout", e);
+            // Remove the specific session from the activeSessions map by its sessionId key
+            if (sessionId) {
+                try {
+                    const userSnap = await getDoc(doc(db, 'users', uid));
+                    if (userSnap.exists()) {
+                        const existing = userSnap.data().activeSessions || {};
+                        const updated: Record<string, any> = {};
+                        for (const [key, val] of Object.entries(existing)) {
+                            if (val && (val as any).sessionId !== sessionId) {
+                                updated[key] = val;
+                            }
+                        }
+                        await updateDoc(doc(db, 'users', uid), {
+                            activeSessions: updated,
+                            currentSessionId: null,
+                            sessionCreatedAt: null,
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to clear session from DB during logout', e);
+                }
             }
 
             await createAuditLog({
                 userId: uid,
                 userName: auth.currentUser.email || 'User',
-                action: reason === 'SESSION_EXPIRED' ? AuditAction.SESSION_EXPIRED : 
-                        reason === 'SESSION_TERMINATED' ? AuditAction.SESSION_EXPIRED : AuditAction.LOGOUT,
+                action: reason === 'MANUAL' ? AuditAction.LOGOUT :
+                        AuditAction.SESSION_EXPIRED,
                 targetType: 'system',
                 targetId: uid,
                 targetName: 'Auth',
-                details: { reason, deviceType }
+                details: { reason, sessionId }
             });
         }
         localStorage.removeItem('sessionId');

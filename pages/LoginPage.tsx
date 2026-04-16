@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormValues } from '../utils/validationSchemas';
 import { motion } from 'framer-motion';
 import { SessionLimitError } from '../services/firebase';
+import { SessionMetadata } from '../services/sessionService';
 import DeviceChooserModal from '../components/DeviceChooserModal';
 import RSALogo from '../components/common/RSALogo';
 
@@ -16,7 +17,7 @@ const LoginPage: React.FC = () => {
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [deviceModal, setDeviceModal] = useState<{
-      sessions: any[];
+      sessions: SessionMetadata[];
       uid: string;
       email: string;
       password: string;

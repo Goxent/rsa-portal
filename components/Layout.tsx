@@ -6,6 +6,7 @@ import { AuthService } from '../services/firebase';
 import { AppNotification } from '../types';
 import { useAutoLogout } from '../hooks/useAutoLogout';
 import { useSessionManager } from '../hooks/useSessionManager';
+import { useHeartbeat } from '../hooks/useHeartbeat';
 import { getCurrentDateUTC } from '../utils/dates';
 
 // New Components
@@ -39,6 +40,7 @@ const Layout: React.FC = () => {
 
   useAutoLogout();
   useSessionManager();
+  useHeartbeat(); // Keep session alive while this tab is open
 
   // Persist Sidebar State
   useEffect(() => {
