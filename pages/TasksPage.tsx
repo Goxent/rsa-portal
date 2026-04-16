@@ -384,6 +384,9 @@ const TasksPage: React.FC = () => {
         if (isAdminOrManager) return true;
         if (task.createdBy === user.uid) return true;
         if (task.assignedTo?.includes(user.uid)) return true;
+        if (task.teamLeaderId === user.uid) return true;
+        if (task.engagementReviewerId === user.uid) return true;
+        if (task.signingPartnerId === user.uid) return true;
         return false;
     };
 
@@ -503,10 +506,6 @@ const TasksPage: React.FC = () => {
     };
 
     const handleOpenEdit = (task: Task) => {
-        if (!canEditTask(task)) {
-            toast.error("You don't have permission to edit this task.");
-            return;
-        }
         setCurrentTask(task);
         setIsEditMode(true);
         setIsModalOpen(true);
