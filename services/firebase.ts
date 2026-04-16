@@ -289,6 +289,10 @@ export const AuthService = {
                 }
             }
         } catch (error: any) {
+            // IMPORTANT: Re-throw SessionLimitError as-is so LoginPage can show device chooser
+            if (error instanceof SessionLimitError || error.name === 'SessionLimitError') {
+                throw error;
+            }
             // Log failure
             await createAuditLog({
                 userId: 'anonymous',
