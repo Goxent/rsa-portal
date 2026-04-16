@@ -7,13 +7,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormValues } from '../utils/validationSchemas';
 import { motion } from 'framer-motion';
-
+import { SessionLimitError } from '../services/firebase';
+import DeviceChooserModal from '../components/DeviceChooserModal';
 import RSALogo from '../components/common/RSALogo';
 
 const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deviceModal, setDeviceModal] = useState<{
+      sessions: any[];
+      uid: string;
+      email: string;
+      password: string;
+  } | null>(null);
 
   const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
@@ -63,6 +70,18 @@ const LoginPage: React.FC = () => {
       navigate('/dashboard');
       toast.success('Access Granted');
     } catch (error: any) {
+      // Session limit reached — show device chooser
+      if (error instanceof SessionLimitError || error.name === 'SessionLimitError') {
+        setDeviceModal({
+            sessions: error.sessions,
+            uid: error.uid,
+            email: data.email,
+            password: data.password,
+        });
+        setLoading(false);
+        return;
+      }
+
       recordAttempt();
       
       // Check for first-time invited users who haven't signed up yet
@@ -95,6 +114,23 @@ const LoginPage: React.FC = () => {
       toast.success('Access Granted');
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handleDeviceChooserSuccess = async () => {
+    if (!deviceModal) return;
+    setDeviceModal(null);
+    setLoading(true);
+    try {
+        // The chosen session was already removed — re-attempt login
+        await login(deviceModal.email, deviceModal.password);
+        clearAttempts();
+        navigate('/dashboard');
+        toast.success('Access Granted');
+    } catch (err: any) {
+        toast.error(err.message || 'Login failed. Please try again.');
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -236,6 +272,17 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Device Chooser Modal */}
+      {deviceModal && (
+          <DeviceChooserModal
+              isOpen={!!deviceModal}
+              sessions={deviceModal.sessions}
+              uid={deviceModal.uid}
+              onSuccess={handleDeviceChooserSuccess}
+              onCancel={() => setDeviceModal(null)}
+          />
+      )}
     </div>
   );
 };

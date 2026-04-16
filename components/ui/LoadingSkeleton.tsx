@@ -39,27 +39,49 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
 };
 
 import RSALogo from '../common/RSALogo';
+import { useEffect, useState } from 'react';
 
 /**
  * Full page loading state with premium brand entrance
  */
-export const PageLoader: React.FC = () => (
-    <div className="flex flex-col h-screen items-center justify-center bg-main animate-in fade-in duration-500">
-        <div className="text-center space-y-8">
-            <RSALogo size="lg" animated className="mx-auto scale-125" />
-            <div className="space-y-3">
-                <p className="text-accent text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">
-                    R. Sapkota & Associates
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce [animation-delay:-0.3s]" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce [animation-delay:-0.15s]" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce" />
+export const PageLoader: React.FC = () => {
+    const [showTimeout, setShowTimeout] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setShowTimeout(true), 9000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <div className="flex flex-col h-screen items-center justify-center bg-main animate-in fade-in duration-500">
+            <div className="text-center space-y-8">
+                <RSALogo size="lg" animated className="mx-auto scale-125" />
+                <div className="space-y-3">
+                    <p className="text-accent text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">
+                        R. Sapkota &amp; Associates
+                    </p>
+                    {!showTimeout ? (
+                        <div className="flex items-center justify-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce [animation-delay:-0.3s]" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce [animation-delay:-0.15s]" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce" />
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-3">
+                            <p className="text-gray-500 text-[11px]">Taking too long?</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="text-accent text-[11px] font-black uppercase tracking-widest border border-accent/30 px-4 py-2 rounded-lg hover:bg-accent/10 transition-all"
+                            >
+                                Refresh App
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 /**
  * Dashboard skeleton loader

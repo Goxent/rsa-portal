@@ -12,7 +12,7 @@ interface AuthContextType {
   user: UserProfile | null;
   emailVerified: boolean;
   loading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string, forceSessionId?: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
   googleLogin: () => Promise<void>;
   logout: (reason?: 'MANUAL' | 'SESSION_EXPIRED') => Promise<void>;
@@ -73,16 +73,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             unsubscribeSnapshot = onSnapshot(userRef, (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.data() as UserProfile;
+                    // New schema: sessions are keyed by sessionId, not deviceType
                     const localSessionId = localStorage.getItem('sessionId');
-                    const deviceType = localStorage.getItem('deviceType') || 'DESKTOP';
-                    const activeSessionId = data.activeSessions?.[deviceType]?.sessionId;
-
-                    if (localSessionId && activeSessionId && localSessionId !== activeSessionId) {
-                        console.warn(`[Security] Session invalidated by another ${deviceType} login.`);
-                        toast.error(`You have been logged out because your account was accessed from another ${deviceType.toLowerCase()} device or browser.`, { duration: 6000, id: 'multi-login' });
-                        AuthService.logout('SESSION_TERMINATED').then(() => {
-                            setUser(null);
-                        });
+                    if (localSessionId) {
+                        const sessionExists = data.activeSessions && data.activeSessions[localSessionId];
+                        if (!sessionExists) {
+                            console.warn('[Security] Session was removed by another login.');
+                            toast.error('You have been logged out because your account was signed in on another device.', { duration: 6000, id: 'multi-login' });
+                            AuthService.logout('SESSION_TERMINATED').then(() => {
+                                setUser(null);
+                            });
+                        }
                     }
                 }
             });
@@ -116,9 +117,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const login = async (email: string, pass: string) => {
+  const login = async (email: string, pass: string, forceSessionId?: string) => {
     try {
-      const profile = await AuthService.login(email, pass);
+      const profile = await AuthService.login(email, pass, forceSessionId);
       setUser(profile);
       if (auth.currentUser) {
         setEmailVerified(auth.currentUser.emailVerified);

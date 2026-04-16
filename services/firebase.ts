@@ -131,24 +131,90 @@ const getDeviceType = (): 'MOBILE' | 'DESKTOP' => {
     return 'DESKTOP';
 };
 
+// Helper to get a friendly device name from user-agent
+const getDeviceName = (): string => {
+    const ua = navigator.userAgent;
+    let browser = 'Browser';
+    let os = 'Unknown OS';
+    if (/Chrome\//.test(ua) && !/Chromium\/|Edg\/|OPR\//.test(ua)) browser = 'Chrome';
+    else if (/Firefox\//.test(ua)) browser = 'Firefox';
+    else if (/Edg\//.test(ua)) browser = 'Edge';
+    else if (/OPR\/|Opera\//.test(ua)) browser = 'Opera';
+    else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = 'Safari';
+    if (/Windows/.test(ua)) os = 'Windows';
+    else if (/Macintosh|Mac OS/.test(ua)) os = 'Mac';
+    else if (/Android/.test(ua)) os = 'Android';
+    else if (/iPhone|iPad/.test(ua)) os = 'iOS';
+    else if (/Linux/.test(ua)) os = 'Linux';
+    return `${browser} on ${os}`;
+};
+
+// Custom error class for session limit
+export class SessionLimitError extends Error {
+    sessions: Array<{ sessionId: string; deviceName: string; deviceType: string; loggedInAt: number; lastActive: number }>;
+    uid: string;
+    constructor(sessions: any[], uid: string) {
+        super('SESSION_LIMIT_REACHED');
+        this.name = 'SessionLimitError';
+        this.sessions = sessions;
+        this.uid = uid;
+    }
+}
+
 // Helper to set up a new session on login
-const setupUserSession = async (uid: string, email: string, method: string) => {
+const setupUserSession = async (uid: string, email: string, method: string, forceSessionId?: string) => {
     const sessionId = crypto.randomUUID();
     const sessionCreatedAt = Date.now();
     const deviceType = getDeviceType();
-    
+    const deviceName = getDeviceName();
+
+    // Check current sessions
+    const userSnap = await getDoc(doc(db, 'users', uid));
+    const existingSessions = userSnap.exists() ? (userSnap.data().activeSessions || {}) : {};
+    const sessionList = Object.values(existingSessions) as any[];
+
+    // If already ≥2 sessions and no forced removal, block and expose session list
+    if (sessionList.length >= 2 && !forceSessionId) {
+        throw new SessionLimitError(
+            sessionList.map((s: any) => ({
+                sessionId: s.sessionId,
+                deviceName: s.deviceName || s.deviceType || 'Unknown Device',
+                deviceType: s.deviceType || 'DESKTOP',
+                loggedInAt: s.loggedInAt || s.lastActive || Date.now(),
+                lastActive: s.lastActive || Date.now(),
+            })),
+            uid
+        );
+    }
+
+    // Build new sessions map (remove forceSessionId if specified)
+    const updatedSessions: Record<string, any> = { ...existingSessions };
+    if (forceSessionId) {
+        // Remove the session the user chose to kick
+        for (const key of Object.keys(updatedSessions)) {
+            if (updatedSessions[key]?.sessionId === forceSessionId) {
+                delete updatedSessions[key];
+            }
+        }
+    }
+    // Add new session keyed by sessionId
+    updatedSessions[sessionId] = {
+        sessionId,
+        deviceName,
+        deviceType,
+        loggedInAt: sessionCreatedAt,
+        lastActive: sessionCreatedAt,
+    };
+
     // Store locally for cross-reference
     localStorage.setItem('sessionId', sessionId);
     localStorage.setItem('deviceType', deviceType);
 
-    // Update specific slot in Firestore
+    // Update Firestore
     await updateDoc(doc(db, 'users', uid), {
-        currentSessionId: sessionId, // Keep for backward compatibility/legacy check
+        currentSessionId: sessionId,
         sessionCreatedAt,
-        [`activeSessions.${deviceType}`]: {
-            sessionId,
-            lastActive: sessionCreatedAt
-        }
+        activeSessions: updatedSessions,
     });
 
     // Log login
@@ -159,20 +225,34 @@ const setupUserSession = async (uid: string, email: string, method: string) => {
         targetType: 'system',
         targetId: uid,
         targetName: 'Auth',
-        details: { method, newSessionId: sessionId, deviceType }
+        details: { method, newSessionId: sessionId, deviceType, deviceName }
     });
 
     return { currentSessionId: sessionId, sessionCreatedAt };
 };
 
 export const AuthService = {
+    // --- SESSION MANAGEMENT ---
+    removeSession: async (uid: string, sessionId: string): Promise<void> => {
+        const userSnap = await getDoc(doc(db, 'users', uid));
+        if (!userSnap.exists()) return;
+        const existing: Record<string, any> = userSnap.data().activeSessions || {};
+        const updated: Record<string, any> = {};
+        for (const key of Object.keys(existing)) {
+            if (existing[key]?.sessionId !== sessionId) {
+                updated[key] = existing[key];
+            }
+        }
+        await updateDoc(doc(db, 'users', uid), { activeSessions: updated });
+    },
+
     // --- AUTHENTICATION ---
     isAdmin: (role?: UserRole): boolean => {
         if (!role) return false;
         return role === UserRole.ADMIN || role === UserRole.MASTER_ADMIN;
     },
 
-    login: async (email: string, pass: string): Promise<UserProfile> => {
+    login: async (email: string, pass: string, forceSessionId?: string): Promise<UserProfile> => {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, pass);
             const uid = userCredential.user.uid;
@@ -180,7 +260,7 @@ export const AuthService = {
             // Fetch Profile from Firestore
             const userDoc = await getDoc(doc(db, 'users', uid));
             if (userDoc.exists()) {
-                const sessionData = await setupUserSession(uid, email, 'Email/Password');
+                const sessionData = await setupUserSession(uid, email, 'Email/Password', forceSessionId);
                 return { uid, ...userDoc.data(), ...sessionData } as UserProfile;
             } else {
                 // Orphaned Auth Account recovery
