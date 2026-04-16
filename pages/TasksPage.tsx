@@ -507,7 +507,7 @@ const TasksPage: React.FC = () => {
 
     const handleOpenEdit = (task: Task) => {
         setCurrentTask(task);
-        setIsEditMode(true);
+        setIsEditMode(canEditTask(task)); // Strictly enforce isEditMode based on user involvement
         setIsModalOpen(true);
         setSelectedTaskId(task.id);
         setNewSubtaskTitle('');
@@ -688,6 +688,13 @@ const TasksPage: React.FC = () => {
     };
 
     const handleDeleteTask = async (taskId: string) => {
+        // Double check permission before showing modal
+        const taskToDelete = tasks.find(t => t.id === taskId);
+        if (!isAdminOrManager && taskToDelete && taskToDelete.createdBy !== user?.uid) {
+            toast.error("You don't have permission to delete this task.");
+            return;
+        }
+
         setConfirmModal({
             open: true,
             title: 'Delete Task',
@@ -706,17 +713,31 @@ const TasksPage: React.FC = () => {
     // --- BULK ACTIONS ---
     const handleBulkDelete = async () => {
         if (!selectedTaskIds.length) return;
-        const count = selectedTaskIds.length;
+        
+        // Filter tasks the user is actually allowed to delete
+        const authorizedIds = selectedTaskIds.filter(id => {
+            const t = tasks.find(task => task.id === id);
+            return t && (isAdminOrManager || t.createdBy === user?.uid);
+        });
 
+        if (authorizedIds.length === 0) {
+            toast.error("You don't have permission to delete any of the selected tasks.");
+            return;
+        }
+
+        const count = authorizedIds.length;
+        const total = selectedTaskIds.length;
 
         setConfirmModal({
             open: true,
             title: `Delete ${count} Tasks`,
-            message: `Are you sure you want to delete ${count} task${count > 1 ? 's' : ''}? This action cannot be undone.`,
-            confirmLabel: 'Delete All',
+            message: count === total 
+                ? `Are you sure you want to delete ${count} task${count > 1 ? 's' : ''}? This action cannot be undone.`
+                : `You only have permission to delete ${count} out of ${total} selected tasks. Proceed?`,
+            confirmLabel: 'Delete Authorized',
             variant: 'danger',
             onConfirm: () => {
-                selectedTaskIds.forEach(id => deleteTaskMutation.mutate(id));
+                authorizedIds.forEach(id => deleteTaskMutation.mutate(id));
                 toast.success(`Deleting ${count} tasks`);
                 setSelectedTaskIds([]);
             }
@@ -725,9 +746,21 @@ const TasksPage: React.FC = () => {
 
     const handleBulkStatusChange = async (newStatus: TaskStatus) => {
         if (!selectedTaskIds.length) return;
+        
+        // Filter tasks the user is authorized to update status for
+        const authorizedIds = selectedTaskIds.filter(id => {
+            const t = tasks.find(task => task.id === id);
+            return t && canUpdateTaskStatus(t);
+        });
+
+        if (authorizedIds.length === 0) {
+            toast.error("You don't have permission to update the status of any selected tasks.");
+            return;
+        }
+
         setShowBulkStatusMenu(false);
         try {
-            await Promise.all(selectedTaskIds.map(async id => {
+            await Promise.all(authorizedIds.map(async id => {
                 const task = tasks.find(t => t.id === id);
                 if (!task) return;
                 
@@ -745,6 +778,12 @@ const TasksPage: React.FC = () => {
                     triggerNextTemplateIfNeeded(id, newStatus);
                 }
             }));
+            
+            if (authorizedIds.length < selectedTaskIds.length) {
+                toast.success(`Updated ${authorizedIds.length} tasks (${selectedTaskIds.length - authorizedIds.length} skipped due to permissions)`);
+            } else {
+                toast.success(`Updated ${authorizedIds.length} tasks`);
+            }
             setSelectedTaskIds([]);
         } catch (error) {
             toast.error('Failed to update status');
@@ -753,9 +792,21 @@ const TasksPage: React.FC = () => {
 
     const handleBulkReassign = async (staffId: string) => {
         if (!selectedTaskIds.length) return;
+        
+        // Filter tasks the user is authorized to reassign
+        const authorizedIds = selectedTaskIds.filter(id => {
+            const t = tasks.find(task => task.id === id);
+            return t && canEditTask(t);
+        });
+
+        if (authorizedIds.length === 0) {
+            toast.error("You don't have permission to reassign any of the selected tasks.");
+            return;
+        }
+
         setShowBulkAssignMenu(false);
         try {
-            await Promise.all(selectedTaskIds.map(async id => {
+            await Promise.all(authorizedIds.map(async id => {
                 const task = tasks.find(t => t.id === id);
 
 
@@ -770,7 +821,11 @@ const TasksPage: React.FC = () => {
             const staffName = usersList.find(u => u.uid === staffId)?.displayName || 'Staff';
 
 
-            toast.success(`${selectedTaskIds.length} tasks reassigned to ${staffName}`);
+            if (authorizedIds.length < selectedTaskIds.length) {
+                toast.success(`${authorizedIds.length} tasks reassigned to ${staffName} (${selectedTaskIds.length - authorizedIds.length} skipped)`);
+            } else {
+                toast.success(`${authorizedIds.length} tasks reassigned to ${staffName}`);
+            }
             setSelectedTaskIds([]);
         } catch (error) {
             toast.error('Failed to reassign tasks');

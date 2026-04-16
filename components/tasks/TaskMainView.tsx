@@ -178,12 +178,21 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                 >
                                     {!isMobile && (
                                         <div onClick={e => e.stopPropagation()} className="flex items-center justify-center">
-                                            <div
-                                                className={`relative w-4 h-4 rounded-[4px] border cursor-pointer flex items-center justify-center transition-all duration-150
-                                                    ${selectedTaskIds.includes(task.id) ? 'bg-brand-500 border-brand-500 opacity-100' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-transparent shadow-inner opacity-60 group-hover:opacity-100 group-hover:border-brand-400'}`}
-                                                onClick={() => onToggleSelection(task.id)}>
-                                                {selectedTaskIds.includes(task.id) && <Check size={10} className="text-white" strokeWidth={3.5} />}
-                                            </div>
+                                            {canEditTask(task) ? (
+                                                <div
+                                                    className={`relative w-4 h-4 rounded-[4px] border cursor-pointer flex items-center justify-center transition-all duration-150
+                                                        ${selectedTaskIds.includes(task.id) ? 'bg-brand-500 border-brand-500 opacity-100' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-transparent shadow-inner opacity-60 group-hover:opacity-100 group-hover:border-brand-400'}`}
+                                                    onClick={() => onToggleSelection(task.id)}>
+                                                    {selectedTaskIds.includes(task.id) && <Check size={10} className="text-white" strokeWidth={3.5} />}
+                                                </div>
+                                            ) : (
+                                                <div 
+                                                    className="w-4 h-4 rounded-[4px] border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 opacity-40 cursor-not-allowed flex items-center justify-center"
+                                                    title="Viewing in read-only mode"
+                                                >
+                                                    <Lock size={8} className="text-slate-400" />
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     <div className="min-w-0 flex flex-col justify-center gap-1">

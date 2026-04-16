@@ -138,20 +138,26 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                             <div className="flex items-center justify-between gap-1 mb-2">
                                 <div className="flex items-center gap-1.5">
                                     {/* Checkbox */}
-                                    <div
-                                        className={`relative w-[13px] h-[13px] flex-shrink-0 transition-all duration-150 rounded-[3px] ${
-                                            isSelected
-                                                ? 'opacity-100'
-                                                : 'opacity-0 group-hover/card:opacity-60'
-                                        }`}
-                                        onClick={e => { e.stopPropagation(); if (!snap.isDragging) onToggleSelection(task.id); }}
-                                    >
-                                        <div className={`w-full h-full rounded-[3px] border flex items-center justify-center transition-all ${
-                                            isSelected ? 'bg-emerald-500 border-emerald-400' : 'border-slate-600 hover:border-slate-400'
-                                        }`}>
-                                            {isSelected && <Check size={8} className="text-black" strokeWidth={4} />}
+                                    {(isAdmin || isTL || isReviewer || isPartner || isAssigned) ? (
+                                        <div
+                                            className={`relative w-[13px] h-[13px] flex-shrink-0 transition-all duration-150 rounded-[3px] ${
+                                                isSelected
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0 group-hover/card:opacity-60'
+                                            }`}
+                                            onClick={e => { e.stopPropagation(); if (!snap.isDragging) onToggleSelection(task.id); }}
+                                        >
+                                            <div className={`w-full h-full rounded-[3px] border flex items-center justify-center transition-all ${
+                                                isSelected ? 'bg-emerald-500 border-emerald-400' : 'border-slate-600 hover:border-slate-400'
+                                            }`}>
+                                                {isSelected && <Check size={8} className="text-black" strokeWidth={4} />}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="w-[13px] h-[13px] flex items-center justify-center opacity-20" title="Read-only mode">
+                                            <ShieldCheck size={10} className="text-slate-400" />
+                                        </div>
+                                    )}
 
                                     {/* Priority indicator */}
                                     <span className={`inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-[2px] rounded-md border uppercase tracking-[0.08em] shadow-sm ${pc.badge}`}>
