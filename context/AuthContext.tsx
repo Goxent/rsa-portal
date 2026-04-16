@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     // New schema: sessions are keyed by sessionId, not deviceType
                     const localSessionId = localStorage.getItem('sessionId');
                     if (localSessionId) {
-                        const sessionExists = data.activeSessions && data.activeSessions[localSessionId];
+                        const sessionExists = data.activeSessions && Object.values(data.activeSessions).some((s: any) => s && s.sessionId === localSessionId);
                         if (!sessionExists) {
                             console.warn('[Security] Session was removed by another login.');
                             toast.error('You have been logged out because your account was signed in on another device.', { duration: 6000, id: 'multi-login' });

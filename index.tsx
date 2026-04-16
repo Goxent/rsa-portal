@@ -6,6 +6,18 @@ import { validateEnvironment } from './utils/envValidation';
 
 // Validate environment before mounting
 const { valid, errors } = validateEnvironment();
+
+// Global handler for Vite chunk load errors (often caused by new deployments during active sessions)
+window.addEventListener('vite:preloadError', () => {
+    console.warn("Vite preload error (new deploy possible). Reloading page...");
+    window.location.reload();
+});
+window.addEventListener('error', (e) => {
+    if (e.message && e.message.includes('Failed to fetch dynamically imported module')) {
+        console.warn("Dynamic import failed. Reloading page...");
+        window.location.reload();
+    }
+});
 if (!valid) {
   document.body.innerHTML = `
         <div style="font-family: monospace; padding: 2rem; background: #09090b; color: #ef4444; min-height: 100vh;">
