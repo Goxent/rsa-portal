@@ -1,0 +1,1 @@
+import{r as o}from"./index-CMPkJwO9.js";var c=function(t,a){return a},v=function(t,a){var n=o.useState(c(t,a)),s=n[0],r=n[1];return o.useEffect(function(){var i=!0,e=window.matchMedia(t),u=function(){i&&r(!!e.matches)};return e.addEventListener("change",u),r(e.matches),function(){i=!1,e.removeEventListener("change",u)}},[t]),s};export{v as u};
