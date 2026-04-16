@@ -20,17 +20,10 @@ import { toBS } from '../../utils/dates';
 import SearchableClientSelect from './SearchableClientSelect';
 import SearchableSelect from '../common/SearchableSelect';
 import ActionDetailEditor from '../common/ActionDetailEditor';
+import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
 
-const NATURE_OF_ASSIGNMENTS = [
-    'Statutory Audit',
-    'Internal Audit',
-    'Taxation',
-    'Consultancy',
-    'Accounting/Bookkeeping',
-    'VAT/TDS Filing',
-    'Company Secretarial',
-    'Other'
-];
+
+
 
 // Timer Component to prevent full AttendanceWidget re-renders
 const SessionTimer = React.memo(({ initialSeconds, isRunning, className }: { initialSeconds: number, isRunning: boolean, className?: string }) => {
@@ -133,8 +126,9 @@ const AttendanceWidget: React.FC = () => {
             hasInitializedLogs.current = true;
         } else if (user) {
             setWorkLogs([
-                { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: 'Internal Audit', description: '', duration: 0, billable: true, locationTag: 'Office' }
+                { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: NATURE_OF_ASSIGNMENTS[0], description: '', duration: 0, billable: true, locationTag: 'Office' }
             ]);
+
             hasInitializedLogs.current = true;
         }
     }, [user]);
@@ -292,12 +286,13 @@ const AttendanceWidget: React.FC = () => {
             id: Math.random().toString(36).substr(2, 9),
             clientId: 'INTERNAL',
             clientName: 'Internal Work / Office',
-            natureOfAssignment: 'Internal Audit',
+            natureOfAssignment: NATURE_OF_ASSIGNMENTS[0],
             description: '',
             duration: 0,
             billable: true,
             locationTag: 'Office'
         }]);
+
     };
 
     const removeLog = (id: string) => {

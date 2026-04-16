@@ -22,11 +22,12 @@ export const CLIENT_STATUSES = [
 ];
 
 export const NATURE_OF_ASSIGNMENTS = [
-    'Certification Service',
-    'Compliance Audit',
-    'File Study, Planning at Office and Report Writing',
     'Financial Management and Accounting',
-    'Interim Review Engagement',
+    'External Audit',
     'Internal Audit',
-    'Statutory Audit'
+    'Donor Audit',
+    'Compliance Audit',
+    'Certification Services',
+    'File Study, Planning at Office and Report Writing'
 ];
+
