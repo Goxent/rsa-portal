@@ -84,23 +84,50 @@ export const exportTaskToExcel = async (task: Task, client?: ClientProfile | nul
     // =============== SHEET 3: FS Review Checklist ===============
     const sheet3 = workbook.addWorksheet('Review Checklist');
     sheet3.columns = [
-        { header: 'Item Head / Title', key: 'item', width: 40 },
+        { header: 'Layer', key: 'layer', width: 25 },
+        { header: 'Item / Title', key: 'item', width: 40 },
         { header: 'Requirement Definition', key: 'req', width: 50 },
         { header: 'Status', key: 'status', width: 15 },
+        { header: 'Date of Review', key: 'reviewDate', width: 20 },
         { header: 'Reviewer Comment', key: 'comment', width: 40 },
     ];
     sheet3.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     sheet3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } }; // Emerald
 
     if (task.reviewChecklist && task.reviewChecklist.length > 0) {
-        task.reviewChecklist.forEach(chk => {
-            const row = sheet3.addRow({
-                item: chk.itemHead || chk.title, // schema compatibility
-                req: chk.requirementDef || '',
-                status: chk.status,
-                comment: chk.comment || ''
-            });
-            row.alignment = { wrapText: true, vertical: 'top' };
+        const layers = [
+            { id: 'TL', label: 'Team Leader', date: task.teamLeadApprovedAt },
+            { id: 'ER', label: 'Engagement Reviewer', date: task.engagementReviewerApprovedAt },
+            { id: 'SP', label: 'Signing Partner', date: task.signingPartnerApprovedAt }
+        ];
+
+        layers.forEach(layer => {
+            const items = task.reviewChecklist!.filter(c => c.reviewerRole === layer.id);
+            if (items.length > 0) {
+                const reviewDateStr = layer.date ? formatDate(layer.date) : 'Pending';
+                
+                // Add header row for the layer
+                const layerRow = sheet3.addRow({
+                    layer: `[ ${layer.label.toUpperCase()} PROTOCOL ]`,
+                    item: '', req: '', status: '', reviewDate: '', comment: ''
+                });
+                layerRow.font = { bold: true, color: { argb: 'FF10B981' } };
+                layerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F4EA' } };
+
+                items.forEach(chk => {
+                    const row = sheet3.addRow({
+                        layer: '', // Blank for sub-items
+                        item: chk.isSectionHeader ? `--- ${chk.title} ---` : (chk.itemHead || chk.title),
+                        req: chk.requirementDef || '',
+                        status: chk.isSectionHeader ? '' : chk.status,
+                        reviewDate: chk.isSectionHeader ? '' : reviewDateStr,
+                        comment: chk.comment || ''
+                    });
+                    row.alignment = { wrapText: true, vertical: 'top' };
+                });
+                
+                sheet3.addRow({}); // spacer
+            }
         });
     }
 
@@ -201,7 +228,6 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
 
     // CHECKLIST
     if (task.reviewChecklist && task.reviewChecklist.length > 0) {
-        // Break to new page if not enough space
         if (currentY > doc.internal.pageSize.getHeight() - 40) {
             doc.addPage();
             currentY = 20;
@@ -210,23 +236,61 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
         doc.setFontSize(14);
         doc.setTextColor(30);
         doc.text('Reviewer Checklist', margin, currentY);
+        currentY += 10;
 
-        const chkBody = task.reviewChecklist.map(chk => [
-            safeText(chk.itemHead || chk.title),
-            safeText(chk.requirementDef),
-            safeText(chk.status),
-            safeText(chk.comment)
-        ]);
+        const layers = [
+            { id: 'TL', label: 'Team Leader', date: task.teamLeadApprovedAt },
+            { id: 'ER', label: 'Engagement Reviewer', date: task.engagementReviewerApprovedAt },
+            { id: 'SP', label: 'Signing Partner', date: task.signingPartnerApprovedAt }
+        ];
 
-        autoTable(doc, {
-            startY: currentY + 5,
-            head: [['Control Item', 'Requirement', 'Status', 'Reviewer Comments']],
-            body: chkBody,
-            theme: 'grid',
-            headStyles: { fillColor: [16, 185, 129] }, // Emerald
-            styles: { fontSize: 9, cellPadding: 3, minCellHeight: 10 }
+        layers.forEach(layer => {
+            const items = task.reviewChecklist!.filter(c => c.reviewerRole === layer.id);
+            if (items.length > 0) {
+                if (currentY > doc.internal.pageSize.getHeight() - 30) {
+                    doc.addPage();
+                    currentY = 20;
+                }
+                
+                doc.setFontSize(11);
+                doc.setTextColor(16, 185, 129); // Emerald
+                const dateStr = layer.date ? formatDate(layer.date) : 'Pending';
+                doc.text(`Layer: ${layer.label.toUpperCase()} PROTOCOL (Verified: ${dateStr})`, margin, currentY);
+
+                const chkBody = items.map(chk => {
+                    if (chk.isSectionHeader) {
+                        return [
+                            `--- ${safeText(chk.title)} ---`,
+                            '', '', '', ''
+                        ];
+                    }
+                    return [
+                        safeText(chk.itemHead || chk.title),
+                        safeText(chk.requirementDef),
+                        safeText(chk.status),
+                        dateStr,
+                        safeText(chk.comment)
+                    ];
+                });
+
+                autoTable(doc, {
+                    startY: currentY + 5,
+                    head: [['Control Item', 'Requirement', 'Status', 'Date of Review', 'Reviewer Comments']],
+                    body: chkBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: [16, 185, 129] }, // Emerald
+                    styles: { fontSize: 8, cellPadding: 3 },
+                    didParseCell: function (data) {
+                        // Bold section headers
+                        if (data.row.raw && typeof data.row.raw[0] === 'string' && data.row.raw[0].startsWith('---')) {
+                           data.cell.styles.fontStyle = 'bold';
+                           data.cell.styles.fillColor = [230, 244, 234];
+                        }
+                    }
+                });
+                currentY = (doc as any).lastAutoTable.finalY + 15;
+            }
         });
-        currentY = (doc as any).lastAutoTable.finalY + 15;
     }
 
     // SUBTASKS

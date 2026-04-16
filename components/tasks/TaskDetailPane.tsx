@@ -1251,30 +1251,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     const renderReviewerChecklist = () => {
         return (
-            <div className="space-y-6">
-                {/* Protocol Tabs */}
-                <div className="flex gap-1 p-1 bg-white/5 border border-white/5 rounded-2xl w-fit mx-auto shadow-2xl backdrop-blur-xl">
-                    {[
-                        { id: 'TL' as const, label: 'Team Leader', color: 'brand' },
-                        { id: 'ER' as const, label: 'Engagement Reviewer', color: 'purple' },
-                        { id: 'SP' as const, label: 'Signing Partner', color: 'rose' }
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveReviewTab(tab.id)}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center gap-2.5 ${
-                                activeReviewTab === tab.id 
-                                    ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20 active:scale-95` 
-                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
-                            }`}
-                        >
-                            <ShieldCheck size={14} />
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                {[activeReviewTab].map((layer) => {
+            <div className="space-y-8">
+                {(['TL', 'ER', 'SP'] as const).map((layer) => {
                     const meta = {
                         'TL': { title: 'Team Leader Protocol', color: 'brand', role: 'Team Leader' },
                         'ER': { title: 'Engagement Reviewer Protocol', color: 'purple', role: 'Engagement Reviewer' },
@@ -1318,7 +1296,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             {isSignedOff && (
                                                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                                                     <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Verified & Locked</span>
+                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">
+                                                        Verified & Locked {signOffDate ? `(${new Date(signOffDate).toLocaleDateString()})` : ''}
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>
