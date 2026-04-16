@@ -8,10 +8,11 @@ import {
     ChevronUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useClockIn, useClockOut, useAttendanceHistory } from '../../hooks/useAttendance';
+import { useClockIn, useClockOut, useAttendanceHistory, attendanceKeys } from '../../hooks/useAttendance';
 import { useClients } from '../../hooks/useClients';
 import { useQueryClient } from '@tanstack/react-query';
-import { Client, WorkLog } from '../../types';
+import { Client, WorkLog, AttendanceRecord } from '../../types';
+import { AuthService } from '../../services/firebase';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import NepaliDate from 'nepali-date-converter';
