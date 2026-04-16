@@ -34,8 +34,8 @@ export const exportTaskToExcel = async (task: Task, client?: ClientProfile | nul
     ];
 
     // Style headers
-    sheet1.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheet1.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A3644' } };
+    sheet1.getRow(1).font = { bold: true, color: { argb: 'FF659A2B' } }; // Brand Accent
+    sheet1.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0A0B0D' } }; // Carbon-950
 
     // Fill Client details
     sheet1.addRow({ attr: 'Client Name', details: client?.name || task.clientName || 'N/A' });
@@ -64,8 +64,8 @@ export const exportTaskToExcel = async (task: Task, client?: ClientProfile | nul
         { header: 'Created By', key: 'creator', width: 25 },
     ];
     // Formats
-    sheet2.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheet2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD97706' } }; // Amber
+    sheet2.getRow(1).font = { bold: true, color: { argb: 'FF659A2B' } };
+    sheet2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0A0B0D' } };
 
     if (task.observations && task.observations.length > 0) {
         task.observations.forEach(obs => {
@@ -91,8 +91,8 @@ export const exportTaskToExcel = async (task: Task, client?: ClientProfile | nul
         { header: 'Date of Review', key: 'reviewDate', width: 20 },
         { header: 'Reviewer Comment', key: 'comment', width: 40 },
     ];
-    sheet3.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheet3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } }; // Emerald
+    sheet3.getRow(1).font = { bold: true, color: { argb: 'FF659A2B' } };
+    sheet3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0A0B0D' } };
 
     if (task.reviewChecklist && task.reviewChecklist.length > 0) {
         const layers = [
@@ -140,8 +140,8 @@ export const exportTaskToExcel = async (task: Task, client?: ClientProfile | nul
         { header: 'Status', key: 'status', width: 15 },
         { header: 'Evidence Provided', key: 'evidence', width: 30 }
     ];
-    sheet4.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheet4.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } }; // Blue
+    sheet4.getRow(1).font = { bold: true, color: { argb: 'FF659A2B' } };
+    sheet4.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0A0B0D' } };
 
     if (task.subtasks && task.subtasks.length > 0) {
         task.subtasks.forEach(st => {
@@ -167,13 +167,14 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
     // A4 Landscape is often better for tabular data
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
     
-    const primaryColor: [number, number, number] = [59, 130, 246]; // Brand Blue
+    const darkBg: [number, number, number] = [10, 11, 13]; // Carbon-950
+    const brandColor: [number, number, number] = [101, 154, 43]; // #659a2b (Olive-Green)
     const margin = 14;
 
     // Title
     doc.setFontSize(22);
-    doc.setTextColor(30);
-    doc.text('Engagement Workpaper', margin, 20);
+    doc.setTextColor(10, 11, 13);
+    doc.text('ENGAGEMENT WORKPAPER', margin, 20);
 
     // Metadata section
     doc.setFontSize(10);
@@ -184,7 +185,7 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
     // Client Info table
     autoTable(doc, {
         startY: 35,
-        head: [['Client Information', 'Details']],
+        head: [['CORE INFORMATION SUMMARY', 'DETAILS']],
         body: [
             ['Name', safeText(client?.name || task.clientName || 'N/A')],
             ['PAN', safeText(client?.pan || 'N/A')],
@@ -194,7 +195,7 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
             ['Assignment Start', formatDate(task.startDate)],
         ],
         theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255 },
+        headStyles: { fillColor: darkBg, textColor: brandColor, fontStyle: 'bold' },
         styles: { fontSize: 10 },
         columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } }
     });
@@ -204,8 +205,8 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
     // OBSERVATIONS
     if (task.observations && task.observations.length > 0) {
         doc.setFontSize(14);
-        doc.setTextColor(30);
-        doc.text('Audit Observations & Findings', margin, currentY);
+        doc.setTextColor(10, 11, 13);
+        doc.text('AUDIT OBSERVATIONS & FINDINGS', margin, currentY);
         
         const obsBody = task.observations.map(obs => [
             safeText(obs.title),
@@ -217,10 +218,10 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
 
         autoTable(doc, {
             startY: currentY + 5,
-            head: [['Title / Area', 'Finding', 'Implication', 'Recommendation', 'Severity']],
+            head: [['TITLE / AREA', 'FINDING', 'IMPLICATION', 'RECOMMENDATION', 'SEVERITY']],
             body: obsBody,
             theme: 'grid',
-            headStyles: { fillColor: [217, 119, 6] }, // Amber
+            headStyles: { fillColor: darkBg, textColor: brandColor }, // Brand Olive on Carbon
             styles: { fontSize: 9, cellPadding: 3 }
         });
         currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -234,8 +235,8 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
         }
 
         doc.setFontSize(14);
-        doc.setTextColor(30);
-        doc.text('Reviewer Checklist', margin, currentY);
+        doc.setTextColor(10, 11, 13);
+        doc.text('REVIEWER CHECKLIST', margin, currentY);
         currentY += 10;
 
         const layers = [
@@ -301,8 +302,8 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
          }
  
          doc.setFontSize(14);
-         doc.setTextColor(30);
-         doc.text('Execution Queue (Subtasks)', margin, currentY);
+         doc.setTextColor(10, 11, 13);
+         doc.text('EXECUTION QUEUE (SUBTASKS)', margin, currentY);
  
          const subBody = task.subtasks.map(st => [
              safeText(st.phase || 'General'),
@@ -314,10 +315,10 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
  
          autoTable(doc, {
              startY: currentY + 5,
-             head: [['Phase', 'Task Title', 'Requirement', 'Status', 'Evidence Provided']],
+             head: [['PHASE', 'TASK TITLE', 'REQUIREMENT', 'STATUS', 'EVIDENCE PROVIDED']],
              body: subBody,
              theme: 'grid',
-             headStyles: { fillColor: [59, 130, 246] }, // Blue
+             headStyles: { fillColor: darkBg, textColor: brandColor }, // Brand Olive on Carbon
              styles: { fontSize: 9, cellPadding: 3 }
          });
     }
