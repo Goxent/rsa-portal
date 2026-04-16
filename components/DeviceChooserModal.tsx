@@ -107,7 +107,7 @@ const DeviceChooserModal: React.FC<DeviceChooserModalProps> = ({
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-white text-sm font-bold truncate">{session.deviceName}</p>
+                                            <p className="text-white text-sm font-bold break-words">{session.deviceName}</p>
                                             <p className="text-gray-500 text-[11px] mt-0.5">
                                                 Last active {timeAgo(session.lastActive)}
                                                 <span className="mx-1 opacity-40">·</span>
