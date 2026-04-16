@@ -26,6 +26,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { taskSchema, TaskFormValues } from '../../utils/validationSchemas';
 import { convertADToBS, generateFiscalYearOptions } from '../../utils/nepaliDate';
+import { exportTaskToExcel, exportTaskToPDF } from '../../utils/taskExportUtils';
 
 interface TaskDetailPaneProps {
     task: Partial<Task>;
@@ -175,8 +176,31 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const [selectingFolderSubtaskId, setSelectingFolderSubtaskId] = useState<string | null>(null);
+    const [showExportMenu, setShowExportMenu] = useState(false);
 
     const descRef = useRef<HTMLTextAreaElement | null>(null);
+
+    const handleExportPDF = () => {
+        try {
+            const client = clientsList.find(c => c.id === task.clientIds?.[0] || c.id === task.clientId);
+            exportTaskToPDF(task as Task, client);
+            toast.success("PDF exported successfully");
+            setShowExportMenu(false);
+        } catch (err: any) {
+            toast.error("Failed to export: " + err.message);
+        }
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            const client = clientsList.find(c => c.id === task.clientIds?.[0] || c.id === task.clientId);
+            await exportTaskToExcel(task as Task, client);
+            toast.success("Excel exported successfully");
+            setShowExportMenu(false);
+        } catch (err: any) {
+            toast.error("Failed to export: " + err.message);
+        }
+    };
 
     const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
@@ -1799,6 +1823,54 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2">
+                                {task.id && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowExportMenu(!showExportMenu)}
+                                            className="px-5 py-2 bg-white/5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 group shadow-sm"
+                                        >
+                                            <Download size={14} className="group-hover:translate-y-px transition-transform" />
+                                            Export Workpaper
+                                            <ChevronDown size={14} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        
+                                        <AnimatePresence>
+                                            {showExportMenu && (
+                                                <>
+                                                    <div className="fixed inset-0 z-[90]" onClick={() => setShowExportMenu(false)} />
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute right-0 top-full mt-2 w-56 bg-[#1a1f26] border border-white/10 rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.5)] overflow-hidden z-[100] p-1.5"
+                                                    >
+                                                        <button
+                                                            onClick={handleExportPDF}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-rose-500/20 group-hover:text-rose-400">
+                                                                <FileText size={14} />
+                                                            </div>
+                                                            Direct PDF Export
+                                                        </button>
+                                                        <div className="h-px bg-white/5 mx-2 my-0.5" />
+                                                        <button
+                                                            onClick={handleExportExcel}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 group-hover:text-emerald-400">
+                                                                <BarChart2 size={14} />
+                                                            </div>
+                                                            Full Excel Workbook
+                                                        </button>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
+
                                 {activeDetailTab === 'PROCEDURES' && (
                                     <button
                                         onClick={(e) => { e.preventDefault(); setImportPhase(currentPhase); }}
