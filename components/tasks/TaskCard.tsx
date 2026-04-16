@@ -87,7 +87,12 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
 
     const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MASTER_ADMIN;
     const isTL = currentUser?.uid === task.teamLeaderId;
-    const isDragDisabled = !(isAdmin || isTL);
+    const isReviewer = currentUser?.uid === task.engagementReviewerId;
+    const isPartner = currentUser?.uid === task.signingPartnerId;
+    const isAssigned = (task.assignedTo || []).includes(currentUser?.uid || '');
+    
+    // Only admins or engagement team members can drag tasks
+    const isDragDisabled = !(isAdmin || isTL || isReviewer || isPartner || isAssigned);
 
     return (
         <Draggable draggableId={task.id} index={index} isDragDisabled={isDragDisabled}>

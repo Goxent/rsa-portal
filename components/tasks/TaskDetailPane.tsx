@@ -441,10 +441,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const isTeamLeader = user?.uid === currentTLId;
     const isEngagementReviewer = user?.uid === currentERId;
     const isSigningPartner = user?.uid === currentSPId;
+    const isAssignedStaff = (watch('assignedTo') || task.assignedTo || []).includes(user?.uid || '');
+    
+    // Core permission flag: Is the user part of this specific engagement assignment?
+    const isEngagementTeamMember = isTeamLeader || isEngagementReviewer || isSigningPartner || isAssignedStaff;
+    const canEditTask = isAdminOrMaster || isEngagementTeamMember;
+
     const canManageTeam = (isAdminOrMaster || isTeamLeader || !task.id) && !isTaskCompleted;
     
-    // Rule: Team Leader AND Admins can ADD subtasks
-    const canAddSubtasks = (isTeamLeader || isAdminOrMaster) && !isTaskCompleted;
+    // Rule: Team Leader, Engagement Staff AND Admins can ADD subtasks
+    const canAddSubtasks = (isEngagementTeamMember || isAdminOrMaster) && !isTaskCompleted;
     
     // Rule: ONLY Team Leader can DELETE subtasks (Admins cannot, unless they are also the Team Leader)
     const canDeleteSubtasks = (isTeamLeader || isMasterAdmin) && !isTaskCompleted;
@@ -783,7 +789,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handleQuickAddSubtask = (phase: AuditPhase) => {
-        if (isTaskCompleted) return;
+        if (isTaskCompleted || !canEditTask) return;
         const title = localSubtaskTitles[phase]?.trim();
         if (!title) return;
 
@@ -806,7 +812,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handleAddObservation = () => {
-        if (isTaskCompleted) return;
+        if (isTaskCompleted || !canEditTask) return;
         const newObs: AuditObservation = {
             id: `obs-${Date.now()}`,
             title: 'New Observation',
@@ -1860,7 +1866,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2">
-                                {task.id && (
+                                {task.id && canEditTask && (
                                     <div className="relative">
                                         <button
                                             onClick={() => setShowExportMenu(!showExportMenu)}
@@ -1908,7 +1914,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </div>
                                 )}
 
-                                {activeDetailTab === 'PROCEDURES' && (
+                                {activeDetailTab === 'PROCEDURES' && canEditTask && (
                                     <button
                                         onClick={(e) => { e.preventDefault(); setImportPhase(currentPhase); }}
                                         className="px-6 py-2 bg-emerald-50 text-emerald-700 dark:bg-brand-500/10 border border-emerald-200 dark:border-brand-500/30 dark:text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 dark:hover:bg-brand-500/20 transition-all flex items-center gap-2 group shadow-sm"
@@ -2420,7 +2426,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 </h4>
                                                 <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em]">Documentation of technical issues and internal control weaknesses</p>
                                             </div>
-                                            {!isTaskCompleted && (
+                                            {!isTaskCompleted && canEditTask && (
                                                 <button
                                                     onClick={handleAddObservation}
                                                     className="px-6 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all flex items-center gap-2 group"
@@ -2449,7 +2455,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                     <input 
                                                                         value={obs.title} 
                                                                         onChange={e => handleUpdateObservation(obs.id, { title: e.target.value })}
-                                                                        readOnly={isTaskCompleted || (isAdminOrMaster && user?.uid !== obs.createdBy)}
+                                                                        readOnly={isTaskCompleted || !canEditTask || (isAdminOrMaster && user?.uid !== obs.createdBy && !isEngagementTeamMember)}
                                                                         className="bg-transparent text-[16px] font-bold text-white border-none outline-none placeholder:text-gray-800 tracking-tight w-full"
                                                                         placeholder="Observation Title..."
                                                                     />
@@ -2463,7 +2469,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                  <select 
                                                                      value={obs.severity} 
                                                                      onChange={e => handleUpdateObservation(obs.id, { severity: e.target.value as any })}
-                                                                     disabled={isTaskCompleted || (isAdminOrMaster && user?.uid !== obs.createdBy)}
+                                                                     disabled={isTaskCompleted || !canEditTask}
                                                                      className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
                                                                          obs.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
                                                                          obs.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
@@ -2486,7 +2492,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <textarea 
                                                                     value={obs.observation}
                                                                     onChange={e => handleUpdateObservation(obs.id, { observation: e.target.value })}
-                                                                    readOnly={isTaskCompleted}
+                                                                    readOnly={isTaskCompleted || !canEditTask}
                                                                     className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-amber-500/30 transition-all min-h-[50px] shadow-inner resize-y"
                                                                     placeholder="Describe the finding in detail..."
                                                                 />
@@ -2496,7 +2502,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <textarea 
                                                                     value={obs.implication}
                                                                     onChange={e => handleUpdateObservation(obs.id, { implication: e.target.value })}
-                                                                    readOnly={isTaskCompleted}
+                                                                    readOnly={isTaskCompleted || !canEditTask}
                                                                     className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-rose-500/30 transition-all min-h-[50px] shadow-inner resize-y"
                                                                     placeholder="What is the potential impact of this issue?"
                                                                 />
@@ -2506,7 +2512,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 <textarea 
                                                                     value={obs.recommendation}
                                                                     onChange={e => handleUpdateObservation(obs.id, { recommendation: e.target.value })}
-                                                                    readOnly={isTaskCompleted}
+                                                                    readOnly={isTaskCompleted || !canEditTask}
                                                                     className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-brand-500/30 transition-all min-h-[50px] shadow-inner resize-y"
                                                                     placeholder="Suggested management response or technical fix..."
                                                                 />
@@ -2582,7 +2588,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             </Field>
 
                                             <Field label="Priority" icon={<Zap size={14} className="text-amber-400" />} error={!!errors.priority}>
-                                                <select className={selectClass} {...register('priority')}>
+                                                <select className={selectClass} {...register('priority')} disabled={!canEditTask || isTaskCompleted}>
                                                     {Object.values(TaskPriority).map(p => (
                                                         <option key={p} value={p} className="bg-navy-900 font-bold uppercase">{p}</option>
                                                     ))}
@@ -2590,7 +2596,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             </Field>
 
                                             <Field label="Status" icon={<Activity size={14} className="text-blue-400" />} error={!!errors.status}>
-                                                <select className={selectClass} {...register('status')}>
+                                                <select className={selectClass} {...register('status')} disabled={!canEditTask || isTaskCompleted}>
                                                     {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED].map(s => (
                                                         <option key={s} value={s} className="bg-navy-900 font-bold uppercase">{s.replace(/_/g, ' ')}</option>
                                                     ))}
@@ -2638,6 +2644,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[13px] font-medium text-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner min-h-[120px]"
                                                     placeholder="Detailed context for the assignment..."
                                                     {...register('description')}
+                                                    readOnly={!canEditTask || isTaskCompleted}
                                                 />
                                             </Field>
                                         </div>
@@ -2786,7 +2793,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 >
                                     Exit Workspace
                                 </button>
-                                {!isTaskCompleted && (
+                                {!isTaskCompleted && canEditTask && (
                                     <button
                                         onClick={handleSubmit(handleSave)}
                                         disabled={isSaving}
