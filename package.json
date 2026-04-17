@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "node scripts/deploy-fix.js && gh-pages -d dist"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
