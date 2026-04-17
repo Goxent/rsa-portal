@@ -24,16 +24,9 @@ export const AiService = {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
 
-    // Auto-detect provider from environment variables
-    const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    const anthropicKey = import.meta.env.VITE_CLAUDE_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY;
-    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
-
-    if (geminiKey) return { provider: 'gemini', apiKey: geminiKey };
-    if (anthropicKey) return { provider: 'anthropic', apiKey: anthropicKey };
-    if (openaiKey) return { provider: 'openai', apiKey: openaiKey };
-
-    return null;
+    // Fallback to system default (Gemini) if no custom key is configured
+    // The server will use its own environment variables if the client key is empty.
+    return { provider: 'gemini', apiKey: '' };
   },
 
   clearConfig: () => {
@@ -42,19 +35,16 @@ export const AiService = {
 
   generateContent: async (prompt: string, context?: string): Promise<string> => {
     const config = AiService.getConfig();
-    // We prioritize local config but also allow env vars (handled by proxy if key is missing here)
-
+    
     const systemPrompt = `You are an expert Audit & Tax Assistant for RSA (a CA Firm). 
         Context: ${context || 'General tax and audit queries.'}
         Provide professional, accurate, and concise responses. Format with Markdown.`;
 
-    const provider = config?.provider || 'gemini'; // Default if not configured but env var exists
+    const provider = config?.provider || 'gemini'; 
     const apiKey = config?.apiKey || '';
 
-    if (!apiKey) {
-      // Fail gracefully if no key is found
-      return "AI Insight is unavailable (Reference: MISSING_KEY). Please add an API Key in settings.";
-    }
+    // We no longer fail early if apiKey is missing, 
+    // because the server-side /api/ai has the master keys in its own env vars.
 
     try {
       const response = await fetch('/api/ai', {
