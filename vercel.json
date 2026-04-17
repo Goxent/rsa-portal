@@ -1,0 +1,7 @@
+{
+  "buildCommand": null,
+  "installCommand": "echo 'Deployment handled by GitHub Actions/gh-pages. Skipping build.'",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "framework": null
+}

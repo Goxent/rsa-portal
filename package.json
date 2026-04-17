@@ -1,0 +1,8 @@
+{
+  "name": "rsa-portal-static",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Static assets already built' && exit 0"
+  }
+}
