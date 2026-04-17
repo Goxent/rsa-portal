@@ -512,8 +512,20 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 toast.error("Engagement must be in the Review & Conclusion phase before it can be completed.", { icon: '🔒' });
                 return;
             }
-            if (!task.teamLeadApprovedAt || !task.engagementReviewerApprovedAt || !task.signingPartnerApprovedAt) {
-                toast.error("All three reviewer sign-offs (Team Lead, Engagement Reviewer, Signing Partner) are required to complete this assignment.", { icon: '🔒' });
+            // Only require sign-off for roles that are actually assigned
+            const tlAssigned = !!task.teamLeaderId;
+            const erAssigned = !!task.engagementReviewerId;
+            const spAssigned = !!task.signingPartnerId;
+            const tlOk = !tlAssigned || !!task.teamLeadApprovedAt;
+            const erOk = !erAssigned || !!task.engagementReviewerApprovedAt;
+            const spOk = !spAssigned || !!task.signingPartnerApprovedAt;
+            if (!tlOk || !erOk || !spOk) {
+                const missing = [
+                    !tlOk && 'Team Leader',
+                    !erOk && 'QC Reviewer',
+                    !spOk && 'Signing Partner'
+                ].filter(Boolean).join(', ');
+                toast.error(`Missing sign-off from: ${missing}. Please complete the Reviewer Checklist before marking as completed.`, { icon: '🔒' });
                 return;
             }
         }
@@ -704,14 +716,27 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             return;
         }
 
-        // Sequential Check
-        if (role === 'ER' && !task.teamLeadApprovedAt) {
-            toast.error("Team Lead sign-off required first.");
-            return;
+        // Sequential Hierarchy Check — skip unassigned layers
+        // ER can sign only if TL has signed OR no TL is assigned
+        if (role === 'ER') {
+            const tlAssigned = !!task.teamLeaderId;
+            if (tlAssigned && !task.teamLeadApprovedAt) {
+                toast.error("Team Leader sign-off must be completed first.", { icon: '🔒' });
+                return;
+            }
         }
-        if (role === 'SP' && !task.engagementReviewerApprovedAt) {
-            toast.error("Engagement Reviewer sign-off required first.");
-            return;
+        // SP can sign only if both prior assigned layers have signed
+        if (role === 'SP') {
+            const tlAssigned = !!task.teamLeaderId;
+            const erAssigned = !!task.engagementReviewerId;
+            if (tlAssigned && !task.teamLeadApprovedAt) {
+                toast.error("Team Leader sign-off must be completed first.", { icon: '🔒' });
+                return;
+            }
+            if (erAssigned && !task.engagementReviewerApprovedAt) {
+                toast.error("QC Reviewer sign-off must be completed first.", { icon: '🔒' });
+                return;
+            }
         }
 
         const itemsForLayer = (task.reviewChecklist || []).filter(i => i.reviewerRole === role);
@@ -1331,19 +1356,29 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         'SP': task.signingPartnerApprovedAt
                     }[layer];
 
+                    // Sequential hierarchy — skip unassigned layers
+                    const tlAssigned = !!task.teamLeaderId;
+                    const erAssigned = !!task.engagementReviewerId;
+                    // TL layer is always first or skipped if unassigned
+                    const tlCleared = !tlAssigned || !!task.teamLeadApprovedAt;
+                    // ER layer is cleared if unassigned OR already signed
+                    const erCleared = !erAssigned || !!task.engagementReviewerApprovedAt;
+
+                    const sequentialOk =
+                        (layer === 'TL') ||
+                        (layer === 'ER' && tlCleared) ||
+                        (layer === 'SP' && tlCleared && erCleared);
+
                     const canSignOff = (
                         task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION &&
                         task.status !== TaskStatus.COMPLETED &&
-                        items.length > 0 && // Must have checklist items loaded — no blank sign-offs
                         (
                          (layer === 'TL' && isTeamLeader) ||
                          (layer === 'ER' && isEngagementReviewer) ||
                          (layer === 'SP' && isSigningPartner) ||
                          isMasterAdmin
                         ) &&
-                        ((layer === 'TL') || 
-                         (layer === 'ER' && !!task.teamLeadApprovedAt) ||
-                         (layer === 'SP' && !!task.engagementReviewerApprovedAt))
+                        sequentialOk
                     );
 
                     return (
