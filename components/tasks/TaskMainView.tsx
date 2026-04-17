@@ -325,7 +325,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
                 {/* Horizontal Phase Columns */}
                 <div className="flex-1 min-h-0 relative w-full h-full z-10">
-                    <div className="h-full w-full flex-1 flex gap-8 overflow-x-auto px-8 py-6 kanban-scroll custom-scrollbar overflow-y-hidden">
+                    <div className="h-full w-full flex-1 flex gap-8 overflow-x-auto px-8 py-6 kanban-scroll custom-scrollbar overflow-y-auto">
                         {PHASE_ORDER.map((phase, phaseIdx) => {
                             const pm = PHASE_META[phase];
                             const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
@@ -336,7 +336,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             return (
                                 <div
                                     key={phase}
-                                    className={`flex flex-col flex-1 min-w-[420px] h-[calc(100vh-220px)] min-h-[700px] overflow-hidden rounded-[24px] border border-white/[0.08] dark:border-white/[0.04] bg-white/40 dark:bg-[#12141c]/40 backdrop-blur-2xl ${pm.glow} transition-all duration-500 hover:shadow-2xl group/phase relative`}
+                                    className={`flex flex-col flex-1 min-w-[420px] h-full min-h-[600px] overflow-hidden rounded-[24px] border border-white/[0.08] dark:border-white/[0.04] bg-white/40 dark:bg-[#12141c]/40 backdrop-blur-2xl ${pm.glow} transition-all duration-500 hover:shadow-2xl group/phase relative`}
                                 >
                                     {/* Glass Edge Highlight */}
                                     <div className="absolute inset-px rounded-[23px] border border-white/20 dark:border-white/[0.03] pointer-events-none z-10" />
