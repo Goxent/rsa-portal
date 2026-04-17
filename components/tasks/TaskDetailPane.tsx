@@ -1179,7 +1179,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 <Award size={13} />
                             </button>
                         )}
-                        {(isTeamLeader || user?.role === UserRole.MASTER_ADMIN) && (
+                        {(isAdminOrMaster || isTeamLeader || st.addedBy === user?.uid) && (
                             <button onClick={() => onRemoveSubtaskLocal(st.id)} className="text-gray-700 hover:text-rose-400 p-1 px-1.5 transition-all">
                                 <Trash2 size={13} />
                             </button>
