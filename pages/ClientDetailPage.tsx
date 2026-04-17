@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import {
     ArrowLeft, Building2, Briefcase, BadgeCheck, Phone, Mail, MapPin,
     Calendar as CalIcon, FileText, CheckCircle2,
-    Clock, User, Plus, ArrowRight, Trash2, ExternalLink, Copy
+    Clock, User, Plus, ArrowRight, Trash2, ExternalLink, Copy, Lock
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { Client, Task, UserProfile } from '../types';
+import { Client, Task, UserProfile, UserRole } from '../types';
 import { AuthService, auth, getAttendanceByClientId } from '../services/firebase';
 import { PageLoader } from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/common/EmptyState';
@@ -19,12 +19,16 @@ import { useTasks } from '../hooks/useTasks';
 import { clientKeys } from '../hooks/useClients';
 import { userKeys } from '../hooks/useStaff';
 import NepaliDate from 'nepali-date-converter';
+import { AuditWorkspace } from '../components/audit/AuditWorkspace';
+import { FolderArchive } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 type Tab = 'OVERVIEW' | 'TASKS' | 'DOCUMENTS' | 'WORK_LOGS';
 
 const ClientDetailPage: React.FC = () => {
     const { clientId } = useParams<{ clientId: string }>();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const [activeTab, setActiveTab] = useState<Tab>('OVERVIEW');
     const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
@@ -137,6 +141,29 @@ const ClientDetailPage: React.FC = () => {
     };
 
     if (isLoading) return <PageLoader />;
+
+    const isStaff = user?.role === UserRole.STAFF;
+    const isPermitted = !isStaff || (client?.permittedStaff?.includes(user?.uid || ''));
+
+    if (client && !isPermitted) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
+                <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-8 shadow-2xl bg-black/20 border border-white/10">
+                    <Lock size={40} className="text-gray-500" />
+                </div>
+                <h2 className="text-xl font-bold mb-3 text-white">Access Denied</h2>
+                <p className="text-sm max-w-md leading-relaxed mb-6 text-gray-400">
+                    You do not have permission to view or manage this client's profile.
+                </p>
+                <button
+                    onClick={() => navigate('/clients')}
+                    className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all"
+                >
+                    Back to Directory
+                </button>
+            </div>
+        );
+    }
 
     if (!client) {
         return (
@@ -413,6 +440,21 @@ const ClientDetailPage: React.FC = () => {
                                     <p className="text-gray-500 text-sm max-w-md text-center">Repository for KYC, registration certificates, and legal documents is empty for this client.</p>
                                 </div>
                             )}
+
+                            <div className="mt-8 pt-8 border-t border-white/10">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
+                                        <FolderArchive size={20} className="text-brand-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">Engagement Documentation</h3>
+                                        <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Standardized Audit Folders Repository</p>
+                                    </div>
+                                </div>
+                                <div className="h-[600px] border border-white/10 rounded-2xl overflow-hidden bg-black/20 relative">
+                                    <AuditWorkspace clientId={client.id} clientName={client.name} isReadOnly={false} />
+                                </div>
+                            </div>
                         </div>
                     )}
 

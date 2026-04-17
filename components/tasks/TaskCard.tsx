@@ -17,7 +17,7 @@ const P: Record<string, {
 }> = {
     [TaskPriority.URGENT]: {
         accent: '#f43f5e', border: 'border-l-rose-500',
-        badge: 'text-rose-300 bg-rose-500/15 border-rose-500/25',
+        badge: 'text-rose-600 dark:text-rose-300 bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/20 dark:border-rose-500/25',
         label: 'Urgent', glow: 'shadow-[0_8px_24px_rgba(244,63,94,0.15)]',
         bgGradient: 'from-rose-500/[0.06]',
         dotColor: '#f43f5e',
@@ -25,7 +25,7 @@ const P: Record<string, {
     },
     [TaskPriority.HIGH]: {
         accent: '#f59e0b', border: 'border-l-amber-500',
-        badge: 'text-amber-300 bg-amber-500/15 border-amber-500/25',
+        badge: 'text-amber-600 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/20 dark:border-amber-500/25',
         label: 'High', glow: 'shadow-[0_8px_24px_rgba(245,158,11,0.12)]',
         bgGradient: 'from-amber-500/[0.04]',
         dotColor: '#f59e0b',
@@ -33,7 +33,7 @@ const P: Record<string, {
     },
     [TaskPriority.MEDIUM]: {
         accent: '#6366f1', border: 'border-l-indigo-500',
-        badge: 'text-indigo-300 bg-indigo-500/15 border-indigo-500/25',
+        badge: 'text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 dark:bg-indigo-500/15 border-indigo-500/20 dark:border-indigo-500/25',
         label: 'Medium', glow: '',
         bgGradient: 'from-indigo-500/[0.03]',
         dotColor: '#6366f1',
@@ -41,7 +41,7 @@ const P: Record<string, {
     },
     [TaskPriority.LOW]: {
         accent: '#475569', border: 'border-l-slate-600',
-        badge: 'text-slate-400 bg-slate-500/10 border-slate-500/15',
+        badge: 'text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/15',
         label: 'Low', glow: '',
         bgGradient: 'from-transparent',
         dotColor: '#475569',
@@ -125,7 +125,7 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                     >
                         {/* Dynamic Client Gradient Header - matching Directory Aesthetic */}
                         <div
-                            className={`absolute top-0 left-0 right-0 h-[38px] opacity-20 dark:opacity-[0.12] bg-gradient-to-br ${getClientVisuals(task.clientName).from} ${getClientVisuals(task.clientName).to} transition-all duration-500`}
+                            className={`absolute top-0 left-0 right-0 h-[48px] opacity-100 dark:opacity-30 bg-gradient-to-br ${getClientVisuals(task.clientName).from} ${getClientVisuals(task.clientName).to} transition-all duration-500`}
                         />
                         {/* Subtle top glare */}
                         <div
@@ -134,9 +134,9 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
 
                         <div className="px-3 pt-3 pb-2.5">
 
-                            {/* Row 1: Priority + ID + Drag */}
+                            {/* Row 1: Priority + Task Type + Drag */}
                             <div className="flex items-center justify-between gap-1 mb-2">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 overflow-hidden">
                                     {/* Checkbox */}
                                     {(isAdmin || isTL || isReviewer || isPartner || isAssigned) ? (
                                         <div
@@ -154,68 +154,63 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="w-[13px] h-[13px] flex items-center justify-center opacity-20" title="Read-only mode">
+                                        <div className="w-[13px] h-[13px] flex items-center justify-center opacity-20 flex-shrink-0" title="Read-only mode">
                                             <ShieldCheck size={10} className="text-slate-400" />
                                         </div>
                                     )}
 
                                     {/* Priority indicator */}
-                                    <span className={`inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-[2px] rounded-md border uppercase tracking-[0.08em] shadow-sm ${pc.badge}`}>
+                                    <span className={`inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-[2px] rounded-md border uppercase tracking-[0.08em] shadow-sm flex-shrink-0 ${pc.badge}`}>
                                         {pc.icon}
                                         {pc.label}
                                     </span>
-                                </div>
 
-                                <div className="flex items-center gap-1.5">
-                                    {/* Task type icon */}
-                                    {IconComp && (
-                                        <div className="opacity-40 group-hover/card:opacity-60 transition-opacity">
-                                            <IconComp size={11} className="text-slate-400" />
+                                    {/* Task type */}
+                                    {task.taskType && (
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.07] text-[9px] text-slate-500 dark:text-slate-400 font-semibold transition-colors group-hover/card:border-slate-300 dark:group-hover/card:border-white/[0.12] truncate">
+                                            {IconComp && <IconComp size={9} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" />}
+                                            <span className="truncate">{TASK_TYPE_LABELS[task.taskType]}</span>
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="flex items-center gap-1 flex-shrink-0">
                                     {!isDragDisabled && (
-                                        <div
-                                            className="p-0.5 text-slate-700 hover:text-slate-400 transition-colors rounded hover:bg-white/5 opacity-50 group-hover/card:opacity-100"
-                                        >
+                                        <div className="p-0.5 text-slate-700 hover:text-slate-400 transition-colors rounded hover:bg-white/5 opacity-50 group-hover/card:opacity-100 cursor-grab">
                                             <GripVertical size={11} />
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Row 2: Title */}
-                            <h4 className={`text-[13px] font-semibold leading-snug line-clamp-2 mb-2 transition-colors ${
+                            {/* Row 2: Client Name (Prominent at top) */}
+                            {task.clientName && (
+                                <div
+                                    className={`flex items-center gap-2 mb-1.5 cursor-pointer group/client px-2.5 py-1.5 rounded-lg border transition-all duration-300 shadow-sm relative overflow-hidden bg-white/50 dark:bg-[#13141a]/50 backdrop-blur-sm ${getClientVisuals(task.clientName).border} hover:scale-[1.01] hover:shadow-md`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!snap.isDragging && onOpenClientDetail && task.clientIds?.[0]) {
+                                            onOpenClientDetail(task.clientIds[0]);
+                                        }
+                                    }}
+                                >
+                                    {/* Liquid Background Gradient */}
+                                    <div className={`absolute inset-0 bg-gradient-to-r ${getClientVisuals(task.clientName).from} ${getClientVisuals(task.clientName).to} opacity-50 dark:opacity-30 group-hover/client:opacity-80 transition-all duration-500`} />
+                                    
+                                    <Tag size={11} className={`relative z-10 ${getClientVisuals(task.clientName).accent} opacity-90 group-hover/client:scale-110 transition-transform flex-shrink-0 drop-shadow-sm`} />
+                                    <span className={`relative z-10 text-[12px] font-black ${getClientVisuals(task.clientName).accent} tracking-tight line-clamp-1 leading-tight drop-shadow-sm`}>
+                                        {task.clientName}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Row 3: Engagement Title (Secondary) */}
+                            <h4 className={`text-[12px] font-medium leading-[1.3] line-clamp-3 mb-3 mt-1.5 transition-colors ${
                                 (isCompleted && task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) ? 'text-slate-400 dark:text-slate-600 line-through' :
-                                isSelected ? 'text-emerald-900 dark:text-white' : 'text-slate-800 dark:text-slate-200 group-hover/card:text-indigo-600 dark:group-hover/card:text-white'
+                                isSelected ? 'text-emerald-800 dark:text-emerald-100' : 'text-slate-700 dark:text-slate-300 group-hover/card:text-indigo-600 dark:group-hover/card:text-indigo-200'
                             }`}>
                                 {task.title}
                             </h4>
-
-                            {/* Row 3: Client & Task Type */}
-                            <div className="flex items-center flex-wrap gap-1.5 mb-2.5">
-                                {task.taskType && (
-                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.07] text-[9px] text-slate-500 dark:text-slate-400 font-semibold transition-colors group-hover/card:border-slate-300 dark:group-hover/card:border-white/[0.12]">
-                                        {IconComp && <IconComp size={9} className="text-indigo-500 dark:text-indigo-400" />}
-                                        <span className="truncate max-w-[90px]">{TASK_TYPE_LABELS[task.taskType]}</span>
-                                    </div>
-                                )}
-                                {task.clientName && (
-                                    <div
-                                        className="flex items-center gap-1.5 cursor-pointer group/client px-2 py-0.5 rounded-md bg-white/5 dark:bg-black/20 border border-white/[0.05] hover:border-cyan-500/30 transition-all duration-300"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (!snap.isDragging && onOpenClientDetail && task.clientIds?.[0]) {
-                                                onOpenClientDetail(task.clientIds[0]);
-                                            }
-                                        }}
-                                    >
-                                        <Tag size={10} className={`${getClientVisuals(task.clientName).accent} opacity-70 group-hover/client:scale-110 transition-transform`} />
-                                        <span className={`text-[10px] font-bold ${getClientVisuals(task.clientName).accent} tracking-tight truncate max-w-[140px]`}>
-                                            {task.clientName}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
 
                             {/* Row 4: Subtask progress */}
                             {pct >= 0 && (

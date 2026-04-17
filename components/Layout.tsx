@@ -119,22 +119,18 @@ const Layout: React.FC = () => {
       <div className="flex h-screen bg-transparent text-gray-100 font-sans overflow-hidden">
 
         {/* Sidebar */}
-        <motion.div
-          initial={{ x: -260 }}
-          animate={{ x: 0 }}
-          transition={{ duration: 0.5, ease: "circOut" }}
-          className="z-50 hidden md:block"
-        >
-          <Sidebar
-            isCollapsed={isSidebarCollapsed}
-            toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            isMobileOpen={isMobileMenuOpen}
-            closeMobileMenu={() => setIsMobileMenuOpen(false)}
-          />
-        </motion.div>
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          isMobileOpen={isMobileMenuOpen}
+          closeMobileMenu={() => setIsMobileMenuOpen(false)}
+        />
 
         {/* Main Content Wrapper */}
-        <div className={`flex-1 flex flex-col h-full transition-all duration-500 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+        <div 
+          className="flex-1 flex flex-col h-full transition-all duration-500 ease-in-out"
+          style={{ marginLeft: isMobileMenuOpen ? 0 : (isSidebarCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)') }}
+        >
 
           {/* Header */}
           <Header

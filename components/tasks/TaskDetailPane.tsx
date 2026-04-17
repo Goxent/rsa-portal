@@ -456,7 +456,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const canDeleteSubtasks = (isTeamLeader || isMasterAdmin) && !isTaskCompleted;
 
     const isInOnboarding = currentPhase === AuditPhase.ONBOARDING;
-    const canChangeFramework = (isAdminOrMaster || !task.id) && isInOnboarding && !isTaskCompleted;
+    const canChangeFramework = !task.id && !isTaskCompleted;
 
 
     // Snapshot task state whenever the pane opens
@@ -2569,7 +2569,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                         clients={clientsList} 
                                                         value={field.value} 
                                                         onChange={field.onChange} 
-                                                        disabled={!canManageTeam}
+                                                        disabled={!!task.id}
                                                     />
                                                 )} />
                                             </Field>
@@ -2578,7 +2578,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <select 
                                                     className={selectClass} 
                                                     {...register('fiscalYear')}
-                                                    disabled={!canManageTeam}
+                                                    disabled={!!task.id}
                                                 >
                                                     <option value="" className="bg-navy-900">Select...</option>
                                                     {fiscalYears.map(fy => (

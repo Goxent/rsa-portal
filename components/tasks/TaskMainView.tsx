@@ -43,28 +43,28 @@ const S: Record<string, {
     border: string; text: string;
 }> = {
     [TaskStatus.NOT_STARTED]: {
-        label: 'Not Started', dot: 'bg-slate-500', dotColor: '#64748b',
-        headerAccent: 'bg-[var(--bg-surface)]',
-        headerBg: 'bg-[var(--bg-elevated)]',
-        countBg: 'bg-[var(--bg-elevated)] text-[var(--text-body)] border-[var(--border)]',
-        ring: 'ring-slate-500/40', dropBg: 'bg-slate-500/5',
-        border: 'border-[var(--border)]', text: 'text-[var(--text-body)]',
+        label: 'Not Started', dot: 'bg-slate-400 dark:bg-slate-500', dotColor: '#94a3b8',
+        headerAccent: 'bg-slate-500/5',
+        headerBg: 'bg-slate-500/10 dark:bg-slate-500/5',
+        countBg: 'bg-slate-500/10 dark:bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20',
+        ring: 'ring-slate-400/40', dropBg: 'bg-slate-400/5',
+        border: 'border-slate-200 dark:border-white/[0.05]', text: 'text-slate-600 dark:text-slate-400',
     },
     [TaskStatus.IN_PROGRESS]: {
         label: 'In Progress', dot: 'bg-blue-500', dotColor: '#3b82f6',
-        headerAccent: 'bg-blue-500/5',
-        headerBg: 'bg-blue-500/10',
-        countBg: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+        headerAccent: 'bg-blue-500/10',
+        headerBg: 'bg-blue-500/15 dark:bg-blue-500/10',
+        countBg: 'bg-blue-600/20 text-blue-700 dark:text-blue-300 border-blue-500/30',
         ring: 'ring-blue-500/40', dropBg: 'bg-blue-500/5',
-        border: 'border-blue-500/20', text: 'text-blue-400',
+        border: 'border-blue-500/30 dark:border-blue-500/20', text: 'text-blue-700 dark:text-blue-400',
     },
     [TaskStatus.COMPLETED]: {
         label: 'Completed', dot: 'bg-emerald-500', dotColor: '#10b981',
-        headerAccent: 'bg-emerald-500/5',
-        headerBg: 'bg-emerald-500/10',
-        countBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        headerAccent: 'bg-emerald-500/10',
+        headerBg: 'bg-emerald-500/15 dark:bg-emerald-500/10',
+        countBg: 'bg-emerald-600/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
         ring: 'ring-emerald-500/40', dropBg: 'bg-emerald-500/5',
-        border: 'border-emerald-500/20', text: 'text-emerald-400',
+        border: 'border-emerald-500/30 dark:border-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-400',
     },
 };
 
@@ -76,32 +76,32 @@ const PHASE_META: Record<string, {
 }> = {
     [AuditPhase.ONBOARDING]: {
         label: 'Onboarding', shortLabel: 'P1',
-        color: 'text-brand-600 dark:text-brand-400',
-        dot: 'bg-[#659a2b]', accentHex: '#659a2b',
-        bg: 'bg-[var(--bg-secondary)]',
-        headerGradient: 'from-[#659a2b]/15 via-[#659a2b]/5 to-transparent',
-        border: 'border-[#659a2b]/20',
-        glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]',
+        color: 'text-blue-700 dark:text-blue-400',
+        dot: 'bg-blue-500', accentHex: '#3b82f6',
+        bg: 'bg-blue-50/30 dark:bg-blue-900/10',
+        headerGradient: 'from-blue-600/30 via-blue-500/10 to-transparent dark:from-blue-600/20 dark:via-blue-500/5',
+        border: 'border-blue-300/30 dark:border-blue-500/20',
+        glow: 'shadow-[0_8px_32px_rgba(59,130,246,0.15)]',
         stepNum: '01',
     },
     [AuditPhase.PLANNING_AND_EXECUTION]: {
         label: 'Planning & Execution', shortLabel: 'P2',
-        color: 'text-[#4d7c0f]',
-        dot: 'bg-[#4d7c0f]', accentHex: '#4d7c0f',
-        bg: 'bg-[var(--bg-secondary)]',
-        headerGradient: 'from-[#4d7c0f]/15 via-[#4d7c0f]/5 to-transparent',
-        border: 'border-[#4d7c0f]/20',
-        glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]',
+        color: 'text-purple-700 dark:text-purple-400',
+        dot: 'bg-purple-500', accentHex: '#a855f7',
+        bg: 'bg-purple-50/30 dark:bg-purple-900/10',
+        headerGradient: 'from-purple-600/30 via-purple-500/10 to-transparent dark:from-purple-600/20 dark:via-purple-500/5',
+        border: 'border-purple-300/30 dark:border-purple-500/20',
+        glow: 'shadow-[0_8px_32px_rgba(168,85,247,0.15)]',
         stepNum: '02',
     },
     [AuditPhase.REVIEW_AND_CONCLUSION]: {
         label: 'Review & Conclusion', shortLabel: 'P3',
-        color: 'text-[#15803d]',
-        dot: 'bg-[#15803d]', accentHex: '#15803d',
-        bg: 'bg-[var(--bg-secondary)]',
-        headerGradient: 'from-[#15803d]/15 via-[#15803d]/5 to-transparent',
-        border: 'border-[#15803d]/20',
-        glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]',
+        color: 'text-emerald-700 dark:text-emerald-400',
+        dot: 'bg-emerald-500', accentHex: '#10b981',
+        bg: 'bg-emerald-50/30 dark:bg-emerald-900/10',
+        headerGradient: 'from-emerald-600/30 via-emerald-500/10 to-transparent dark:from-emerald-600/20 dark:via-emerald-500/5',
+        border: 'border-emerald-300/30 dark:border-emerald-500/20',
+        glow: 'shadow-[0_8px_32px_rgba(16,185,129,0.15)]',
         stepNum: '03',
     },
 };
@@ -317,10 +317,15 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="h-full flex flex-col min-h-0 overflow-hidden">
+            <div className="h-full flex flex-col min-h-0 overflow-hidden relative">
+                {/* Board Background Gradient - Matching Client Directory Depth */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white dark:from-[#0a0b0e] dark:to-[#12141c] pointer-events-none" />
+                <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-blue-500/5 dark:bg-blue-500/[0.03] blur-[120px] rounded-full pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-emerald-500/5 dark:bg-emerald-500/[0.03] blur-[100px] rounded-full pointer-events-none" />
+
                 {/* Horizontal Phase Columns */}
-                <div className="flex-1 min-h-0 relative w-full h-full">
-                    <div className="h-full w-full flex-1 flex gap-5 overflow-x-auto px-4 py-3 kanban-scroll custom-scrollbar overflow-y-hidden">
+                <div className="flex-1 min-h-0 relative w-full h-full z-10">
+                    <div className="h-full w-full flex-1 flex gap-8 overflow-x-auto px-8 py-6 kanban-scroll custom-scrollbar overflow-y-hidden">
                         {PHASE_ORDER.map((phase, phaseIdx) => {
                             const pm = PHASE_META[phase];
                             const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
@@ -331,20 +336,22 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             return (
                                 <div
                                     key={phase}
-                                    className={`flex flex-col flex-1 min-w-[380px] h-full overflow-hidden rounded-2xl border ${pm.border} ${pm.bg} ${pm.glow} transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]`}
-                                    style={{ minHeight: 0 }}
+                                    className={`flex flex-col flex-1 min-w-[420px] h-[calc(100vh-220px)] min-h-[700px] overflow-hidden rounded-[24px] border border-white/[0.08] dark:border-white/[0.04] bg-white/40 dark:bg-[#12141c]/40 backdrop-blur-2xl ${pm.glow} transition-all duration-500 hover:shadow-2xl group/phase relative`}
                                 >
+                                    {/* Glass Edge Highlight */}
+                                    <div className="absolute inset-px rounded-[23px] border border-white/20 dark:border-white/[0.03] pointer-events-none z-10" />
+
                                     {/* ── Phase Header ── */}
-                                    <div className={`relative flex-shrink-0 bg-[var(--bg-elevated)] border-b ${pm.border} px-4 pt-3.5 pb-2.5`}>
-                                        {/* Gradient Background Layer */}
-                                        <div className={`absolute inset-0 bg-gradient-to-r ${pm.headerGradient} opacity-50`} />
+                                    <div className={`relative flex-shrink-0 border-b ${pm.border} px-6 pt-6 pb-4 overflow-hidden`}>
+                                        {/* Dynamic Gradient Banner - Echoing Client Directory */}
+                                        <div className={`absolute inset-0 bg-gradient-to-br ${pm.headerGradient} opacity-60 dark:opacity-40 transition-opacity duration-700`} />
                                         
-                                        {/* Gradient top line */}
+                                        {/* Top Accent Line */}
                                         <div
-                                            className="absolute top-0 left-0 right-0 h-[2.5px] z-20"
+                                            className="absolute top-0 left-0 right-0 h-[3px] z-20"
                                             style={{ 
                                                 background: `linear-gradient(90deg, ${pm.accentHex}, ${pm.accentHex}40, transparent)`,
-                                                boxShadow: `0 1px 12px ${pm.accentHex}`
+                                                boxShadow: `0 2px 15px ${pm.accentHex}60`
                                             }}
                                         />
 
@@ -352,15 +359,16 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                             <div className="flex items-center gap-2.5">
                                                 {/* Step number badge */}
                                                 <div
-                                                    className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-black border backdrop-blur-sm flex-shrink-0"
+                                                    className="w-10 h-10 rounded-2xl flex items-center justify-center text-[12px] font-black border backdrop-blur-md flex-shrink-0 shadow-lg relative overflow-hidden group/step"
                                                     style={{
-                                                        backgroundColor: `${pm.accentHex}15`,
+                                                        backgroundColor: `${pm.accentHex}20`,
                                                         borderColor: `${pm.accentHex}40`,
                                                         color: pm.accentHex,
-                                                        boxShadow: `0 0 16px ${pm.accentHex}20`,
                                                     }}
                                                 >
-                                                    {pm.stepNum}
+                                                    {/* Step Glow */}
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
+                                                    <span className="relative z-10">{pm.stepNum}</span>
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-1.5">
@@ -382,21 +390,24 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
 
                                             {/* Circular progress */}
                                             {phaseTotal > 0 && (
-                                                <div className="relative w-9 h-9 flex-shrink-0">
+                                                <div className="relative w-11 h-11 flex-shrink-0">
                                                     <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                                                        <circle cx="18" cy="18" r="14" fill="none" stroke="currentColor" className="text-[var(--border-mid)]" strokeWidth="3" />
+                                                        <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-black/5 dark:text-white/5" strokeWidth="4" />
                                                         <circle
-                                                            cx="18" cy="18" r="14" fill="none"
+                                                            cx="18" cy="18" r="15" fill="none"
                                                             stroke={pm.accentHex}
-                                                            strokeWidth="3"
+                                                            strokeWidth="4"
                                                             strokeLinecap="round"
-                                                            strokeDasharray={`${phaseProgress * 0.879} 87.9`}
-                                                            className="opacity-90 dark:opacity-70"
+                                                            strokeDasharray={`${phaseProgress * 0.942} 94.2`}
+                                                            className="opacity-100 dark:opacity-80 drop-shadow-[0_0_8px_rgba(0,0,0,0.1)]"
                                                         />
                                                     </svg>
-                                                    <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black" style={{ color: pm.accentHex }}>
-                                                        {phaseCompleted}/{phaseTotal}
-                                                    </span>
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-0">
+                                                        <span className="text-[10px] font-black leading-none" style={{ color: pm.accentHex }}>
+                                                            {phaseProgress}%
+                                                        </span>
+                                                        <span className="text-[7px] font-bold opacity-40 uppercase tracking-tighter">Done</span>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -434,16 +445,18 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                         <div
                                                             ref={prov.innerRef}
                                                             {...prov.droppableProps}
-                                                            className={`rounded-xl transition-all duration-300 p-2.5 mb-2 border ${
+                                                            className={`rounded-2xl transition-all duration-300 p-4 mb-3 border relative overflow-hidden group/status ${
                                                                 snap.isDraggingOver 
-                                                                    ? `ring-2 ${cfg.ring} ${cfg.headerAccent} scale-[1.01] shadow-xl` 
-                                                                    : `bg-[var(--bg-surface)] border-[var(--border)] shadow-sm opacity-95 hover:opacity-100 hover:border-[var(--border-mid)]`
+                                                                    ? `ring-4 ${cfg.ring} ${cfg.headerAccent} scale-[1.02] shadow-2xl z-20` 
+                                                                    : `bg-white/30 dark:bg-black/20 border-white/10 dark:border-white/[0.03] shadow-sm hover:border-white/30 dark:hover:border-white/[0.1]`
                                                             }`}
                                                         >
                                                             {/* Status header */}
-                                                            <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg mb-2 border border-[var(--border)] bg-[var(--bg-elevated)] relative overflow-hidden`}>
-                                                                {/* Subtle left accent border inside header */}
-                                                                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${cfg.dot}`} />
+                                                            <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl mb-4 border relative overflow-hidden shadow-sm transition-all duration-300 ${
+                                                                snap.isDraggingOver ? 'bg-white/80 dark:bg-white/10' : 'bg-white/60 dark:bg-white/5'
+                                                            } ${pm.border}`}>
+                                                                {/* Left Marker */}
+                                                                <div className={`absolute left-0 top-0 bottom-0 w-[4px] ${cfg.dot} shadow-[4px_0_12px_rgba(0,0,0,0.1)]`} />
                                                                 
                                                                 <div
                                                                     className={`w-2 h-2 rounded-full ${cfg.dot} flex-shrink-0 transition-all ${snap.isDraggingOver ? 'scale-125' : ''}`}

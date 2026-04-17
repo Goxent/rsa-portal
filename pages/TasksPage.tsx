@@ -1393,7 +1393,7 @@ const TasksPage: React.FC = () => {
     return (
         <div className="relative h-full w-full flex flex-col overflow-hidden bg-surface">
             {/* --- REFINED UNIFIED TOOLBAR --- */}
-            <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-50 transition-colors duration-300">
+            <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-40 transition-colors duration-300">
                 <div className="flex flex-col border-b border-border/50">
                     <div className="flex flex-wrap items-center gap-3 px-4 py-3 md:flex-nowrap">
                         {/* LEFT: View Mode Toggle */}
