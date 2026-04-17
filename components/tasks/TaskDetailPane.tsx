@@ -542,9 +542,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             teamLeaderId: data.teamLeaderId,
             engagementReviewerId: data.engagementReviewerId,
             signingPartnerId: data.signingPartnerId,
-            teamLeadApprovedAt: data.teamLeadApprovedAt,
-            engagementReviewerApprovedAt: data.engagementReviewerApprovedAt,
-            signingPartnerApprovedAt: data.signingPartnerApprovedAt,
+            // Sign-off timestamps are write-once, set only by the sign-off action.
+            // Always preserve the task prop values — never override from form data,
+            // which could be undefined if the field isn't registered in react-hook-form.
+            teamLeadApprovedAt: task.teamLeadApprovedAt,
+            engagementReviewerApprovedAt: task.engagementReviewerApprovedAt,
+            signingPartnerApprovedAt: task.signingPartnerApprovedAt,
             totalTimeSpent: data.estimatedHours,
             clientIds: data.clientId ? [data.clientId] : [],
             clientName: clientsList.find(c => c.id === data.clientId)?.name || undefined,
