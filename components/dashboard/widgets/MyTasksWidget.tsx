@@ -35,6 +35,7 @@ const getStatusConfig = (status: string) => {
     switch (status) {
         case TaskStatus.IN_PROGRESS: return { label: 'In Progress', color: 'text-amber-400' };
         case TaskStatus.COMPLETED: return { label: 'Completed', color: 'text-brand-400' };
+        case TaskStatus.ARCHIVED: return { label: 'Archived', color: 'text-amber-600' };
         default: return { label: 'Not Started', color: 'text-gray-400' };
     }
 };
@@ -68,7 +69,7 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ recentTasks = [] }) => {
     const priorityWeight: Record<string, number> = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
 
     const activeTasks = recentTasks.filter(
-        t => t.status !== TaskStatus.COMPLETED
+        t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED
     );
 
     const sorted = [...activeTasks]

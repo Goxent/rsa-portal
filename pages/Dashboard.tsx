@@ -80,7 +80,9 @@ const Dashboard: React.FC = () => {
         const allUsers = isAdmin ? usersForMap : [user];
         const activeStaffCount = isAdmin ? allUsers.filter(u => u.status === 'Active').length : 0;
 
-        const relTasks = isAdmin ? allTasks : allTasks.filter(t => t.assignedTo.includes(user.uid));
+        const relTasks = isAdmin 
+            ? allTasks.filter(t => t.status !== 'ARCHIVED') 
+            : allTasks.filter(t => t.assignedTo.includes(user.uid) && t.status !== 'ARCHIVED');
 
         const statusCounts = { COMPLETED: 0, IN_PROGRESS: 0, UNDER_REVIEW: 0, NOT_STARTED: 0 };
         relTasks.forEach(t => {
@@ -123,7 +125,7 @@ const Dashboard: React.FC = () => {
 
         const deadlineTasks = isAdmin ? allTasks : allTasks.filter(t => t.assignedTo.includes(user.uid));
         const futureDeadlines = deadlineTasks
-            .filter(t => t.dueDate >= todayStr && t.dueDate <= cutoffDateStr && t.status !== 'COMPLETED')
+            .filter(t => t.dueDate >= todayStr && t.dueDate <= cutoffDateStr && t.status !== 'COMPLETED' && t.status !== 'ARCHIVED')
             .map(t => ({ id: t.id, title: t.title, date: t.dueDate, type: 'DEADLINE' as const, subType: t.priority, description: t.clientName }));
 
         const mergedSchedule = [...futureEvents, ...futureDeadlines].sort((a, b) => a.date.localeCompare(b.date));
@@ -137,7 +139,7 @@ const Dashboard: React.FC = () => {
 
         const sStats = { busy: [] as any[], free: [] as any[], byDepartment: deptStats };
         if (isAdmin) {
-            const activeTasksList = allTasks.filter(t => t.status !== 'COMPLETED');
+            const activeTasksList = allTasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'ARCHIVED');
             const busyList: (UserProfile & { taskCount: number })[] = [];
             const freeList: UserProfile[] = [];
             const staffOnly = allUsers.filter(u => u.role !== UserRole.ADMIN && u.role !== UserRole.MASTER_ADMIN);
@@ -161,7 +163,7 @@ const Dashboard: React.FC = () => {
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     // Command strip derived values
-    const myOpenTasks = allTasks.filter(t => t.assignedTo.includes(user?.uid ?? '') && t.status !== 'COMPLETED').length;
+    const myOpenTasks = allTasks.filter(t => t.assignedTo.includes(user?.uid ?? '') && t.status !== 'COMPLETED' && t.status !== 'ARCHIVED').length;
     const todayStr = new Date().toLocaleDateString('en-CA');
     const completedToday = allTasks.filter(t =>
         t.assignedTo.includes(user?.uid ?? '') &&

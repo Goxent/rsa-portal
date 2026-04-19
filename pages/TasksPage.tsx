@@ -1871,6 +1871,7 @@ const TasksPage: React.FC = () => {
                                 viewMode={viewMode as 'LIST' | 'KANBAN'}
                                 tasks={filteredTasks}
                                 currentUser={user}
+                                canEditTask={canEditTask}
                                 onDragEnd={onDragEnd}
                                 handleOpenEdit={handleOpenEdit}
                                 onOpenClientDetail={handleOpenClientDetail}

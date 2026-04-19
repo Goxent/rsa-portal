@@ -15,7 +15,7 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
 
         return tasks.filter(t => {
             // Only tasks in Conclusion phase that are not yet completed
-            if (t.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION || t.status === TaskStatus.COMPLETED) return false;
+            if (t.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION || t.status === TaskStatus.COMPLETED || t.status === TaskStatus.ARCHIVED) return false;
 
             const isER = t.engagementReviewerId === currentUser.uid && !t.engagementReviewerApprovedAt;
             const isPartner = t.signingPartnerId === currentUser.uid && !t.signingPartnerApprovedAt;

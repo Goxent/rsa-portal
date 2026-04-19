@@ -1101,6 +1101,7 @@ const TemplatesPage: React.FC = () => {
                                                     <div className={`p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-white/5'}`}>
                                                         <IconComponent size={16} />
                                                     </div>
+                                                    <span className="text-[10px] font-bold">{TASK_TYPE_LABELS[type]}</span>
                                                 </button>
                                             );
                                         })}

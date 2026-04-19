@@ -156,8 +156,17 @@ const ArchivedTasksPage: React.FC = () => {
                                             <span className="truncate">{task.clientName || 'No Client'}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
-                                            <CheckCircle2 size={12} className="text-brand-500" />
-                                            <span>Completed</span>
+                                            {task.status === TaskStatus.ARCHIVED ? (
+                                                <>
+                                                    <Archive size={12} className="text-amber-500" />
+                                                    <span>Archived</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle2 size={12} className="text-brand-500" />
+                                                    <span>Completed</span>
+                                                </>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400 col-span-2">
                                             <Clock size={12} className="text-gray-500" />

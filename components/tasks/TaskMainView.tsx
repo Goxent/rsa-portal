@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import {
     List as ListIcon, Plus, X, Check, Tag,
     Calendar, Clock, CheckCircle2, AlertTriangle, UserCircle2,
-    GripVertical, ChevronDown, Layers
+    GripVertical, ChevronDown, Layers, Lock
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, UserProfile, UserRole, Client, AuditPhase } from '../../types';
 import { SIGNING_AUTHORITIES } from '../../constants/firmData';
@@ -34,6 +34,7 @@ interface TaskMainViewProps {
     sentinelRef?: React.RefObject<HTMLDivElement | null>;
     isFetchingNextPage?: boolean;
     currentUser: UserProfile | null;
+    canEditTask: (task: Task) => boolean;
 }
 
 // ── Status column config ──────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode, tasks, onDragEnd, handleOpenEdit, usersList,
     collapsedColumns, toggleColumnCollapse, selectedTaskId,
     selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll, onOpenClientDetail,
-    sentinelRef, isFetchingNextPage, currentUser
+    sentinelRef, isFetchingNextPage, currentUser, canEditTask
 }) => {
     const isMobile = useMedia('(max-width: 768px)', false);
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
