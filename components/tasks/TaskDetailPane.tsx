@@ -1952,7 +1952,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </div>
                                 )}
 
-                                {activeDetailTab === 'PROCEDURES' && canEditTask && (
+                                {activeDetailTab === 'PROCEDURES' && canAddSubtasks && (
                                     <button
                                         onClick={(e) => { e.preventDefault(); setImportPhase(currentPhase); }}
                                         className="px-6 py-2 bg-emerald-50 text-emerald-700 dark:bg-brand-500/10 border border-emerald-200 dark:border-brand-500/30 dark:text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 dark:hover:bg-brand-500/20 transition-all flex items-center gap-2 group shadow-sm"

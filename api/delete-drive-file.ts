@@ -19,8 +19,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { fileId } = req.body;
         if (!fileId) return res.status(400).json({ error: 'fileId required' });
 
-        if (!process.env.GOOGLE_SERVICE_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-            throw new Error('Google Drive credentials not configured on the server');
+        if (!process.env.GOOGLE_SERVICE_EMAIL || !process.env.GOOGLE_SERVICE_EMAIL.includes('@')) {
+            return res.status(412).json({ 
+                error: 'Google Drive credentials not configured on the server',
+                code: 'MISSING_DRIVE_CREDENTIALS',
+                details: 'GOOGLE_SERVICE_EMAIL is missing or invalid'
+            });
+        }
+
+        if (!process.env.GOOGLE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY.length < 100) {
+            return res.status(412).json({ 
+                error: 'Google Drive credentials not configured on the server',
+                code: 'MISSING_DRIVE_CREDENTIALS',
+                details: 'GOOGLE_PRIVATE_KEY is missing or invalid'
+            });
         }
 
         const auth = new google.auth.GoogleAuth({

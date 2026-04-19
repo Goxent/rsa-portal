@@ -22,6 +22,7 @@ import {
     orderBy,
 } from 'firebase/firestore';
 import { GoogleDriveService } from './googleDrive';
+import { AppwriteService } from './appwrite';
 import { AuditFolderKey } from '../types';
 
 const db = getFirestore();
@@ -96,12 +97,25 @@ export const AuditDocService = {
         file: File,
         meta: Omit<AuditDocFile, 'id' | 'appwriteFileId' | 'fileName' | 'fileSize' | 'mimeType' | 'uploadedAt'>
     ): Promise<AuditDocFile> => {
-        // 1. Push to Google Drive
-        const driveFile = await GoogleDriveService.uploadFile(file);
+        // 1. Push to Cloud Storage
+        let storageFile: { $id: string };
+        try {
+            storageFile = await GoogleDriveService.uploadFile(file);
+        } catch (driveError: any) {
+            const isConfigError = driveError.message?.includes('not configured') || 
+                                 driveError.message?.includes('MISSING_DRIVE_CREDENTIALS');
+            
+            if (isConfigError) {
+                console.warn("Google Drive not configured for Audit Docs, falling back to Appwrite...");
+                storageFile = await AppwriteService.uploadFile(file);
+            } else {
+                throw driveError;
+            }
+        }
 
         // 2. Store metadata in Firestore
         const record = AuditDocService.sanitizeData({
-            appwriteFileId: driveFile.$id,
+            appwriteFileId: storageFile.$id,
             fileName: file.name,
             fileSize: file.size,
             mimeType: file.type || 'application/octet-stream',
@@ -166,7 +180,11 @@ export const AuditDocService = {
      */
     deleteFile: async (firestoreId: string, appwriteFileId: string): Promise<void> => {
         // Delete from Storage first
-        await GoogleDriveService.deleteFile(appwriteFileId);
+        if (appwriteFileId.length > 20) {
+            await GoogleDriveService.deleteFile(appwriteFileId);
+        } else {
+            await AppwriteService.deleteFile(appwriteFileId);
+        }
         // Then remove Firestore metadata
         await deleteDoc(doc(db, 'auditDocFiles', firestoreId));
     },
