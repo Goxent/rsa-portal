@@ -128,8 +128,7 @@ const Layout: React.FC = () => {
 
         {/* Main Content Wrapper */}
         <div 
-          className="flex-1 flex flex-col h-full transition-all duration-500 ease-in-out"
-          style={{ marginLeft: isMobileMenuOpen ? 0 : (isSidebarCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)') }}
+          className={`flex-1 flex flex-col h-full transition-all duration-500 ease-in-out ${isMobileMenuOpen ? 'ml-0' : (isSidebarCollapsed ? 'md:ml-[var(--sidebar-collapsed)]' : 'md:ml-[var(--sidebar-width)]')}`}
         >
 
           {/* Header */}

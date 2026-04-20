@@ -19,7 +19,9 @@ import {
     FolderArchive,
     Pin,
     PinOff,
-    Activity
+    Activity,
+    Megaphone,
+    Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -34,11 +36,13 @@ interface SidebarProps {
 
 const ALL_NAV_ITEMS = [
     { id: 'dashboard', to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'notices', to: '/notices', icon: Bell, label: 'Team Notices' },
     { id: 'tasks', to: '/tasks', icon: CheckSquare, label: 'Tasks & Workflow' },
     { id: 'clients', to: '/clients', icon: Building2, label: 'Clients' },
     { id: 'calendar', to: '/calendar', icon: Calendar, label: 'Calendar' },
     { id: 'attendance', to: '/attendance', icon: Clock, label: 'Attendance' },
     { id: 'compliance', to: '/compliance', icon: AlertCircle, label: 'Compliance' },
+    { id: 'communication', to: '/communication', icon: Megaphone, label: 'Communication Center', adminOnly: true },
     { id: 'leaves', to: '/leaves', icon: Calendar, label: 'Leaves & Requests' },
     { id: 'staff', to: '/staff', icon: Users, label: 'Staff Directory', adminOnly: true },
     { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true, managerAllowed: true },

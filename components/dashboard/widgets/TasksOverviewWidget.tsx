@@ -45,21 +45,21 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
     const now = new Date();
 
-    // ── Filter & Sort Logic ───────────────────────────────────────────────
-    const filteredTasks = useMemo(() => {
-        let base = recentTasks;
-        
-        // Mode Filter
+    const baseTasksForView = useMemo(() => {
+        let base = recentTasks.filter(t => t.status !== TaskStatus.ARCHIVED);
         if (viewMode === 'MY' && user) {
             base = base.filter(t => t.assignedTo.includes(user.uid));
         }
+        return base;
+    }, [recentTasks, viewMode, user]);
 
-        // Status Filter
-        base = base.filter(t => {
-            if (filterStatus === 'active') return t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED;
-            if (filterStatus === 'overdue') return t.dueDate && new Date(t.dueDate + 'T00:00:00') < now && t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED;
-            if (filterStatus === 'review') return t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED;
-            return true; // 'all'
+    // ── Filter & Sort Logic ───────────────────────────────────────────────
+    const filteredTasks = useMemo(() => {
+        let base = baseTasksForView.filter(t => {
+            if (filterStatus === 'active') return t.status !== TaskStatus.COMPLETED;
+            if (filterStatus === 'overdue') return t.dueDate && new Date(t.dueDate + 'T00:00:00') < now && t.status !== TaskStatus.COMPLETED;
+            if (filterStatus === 'review') return t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED;
+            return true; // 'all' (excluding archived)
         });
 
         // Search Filter
@@ -78,13 +78,13 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
             if (bOverdue !== aOverdue) return bOverdue - aOverdue;
             return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
         });
-    }, [recentTasks, viewMode, filterStatus, search, user, now]);
+    }, [baseTasksForView, filterStatus, search, now]);
 
     // Counts for pills
-    const myTasksCount = recentTasks.filter(t => t.assignedTo.includes(user?.uid || '') && t.status !== TaskStatus.ARCHIVED).length;
-    const overdueCount = recentTasks.filter(t => t.dueDate && new Date(t.dueDate + 'T00:00:00') < now && t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED).length;
-    const reviewCount = recentTasks.filter(t => t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED).length;
-    const activeCount = recentTasks.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.ARCHIVED).length;
+    const activeCount = baseTasksForView.filter(t => t.status !== TaskStatus.COMPLETED).length;
+    const overdueCount = baseTasksForView.filter(t => t.dueDate && new Date(t.dueDate + 'T00:00:00') < now && t.status !== TaskStatus.COMPLETED).length;
+    const reviewCount = baseTasksForView.filter(t => t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED).length;
+    const allCount = baseTasksForView.length;
 
     if (isLoading) {
         return (
@@ -153,7 +153,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
                     onClick={() => setFilterStatus('all')}
                     className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'all' ? 'bg-slate-200 dark:bg-white/15 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-500'}`}
                 >
-                    All · {filteredTasks.length}
+                    All · {allCount}
                 </button>
             </div>
 

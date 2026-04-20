@@ -536,6 +536,20 @@ export interface AppNotification {
   createdAt: string; // ISO Timestamp
 }
 
+export interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  type: 'GENERAL' | 'URGENT' | 'POLICY' | 'EVENT';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  createdBy: string;
+  createdByName: string;
+  createdAt: string;
+  recipients: string[] | 'ALL'; // UIDs or 'ALL'
+  sendEmail: boolean;
+  readBy: string[]; // Track which users have seen it
+}
+
 export interface Resource {
   id: string;
   title: string;

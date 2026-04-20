@@ -437,5 +437,53 @@ export const EmailService = {
 
         const html = EmailService.getTemplateWrapper(content, 'Workspace Invitation', 'Accept Invitation & Sign Up', signupLink, 'green');
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, `${inviterName} via RSA Portal`);
+    },
+
+    sendOfficialNotice: async (toEmail: string, userName: string, title: string, contentText: string, priority: string): Promise<boolean> => {
+        const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+        const subject = `Official Firm Notice: ${title}`;
+        
+        let priorityColor = '#659a2b';
+        let priorityBg = 'rgba(101,154,43,0.1)';
+        let btnStyle: 'green' | 'danger' | 'info' = 'green';
+        
+        if (priority === 'HIGH') {
+            priorityColor = '#c4445a';
+            priorityBg = 'rgba(196,68,90,0.1)';
+            btnStyle = 'danger';
+        } else if (priority === 'MEDIUM') {
+            priorityColor = '#c98a2a';
+            priorityBg = 'rgba(201,138,42,0.1)';
+            btnStyle = 'info';
+        }
+
+        const content = `
+            <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
+                Dear <strong>${userName}</strong>,
+            </p>
+            <p style="font-size:14px; line-height:1.7; color:#64748b; margin:0 0 24px; font-family:${fontStack};">
+                An official notice has been broadcast to the firm. Please review the details below.
+            </p>
+
+            <!-- Notice card -->
+            <div style="background:${priorityBg}; border:1px solid ${priorityColor}40; border-radius:12px; padding:24px; margin-bottom:28px;">
+                <div style="display:inline-block; background:${priorityColor}; color:#ffffff; padding:3px 12px; border-radius:99px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:14px; font-family:${fontStack};">
+                    ${priority} Priority
+                </div>
+                <h3 style="margin:0 0 12px 0; color:#1e293b; font-size:20px; font-weight:800; letter-spacing:-0.5px; line-height:1.2; font-family:${fontStack};">
+                    ${title}
+                </h3>
+                <div style="color:#475569; font-size:14px; line-height:1.6; font-family:${fontStack};">
+                    ${contentText.replace(/\n/g, '<br/>')}
+                </div>
+            </div>
+
+            <p style="font-size:13px; color:#64748b; font-family:${fontStack}; margin-bottom: 20px;">
+                You can view the full discussion and related documents in the RSA Portal.
+            </p>
+        `;
+
+        const html = EmailService.getTemplateWrapper(content, 'OFFICIAL NOTICE', 'Open RSA Portal', `${window.location.origin}/#/notices`, btnStyle);
+        return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Board');
     }
 };
