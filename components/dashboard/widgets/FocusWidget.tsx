@@ -28,7 +28,7 @@ function injectStyle() {
     styleInjected = true;
 }
 
-const MAX_GOALS         = 5;
+// Unlimited goals allowed - removing MAX_GOALS limit
 
 // ── Main FocusWidget ──────────────────────────────────────────────────────────
 const FocusWidget: React.FC = () => {
@@ -89,7 +89,7 @@ const FocusWidget: React.FC = () => {
     const handleAddGoal = (e?: React.FormEvent) => {
         e?.preventDefault();
         const text = inputValue.trim();
-        if (!text || goals.length >= MAX_GOALS) return;
+        if (!text) return;
         persist([...goals, { id: uuidv4(), text, completed: false }]);
         setInputValue('');
         setTimeout(() => inputRef.current?.focus(), 0);
@@ -113,7 +113,7 @@ const FocusWidget: React.FC = () => {
     const completedCount = goals.filter(g => g.completed).length;
     const allCompleted   = goals.length > 0 && completedCount === goals.length;
     const progress       = goals.length > 0 ? (completedCount / goals.length) * 100 : 0;
-    const atLimit        = goals.length >= MAX_GOALS;
+    const atLimit        = false; // Limit removed
 
     return (
         <div className="relative glass-panel hover-lift rounded-2xl border border-brand-100 dark:border-white/[0.07] p-5 flex flex-col gap-3 h-full min-h-[140px]">
@@ -190,7 +190,7 @@ const FocusWidget: React.FC = () => {
                 {atLimit ? (
                     <div className="flex flex-col items-center gap-1.5 py-1">
                         <p className="text-[10px] text-slate-500 dark:text-gray-600 text-center">
-                            Limit reached (5 goals)
+                            Limit reached
                         </p>
                         <button 
                             onClick={() => persist(goals.filter(g => !g.completed))}

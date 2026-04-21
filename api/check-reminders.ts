@@ -98,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                     const { Resend } = await import('resend');
                     // @ts-ignore - resend may not be in local node_modules yet but is in package.json
-                    const resend = new Resend(process.env.VITE_RESEND_API_KEY);
+                    const resend = new Resend(process.env.RESEND_API_KEY);
 
                     // Construct Email HTML (Reuse 'Due Date Reminder' logic)
                     const subject = `Reminder: Task Due Today - ${task.title}`;

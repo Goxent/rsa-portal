@@ -4,7 +4,7 @@ import {
     User, Briefcase, Clock, CheckCircle2, AlertCircle, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Task, UserRole } from '../types';
+import { Task, UserRole, TaskStatus } from '../types';
 import { AuthService } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { getNepaliFiscalYear, generateFiscalYearOptions } from '../utils/nepaliDate';

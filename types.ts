@@ -226,6 +226,8 @@ export interface Task {
   // Archiving
   fiscalYear?: string;                // The Nepali Fiscal Year (e.g., "2080-81") assigned during creation
   archivedFiscalYear?: string;        // Metadata field for the year it was actually archived
+  archivedAt?: string;
+  archivedBy?: string;
   
   // Audit Master Suite (Observations & Findings)
   observations?: AuditObservation[];

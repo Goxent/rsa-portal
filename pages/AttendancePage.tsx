@@ -272,16 +272,26 @@ const AttendancePage: React.FC = () => {
                     return;
                 }
 
-                // 5. Absent
+                // 5. Absent or Untracked
+                let currentStatus = 'ABSENT';
+                if (dateStr === todayStr) {
+                    const now = new Date();
+                    const hours = now.getHours();
+                    const minutes = now.getMinutes();
+                    if (hours < 10 || (hours === 10 && minutes < 15)) {
+                        currentStatus = 'UNTRACKED';
+                    }
+                }
+
                 report.push({
                     id: `abs_${u.uid}_${dateStr}`,
                     userId: u.uid,
                     userName: u.displayName,
                     date: dateStr,
-                    status: 'ABSENT',
+                    status: currentStatus,
                     clientName: '-',
                     notes: '-',
-                    type: 'ABSENT'
+                    type: currentStatus
                 });
             });
         }

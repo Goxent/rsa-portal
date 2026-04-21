@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS for development/production
-    const allowedOrigin = process.env.VITE_APP_URL || process.env.FRONTEND_URL || 'https://rsa-portal.web.app'; // Must be restricted in production
+    const allowedOrigin = process.env.VITE_APP_URL || process.env.FRONTEND_URL || '*'; // Fallback to '*' for local dev
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -28,78 +28,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Parse 'to' field safely to support string, array of strings, or { email, name } objects
-    let parsedTo = '';
+    let parsedTo: string | string[] = '';
     if (typeof to === 'string') {
         parsedTo = to;
     } else if (Array.isArray(to)) {
-        parsedTo = to.map(t => typeof t === 'object' && t.email ? t.email : t).join(',');
+        parsedTo = to.map(t => typeof t === 'object' && t.email ? t.email : t);
     } else if (typeof to === 'object' && to.email) {
-        parsedTo = `${to.name ? `"${to.name}" ` : ''}<${to.email}>`;
+        parsedTo = to.email;
     } else {
         return res.status(400).json({ error: 'Invalid "to" recipient format.' });
     }
 
-    // Gmail SMTP Configuration
-    const emailUser = process.env.EMAIL_USER || 'anil99sunar@gmail.com';
-    const emailPass = process.env.EMAIL_PASSWORD;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const emailFrom = process.env.VITE_EMAIL_FROM || 'onboarding@resend.dev';
 
-    if (!emailPass) {
-        const errorMsg = 'CRITICAL ERROR: EMAIL_PASSWORD is not set in environment variables. Gmail SMTP cannot connect without an App Password.';
+    if (!resendApiKey) {
+        const errorMsg = 'CRITICAL ERROR: RESEND_API_KEY is not set in environment variables.';
         console.error(`[Email Service] ${errorMsg}`);
         return res.status(500).json({ 
-            error: 'Server configuration error: Missing Email Credentials.',
-            tip: 'If running locally, ensure EMAIL_PASSWORD is in your .env.local file. If on Vercel, check Project Settings -> Environment Variables.'
+            error: 'Server configuration error: Missing Resend API Key.',
+            tip: 'Check your environment variables for RESEND_API_KEY.'
         });
     }
 
     try {
-        console.log(`Email Service: Attempting to send via Gmail to ${parsedTo}`);
+        console.log(`Email Service: Attempting to send via Resend to ${JSON.stringify(parsedTo)}`);
         
-        // Use more explicit host/port settings which can be more stable in serverless
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // Use SSL
-            auth: {
-                user: emailUser,
-                pass: emailPass,
-            },
-            // Debugging
-            debug: true,
-            logger: true
-        });
+        const resend = new Resend(resendApiKey);
 
-        // Verify connection before sending
-        try {
-            await transporter.verify();
-            console.log('Email Service: Connection verified successfully');
-        } catch (verifyError: any) {
-            console.error('Email Service: SMTP Verification Failed:', verifyError);
-            // We continue anyway, but the log will be helpful
-        }
-
-        const mailOptions = {
-            from: `"${fromName || 'RSA Portal'}" <${emailUser}>`,
+        const { data, error } = await resend.emails.send({
+            from: fromName ? `"${fromName}" <${emailFrom}>` : `RSA Portal <${emailFrom}>`,
             to: parsedTo,
             subject: subject,
             html: html,
-        };
+        });
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Email Service: Success!', info.messageId);
+        if (error) {
+            console.error('Resend SDK Error:', error);
+            return res.status(400).json({ error: 'Resend failed to send email', details: error });
+        }
 
-        return res.status(200).json({ success: true, messageId: info.messageId });
+        console.log('Email Service: Success!', data?.id);
+        return res.status(200).json({ success: true, messageId: data?.id });
 
     } catch (error: any) {
         console.error('Email Service Error:', {
             message: error.message,
-            code: error.code,
-            command: error.command
+            stack: error.stack
         });
         return res.status(500).json({ 
             error: 'Failed to send email', 
-            details: error.message,
-            code: error.code 
+            details: error.message
         });
     }
 }
+
