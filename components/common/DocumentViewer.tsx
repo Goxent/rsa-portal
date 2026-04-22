@@ -24,19 +24,22 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     const isImage = type === 'image' || type.startsWith('image/');
     const isPdf = type === 'pdf' || type === 'application/pdf' || url.endsWith('.pdf');
 
+    // Detect if this is a Google Drive URL
+    const isGoogleDrive = url.includes('drive.google.com');
+
     // For Office docs, we can use Google Docs Viewer if the URL is public/accessible
-    // If usage is strictly internal/private, this might fail without signed URLs, 
-    // but Appwrite view/download URLs are usually accessible if permissions allow.
-    // We'll use the 'url' (view) for Google Docs.
+    // If it's a Google Drive URL, we use the /preview endpoint for a better embedding experience
     const isOffice = !isImage && !isPdf;
-    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(downloadUrl || url)}&embedded=true`;
+    const embedUrl = isGoogleDrive 
+        ? url.replace('/view', '/preview') 
+        : `https://docs.google.com/viewer?url=${encodeURIComponent(downloadUrl || url)}&embedded=true`;
 
     const [isAiOpen, setIsAiOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className={`relative w-full ${isFullscreen ? 'h-screen max-w-full rounded-none' : isAiOpen ? 'max-w-[95vw] h-[85vh] rounded-xl' : 'max-w-5xl h-[85vh] rounded-xl'} bg-white shadow-2xl flex flex-col overflow-hidden transition-all duration-300`}>
+            <div className={`relative w-full ${isFullscreen ? 'h-screen max-w-full rounded-none' : isAiOpen ? 'max-w-[98vw] h-[92vh] rounded-xl' : 'max-w-7xl h-[92vh] rounded-xl'} bg-white shadow-2xl flex flex-col overflow-hidden transition-all duration-300`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 flex-shrink-0">
                     <div className="flex items-center gap-3">
@@ -45,11 +48,23 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-900 truncate max-w-md">{title}</h3>
-                            <p className="text-xs text-gray-500 capitalize">{type} Document</p>
+                            <p className="text-xs text-gray-500 capitalize">{isGoogleDrive ? 'Google Drive' : type} Document</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {isGoogleDrive && (
+                            <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-4 py-2 bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-lg text-sm font-bold flex items-center gap-2 border border-brand-200 transition-all mr-2"
+                            >
+                                <ExternalLink size={18} />
+                                Edit Document
+                            </a>
+                        )}
+
                         <button
                             onClick={() => setIsAiOpen(!isAiOpen)}
                             className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${isAiOpen
@@ -76,15 +91,17 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                                 <Download size={20} />
                             </a>
                         )}
-                        <a
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Open in New Tab"
-                        >
-                            <ExternalLink size={20} />
-                        </a>
+                        {!isGoogleDrive && (
+                            <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Open in New Tab"
+                            >
+                                <ExternalLink size={20} />
+                            </a>
+                        )}
                         <button
                             onClick={onClose}
                             className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -116,7 +133,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
                         {isOffice && (
                             <iframe
-                                src={googleDocsUrl}
+                                src={embedUrl}
                                 className="w-full h-full border-0"
                                 title="Office Document Viewer"
                             />
@@ -135,5 +152,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 </div>
             </div>
         </div>
+
     );
 };

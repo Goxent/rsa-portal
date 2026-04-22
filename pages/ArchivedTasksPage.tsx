@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { 
-    Archive, ChevronLeft, Search, Filter, Calendar, 
-    User, Briefcase, Clock, CheckCircle2, AlertCircle, FileText
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    Archive, ChevronLeft, Search, Filter, Calendar,
+    Briefcase, Clock, CheckCircle2, FileText, Eye,
+    Download, User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Task, UserRole, TaskStatus } from '../types';
+import { Task, UserRole, TaskStatus, AuditPhase, UserProfile, Client, SubTask, TaskComment, Template } from '../types';
 import { AuthService } from '../services/firebase';
+import { AuditDocService, AuditDocFile } from '../services/auditDocs';
+import { GoogleDriveService } from '../services/googleDrive';
 import { useAuth } from '../context/AuthContext';
-import { getNepaliFiscalYear, generateFiscalYearOptions } from '../utils/nepaliDate';
+import { generateFiscalYearOptions } from '../utils/nepaliDate';
+import { useUsers } from '../hooks/useStaff';
+import { useClients } from '../hooks/useClients';
+import { useTemplates } from '../hooks/useTemplates';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import TaskDetailPane from '../components/tasks/TaskDetailPane';
 
 const ArchivedTasksPage: React.FC = () => {
     const navigate = useNavigate();
@@ -20,23 +27,26 @@ const ArchivedTasksPage: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFY, setSelectedFY] = useState<string>('');
-    const [availableFYs, setAvailableFYs] = useState<string[]>([]);
+
+    // Detail pane state (reusing TaskDetailPane)
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [currentTask, setCurrentTask] = useState<Partial<Task>>({});
+    const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+    const [dateMode, setDateMode] = useState<'AD' | 'BS'>('AD');
+
+    // Data for TaskDetailPane
+    const { data: usersList = [] } = useUsers();
+    const { data: clientsList = [] } = useClients();
+    const { data: templates = [] } = useTemplates();
 
     useEffect(() => {
-        if (!isAdmin) {
-            navigate('/dashboard');
-            return;
-        }
-        
+        if (!isAdmin) { navigate('/dashboard'); return; }
         const fvs = generateFiscalYearOptions(2080).reverse();
-        setAvailableFYs(fvs);
         setSelectedFY(fvs[0]);
     }, [isAdmin, navigate]);
 
     useEffect(() => {
-        if (selectedFY) {
-            loadArchivedTasks();
-        }
+        if (selectedFY) loadArchivedTasks();
     }, [selectedFY]);
 
     const loadArchivedTasks = async () => {
@@ -47,12 +57,30 @@ const ArchivedTasksPage: React.FC = () => {
         } catch (error) {
             console.error('Error loading archived tasks:', error);
             toast.error('Failed to load archived records');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
-    const filteredTasks = tasks.filter(t => 
+    const handleOpenTask = (task: Task) => {
+        setCurrentTask(task);
+        setIsDetailOpen(true);
+    };
+
+    const handleCloseDetail = () => {
+        setIsDetailOpen(false);
+        setCurrentTask({});
+    };
+
+    // No-op handlers for read-only mode
+    const noopSave = () => { toast.error('Archived tasks are read-only'); };
+    const noopDelete = () => { toast.error('Archived tasks cannot be deleted from here'); };
+    const noopChange = (updates: Partial<Task>) => {
+        // Allow state updates so the pane doesn't crash, but don't persist
+        setCurrentTask(prev => ({ ...prev, ...updates }));
+    };
+    const noopAddSubtask = () => { toast.error('Cannot modify archived tasks'); };
+    const noopAddComment = () => { toast.error('Cannot add comments to archived tasks'); };
+
+    const filteredTasks = tasks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.clientName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -64,10 +92,8 @@ const ArchivedTasksPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-4">
-                    <button 
-                        onClick={() => navigate(-1)}
-                        className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-gray-400 hover:text-white"
-                    >
+                    <button onClick={() => navigate(-1)}
+                        className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-gray-400 hover:text-white">
                         <ChevronLeft size={20} />
                     </button>
                     <div>
@@ -80,21 +106,15 @@ const ArchivedTasksPage: React.FC = () => {
                         <p className="text-[13px] text-gray-500 mt-1">Review historical engagement records by fiscal year</p>
                     </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
-                        <Calendar size={14} className="text-gray-400" />
-                        <span className="text-xs font-medium text-gray-400">Fiscal Year:</span>
-                        <select 
-                            value={selectedFY}
-                            onChange={(e) => setSelectedFY(e.target.value)}
-                            className="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer"
-                        >
-                            {generateFiscalYearOptions(2080).reverse().map(fy => (
-                                <option key={fy} value={fy} className="bg-navy-900 text-white font-sans">{fy}</option>
-                            ))}
-                        </select>
-                    </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+                    <Calendar size={14} className="text-gray-400" />
+                    <span className="text-xs font-medium text-gray-400">Fiscal Year:</span>
+                    <select value={selectedFY} onChange={(e) => setSelectedFY(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+                        {generateFiscalYearOptions(2080).reverse().map(fy => (
+                            <option key={fy} value={fy} className="bg-navy-900 text-white font-sans">{fy}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
@@ -102,15 +122,10 @@ const ArchivedTasksPage: React.FC = () => {
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between glass-panel p-3 rounded-2xl">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
-                    <input 
-                        type="text"
-                        placeholder="Search archives by title or client..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                    />
+                    <input type="text" placeholder="Search archives by title or client..."
+                        value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
                 </div>
-
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                     <Filter size={14} />
                     <span>Showing {filteredTasks.length} archived records</span>
@@ -127,29 +142,26 @@ const ArchivedTasksPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <AnimatePresence mode="popLayout">
                         {filteredTasks.map((task, idx) => (
-                            <motion.div 
+                            <motion.div
                                 key={task.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="glass-panel p-5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all group relative overflow-hidden"
+                                onClick={() => handleOpenTask(task)}
+                                className="glass-panel p-5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all group relative overflow-hidden cursor-pointer hover:shadow-[0_10px_40px_rgba(245,158,11,0.08)]"
                             >
                                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <Archive size={40} className="text-amber-400" />
                                 </div>
-
                                 <div className="space-y-4">
-                                    <div className="flex items-start justify-between">
-                                        <div className="space-y-1">
-                                            <div className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold w-fit">
-                                                FY {task.archivedFiscalYear}
-                                            </div>
-                                            <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors line-clamp-1 uppercase tracking-tight">
-                                                {task.title}
-                                            </h3>
+                                    <div className="space-y-1">
+                                        <div className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold w-fit">
+                                            FY {task.archivedFiscalYear}
                                         </div>
+                                        <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors line-clamp-1 uppercase tracking-tight">
+                                            {task.title}
+                                        </h3>
                                     </div>
-
                                     <div className="grid grid-cols-2 gap-3 text-[11px]">
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Briefcase size={12} className="text-gray-500" />
@@ -157,15 +169,9 @@ const ArchivedTasksPage: React.FC = () => {
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             {task.status === TaskStatus.ARCHIVED ? (
-                                                <>
-                                                    <Archive size={12} className="text-amber-500" />
-                                                    <span>Archived</span>
-                                                </>
+                                                <><Archive size={12} className="text-amber-500" /><span>Archived</span></>
                                             ) : (
-                                                <>
-                                                    <CheckCircle2 size={12} className="text-brand-500" />
-                                                    <span>Completed</span>
-                                                </>
+                                                <><CheckCircle2 size={12} className="text-brand-500" /><span>Completed</span></>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400 col-span-2">
@@ -173,7 +179,6 @@ const ArchivedTasksPage: React.FC = () => {
                                             <span>{task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'N/A'}</span>
                                         </div>
                                     </div>
-
                                     <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                                         <div className="flex -space-x-2">
                                             {task.assignedToNames?.slice(0, 3).map((name, i) => (
@@ -187,12 +192,8 @@ const ArchivedTasksPage: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
-                                        
-                                        <button 
-                                            onClick={() => navigate(`/tasks?id=${task.id}`)}
-                                            className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                                        >
-                                            <FileText size={14} />
+                                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all text-[10px] font-bold uppercase tracking-widest border border-amber-500/20">
+                                            <Eye size={12} /> View Details
                                         </button>
                                     </div>
                                 </div>
@@ -207,6 +208,29 @@ const ArchivedTasksPage: React.FC = () => {
                     <p className="text-xs mt-1">Archived records will appear here after they are moved from settings.</p>
                 </div>
             )}
+
+            {/* ── REUSE TaskDetailPane in VIEW-ONLY mode ── */}
+            <TaskDetailPane
+                task={currentTask}
+                isOpen={isDetailOpen}
+                onClose={handleCloseDetail}
+                onSave={noopSave}
+                onDelete={noopDelete}
+                onChange={noopChange}
+                usersList={usersList}
+                clientsList={clientsList}
+                templates={templates}
+                isSaving={false}
+                isEditMode={false}
+                canManageTask={false}
+                dateMode={dateMode}
+                setDateMode={setDateMode}
+                newSubtaskTitle={newSubtaskTitle}
+                setNewSubtaskTitle={setNewSubtaskTitle}
+                onAddSubtask={noopAddSubtask}
+                onAddComment={noopAddComment as any}
+                isArchived={true}
+            />
         </div>
     );
 };

@@ -53,6 +53,7 @@ interface TaskDetailPaneProps {
     onSwapPhaseChecklist?: (task: Task, newPhase: AuditPhase) => SubTask[];
     templates: Template[];
     userTasksCount?: Record<string, number>;
+    isArchived?: boolean;
 }
 
 const PHASE_ORDER = {
@@ -144,7 +145,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     onInjectStatusSubtasks,
     onSwapPhaseChecklist,
     templates,
-    userTasksCount = {}
+    userTasksCount = {},
+    isArchived = false
 }) => {
     const { user } = useAuth();
     const { openModal } = useModal();
@@ -445,23 +447,26 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     
     // Core permission flag: Is the user part of this specific engagement assignment?
     const isEngagementTeamMember = isTeamLeader || isEngagementReviewer || isSigningPartner || isAssignedStaff;
-    const canEditTask = isAdminOrMaster || isEngagementTeamMember;
+    const canEditTask = (isAdminOrMaster || isEngagementTeamMember) && !isArchived;
 
-    const canManageTeam = (isAdminOrMaster || isTeamLeader || !task.id) && !isTaskCompleted;
+    const canManageTeam = (isAdminOrMaster || isTeamLeader || !task.id) && !isTaskCompleted && !isArchived;
     
     // Rule: Team Leader, Engagement Staff AND Admins can ADD subtasks
-    const canAddSubtasks = (isEngagementTeamMember || isAdminOrMaster) && !isTaskCompleted;
+    const canAddSubtasks = (isEngagementTeamMember || isAdminOrMaster) && !isTaskCompleted && !isArchived;
     
     // Rule: ONLY Team Leader can DELETE subtasks (Admins cannot, unless they are also the Team Leader)
-    const canDeleteSubtasks = (isTeamLeader || isMasterAdmin) && !isTaskCompleted;
+    const canDeleteSubtasks = (isTeamLeader || isMasterAdmin) && !isTaskCompleted && !isArchived;
 
     const isInOnboarding = currentPhase === AuditPhase.ONBOARDING;
-    const canChangeFramework = !task.id && !isTaskCompleted;
+    const canChangeFramework = !task.id && !isTaskCompleted && !isArchived;
 
 
     // Snapshot task state whenever the pane opens
     useEffect(() => {
         if (isOpen) {
+            if (isArchived) {
+                setActiveDetailTab('OVERVIEW');
+            }
             initialTaskRef.current = JSON.parse(JSON.stringify(task));
             setShowDiscardBanner(false);
             setShowPhaseWarning(null);
@@ -1027,12 +1032,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     <div className="flex-shrink-0 mt-0.5">
                         <button
                             onClick={() => toggleSubtask(st.id)}
-                            disabled={!canManageTeam && !(st.assignedTo || []).includes(user?.uid || '')}
+                            disabled={isArchived || (!canManageTeam && !(st.assignedTo || []).includes(user?.uid || ''))}
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                 st.isCompleted 
                                     ? 'bg-brand-500 border-brand-500 text-white shadow-md' 
                                     : 'border-gray-400 dark:border-slate-600 hover:border-gray-500 dark:hover:border-slate-500 bg-white dark:bg-transparent'
-                            } ${(!canManageTeam && !(st.assignedTo || []).includes(user?.uid || '')) ? 'opacity-40 grayscale-[0.5] cursor-not-allowed' : 'cursor-pointer'}`}
+                            } ${(isArchived || (!canManageTeam && !(st.assignedTo || []).includes(user?.uid || ''))) ? 'opacity-40 grayscale-[0.5] cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                             {st.isCompleted && <Check size={12} strokeWidth={4} />}
                         </button>
@@ -1873,7 +1878,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     { id: 'OBSERVATIONS', label: 'Engagement Findings', icon: <Eye size={14} /> },
                                     { id: 'REVIEW_CHECKLIST', label: 'Reviewer Checklist', icon: <ShieldCheck size={14} /> },
                                     { id: 'COMMENTS', label: 'Collaborate', icon: <MessageSquare size={14} />, badge: (task.comments || []).length },
-                                    { id: 'SETTINGS', label: 'Settings', icon: <Settings2 size={14} /> }
+                                    ...(isArchived ? [] : [{ id: 'SETTINGS', label: 'Settings', icon: <Settings2 size={14} /> }])
                                 ] : [
                                     { id: 'SETTINGS', label: 'Task Detail', icon: <Settings2 size={14} /> },
                                     { id: 'PROCEDURES', label: 'Sub task', icon: <ClipboardCheck size={14} /> }
@@ -2126,12 +2131,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                         </div>
                                                     </div>
 
-                                                    <button 
-                                                        onClick={() => setActiveDetailTab('SETTINGS')}
-                                                        className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] transition-all border border-white/5 flex items-center justify-center gap-2"
-                                                    >
-                                                        <Settings2 size={12} /> Manage Engagement
-                                                    </button>
+                                                    {!isArchived && (
+                                                        <button 
+                                                            onClick={() => setActiveDetailTab('SETTINGS')}
+                                                            className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] transition-all border border-white/5 flex items-center justify-center gap-2"
+                                                        >
+                                                            <Settings2 size={12} /> Manage Engagement
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

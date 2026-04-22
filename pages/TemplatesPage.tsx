@@ -71,10 +71,11 @@ const TemplatesPage: React.FC = () => {
         folderName?: string;
     }>({
         name: '', description: '', category: 'TASK', type: '', content: '',
-        priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+        priority: 'MEDIUM', expectedDays: 7, taskType: TaskType.GENERAL,
         reviewerRole: undefined,
         tags: [], attachments: [], folderId: '', folderName: ''
     });
+
 
     const [phaseSubtasks, setPhaseSubtasks] = useState<{ [key in AuditPhase]: any[] }>({
         [AuditPhase.ONBOARDING]: [],
@@ -110,6 +111,16 @@ const TemplatesPage: React.FC = () => {
     const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({ label: '', icon: 'FolderOpen', color: '#3B82F6' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploadMode, setIsUploadMode] = useState(false);
+
+    const resourceCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        resources.forEach(r => {
+            if (r.category) {
+                counts[r.category] = (counts[r.category] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [resources]);
 
     // ── Load data ──────────────────────────────────────────────────────────────
     useEffect(() => { loadTemplates(); loadFolders(); }, [categoryFilter]);
@@ -177,7 +188,7 @@ const TemplatesPage: React.FC = () => {
             // Reset everything
             setNewTemplate({ 
                 name: '', description: '', category: 'TASK', type: '', content: '',
-                priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+                priority: 'MEDIUM', expectedDays: 7, taskType: TaskType.GENERAL,
                 tags: [], attachments: [], folderId: '', folderName: '' 
             });
             setPhaseSubtasks({
@@ -196,7 +207,7 @@ const TemplatesPage: React.FC = () => {
             setIsModalOpen(false);
             setNewTemplate({ 
                 name: '', description: '', category: 'TASK', type: '', content: '',
-                priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+                priority: 'MEDIUM', expectedDays: 7, taskType: TaskType.GENERAL,
                 reviewerRole: undefined,
                 tags: [], attachments: [], folderId: '', folderName: '' 
             });
@@ -511,7 +522,7 @@ const TemplatesPage: React.FC = () => {
     });
 
     const recommendedTemplates = filteredTemplates.filter(t => filterTaskType !== 'ALL' && t.taskType === filterTaskType);
-    const generalTemplates = filteredTemplates.filter(t => filterTaskType === 'ALL' || !t.taskType);
+    const generalTemplates = filteredTemplates.filter(t => filterTaskType === 'ALL' || !t.taskType || t.taskType === TaskType.GENERAL);
 
     const filteredResources = resources.filter(r => {
         const matchesCat = activeKbCategory === 'ALL' || r.category === activeKbCategory;
@@ -877,6 +888,7 @@ const TemplatesPage: React.FC = () => {
                             <button onClick={() => setActiveKbCategory('ALL')}
                                 className={`flex items-center w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeKbCategory === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
                                 <FolderOpen size={16} className="mr-2.5" /> All Resources
+                                <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${activeKbCategory === 'ALL' ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-500'}`}>{resources.length}</span>
                             </button>
                             {kbCategories.map(cat => (
                                 <div key={cat.id} className="relative group flex-shrink-0 lg:flex-shrink w-full">
@@ -884,7 +896,8 @@ const TemplatesPage: React.FC = () => {
                                         className={`flex items-center w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeKbCategory === cat.id ? 'bg-white/10 text-white border border-white/10' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
                                         style={{ borderLeft: activeKbCategory === cat.id ? `3px solid ${cat.color || '#3B82F6'}` : 'none' }}>
                                         <FolderOpen size={16} className="mr-2.5" style={{ color: cat.color || '#6B7280' }} />
-                                        {cat.label}
+                                        <span className="truncate flex-1 text-left">{cat.label}</span>
+                                        <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${activeKbCategory === cat.id ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-600'}`}>{resourceCounts[cat.id] || 0}</span>
                                     </button>
                                     {isAdmin && (
                                         <button onClick={e => handleDeleteCategory(cat.id, e)}
@@ -956,7 +969,7 @@ const TemplatesPage: React.FC = () => {
                                 setIsModalOpen(false);
                                 setNewTemplate({ 
                                     name: '', description: '', category: 'TASK', type: '', content: '',
-                                    priority: 'MEDIUM', expectedDays: 7, taskType: undefined,
+                                    priority: 'MEDIUM', expectedDays: 7, taskType: TaskType.GENERAL,
                                     tags: [], attachments: [], folderId: '', folderName: '' 
                                 });
                             }} className="w-10 h-10 rounded-full hover:bg-white/5 flex items-center justify-center text-gray-400 hover:text-white transition-all"><X size={20} /></button>
@@ -1067,20 +1080,6 @@ const TemplatesPage: React.FC = () => {
                                 <div className="col-span-2 border-t border-white/5 pt-4">
                                     <label className="block text-xs font-black text-gray-400 mb-3 uppercase tracking-widest">Target Engagement Type</label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setNewTemplate({ ...newTemplate, taskType: undefined })}
-                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
-                                                newTemplate.taskType === undefined
-                                                    ? 'bg-amber-500 text-black border-amber-400 shadow-lg shadow-amber-500/20'
-                                                    : 'bg-white/[0.03] border-white/[0.06] text-gray-500 hover:bg-white/[0.06]'
-                                            }`}
-                                        >
-                                            <div className={`p-2 rounded-lg ${newTemplate.taskType === undefined ? 'bg-black/20' : 'bg-white/5'}`}>
-                                                <Activity size={16} />
-                                            </div>
-                                            <span className="text-[10px] font-bold">General</span>
-                                        </button>
                                         {Object.values(TaskType).map((type) => {
                                             const isSelected = newTemplate.taskType === type;
                                             const IconComponent = {

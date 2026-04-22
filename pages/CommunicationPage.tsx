@@ -32,10 +32,16 @@ export default function CommunicationPage() {
 
     const loadNotices = async () => {
         setIsLoading(true);
-        // Admins see all notices
-        const data = await NoticeService.getNotices();
-        setNotices(data);
-        setIsLoading(false);
+        try {
+            // Admins see all notices
+            const data = await NoticeService.getNotices();
+            setNotices(data);
+        } catch (error) {
+            console.error('Failed to load notices:', error);
+            // We don't toast here to avoid spamming the user if it's a recurring permission issue
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const resetForm = () => {

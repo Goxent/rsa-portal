@@ -147,7 +147,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
             <div className="h-full overflow-y-auto custom-scrollbar bg-transparent">
                 <div className="min-w-full md:min-w-[900px] w-full overflow-x-hidden md:overflow-x-visible pb-8">
                     {!isMobile && (
-                        <div className="grid grid-cols-[32px_1fr_180px_140px_100px_120px] gap-x-4 px-6 py-2.5 border-b border-border text-[10px] font-semibold text-muted uppercase tracking-widest sticky top-0 bg-surface/95 backdrop-blur-xl z-20">
+                        <div className="grid grid-cols-[32px_1fr_160px_80px_140px_100px_120px] gap-x-4 px-6 py-2.5 border-b border-border text-[10px] font-semibold text-muted uppercase tracking-widest sticky top-0 bg-surface/95 backdrop-blur-xl z-20">
                             <div className="flex items-center justify-center">
                                 <button
                                     onClick={onSelectAll}
@@ -158,6 +158,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             </div>
                             <div>Task</div>
                             <div>Assignees</div>
+                            <div>Phase</div>
                             <div>Status</div>
                             <div>Priority</div>
                             <div className="text-right">Due Date</div>
@@ -173,7 +174,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             const content = (
                                 <div
                                     onClick={() => handleOpenEdit(task)}
-                                    className={`grid ${isMobile ? 'grid-cols-1 gap-y-3 p-4' : 'grid-cols-[32px_1fr_180px_140px_100px_120px] gap-x-4 px-4 py-2.5'} items-center cursor-pointer group transition-all duration-300 rounded-xl
+                                    className={`grid ${isMobile ? 'grid-cols-1 gap-y-3 p-4' : 'grid-cols-[32px_1fr_160px_80px_140px_100px_120px] gap-x-4 px-4 py-2.5'} items-center cursor-pointer group transition-all duration-300 rounded-xl
                                         border ${selectedTaskIds.includes(task.id) ? 'border-brand-500/60 bg-brand-50 dark:bg-brand-900/20 shadow-[0_0_15px_rgba(46,138,97,0.15)]' : 'border-slate-200 dark:border-white/[0.05] hover:border-brand-300 dark:hover:border-brand-500/50 bg-white dark:bg-white/[0.02] hover:bg-brand-50/50 dark:hover:bg-white/[0.04]'}
                                         ${isCompleted ? 'opacity-50 grayscale hover:grayscale-0' : 'shadow-sm hover:shadow-md hover:-translate-y-0.5'}`}
                                 >
@@ -233,6 +234,29 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                         })}
                                                         {task.assignedTo.length > 4 && <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-[#09090b] flex items-center justify-center text-[9px] font-black text-slate-600 dark:text-slate-400 z-10 shadow-md">+{task.assignedTo.length - 4}</div>}
                                                     </>
+                                                )}
+                                            </div>
+                                            {/* Phase Badge */}
+                                            <div className="flex items-center">
+                                                {task.auditPhase ? (() => {
+                                                    const pm = PHASE_META[task.auditPhase];
+                                                    if (!pm) return <span className="text-[9px] text-slate-400">—</span>;
+                                                    return (
+                                                        <div
+                                                            className="flex items-center gap-1 px-2 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest shadow-sm cursor-default"
+                                                            style={{
+                                                                backgroundColor: `${pm.accentHex}14`,
+                                                                borderColor: `${pm.accentHex}35`,
+                                                                color: pm.accentHex,
+                                                            }}
+                                                            title={pm.label}
+                                                        >
+                                                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${pm.dot}`} style={{ boxShadow: `0 0 5px ${pm.accentHex}80` }} />
+                                                            <span>{pm.shortLabel}</span>
+                                                        </div>
+                                                    );
+                                                })() : (
+                                                    <span className="text-[9px] font-medium text-slate-400 dark:text-slate-600">—</span>
                                                 )}
                                             </div>
                                             <div className="flex items-center">

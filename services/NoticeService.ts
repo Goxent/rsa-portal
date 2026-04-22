@@ -23,8 +23,8 @@ export const NoticeService = {
             // 1. Save to Firestore
             const docRef = await addDoc(collection(db, 'notices'), {
                 ...noticeData,
-                createdAt: new Date().toISOString(),
-                readBy: []
+                createdAt: noticeData.createdAt || new Date().toISOString(),
+                readBy: noticeData.readBy || []
             });
 
             // 2. Trigger Emails if requested
@@ -65,37 +65,58 @@ export const NoticeService = {
      */
     getNotices: async (userId?: string): Promise<Notice[]> => {
         try {
-            let q;
             if (userId) {
-                // In a real app, you might want to fetch 'ALL' notices plus ones specifically for this user
-                // Firestore doesn't support OR queries easily across different field values like this without 'in'
-                // For simplicity, we fetch all and filter in memory if needed, or use multiple queries.
-                // Best: Fetch all for everyone and specifically for the user.
-                q = query(
+                // To bypass "Missing or insufficient permissions" errors, we query specifically for what the user is allowed to see.
+                // Firestore doesn't support 'OR' between array-contains and equality easily in one query.
+                // We run two queries in parallel: one for 'ALL' recipients and one for specific user ID.
+                
+                const qAll = query(
                     collection(db, 'notices'), 
+                    where('recipients', '==', 'ALL'),
                     orderBy('createdAt', 'desc')
                 );
+                
+                const qUser = query(
+                    collection(db, 'notices'),
+                    where('recipients', 'array-contains', userId),
+                    orderBy('createdAt', 'desc')
+                );
+
+                const [snapAll, snapUser] = await Promise.all([
+                    getDocs(qAll),
+                    getDocs(qUser)
+                ]);
+
+                // Merge and deduplicate (though unlikely to have duplicates between 'ALL' and specific array)
+                const results: Notice[] = [];
+                const seenIds = new Set<string>();
+
+                [...snapAll.docs, ...snapUser.docs].forEach(doc => {
+                    if (!seenIds.has(doc.id)) {
+                        results.push({ id: doc.id, ...doc.data() } as Notice);
+                        seenIds.add(doc.id);
+                    }
+                });
+
+                // Re-sort because we merged two separate queries
+                return results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             } else {
-                q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'));
+                // For Admins (when userId is not passed), fetch all notices
+                const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                
+                const results: Notice[] = [];
+                querySnapshot.forEach((doc) => {
+                    results.push({ id: doc.id, ...doc.data() } as Notice);
+                });
+                return results;
             }
-
-            const querySnapshot = await getDocs(q);
-            const notices: Notice[] = [];
-            
-            querySnapshot.forEach((doc) => {
-                const data = doc.data() as any;
-                const fitsRecipient = !userId || 
-                                    data.recipients === 'ALL' || 
-                                    (Array.isArray(data.recipients) && data.recipients.includes(userId));
-                                    
-                if (fitsRecipient) {
-                    notices.push({ id: doc.id, ...data } as Notice);
-                }
-            });
-
-            return notices;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching notices:', error);
+            // If it's a permission error, show a more helpful message to console
+            if (error.code === 'permission-denied') {
+                console.warn('Permission denied while fetching notices. Check Firestore security rules.');
+            }
             return [];
         }
     },

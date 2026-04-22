@@ -863,15 +863,11 @@ export const AuthService = {
 
     // Fetch All Users (Staff Directory)
     getAllUsers: async (): Promise<UserProfile[]> => {
-        // Optimization: Filter MASTER_ADMIN on server.
-        // Note: Sort remains client-side to avoid mandatory composite index requirements.
-        const q = query(
-            collection(db, 'users'), 
-            where('role', '!=', UserRole.MASTER_ADMIN)
-        );
-        const snapshot = await getDocs(q);
+        // Fetch all users and filter MASTER_ADMIN in memory to avoid "List" permission or index errors
+        const snapshot = await getDocs(collection(db, 'users'));
         return snapshot.docs
             .map(d => docConverter<UserProfile>(d))
+            .filter(u => u.role !== UserRole.MASTER_ADMIN)
             .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
     },
 
