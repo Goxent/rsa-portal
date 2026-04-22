@@ -143,6 +143,14 @@ service cloud.firestore {
         allow create: if isAuthenticated();
         allow delete, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
+
+    // NOTICES COLLECTION
+    match /notices/{noticeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
     
     // TEMPLATES (Advanced)
     match /templates/{templateId} {
@@ -208,6 +216,19 @@ service cloud.firestore {
       
       // Only admins can create, update, or delete
       allow create, update, delete: if isAdmin();
+    }
+
+    // SMART REMINDERS
+    match /smart_reminders/{reminderId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // REMINDER PREFERENCES
+    match /reminder_preferences/{userId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
     
     // TEMPLATES
