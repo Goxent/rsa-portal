@@ -1,0 +1,1 @@
+const a=["R. Sapkota & Associates","TN Acharya & Co.","Pankaj Thapa Associates","NP Sharma & Co.","Others"],n=["Financial Management and Accounting","External Audit","Internal Audit","Donor Audit","Compliance Audit","Certification Services","File Study, Planning at Office and Report Writing"];export{n as N,a as S};
