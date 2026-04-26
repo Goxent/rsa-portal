@@ -86,14 +86,14 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
 
                             <div className="pt-4 border-t border-border/50 flex items-center justify-between">
                                 <div className="flex -space-x-1.5">
-                                    {task.assignedTo.slice(0, 3).map((uid, i) => (
+                                    {(task.assignedTo || []).slice(0, 3).map((uid, i) => (
                                         <div key={uid} className="w-6 h-6 rounded-md border border-border bg-secondary flex items-center justify-center text-[9px] font-black text-muted">
                                             {uid.substring(0, 1).toUpperCase()}
                                         </div>
                                     ))}
-                                    {task.assignedTo.length > 3 && (
+                                    {(task.assignedTo || []).length > 3 && (
                                         <div className="w-6 h-6 rounded-md border border-border bg-secondary flex items-center justify-center text-[9px] font-black text-muted">
-                                            +{task.assignedTo.length - 3}
+                                            +{(task.assignedTo || []).length - 3}
                                         </div>
                                     )}
                                 </div>
