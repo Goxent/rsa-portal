@@ -98,10 +98,8 @@ service cloud.firestore {
     // TASKS COLLECTION
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
-      allow create: if canCreateTask() 
-                    && checkKeys(['title', 'status', 'priority'])
-                    && (!request.resource.data.keys().hasAny(['taskType']) || request.resource.data.taskType is string)
-                    && isSafeString(request.resource.data.title, 500);
+      allow create: if isAuthenticated();
+      
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
         resource.data.createdBy == request.auth.uid ||
@@ -109,31 +107,32 @@ service cloud.firestore {
         isAdmin() ||
         getUserRole() == 'MANAGER'
       ) && (
-        // Protect Team Lead Sign-off
+        // 1. ARCHIVED LOCKDOWN: Archived tasks cannot be edited by ANYONE (even Admins)
+        // This ensures the total integrity of historical audit documentation.
+        resource.data.get('status', '') != 'ARCHIVED'
+      ) && (
+        // 2. GOVERNANCE LOCKDOWN: Completed tasks in Review & Conclusion can only be reopened/modified by Admin
+        (!(resource.data.status == 'COMPLETED' && resource.data.auditPhase == 'REVIEW_AND_CONCLUSION' && request.resource.data.status != 'COMPLETED') || isAdmin())
+      ) && (
+        // 3. SIGN-OFF PROTECTION: Only designated roles or Admins can sign off
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['teamLeadApprovedAt'])) ||
         (request.auth.uid == resource.data.get('teamLeaderId', '') || isAdmin())
       ) && (
-        // Protect Engagement Reviewer Sign-off
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['engagementReviewerApprovedAt'])) ||
         (request.auth.uid == resource.data.get('engagementReviewerId', '') || isAdmin())
       ) && (
-        // Protect Signing Partner Sign-off
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['signingPartnerApprovedAt'])) ||
         (request.auth.uid == resource.data.get('signingPartnerId', '') || isAdmin())
       ) && (
-        // Enforce COMPLETED status requires all 3 sign-offs (Admins can bypass)
-        (request.resource.data.get('status', 'NOT_STARTED') != 'COMPLETED') ||
-        (
-          isAdmin() ||
-          request.auth.uid == resource.data.get('teamLeaderId', '') ||
-          (
-            request.resource.data.get('teamLeadApprovedAt', '') != '' &&
-            request.resource.data.get('engagementReviewerApprovedAt', '') != '' &&
-            request.resource.data.get('signingPartnerApprovedAt', '') != ''
-          )
-        )
-      ) && (!request.resource.data.keys().hasAll(['title']) || isSafeString(request.resource.data.title, 500))
-        && (!request.resource.data.keys().hasAll(['taskType']) || request.resource.data.taskType is string);
+        // 4. COMPLETION GATE: Enforce sign-offs before status becomes COMPLETED (Admins can bypass)
+        (request.resource.data.get('status', '') != 'COMPLETED') ||
+        (isAdmin() || (
+            resource.data.get('teamLeadApprovedAt', '') != '' &&
+            resource.data.get('engagementReviewerApprovedAt', '') != '' &&
+            resource.data.get('signingPartnerApprovedAt', '') != ''
+        ))
+      );
+      
       allow delete: if isAdmin();
     }
 

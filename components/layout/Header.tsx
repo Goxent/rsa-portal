@@ -41,26 +41,25 @@ const Header: React.FC<HeaderProps> = ({
         >
 
             {/* Left side: Breadcrumbs & Mobile Logo */}
-            <div className="flex items-center gap-4">
-                <div className="hidden md:block">
-                    <div className="flex items-center text-[0.8125rem]">
-                        <Breadcrumbs />
-                    </div>
-                </div>
-                
-                {/* Mobile Logo (md:hidden) */}
+            <div className="flex items-center gap-2">
+                {/* Mobile Logo */}
                 <div className="md:hidden flex items-center">
                     <div 
-                        className="shrink-0 flex items-center justify-center text-white"
+                        className="shrink-0 flex items-center justify-center text-white shadow-accent-glow"
                         style={{ 
-                            width: '36px',
-                            height: '28px',
+                            width: '32px',
+                            height: '24px',
                             background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
-                            borderRadius: 'var(--radius-md)'
+                            borderRadius: 'var(--radius-sm)'
                         }}
                     >
-                        <span style={{ fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.05em' }}>RSA</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.02em' }}>RSA</span>
                     </div>
+                    <span className="mx-2 text-[var(--text-muted)] text-sm font-light">/</span>
+                </div>
+
+                <div className="flex items-center text-[0.8125rem]">
+                    <Breadcrumbs />
                 </div>
             </div>
 

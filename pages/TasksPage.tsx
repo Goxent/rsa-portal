@@ -30,6 +30,7 @@ import NepaliDatePicker from '../components/NepaliDatePicker';
 import { getNepaliFiscalYear } from '../utils/nepaliDate';
 import TaskDetailPane from '../components/tasks/TaskDetailPane';
 import TaskTimelineView from '../components/tasks/TaskTimelineView';
+import { SkeletonCard } from '../components/common/SkeletonCard';
 import ClientDetailModal from "../components/tasks/ClientDetailModal";
 import { ComplianceService, complianceKeys } from "../services/advanced";
 import { useQuery } from "@tanstack/react-query";
@@ -45,7 +46,7 @@ const PHASE_ORDER = {
     [AuditPhase.ONBOARDING]: 1,
     [AuditPhase.PLANNING_AND_EXECUTION]: 2,
     [AuditPhase.REVIEW_AND_CONCLUSION]: 3
-};const STATUS_ORDER = {
+}; const STATUS_ORDER = {
     [TaskStatus.NOT_STARTED]: 1,
     [TaskStatus.IN_PROGRESS]: 2,
     [TaskStatus.COMPLETED]: 3
@@ -72,11 +73,28 @@ const TasksPage: React.FC = () => {
     const { user } = useAuth();
     const { openModal } = useModal();
     const queryClient = useQueryClient();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    // -- DATA FETCHING (React Query) --
-    const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: tasksLoading } = useInfiniteTasks();
-    const tasks = data?.pages.flatMap(page => page.tasks) ?? [];
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [tasksLoading, setTasksLoading] = useState(true);
+    const [isLive, setIsLive] = useState(false);
+
+    useEffect(() => {
+        setTasksLoading(true);
+        setIsLive(false);
+        const unsubscribe = AuthService.subscribeToTasks(
+            (liveTasks) => {
+                setTasks(liveTasks);
+                setTasksLoading(false);
+                setIsLive(true);
+            },
+            (err) => {
+                toast.error('Real-time sync failed. ' + err.message);
+                setIsLive(false);
+            }
+        );
+        return () => unsubscribe();
+    }, []);
 
 
     const { data: usersList = [], isLoading: usersLoading } = useUsers();
@@ -101,26 +119,62 @@ const TasksPage: React.FC = () => {
 
 
     const isMobile = useMedia('(max-width: 768px)', false);
-    
-    // -- INFINITE SCROLL LOGIC --
-    const sentinelRef = useRef<HTMLDivElement>(null);
-    const intersection = useIntersection(sentinelRef, {
-        root: null,
-        rootMargin: '400px',
-        threshold: 0,
-    });
-
-    useEffect(() => {
-        if (intersection?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-        }
-    }, [intersection, hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-
-
-    const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN' | 'TIMELINE'>(isMobile ? 'LIST' : 'KANBAN');
 
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+
+    // -- FILTER STATE (Sync with URL) --
+    const getParam = (key: string, fallback: string) => searchParams.get(key) || fallback;
+
+    const filterStatus = getParam('status', 'ALL');
+    const filterPriority = getParam('priority', 'ALL');
+    const filterClient = getParam('client', 'ALL');
+    const filterStaff = getParam('staff', 'ALL');
+    const filterAuditor = getParam('auditor', 'ALL');
+    const filterTaskType = getParam('type', 'ALL') as TaskType | 'ALL';
+    const viewMode = getParam('view', isMobile ? 'LIST' : 'KANBAN');
+    const groupBy = getParam('group', 'NONE') as 'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE';
+
+    const [searchTerm, setSearchTerm] = useState(getParam('search', ''));
+    const [dateRange, setDateRange] = useState({
+        start: getParam('start', ''),
+        end: getParam('end', '')
+    });
+
+    const updateFilters = useCallback((updates: Record<string, string | null>) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            Object.entries(updates).forEach(([key, value]) => {
+                if (value === null || value === 'ALL' || value === 'NONE' || value === '') {
+                    next.delete(key);
+                } else {
+                    next.set(key, value);
+                }
+            });
+            return next;
+        }, { replace: true });
+    }, [setSearchParams]);
+
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        updateFilters({ search: debouncedSearchTerm });
+    }, [debouncedSearchTerm, updateFilters]);
+
+    const setFilterStatus = (val: string) => updateFilters({ status: val });
+    const setFilterPriority = (val: string) => updateFilters({ priority: val });
+    const setFilterClient = (val: string) => updateFilters({ client: val });
+    const setFilterStaff = (val: string) => updateFilters({ staff: val });
+    const setFilterAuditor = (val: string) => updateFilters({ auditor: val });
+    const setFilterTaskType = (val: string) => updateFilters({ type: val });
+    const setViewMode = (val: string) => updateFilters({ view: val });
+    const setGroupBy = (val: string) => updateFilters({ group: val });
 
     // Bulk Actions State
     const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
@@ -131,10 +185,10 @@ const TasksPage: React.FC = () => {
     const assignMenuRef = useRef<HTMLDivElement>(null);
 
     // Confirmation Modal State (replaces window.confirm)
-    const [confirmModal, setConfirmModal] = useState<{ 
-        open: boolean; 
-        title: string; 
-        message: string; 
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
         onConfirm?: () => void;
         onSecondaryConfirm?: () => void;
         onCancel?: () => void;
@@ -288,7 +342,7 @@ const TasksPage: React.FC = () => {
                 <span className="flex-1 text-xs">
                     <b>{count}</b> subtask(s) auto-added for <b>{label}</b>
                 </span>
-                <button 
+                <button
                     onClick={() => updateTaskMutation.mutate({ id: taskId, updates: { subtasks: originalSubtasks } })}
                     className="px-2 py-1 rounded bg-white/10 text-[10px] font-black uppercase tracking-tighter hover:bg-white/20 transition-all border border-white/10"
                 >
@@ -372,7 +426,7 @@ const TasksPage: React.FC = () => {
     const isAdminOrManager = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.MASTER_ADMIN;
     const isFullAdmin = user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.ADMIN;
     const isStaff = user?.role === UserRole.STAFF;
-    
+
     // Master Admin can grant task-creation rights to any user via System Settings
     const canCreateTask = isAdminOrManager || user?.taskCreationAuthorized === true;
     const canManageTask = isAdminOrManager;
@@ -392,26 +446,13 @@ const TasksPage: React.FC = () => {
 
 
 
-    const [filterPriority, setFilterPriority] = useState<string>(() => localStorage.getItem('rsa_filter_priority') || 'ALL');
-    const [filterStatus, setFilterStatus] = useState<string>(() => localStorage.getItem('rsa_filter_status') || 'ALL');
-    const [filterClient, setFilterClient] = useState<string>(() => localStorage.getItem('rsa_filter_client') || 'ALL');
-    const [groupBy, setGroupBy] = useState<'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE'>(() => (localStorage.getItem('rsa_filter_groupby') as any) || 'NONE');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterStaff, setFilterStaff] = useState<string>(() => localStorage.getItem('rsa_filter_staff') || 'ALL');
-    const [filterAuditor, setFilterAuditor] = useState<string>(() => localStorage.getItem('rsa_filter_auditor') || 'ALL');
-    const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
-    const [filterTaskType, setFilterTaskType] = useState<TaskType | 'ALL'>(() => (localStorage.getItem('rsa_filter_tasktype') as any) || 'ALL');
-
-    // Auto-persistence Effects
+    // Auto-persistence removed in favor of URL state
     useEffect(() => {
-        localStorage.setItem('rsa_filter_priority', filterPriority);
-        localStorage.setItem('rsa_filter_status', filterStatus);
-        localStorage.setItem('rsa_filter_client', filterClient);
-        localStorage.setItem('rsa_filter_groupby', groupBy);
-        localStorage.setItem('rsa_filter_staff', filterStaff);
-        localStorage.setItem('rsa_filter_auditor', filterAuditor);
-        localStorage.setItem('rsa_filter_tasktype', filterTaskType);
-    }, [filterPriority, filterStatus, filterClient, groupBy, filterStaff, filterAuditor, filterTaskType]);
+        const staffParam = searchParams.get('staff');
+        if (staffParam && filterStaff !== staffParam) {
+            setFilterStaff(staffParam);
+        }
+    }, [searchParams, filterStaff]);
 
     const allSelectedArchivable = useMemo(() => {
         if (selectedTaskIds.length === 0) return false;
@@ -444,7 +485,7 @@ const TasksPage: React.FC = () => {
         if (filterStatus !== 'ALL' && t.status !== filterStatus) return false;
         if (filterPriority !== 'ALL' && t.priority !== filterPriority) return false;
         if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase()) && !t.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-        if (filterStaff !== 'ALL' && !t.assignedTo.includes(filterStaff)) return false;
+        if (filterStaff !== 'ALL' && !t.assignedTo?.includes(filterStaff)) return false;
         if (filterClient !== 'ALL' && !t.clientIds?.includes(filterClient)) return false;
         if (filterTaskType !== 'ALL' && t.taskType !== filterTaskType) return false;
 
@@ -461,12 +502,12 @@ const TasksPage: React.FC = () => {
 
     const canUpdateTaskStatus = (task: Partial<Task>) => {
         if (!user || !task) return false;
-        
+
         const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MASTER_ADMIN;
         const isManager = user.role === UserRole.MANAGER;
-        
+
         // --- 1. Completed Lockdown: Locked once in Phase 3 + Completed status ---
-        if (task.status === TaskStatus.COMPLETED && 
+        if (task.status === TaskStatus.COMPLETED &&
             task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) {
             return isAdmin;
         }
@@ -475,7 +516,7 @@ const TasksPage: React.FC = () => {
         if (isAdmin || isManager) return true;
         if (task.teamLeaderId === user.uid) return true;
         if (task.assignedTo?.includes(user.uid)) return true;
-        
+
         return false;
     };
 
@@ -517,7 +558,7 @@ const TasksPage: React.FC = () => {
         if (Array.isArray(obj)) {
             return obj.map(v => (v && typeof v === 'object' ? cleanForFirestore(v) : v)) as any;
         }
-        
+
         if (obj !== null && typeof obj === 'object') {
             return Object.entries(obj).reduce((acc, [key, value]) => {
                 if (value !== undefined) {
@@ -539,10 +580,10 @@ const TasksPage: React.FC = () => {
         if (!nextTemplate) return;
 
         const generatedSubtasks: SubTask[] = [];
-        
+
         // Strictly handle template subtasks (either detailed or simple strings)
-        const templateSubtasks = nextTemplate.subtaskDetails || 
-                                 nextTemplate.subtasks?.map(title => ({ title })) || [];
+        const templateSubtasks = nextTemplate.subtaskDetails ||
+            nextTemplate.subtasks?.map(title => ({ title })) || [];
 
         const assignedSet = new Set<string>();
 
@@ -616,10 +657,10 @@ const TasksPage: React.FC = () => {
             if (isEditMode && dataToSave.id) {
                 // EXTREMELY IMPORTANT: Unpack comments out so it doesn't revert newer comments added to the DB
                 const { comments, ...updatesWithoutComments } = taskToSave;
-                
+
                 const oldTask = tasks.find(t => t.id === dataToSave.id);
                 updateTaskMutation.mutate({ id: dataToSave.id, updates: updatesWithoutComments });
-                
+
                 if (oldTask && oldTask.status !== TaskStatus.COMPLETED && dataToSave.status === TaskStatus.COMPLETED) {
                     triggerNextTemplateIfNeeded(dataToSave.id, TaskStatus.COMPLETED);
                 }
@@ -672,7 +713,7 @@ const TasksPage: React.FC = () => {
         try {
             await updateTaskMutation.mutateAsync({
                 id: taskId,
-                updates: { 
+                updates: {
                     status: TaskStatus.ARCHIVED,
                     archivedAt: new Date().toISOString(),
                     archivedBy: user?.uid,
@@ -713,7 +754,7 @@ const TasksPage: React.FC = () => {
     // --- BULK ACTIONS ---
     const handleBulkDelete = async () => {
         if (!selectedTaskIds.length) return;
-        
+
         // Filter tasks the user is actually allowed to delete
         const authorizedIds = selectedTaskIds.filter(id => {
             const t = tasks.find(task => task.id === id);
@@ -731,7 +772,7 @@ const TasksPage: React.FC = () => {
         setConfirmModal({
             open: true,
             title: `Delete ${count} Tasks`,
-            message: count === total 
+            message: count === total
                 ? `Are you sure you want to delete ${count} task${count > 1 ? 's' : ''}? This action cannot be undone.`
                 : `You only have permission to delete ${count} out of ${total} selected tasks. Proceed?`,
             confirmLabel: 'Delete Authorized',
@@ -746,7 +787,7 @@ const TasksPage: React.FC = () => {
 
     const handleBulkStatusChange = async (newStatus: TaskStatus) => {
         if (!selectedTaskIds.length) return;
-        
+
         // Filter tasks the user is authorized to update status for
         const authorizedIds = selectedTaskIds.filter(id => {
             const t = tasks.find(task => task.id === id);
@@ -763,9 +804,9 @@ const TasksPage: React.FC = () => {
             await Promise.all(authorizedIds.map(async id => {
                 const task = tasks.find(t => t.id === id);
                 if (!task) return;
-                
+
                 const updates: Partial<Task> = { status: newStatus };
-                
+
                 // PROMPT 4: Inject status subtasks
                 const injected = injectStatusSubtasks(task, newStatus, templates);
                 if (injected) {
@@ -778,7 +819,7 @@ const TasksPage: React.FC = () => {
                     triggerNextTemplateIfNeeded(id, newStatus);
                 }
             }));
-            
+
             if (authorizedIds.length < selectedTaskIds.length) {
                 toast.success(`Updated ${authorizedIds.length} tasks (${selectedTaskIds.length - authorizedIds.length} skipped due to permissions)`);
             } else {
@@ -792,7 +833,7 @@ const TasksPage: React.FC = () => {
 
     const handleBulkReassign = async (staffId: string) => {
         if (!selectedTaskIds.length) return;
-        
+
         // Filter tasks the user is authorized to reassign
         const authorizedIds = selectedTaskIds.filter(id => {
             const t = tasks.find(task => task.id === id);
@@ -1118,9 +1159,9 @@ const TasksPage: React.FC = () => {
         const statusInjected = injectStatusSubtasks(task, finalStatus, templatesList);
         if (statusInjected) {
             updates.subtasks = [...(task.subtasks || []), ...statusInjected];
-            
-            const template = templatesList.find(t => t.id === task.templateId) || 
-                             templatesList.find(t => t.taskType === task.taskType && t.statusSubtasks?.[finalStatus]);
+
+            const template = templatesList.find(t => t.id === task.templateId) ||
+                templatesList.find(t => t.taskType === task.taskType && t.statusSubtasks?.[finalStatus]);
             if (template && !task.templateId) {
                 updates.templateId = template.id;
             }
@@ -1148,25 +1189,18 @@ const TasksPage: React.FC = () => {
         const parts = destination.droppableId.split('::');
         if (parts.length === 2) {
             let [newPhase, newStatus] = parts as [AuditPhase, TaskStatus];
-            
+
             // --- WORKFLOW GOVERNANCE: LOCKDOWN & FORWARD-ONLY RULES ---
             const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
             const isManager = user?.role === UserRole.MANAGER;
-            
+
             // A. Lockdown Rule: Final phase + Completed status can only be moved by Admin
-            if (task.status === TaskStatus.COMPLETED && 
+            if (task.status === TaskStatus.COMPLETED &&
                 task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) {
                 if (!isAdmin) {
                     toast.error('Governance Lockdown: Only Admins can reopen a fully completed assignment in the final phase.', { icon: '🔒' });
                     return;
                 }
-            }
-
-            // B. Directional Governance: Logic here can be added if specific phase-lock is needed, 
-            // but for now we follow the form's flexibility as requested.
-
-            if (newPhase === AuditPhase.ONBOARDING && newStatus === TaskStatus.UNDER_REVIEW) {
-                newStatus = TaskStatus.IN_PROGRESS;
             }
 
             const updates: any = {};
@@ -1175,14 +1209,14 @@ const TasksPage: React.FC = () => {
                 // ── Compliance Gate: Check for Mandatory Evidence before allowing Phase change ──
                 const currentOrder = PHASE_ORDER[task.auditPhase as AuditPhase || AuditPhase.ONBOARDING];
                 const nextOrder = PHASE_ORDER[newPhase as AuditPhase];
-                
+
                 if (nextOrder > currentOrder) {
-                    const missingEvidence = (task.subtasks || []).filter(s => 
-                        s.phase === task.auditPhase && 
-                        s.isEvidenceMandatory && 
+                    const missingEvidence = (task.subtasks || []).filter(s =>
+                        s.phase === task.auditPhase &&
+                        s.isEvidenceMandatory &&
                         !s.evidenceProvided
                     );
-                    
+
                     if (missingEvidence.length > 0) {
                         toast.error(`Compliance Gate: Mandatory evidence missing for ${missingEvidence.length} item(s). Transition to ${PHASE_LABELS[newPhase as AuditPhase]} blocked.`, { icon: '🛑' });
                         return; // Block the drag update
@@ -1190,18 +1224,18 @@ const TasksPage: React.FC = () => {
                 }
 
                 updates.auditPhase = newPhase;
-                
+
                 // Prompt C: Handle Phase Transition Auto-Swap Checklist
                 if (task.taskType) {
                     const oldSubtasks = task.subtasks || [];
                     const updatedSubtasks = swapPhaseChecklist(task, newPhase as AuditPhase);
-                    
+
                     if (updatedSubtasks.length !== oldSubtasks.length) {
                         updates.subtasks = updatedSubtasks;
                         // Prompt C Step 4 summary toast
                         const added = updatedSubtasks.filter(s => s.isAutoGenerated && s.phase === newPhase).length;
                         const removed = oldSubtasks.filter(s => s.isAutoGenerated && s.phase === task.auditPhase).length;
-                        
+
                         toast.success(
                             (t) => (
                                 <div className="flex flex-col gap-1">
@@ -1209,7 +1243,7 @@ const TasksPage: React.FC = () => {
                                     <span className="text-[10px] text-gray-400">
                                         {removed} items replaced with {added} items for {newPhase.replace(/_/g, ' ')}
                                     </span>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             updateTaskMutation.mutate({ id: draggableId, updates: { auditPhase: task.auditPhase, subtasks: oldSubtasks } });
                                             toast.dismiss(t.id);
@@ -1239,7 +1273,7 @@ const TasksPage: React.FC = () => {
                     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
                     const isTL = user?.uid === task.teamLeaderId;
                     const signOffsComplete = task.teamLeadApprovedAt && task.engagementReviewerApprovedAt && task.signingPartnerApprovedAt;
-                    
+
                     if (!signOffsComplete) {
                         const isInFinalPhase = task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION;
                         setConfirmModal({
@@ -1263,21 +1297,21 @@ const TasksPage: React.FC = () => {
                 }
 
                 updates.status = newStatus;
-                
+
                 // PROMPT 4: Inject status subtasks on drag
                 const statusInjected = injectStatusSubtasks(task, newStatus as TaskStatus, templates);
                 if (statusInjected) {
                     // Note: If both phase and status changed, we need to merge both
                     const existingSubtasksAndPhase = updates.subtasks || task.subtasks || [];
                     updates.subtasks = [...existingSubtasksAndPhase, ...statusInjected];
-                    
+
                     // Logic to find and persist the templateId if it's being used for this injection
-                    const template = templates.find(t => t.id === task.templateId) || 
-                                     templates.find(t => t.taskType === task.taskType && t.statusSubtasks?.[newStatus as TaskStatus]);
+                    const template = templates.find(t => t.id === task.templateId) ||
+                        templates.find(t => t.taskType === task.taskType && t.statusSubtasks?.[newStatus as TaskStatus]);
                     if (template && !task.templateId) {
                         updates.templateId = template.id;
                     }
-                    
+
                     showInjectionToast(task.id, task.subtasks || [], statusInjected.length, newStatus.replace(/_/g, ' '));
                 }
             }
@@ -1317,9 +1351,9 @@ const TasksPage: React.FC = () => {
 
         let dueDate = getCurrentDateUTC();
         if (template.expectedDays) {
-           const d = new Date();
-           d.setDate(d.getDate() + template.expectedDays);
-           dueDate = d.toISOString().split('T')[0];
+            const d = new Date();
+            d.setDate(d.getDate() + template.expectedDays);
+            dueDate = d.toISOString().split('T')[0];
         }
 
         setCurrentTask({
@@ -1368,6 +1402,13 @@ const TasksPage: React.FC = () => {
         return stats;
     }, [filteredTasks]);
 
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const intersection = useIntersection(sentinelRef, {
+        root: null,
+        rootMargin: '200px',
+        threshold: 0
+    });
+
     // Count active (non-default) filters for the filter badge
     const activeFilterCount = useMemo(() => {
         let count = 0;
@@ -1383,12 +1424,7 @@ const TasksPage: React.FC = () => {
         return count;
     }, [filterStatus, filterPriority, filterStaff, filterClient, filterAuditor, filterTaskType, dateRange, searchTerm]);
 
-    if (loading) return (
-        <div className="flex flex-col h-full bg-transparent p-8 space-y-6 animate-pulse">
-            <div className="h-12 bg-white/[0.03] rounded-xl border border-white/[0.04]" />
-            <div className="flex-1 bg-white/[0.03] rounded-xl border border-white/[0.04]" />
-        </div>
-    );
+    // Integrated loading state in main return
 
     return (
         <div className="relative h-full w-full flex flex-col overflow-hidden bg-surface">
@@ -1396,6 +1432,7 @@ const TasksPage: React.FC = () => {
             <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-40 transition-colors duration-300">
                 <div className="flex flex-col border-b border-border/50">
                     <div className="flex flex-wrap items-center gap-3 px-4 py-3 md:flex-nowrap">
+
                         {/* LEFT: View Mode Toggle */}
                         <div
                             className="flex-shrink-0 inline-flex"
@@ -1433,16 +1470,15 @@ const TasksPage: React.FC = () => {
 
 
                         {/* CENTER: Search & Workflow Dropdown */}
-                        <div className="flex items-center gap-2 flex-1 min-w-full md:min-w-0 md:max-w-xl order-3 md:order-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[400px] order-3 md:order-2">
                             {/* NEW: Workflow Selector Dropdown */}
                             <div className="relative" ref={workflowMenuRef}>
                                 <button
                                     onClick={() => setShowWorkflowMenu(!showWorkflowMenu)}
-                                    className={`h-[38px] px-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${
-                                        filterTaskType !== 'ALL'
+                                    className={`h-[38px] px-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${filterTaskType !== 'ALL'
                                             ? 'bg-accent/10 border-accent/40 text-accent'
                                             : 'bg-secondary border-border text-muted hover:text-heading hover:border-border-mid'
-                                    }`}
+                                        }`}
                                 >
                                     <Layers size={13} className={filterTaskType !== 'ALL' ? 'text-accent' : 'text-muted'} />
                                     <span className="max-w-[120px] truncate">
@@ -1453,13 +1489,13 @@ const TasksPage: React.FC = () => {
 
                                 <AnimatePresence>
                                     {showWorkflowMenu && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 8 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 8 }}
-                                                    className="absolute top-full left-0 mt-2 w-64 border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
-                                                    style={{ background: 'var(--bg-secondary)' }}
-                                                >
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 8 }}
+                                            className="absolute top-full left-0 mt-2 w-64 border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
+                                            style={{ background: 'var(--bg-secondary)' }}
+                                        >
                                             <div className="p-2 space-y-0.5">
                                                 <button
                                                     onClick={() => { setFilterTaskType('ALL'); setShowWorkflowMenu(false); }}
@@ -1492,6 +1528,21 @@ const TasksPage: React.FC = () => {
                                 </AnimatePresence>
                             </div>
 
+                            <div className="flex items-center gap-2">
+                                {activeFilterCount > 0 && (
+                                    <button
+                                        onClick={() => updateFilters({
+                                            status: null, priority: null, client: null, staff: null,
+                                            auditor: null, type: null, search: '', start: null, end: null
+                                        })}
+                                        className="h-[38px] px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+                                    >
+                                        Clear ({activeFilterCount})
+                                    </button>
+                                )}
+
+                            </div>
+
                             <div className="relative flex-1 group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors" size={13} />
                                 <input
@@ -1505,99 +1556,115 @@ const TasksPage: React.FC = () => {
                         </div>
 
                         {/* Bulk Actions — contextual bar */}
-                        {selectedTaskIds.length > 0 && (
-                            <motion.div 
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="flex items-center gap-2 flex-shrink-0 bg-accent/10 border border-accent/30 rounded-xl px-2 py-1 shadow-accent-glow"
-                            >
-                                <span className="text-[10px] font-black text-accent tabular-nums px-2 py-0.5 bg-accent/20 rounded-lg">{selectedTaskIds.length} Selective</span>
-                                <div className="w-px h-4 bg-accent/20" />
-                                <div className="relative" ref={statusMenuRef}>
-                                    <button
-                                        onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
-                                        className="h-[28px] px-2.5 hover:bg-white/5 text-indigo-300 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all"
-                                    >
-                                        Status <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    <AnimatePresence>
-                                        {showBulkStatusMenu && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 8 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 8 }}
-                                                className="absolute top-full left-0 mt-2 w-44 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl"
+                        <AnimatePresence>
+                            {selectedTaskIds.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: isMobile ? 20 : 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: isMobile ? 20 : 0, scale: 0.95 }}
+                                    className={`${isMobile
+                                            ? 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 bg-slate-900/90 border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex-row'
+                                            : 'flex items-center gap-2 flex-shrink-0 bg-accent/10 border border-accent/30 rounded-xl px-2 py-1 shadow-accent-glow'
+                                        } flex items-center gap-2 backdrop-blur-xl transition-all`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-[10px] font-black tabular-nums px-2 py-0.5 rounded-lg ${isMobile ? 'bg-accent/20 text-accent' : 'bg-accent/20 text-accent'}`}>
+                                            {selectedTaskIds.length} <span className="hidden sm:inline">Selected</span>
+                                        </span>
+                                        <div className="w-px h-4 bg-accent/20" />
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="relative" ref={statusMenuRef}>
+                                            <button
+                                                onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
+                                                className={`h-[28px] px-2.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all ${isMobile ? 'bg-white/5 text-indigo-300' : 'hover:bg-white/5 text-indigo-300'}`}
                                             >
-                                                {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.ARCHIVED].filter(s => {
-                                                    if (s !== TaskStatus.ARCHIVED) return true;
-                                                    return isFullAdmin && allSelectedArchivable;
-                                                }).map((status) => (
-                                                    <button
-                                                        key={status}
-                                                        onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
-                                                        className="w-full px-4 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-between group"
+                                                Status <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            <AnimatePresence>
+                                                {showBulkStatusMenu && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: isMobile ? -8 : 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: isMobile ? -8 : 8 }}
+                                                        className={`absolute ${isMobile ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-44 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl`}
                                                     >
-                                                        {status.replace(/_/g, ' ')}
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${status === TaskStatus.ARCHIVED ? 'bg-purple-500/40 group-hover:bg-purple-400' : 'bg-indigo-500/40 group-hover:bg-indigo-400'}`} />
-                                                    </button>
-                                                ))}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                                <div className="relative" ref={assignMenuRef}>
-                                    <button
-                                        onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
-                                        className="h-[28px] px-2.5 hover:bg-white/5 text-cyan-400 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all"
-                                    >
-                                        Assign <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    <AnimatePresence>
-                                        {showBulkAssignMenu && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 8 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 8 }}
-                                                className="absolute top-full left-0 mt-2 w-52 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
+                                                        {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.ARCHIVED].filter(s => {
+                                                            if (s !== TaskStatus.ARCHIVED) return true;
+                                                            return isFullAdmin && allSelectedArchivable;
+                                                        }).map((status) => (
+                                                            <button
+                                                                key={status}
+                                                                onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
+                                                                className="w-full px-4 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-between group"
+                                                            >
+                                                                {status.replace(/_/g, ' ')}
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${status === TaskStatus.ARCHIVED ? 'bg-purple-500/40 group-hover:bg-purple-400' : 'bg-indigo-500/40 group-hover:bg-indigo-400'}`} />
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        <div className="relative" ref={assignMenuRef}>
+                                            <button
+                                                onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
+                                                className={`h-[28px] px-2.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all ${isMobile ? 'bg-white/5 text-cyan-400' : 'hover:bg-white/5 text-cyan-400'}`}
                                             >
-                                                <div className="px-4 py-2.5 border-b border-slate-100 dark:border-white/[0.05] bg-slate-50 dark:bg-white/[0.02]">
-                                                    <p className="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest text-center">Assign to Team</p>
-                                                </div>
-                                                <div className="max-h-64 overflow-y-auto custom-scrollbar p-1">
-                                                    {usersList.map((st, idx) => (
-                                                        <button
-                                                            key={st.uid || `staff-${idx}`}
-                                                            onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
-                                                            className="w-full px-3 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-indigo-600 dark:hover:text-white transition-colors rounded-xl flex items-center gap-2.5"
-                                                        >
-                                                            <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center text-[9px] font-black text-indigo-400 border border-indigo-500/20">
-                                                                {getInitials(st.displayName)}
-                                                            </div>
-                                                            <span className="truncate">{st.displayName}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                                <div className="w-px h-4 bg-indigo-500/20" />
-                                <button
-                                    onClick={handleBulkDelete}
-                                    title="Delete selected tasks"
-                                    className="w-[28px] h-[28px] flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all"
-                                >
-                                    <Trash2 size={13} />
-                                </button>
-                                <button
-                                    onClick={() => setSelectedTaskIds([])}
-                                    title="Clear selection"
-                                    className="w-[28px] h-[28px] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
-                                >
-                                    <X size={14} />
-                                </button>
-                            </motion.div>
-                        )}
+                                                Assign <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            <AnimatePresence>
+                                                {showBulkAssignMenu && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: isMobile ? -8 : 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: isMobile ? -8 : 8 }}
+                                                        className={`absolute ${isMobile ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-52 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl`}
+                                                    >
+                                                        <div className="px-4 py-2.5 border-b border-slate-100 dark:border-white/[0.05] bg-slate-50 dark:bg-white/[0.02]">
+                                                            <p className="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest text-center">Assign to Team</p>
+                                                        </div>
+                                                        <div className="max-h-64 overflow-y-auto custom-scrollbar p-1">
+                                                            {usersList.map((st, idx) => (
+                                                                <button
+                                                                    key={st.uid || `staff-${idx}`}
+                                                                    onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
+                                                                    className="w-full px-3 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-indigo-600 dark:hover:text-white transition-colors rounded-xl flex items-center gap-2.5"
+                                                                >
+                                                                    <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center text-[9px] font-black text-indigo-400 border border-indigo-500/20">
+                                                                        {getInitials(st.displayName)}
+                                                                    </div>
+                                                                    <span className="truncate">{st.displayName}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        <div className="w-px h-4 bg-indigo-500/20" />
+
+                                        <button
+                                            onClick={handleBulkDelete}
+                                            title="Delete selected tasks"
+                                            className="w-[28px] h-[28px] flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all"
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
+
+                                        <button
+                                            onClick={() => setSelectedTaskIds([])}
+                                            className="w-[28px] h-[28px] flex items-center justify-center bg-white/5 hover:bg-white/10 text-gray-400 rounded-lg transition-all"
+                                        >
+                                            <X size={13} />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         {/* RIGHT ACTIONS */}
                         <div className="flex items-center gap-2 ml-auto order-2 md:order-3">
@@ -1622,11 +1689,10 @@ const TasksPage: React.FC = () => {
                             {/* Filters Button */}
                             <button
                                 onClick={() => setShowFilterPanel(!showFilterPanel)}
-                                className={`h-[38px] px-3 md:px-4 flex items-center gap-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
-                                    showFilterPanel || activeFilterCount > 0
+                                className={`h-[38px] px-3 md:px-4 flex items-center gap-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${showFilterPanel || activeFilterCount > 0
                                         ? 'bg-accent/15 border-accent/40 text-accent shadow-accent-glow'
                                         : 'bg-secondary border-border text-muted hover:text-heading'
-                                }`}
+                                    }`}
                             >
                                 <Filter size={13} className={activeFilterCount > 0 ? 'animate-pulse' : ''} />
                                 <span className="hidden sm:inline">FILTERS</span>
@@ -1657,47 +1723,47 @@ const TasksPage: React.FC = () => {
                     {filterStatus !== 'ALL' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
                             Status: {filterStatus.replace(/_/g, ' ')}
-                            <button onClick={() => setFilterStatus('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                            <button onClick={() => setFilterStatus('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110" /></button>
                         </div>
                     )}
                     {filterPriority !== 'ALL' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
                             Priority: {filterPriority}
-                            <button onClick={() => setFilterPriority('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                            <button onClick={() => setFilterPriority('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110" /></button>
                         </div>
                     )}
                     {filterTaskType && filterTaskType !== 'ALL' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
                             Workflow: {filterTaskType.replace(/_/g, ' ')}
-                            <button onClick={() => setFilterTaskType('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                            <button onClick={() => setFilterTaskType('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110" /></button>
                         </div>
                     )}
                     {filterClient !== 'ALL' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
                             Client: {clientsList.find(c => c.id === filterClient)?.name || 'Unknown'}
-                            <button onClick={() => setFilterClient('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                            <button onClick={() => setFilterClient('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110" /></button>
                         </div>
                     )}
                     {filterStaff !== 'ALL' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
                             Staff: {usersList.find(u => u.uid === filterStaff)?.displayName?.split(' ')[0] || 'Unknown'}
-                            <button onClick={() => setFilterStaff('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                            <button onClick={() => setFilterStaff('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110" /></button>
                         </div>
                     )}
                     {filterAuditor !== 'ALL' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
                             Reviewer: {usersList.find(u => u.uid === filterAuditor)?.displayName?.split(' ')[0] || 'Unknown'}
-                            <button onClick={() => setFilterAuditor('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                            <button onClick={() => setFilterAuditor('ALL')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110" /></button>
                         </div>
                     )}
                     {searchTerm && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-full text-[11px] font-bold text-accent shadow-sm">
                             Search: "{searchTerm}"
-                            <button onClick={() => setSearchTerm('')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110"/></button>
+                            <button onClick={() => setSearchTerm('')} className="hover:text-rose-400 group"><X size={11} className="transition-transform group-hover:scale-110" /></button>
                         </div>
                     )}
                     <button onClick={() => {
-                        setFilterStatus('ALL'); setFilterPriority('ALL'); setFilterTaskType('ALL'); setFilterClient('ALL'); setFilterStaff('ALL'); setFilterAuditor('ALL'); setSearchTerm(''); setDateRange({start:'', end:''});
+                        setFilterStatus('ALL'); setFilterPriority('ALL'); setFilterTaskType('ALL'); setFilterClient('ALL'); setFilterStaff('ALL'); setFilterAuditor('ALL'); setSearchTerm(''); setDateRange({ start: '', end: '' });
                     }} className="text-[10px] text-muted hover:text-white underline ml-2 transition-colors uppercase font-black">Clear All</button>
                 </div>
             )}
@@ -1854,15 +1920,32 @@ const TasksPage: React.FC = () => {
                 </div>
             )}
 
-            {/* --- WORKSPACE AREA --- */}
             <main className="flex-1 min-h-0 h-full flex flex-col overflow-y-auto relative">
-                {viewMode === 'TIMELINE' ? (
+                {tasksLoading ? (
+                    <div className="flex-1 p-6">
+                        {viewMode === 'KANBAN' ? (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+                                {[1, 2, 3].map(col => (
+                                    <div key={col} className="space-y-4">
+                                        <div className="h-8 w-32 bg-elevated rounded-lg animate-pulse mb-6" />
+                                        {[1, 2, 3].map(card => <SkeletonCard key={card} height={160} />)}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} lines={2} hasAvatar />)}
+                            </div>
+                        )}
+                    </div>
+                ) : viewMode === 'TIMELINE' ? (
                     <TaskTimelineView
                         tasks={filteredTasks}
                         usersList={usersList}
                         clientsList={clientsList}
                         handleOpenEdit={handleOpenEdit}
                         groupBy={groupBy}
+                        setGroupBy={setGroupBy}
                     />
                 ) : (
                     <>
@@ -1882,8 +1965,6 @@ const TasksPage: React.FC = () => {
                                 selectedTaskId={selectedTaskId}
                                 selectedTaskIds={selectedTaskIds}
                                 onToggleSelection={toggleTaskSelection}
-                                sentinelRef={sentinelRef}
-                                isFetchingNextPage={isFetchingNextPage}
                                 onSelectAll={() => {
                                     if (selectedTaskIds.length === filteredTasks.length) {
                                         setSelectedTaskIds([]); // Deselect all
@@ -1995,7 +2076,7 @@ const TasksPage: React.FC = () => {
                             className="bg-[#09090b] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4"
                             onClick={e => e.stopPropagation()}
                         >
-                             <ConfirmationModal
+                            <ConfirmationModal
                                 title={confirmModal.title}
                                 message={confirmModal.message}
                                 variant={confirmModal.variant || 'danger'}

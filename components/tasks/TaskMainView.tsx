@@ -31,8 +31,6 @@ interface TaskMainViewProps {
     onOpenReassign?: (taskId: string) => void;
     onSelectAll?: () => void;
     onOpenClientDetail?: (clientId: string) => void;
-    sentinelRef?: React.RefObject<HTMLDivElement | null>;
-    isFetchingNextPage?: boolean;
     currentUser: UserProfile | null;
     canEditTask: (task: Task) => boolean;
 }
@@ -126,7 +124,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode, tasks, onDragEnd, handleOpenEdit, usersList,
     collapsedColumns, toggleColumnCollapse, selectedTaskId,
     selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll, onOpenClientDetail,
-    sentinelRef, isFetchingNextPage, currentUser, canEditTask
+    currentUser, canEditTask
 }) => {
     const isMobile = useMedia('(max-width: 768px)', false);
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
@@ -218,11 +216,11 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                     {!isMobile && (
                                         <>
                                             <div className="flex -space-x-2 items-center pl-2">
-                                                {task.assignedTo.length === 0 ? (
+                                                {(!task.assignedTo || task.assignedTo.length === 0) ? (
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 rounded-full px-2.5 py-1">Unassigned</span>
                                                 ) : (
                                                     <>
-                                                        {task.assignedTo.slice(0, 4).map((uid, i) => {
+                                                        {(task.assignedTo || []).slice(0, 4).map((uid, i) => {
                                                             const u = usersList.find(x => x.uid === uid);
                                                             const av = getAvatarColor(uid);
                                                             return (
@@ -279,21 +277,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             return <React.Fragment key={task.id || `task-${idx}`}>{content}</React.Fragment>;
                         })}
                     </div>
-                    {/* INFINITE SCROLL SENTINEL - LIST VIEW */}
-                    <div ref={sentinelRef} className="w-full flex flex-col items-center justify-center py-10 gap-3">
-                        {isFetchingNextPage ? (
-                            <div className="flex flex-col items-center gap-2 opacity-50">
-                                <div className="w-6 h-6 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-amber-500/60">Fetching More</span>
-                            </div>
-                        ) : (
-                            tasks.length > 0 && (
-                                <span className="text-[10px] font-bold text-slate-600 bg-slate-800/20 px-3 py-1 rounded-full border border-white/[0.03]">
-                                    {tasks.length} tasks loaded
-                                </span>
-                            )
-                        )}
-                    </div>
+                    {/* No Infinite Scroll */}
 
                     {tasks.length === 0 && (
                         <motion.div 
@@ -609,11 +593,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                             );
                         })}
                         
-                        {/* INFINITE SCROLL SENTINEL - KANBAN (Horizontal) */}
-                        <div 
-                            ref={sentinelRef} 
-                            className="flex-shrink-0 w-4 h-full pointer-events-none opacity-0"
-                        />
+                        {/* No Infinite Scroll */}
                     </div>
                 </div>
             </div>

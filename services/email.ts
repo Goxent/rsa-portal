@@ -1,28 +1,33 @@
 export const EmailService = {
     /**
-     * Send an email using our Vercel Serverless Function (Resend)
+     * Send an email using our Vercel Serverless Function (Gmail/SMTP via Nodemailer)
      */
-    sendEmail: async (to: string | { email: string; name: string }, subject: string, html: string, fromName?: string): Promise<boolean> => {
+     sendEmail: async (to: string | { email: string; name: string }, subject: string, html: string, fromName?: string): Promise<boolean> => {
         try {
-            const response = await fetch('/api/send-email', {
+            // Support absolute API URL if provided (important for GitHub Pages + Vercel API setup)
+            const apiBase = import.meta.env.VITE_API_URL || '';
+            const response = await fetch(`${apiBase}/api/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ to, subject, html, fromName }),
             });
 
             if (!response.ok) {
-                let detail = 'No detail available';
+                let detail = '';
                 try {
                     const errorJson = await response.json();
-                    detail = JSON.stringify(errorJson);
+                    detail = errorJson.details || errorJson.error || JSON.stringify(errorJson);
+                    // If there's a tip in the response, log it
+                    if (errorJson.tip) console.warn('Email Tip:', errorJson.tip);
                 } catch {
                     detail = await response.text();
                 }
                 console.error(`Email send failed | Status: ${response.status} (${response.statusText}) | Detail: ${detail}`);
+                return false;
             }
 
-            return response.ok;
-        } catch (error) {
+            return true;
+        } catch (error: any) {
             console.error('Email send failed | Network or Exception Error:', error);
             return false;
         }

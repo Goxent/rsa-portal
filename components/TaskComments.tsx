@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, UserCircle2, MessageSquare, AtSign } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Send, UserCircle2, MessageSquare, AtSign, Reply, X, CornerDownRight } from 'lucide-react';
 import { TaskComment, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -14,13 +14,32 @@ interface TaskCommentsProps {
 const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAddComment, readOnly = false }) => {
     const { user } = useAuth();
     const [newComment, setNewComment] = useState('');
+    const [replyTo, setReplyTo] = useState<TaskComment | null>(null);
     const [showMentions, setShowMentions] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const commentsEndRef = useRef<HTMLDivElement>(null);
 
+    // Group comments into threads
+    const rootComments = useMemo(() => {
+        return comments.filter(c => !c.parentId);
+    }, [comments]);
+
+    const repliesByParent = useMemo(() => {
+        const map: Record<string, TaskComment[]> = {};
+        comments.forEach(c => {
+            if (c.parentId) {
+                if (!map[c.parentId]) map[c.parentId] = [];
+                map[c.parentId].push(c);
+            }
+        });
+        return map;
+    }, [comments]);
+
     const scrollToBottom = () => {
-        commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (!replyTo) {
+            commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
     };
 
     useEffect(() => {
@@ -32,14 +51,17 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
             e.preventDefault();
             handleSubmit();
         }
+        if (e.key === 'Escape') {
+            setReplyTo(null);
+            setShowMentions(false);
+        }
     };
 
     const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const val = e.target.value;
         setNewComment(val);
 
-        // Simple mention trigger detection (last word starting with @)
-        const lastWord = val.split(' ').pop();
+        const lastWord = val.split(/[\s\n]/).pop();
         if (lastWord && lastWord.startsWith('@') && lastWord.length > 1) {
             setShowMentions(true);
             setMentionQuery(lastWord.substring(1));
@@ -49,9 +71,14 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
     };
 
     const addMention = (userName: string, userId: string) => {
-        const words = newComment.split(' ');
-        words.pop(); // Remove the partial mention
-        const updatedText = [...words, `@${userName} `].join(' ');
+        const cursorPosition = textareaRef.current?.selectionStart || 0;
+        const textBefore = newComment.substring(0, cursorPosition);
+        const textAfter = newComment.substring(cursorPosition);
+        
+        const words = textBefore.split(/([\s\n])/);
+        words[words.length - 1] = `@${userName} `;
+        
+        const updatedText = words.join('') + textAfter;
         setNewComment(updatedText);
         setShowMentions(false);
         textareaRef.current?.focus();
@@ -60,7 +87,6 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
     const handleSubmit = () => {
         if (!newComment.trim() || !user) return;
 
-        // Extract mentions
         const mentions: string[] = [];
         users.forEach(u => {
             if (newComment.includes(`@${u.displayName}`)) {
@@ -69,16 +95,19 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
         });
 
         const comment: TaskComment = {
-            id: Date.now().toString(),
+            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             text: newComment.trim(),
             userId: user.uid,
             userName: user.displayName || 'Anonymous',
+            userAvatar: user.photoURL,
             createdAt: new Date().toISOString(),
-            mentions
+            mentions,
+            parentId: replyTo?.id
         };
 
         onAddComment(comment);
         setNewComment('');
+        setReplyTo(null);
     };
 
     const filteredUsers = users.filter(u =>
@@ -89,57 +118,94 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
         return name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
     };
 
+    const CommentCard = ({ comment, isReply = false }: { comment: TaskComment, isReply?: boolean }) => {
+        const isMe = comment.userId === user?.uid;
+        const replies = repliesByParent[comment.id] || [];
+
+        return (
+            <div className={`flex flex-col gap-2 ${isReply ? 'ml-8 mt-2 border-l-2 border-white/5 pl-4' : 'mt-4'}`}>
+                <div className={`flex gap-3 ${isMe && !isReply ? 'flex-row-reverse' : ''} group/comment`}>
+                    <div className="shrink-0 mt-1">
+                        {comment.userAvatar ? (
+                            <img src={comment.userAvatar} className="w-8 h-8 rounded-full border border-white/10" alt="" />
+                        ) : (
+                            <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black shadow-sm
+                                ${isMe ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-300'}`}>
+                                {getInitials(comment.userName)}
+                            </div>
+                        )}
+                    </div>
+                    <div className={`flex flex-col max-w-[85%] ${isMe && !isReply ? 'items-end' : 'items-start'}`}>
+                        <div className="flex items-baseline gap-2 mb-1 px-1">
+                            <span className="text-[11px] font-bold text-slate-300">{comment.userName}</span>
+                            <span className="text-[9px] font-medium text-slate-500">
+                                {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                            </span>
+                        </div>
+                        <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm group-hover/comment:shadow-md transition-shadow
+                            ${isMe && !isReply
+                                ? 'bg-amber-500/10 text-amber-50 border border-amber-500/20 rounded-tr-sm'
+                                : 'bg-white/[0.03] text-slate-200 border border-white/[0.05] rounded-tl-sm'
+                            }`}
+                        >
+                            {comment.text.split(/(@[\w\s]+)/g).map((part, i) => {
+                                if (part.startsWith('@')) {
+                                    return <span key={i} className="text-amber-400 font-semibold bg-amber-500/10 px-1 py-0.5 rounded transition-colors hover:bg-amber-500/20">{part}</span>;
+                                }
+                                return <span key={i}>{part}</span>;
+                            })}
+                        </div>
+                        {!readOnly && !isReply && (
+                            <button 
+                                onClick={() => {
+                                    setReplyTo(comment);
+                                    textareaRef.current?.focus();
+                                }}
+                                className="mt-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-amber-400 transition-colors opacity-0 group-hover/comment:opacity-100 px-2"
+                            >
+                                <Reply size={10} /> Reply
+                            </button>
+                        )}
+                    </div>
+                </div>
+                {/* Render Replies */}
+                {replies.map(reply => (
+                    <CommentCard key={reply.id} comment={reply} isReply />
+                ))}
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 mb-4 pr-1 px-1">
-                {comments.length === 0 ? (
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 mb-4 pr-1 px-1">
+                {rootComments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 opacity-60">
                         <MessageSquare size={24} className="text-slate-600 mb-3" />
                         <span className="text-[12px] font-medium text-slate-500 italic">
-                            No comments yet. Start the conversation!
+                            No audit notes yet. Start the conversation!
                         </span>
                     </div>
                 ) : (
-                    comments.map(comment => {
-                        const isMe = comment.userId === user?.uid;
-                        return (
-                            <div key={comment.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''} group/comment`}>
-                                <div className="shrink-0 mt-1">
-                                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black shadow-sm
-                                        ${isMe ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-300'}`}>
-                                        {getInitials(comment.userName)}
-                                    </div>
-                                </div>
-                                <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
-                                    <div className="flex items-baseline gap-2 mb-1 px-1">
-                                        <span className="text-[11px] font-bold text-slate-300">{comment.userName}</span>
-                                        <span className="text-[9px] font-medium text-slate-500">
-                                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                                        </span>
-                                    </div>
-                                    <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm
-                                        ${isMe
-                                            ? 'bg-amber-500/10 text-amber-50 border border-amber-500/20 rounded-tr-sm'
-                                            : 'bg-white/[0.03] text-slate-200 border border-white/[0.05] rounded-tl-sm'
-                                        }`}
-                                    >
-                                        {comment.text.split(/(@[\w\s]+)/g).map((part, i) => {
-                                            if (part.startsWith('@')) {
-                                                return <span key={i} className="text-amber-400 font-semibold bg-amber-500/10 px-1 py-0.5 rounded">{part}</span>;
-                                            }
-                                            return <span key={i}>{part}</span>;
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })
+                    rootComments.map(comment => (
+                        <CommentCard key={comment.id} comment={comment} />
+                    ))
                 )}
                 <div ref={commentsEndRef} />
             </div>
 
             {!readOnly && (
                 <div className="relative mt-auto">
+                    {replyTo && (
+                        <div className="flex items-center justify-between bg-amber-500/10 border-l-2 border-amber-500 px-3 py-1.5 mb-2 rounded-r-lg animate-in slide-in-from-bottom-2">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <CornerDownRight size={14} className="text-amber-500 shrink-0" />
+                                <span className="text-[10px] text-slate-400 truncate">Replying to <span className="font-bold text-amber-300">{replyTo.userName}</span></span>
+                            </div>
+                            <button onClick={() => setReplyTo(null)} className="text-slate-500 hover:text-white p-0.5"><X size={12} /></button>
+                        </div>
+                    )}
+
                     {showMentions && filteredUsers.length > 0 && (
                         <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#0f172a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-30 transform origin-bottom-left transition-all">
                             <div className="px-3 py-2 bg-black/40 text-[9px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
@@ -168,7 +234,7 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
                             value={newComment}
                             onChange={handleInput}
                             onKeyDown={handleKeyDown}
-                            placeholder="Write a comment... use @ to mention"
+                            placeholder={replyTo ? "Write a reply..." : "Write a comment... use @ to mention"}
                             className="w-full bg-transparent border-none outline-none text-[13px] text-slate-200 resize-none max-h-32 custom-scrollbar placeholder-slate-600 px-1 leading-relaxed"
                             rows={newComment.split('\n').length > 1 ? Math.min(newComment.split('\n').length, 5) : 1}
                         />
@@ -183,7 +249,7 @@ const TaskComments: React.FC<TaskCommentsProps> = ({ comments = [], users, onAdd
                                 disabled={!newComment.trim()}
                                 className="p-1.5 px-3 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg transition-all shadow-md font-bold text-[11px] flex items-center gap-1.5 cursor-pointer"
                             >
-                                Send <Send size={12} />
+                                {replyTo ? 'Reply' : 'Send'} <Send size={12} />
                             </button>
                         </div>
                     </div>

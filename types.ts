@@ -344,8 +344,11 @@ export interface TaskComment {
   text: string;
   userId: string;
   userName: string;
+  userAvatar?: string;
   createdAt: string;
-  mentions?: string[]; // userIds
+  updatedAt?: string;
+  parentId?: string;   // if set, this is a reply to another comment
+  mentions?: string[]; // array of userIds mentioned with @
 }
 
 export interface Client {

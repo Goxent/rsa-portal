@@ -14,7 +14,7 @@ import { Client, UserRole, UserProfile, Task } from '../types';
 import { AuthService } from '../services/firebase';
 import { toast } from 'react-hot-toast';
 import StaffSelect from '../components/StaffSelect';
-import { ClientCardSkeleton } from '../components/ui/LoadingSkeleton';
+import { SkeletonCard } from '../components/common/SkeletonCard';
 import { getAvatarColor, getInitials } from '../utils/userUtils';
 
 import { INITIAL_CLIENTS } from '../constants/initialClients';
@@ -598,7 +598,18 @@ const ClientsPage: React.FC = () => {
             </div>
 
             {loading && (
-                <ClientCardSkeleton count={6} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="glass-panel p-0 rounded-2xl overflow-hidden border border-white/5 h-[180px]">
+                            <div className="h-24 bg-white/[0.03] animate-pulse relative overflow-hidden">
+                                <div className="absolute inset-0 skeleton-pulse opacity-50" />
+                            </div>
+                            <div className="p-6">
+                                <SkeletonCard lines={2} hasAvatar height={60} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             )}
 
             {!loading && filteredClients.length === 0 && (

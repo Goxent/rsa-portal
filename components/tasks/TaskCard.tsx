@@ -82,7 +82,7 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
                         task.status !== TaskStatus.COMPLETED && task.status !== TaskStatus.ARCHIVED;
     const pc          = P[task.priority] ?? P[TaskPriority.LOW];
     const isCompleted = task.status === TaskStatus.COMPLETED;
-    const validAssignees = task.assignedTo.filter(uid => uid && typeof uid === 'string' && uid.trim() !== '');
+    const validAssignees = (task.assignedTo || []).filter(uid => uid && typeof uid === 'string' && uid.trim() !== '');
     const IconComp = task.taskType ? ICON_MAP[TASK_TYPE_ICONS[task.taskType]] : null;
 
     const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MASTER_ADMIN;
@@ -303,7 +303,7 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, index, usersList, 
     prev.task.title === next.task.title &&
     prev.task.dueDate === next.task.dueDate &&
     prev.task.priority === next.task.priority &&
-    prev.task.assignedTo.length === next.task.assignedTo.length &&
+    (prev.task.assignedTo?.length || 0) === (next.task.assignedTo?.length || 0) &&
     prev.task.clientName === next.task.clientName &&
     prev.task.subtasks?.length === next.task.subtasks?.length &&
     (prev.task.subtasks?.filter(s => s.isCompleted).length === next.task.subtasks?.filter(s => s.isCompleted).length) &&

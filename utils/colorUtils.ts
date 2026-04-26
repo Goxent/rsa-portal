@@ -18,7 +18,7 @@ export const GRADIENT_PALETTE = [
  */
 export function getClientVisuals(seed?: string) {
     if (!seed || seed.length === 0) return GRADIENT_PALETTE[0];
-    
+        
     const index = (seed.charCodeAt(0) + seed.charCodeAt(seed.length - 1)) % GRADIENT_PALETTE.length;
     return GRADIENT_PALETTE[index];
 }

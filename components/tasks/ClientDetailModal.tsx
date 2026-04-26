@@ -311,8 +311,8 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
 
                                 {client.documents && client.documents.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {client.documents.map(doc => (
-                                            <div key={doc.id} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
+                                        {client.documents.map((doc, idx) => (
+                                            <div key={doc.id || `doc-${idx}`} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
                                                         <FileText size={20} />
@@ -351,8 +351,8 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         {activeTab === 'TASKS' && (
                             <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {clientTasks.length > 0 ? (
-                                    clientTasks.map(task => (
-                                        <div key={task.id} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
+                                    clientTasks.map((task, idx) => (
+                                        <div key={task.id || `task-${idx}`} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
                                             <div>
                                                 <h4 className="font-bold text-white text-base mb-1 group-hover:text-amber-400 transition-colors">{task.title}</h4>
                                                 <div className="flex gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
@@ -376,8 +376,8 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         {activeTab === 'COMPLIANCE' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {clientCompliance.length > 0 ? (
-                                    clientCompliance.map(event => (
-                                        <div key={event.id} className="p-6 bg-white/5 rounded-2xl border-l-[6px] border border-white/5 border-l-amber-500">
+                                    clientCompliance.map((event, idx) => (
+                                        <div key={event.id || `event-${idx}`} className="p-6 bg-white/5 rounded-2xl border-l-[6px] border border-white/5 border-l-amber-500">
                                             <div className="flex justify-between items-start mb-4">
                                                 <span className="px-2 py-0.5 rounded-md bg-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest">{event.category}</span>
                                                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500">

@@ -263,7 +263,7 @@ const TemplatesPage: React.FC = () => {
         }
 
         if (template.reviewChecklist) {
-            setReviewerChecklist(template.reviewChecklist);
+            setReviewerChecklist(template.reviewChecklist as ReviewChecklistItem[]);
         } else {
             setReviewerChecklist([]);
         }

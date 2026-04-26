@@ -7,7 +7,7 @@ import {
     Trash2, Save, Loader2, CheckCircle2, Check, Eye, Map,
     Sparkles, Book, ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen,
     Users, UserCheck, Shield, Lock, Unlock, ExternalLink, History, CloudUpload, FileText,
-    MessageSquare, Zap, Settings2, Folder, Download, ChevronDown
+    MessageSquare, Zap, Settings2, Folder, Download, ChevronDown, CheckSquare
 } from 'lucide-react';
 import { GoogleDriveService } from '../../services/googleDrive';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation, ReviewChecklistItem } from '../../types';
@@ -17,6 +17,8 @@ import { KnowledgeService } from '../../services/knowledge';
 import { TemplateService } from '../../services/templates';
 import { AuditDocService, AuditDocFile, AuditDocFolder } from '../../services/auditDocs';
 import { AUDIT_FOLDER_STRUCTURE, AuditFolderKey } from '../../types';
+import { AuditService } from '../../services/AuditService';
+import { useDebounce } from 'react-use';
 import StaffSelect from '../StaffSelect';
 import ClientSelect from '../ClientSelect';
 import TaskComments from '../TaskComments';
@@ -27,6 +29,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { taskSchema, TaskFormValues } from '../../utils/validationSchemas';
 import { convertADToBS, generateFiscalYearOptions } from '../../utils/nepaliDate';
 import { exportTaskToExcel, exportTaskToPDF } from '../../utils/taskExportUtils';
+import { useMedia } from 'react-use';
+import TaskCommentsTab from './tabs/TaskCommentsTab';
+import TaskObservationsTab from './tabs/TaskObservationsTab';
+import TaskDocumentsTab from './tabs/TaskDocumentsTab';
+import TaskDetailsTab from './tabs/TaskDetailsTab';
+import TaskSubtasksTab from './tabs/TaskSubtasksTab';
+import TaskReviewChecklistTab from './tabs/TaskReviewChecklistTab';
+import TaskHistoryTab from './tabs/TaskHistoryTab';
 
 interface TaskDetailPaneProps {
     task: Partial<Task>;
@@ -54,6 +64,7 @@ interface TaskDetailPaneProps {
     templates: Template[];
     userTasksCount?: Record<string, number>;
     isArchived?: boolean;
+    initialTab?: string;
 }
 
 const PHASE_ORDER = {
@@ -146,17 +157,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     onSwapPhaseChecklist,
     templates,
     userTasksCount = {},
-    isArchived = false
+    isArchived = false,
+    initialTab
 }) => {
     const { user } = useAuth();
     const { openModal } = useModal();
+    const isMobile = useMedia('(max-width: 768px)');
     const initialTaskRef = useRef<Partial<Task> | null>(null);
     const [showDiscardBanner, setShowDiscardBanner] = useState(false);
     const [showPhaseWarning, setShowPhaseWarning] = useState<AuditPhase | null>(null);
     const fiscalYears = useMemo(() => generateFiscalYearOptions(2080), []);
     const [allResources, setAllResources] = useState<Resource[]>([]);
     const [templateFolders, setTemplateFolders] = useState<TemplateFolder[]>([]);
-    const [activeDetailTab, setActiveDetailTab] = useState<string>('SETTINGS');
+    const [activeDetailTab, setActiveDetailTab] = useState<string>(initialTab || 'OVERVIEW');
     const [activeReviewTab, setActiveReviewTab] = useState<'TL' | 'ER' | 'SP'>('TL');
     const [importPhase, setImportPhase] = useState<AuditPhase | null>(null);
     const [templateSearchQuery, setTemplateSearchQuery] = useState('');
@@ -181,6 +194,35 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const [showExportMenu, setShowExportMenu] = useState(false);
 
     const descRef = useRef<HTMLTextAreaElement | null>(null);
+    
+    // ── AUTOSAVE LOGIC ──
+    const [isDirty, setIsDirty] = useState(false);
+    const [lastSavedTask, setLastSavedTask] = useState<Partial<Task>>(task);
+
+    // Track dirty state for unsaved changes guard
+    useEffect(() => {
+        if (task.id) {
+            const hasChanges = task.title !== lastSavedTask.title || 
+                              task.description !== lastSavedTask.description ||
+                              task.priority !== lastSavedTask.priority;
+            setIsDirty(hasChanges);
+        }
+    }, [task, lastSavedTask]);
+
+    // Debounced autosave
+    useDebounce(() => {
+        if (task.id && isDirty && !isSaving) {
+            const updates = {
+                title: task.title,
+                description: task.description,
+                priority: task.priority
+            };
+            onSave(updates);
+            setLastSavedTask(prev => ({ ...prev, ...updates }));
+            setIsDirty(false);
+            console.log('Autosaved changes');
+        }
+    }, 2000, [task.title, task.description, task.priority]);
 
     const handleExportPDF = () => {
         try {
@@ -780,7 +822,17 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         // IMMEDIATE PERSISTENCE: Sign-offs are critical security events.
         // We trigger an auto-save immediately to ensure the state is persisted to Firestore.
         toast.promise(
-            Promise.resolve(onSave(updates)),
+            (async () => {
+                await onSave(updates);
+                if (user) {
+                    await AuditService.logAction(
+                        'TASK_SIGN_OFF',
+                        { uid: user.uid, displayName: user.displayName || 'Staff' },
+                        { id: task.id!, name: task.title },
+                        { role, timestamp: now }
+                    );
+                }
+            })(),
             {
                 loading: `Sealing ${role} Protocol...`,
                 success: `${role} Sign-off Secured and Persisted!`,
@@ -1867,41 +1919,42 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </div>
                         </div>
 
-                        {/* Secondary Navigation — Slim & High Density */}
-                        <div className="shrink-0 bg-white/80 dark:bg-[#0c0e12] border-b border-black/5 dark:border-white/[0.04] px-8 py-3 flex flex-wrap items-center justify-between gap-4 z-50">
-                            {/* Main Tabs - Redesigned to match mockup */}
-                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-white/[0.03] p-1 rounded-full border border-black/5 dark:border-white/5 shadow-inner">
+                        {/* Secondary Navigation — Sticky & Responsive */}
+                        <div className="shrink-0 sticky top-0 bg-white/80 dark:bg-[#0c0e12]/90 backdrop-blur-md border-b border-black/5 dark:border-white/[0.04] px-4 md:px-8 py-2 md:py-3 flex items-center justify-between gap-4 z-[60]">
+                            {/* Main Tabs - Refactored for Mobile */}
+                            <div className="flex items-center gap-1.5 md:gap-2 bg-gray-100 dark:bg-white/[0.03] p-1 rounded-full border border-black/5 dark:border-white/5 shadow-inner overflow-x-auto scrollbar-none max-w-full">
                                 {(task.id ? [
-                                    { id: 'OVERVIEW', label: 'Overview', icon: <Activity size={14} /> },
-                                    { id: 'PROCEDURES', label: 'Sub task', icon: <ClipboardCheck size={14} /> },
-                                    { id: 'EVIDENCE', label: 'Evidence Repository', icon: <FolderOpen size={14} /> },
-                                    { id: 'OBSERVATIONS', label: 'Engagement Findings', icon: <Eye size={14} /> },
-                                    { id: 'REVIEW_CHECKLIST', label: 'Reviewer Checklist', icon: <ShieldCheck size={14} /> },
-                                    { id: 'COMMENTS', label: 'Collaborate', icon: <MessageSquare size={14} />, badge: (task.comments || []).length },
-                                    ...(isArchived ? [] : [{ id: 'SETTINGS', label: 'Settings', icon: <Settings2 size={14} /> }])
+                                    { id: 'OVERVIEW', label: 'Details', icon: <Settings2 size={14} /> },
+                                    { id: 'PROCEDURES', label: 'Subtasks', icon: <CheckSquare size={14} />, badge: `${(task.subtasks || []).filter(s => s.isCompleted).length}/${(task.subtasks || []).length}` },
+                                    { id: 'COMMENTS', label: 'Comments', icon: <MessageSquare size={14} />, badge: (task.comments || []).length },
+                                    { id: 'EVIDENCE', label: 'Documents', icon: <FolderOpen size={14} />, badge: auditFiles.length },
+                                    { id: 'OBSERVATIONS', label: 'Observations', icon: <Eye size={14} />, badge: (task.observations || []).length },
+                                    { id: 'HISTORY', label: 'History', icon: <History size={14} /> },
+                                    { id: 'REVIEW_CHECKLIST', label: 'Review', icon: <ShieldCheck size={14} />, desktopOnly: true },
+                                    ...(isArchived ? [] : [{ id: 'SETTINGS', label: 'Setup', icon: <Activity size={14} />, adminOnly: true }])
                                 ] : [
                                     { id: 'SETTINGS', label: 'Task Detail', icon: <Settings2 size={14} /> },
-                                    { id: 'PROCEDURES', label: 'Sub task', icon: <ClipboardCheck size={14} /> }
+                                    { id: 'PROCEDURES', label: 'Subtasks', icon: <CheckSquare size={14} /> }
                                 ]).map((tab: any) => {
+                                    if (tab.desktopOnly && isMobile) return null;
                                     const isActive = activeDetailTab === tab.id;
                                     return (
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveDetailTab(tab.id as any)}
-                                            className={`relative flex items-center gap-2 px-6 py-2 rounded-[28px] text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                                            className={`relative flex items-center gap-2 px-3 md:px-6 py-2 rounded-[28px] text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${
                                                 isActive 
                                                     ? 'bg-brand-500 text-white shadow-md' 
                                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
                                             }`}
                                         >
                                             <span className={`transition-colors ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-500'}`}>{tab.icon}</span>
-                                            {tab.label}
-                                            {tab.badge ? (
-                                                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] leading-none ${isActive ? 'bg-white/20 text-white' : 'bg-brand-500/10 text-brand-500 dark:bg-brand-500/20 dark:text-brand-400'}`}>
+                                            <span className="hidden min-[480px]:inline">{tab.label}</span>
+                                            {tab.badge !== undefined && (
+                                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] leading-none ${isActive ? 'bg-white/20 text-white' : 'bg-brand-500/10 text-brand-500 dark:bg-brand-500/20 dark:text-brand-400'}`}>
                                                     {tab.badge}
                                                 </span>
-                                            ) : null}
-                                            {/* Small activity dot just like the mockup */}
+                                            )}
                                             {isActive && <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-emerald-400 rounded-full border border-white dark:border-[#0c0e12]" />}
                                         </button>
                                     );
@@ -1971,625 +2024,74 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         {/* Content Layout */}
                         <div className="flex-1 overflow-hidden bg-[#f8f9fa] dark:bg-[#080a0e] flex flex-col">
                             {activeDetailTab === 'OVERVIEW' && (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-[1600px] w-full mx-auto p-4 md:p-6 space-y-6 pb-32">
-                                        
-                                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                                            {/* Left Column: Core Identity (Read-only) */}
-                                            <div className="lg:col-span-3 space-y-6">
-                                                <div className="bg-white dark:bg-white/5 rounded-[32px] p-8 border border-black/5 dark:border-white/10 shadow-sm">
-                                                    <div className="flex items-center gap-3 mb-8">
-                                                        <div className="w-10 h-10 rounded-2xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
-                                                            <Briefcase size={20} className="text-brand-400" />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-[14px] font-black text-white uppercase tracking-widest">Engagement Overview</h4>
-                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Core Information Summary</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Title</label>
-                                                            <p className="text-[14px] font-bold text-white">{task.title}</p>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Client</label>
-                                                            <p className="text-[14px] font-bold text-white">{task.clientName || 'N/A'}</p>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Fiscal Year</label>
-                                                            <p className="text-[14px] font-bold text-emerald-400">FY {task.fiscalYear}</p>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Status & Phase</label>
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <span className="px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-black uppercase tracking-widest border border-brand-500/20">
-                                                                    {task.status?.replace('_', ' ')}
-                                                                </span>
-                                                                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
-                                                                    {(PHASE_LABELS_FULL as any)[task.auditPhase as AuditPhase] || task.auditPhase}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Start Date</label>
-                                                            <p className="text-[14px] font-bold text-emerald-400">{task.startDate || '—'}</p>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Deadline</label>
-                                                            <p className="text-[14px] font-bold text-rose-400">{task.dueDate}</p>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Lead Auditor</label>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] font-bold text-brand-400 uppercase">
-                                                                    {task.assignedToNames?.[0]?.charAt(0) || 'A'}
-                                                                </div>
-                                                                <p className="text-[13px] font-bold text-white">{task.assignedToNames?.[0] || 'Unassigned'}</p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="md:col-span-2 space-y-2 pt-4 border-t border-white/5">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Description / Audit Scope</label>
-                                                            <p className="text-[13px] text-gray-400 leading-relaxed font-semibold italic">
-                                                                "{task.description || 'No engagement scope defined.'}"
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Right Column: Key Pulse Metrics */}
-                                            <div className="space-y-6">
-                                                <div className="bg-white dark:bg-white/5 rounded-[32px] p-8 border border-black/5 dark:border-white/10 shadow-sm space-y-8">
-                                                    <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Pulse Indicator</h4>
-                                                    
-                                                    <div className="space-y-6">
-                                                        {/* Progress Pulsar */}
-                                                        <div className="space-y-3">
-                                                            <div className="flex justify-between items-end">
-                                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Execution Progress</span>
-                                                                <span className="text-[16px] font-black text-brand-400">{Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / (task.subtasks || []).length) * 100 || 0)}%</span>
-                                                            </div>
-                                                            <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                                                                <div 
-                                                                    className="h-full bg-gradient-to-r from-emerald-500 to-brand-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all duration-1000"
-                                                                    style={{ width: `${Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / (task.subtasks || []).length) * 100 || 0)}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('PROCEDURES')}>
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <div className="p-1 rounded bg-brand-500/10 text-brand-400">
-                                                                        <ClipboardCheck size={12} />
-                                                                    </div>
-                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Sub task</span>
-                                                                </div>
-                                                                <p className="text-xl font-black text-white">{(task.subtasks || []).filter(s => s.isCompleted).length}<span className="text-[10px] text-gray-600 font-bold"> / {(task.subtasks || []).length}</span></p>
-                                                            </div>
-
-                                                            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('OBSERVATIONS')}>
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <div className="p-1 rounded bg-rose-500/10 text-rose-400">
-                                                                        <Eye size={12} />
-                                                                    </div>
-                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Findings</span>
-                                                                </div>
-                                                                <p className="text-xl font-black text-white">{(task.observations || []).length}</p>
-                                                            </div>
-
-                                                            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('EVIDENCE')}>
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <div className="p-1 rounded bg-emerald-500/10 text-emerald-400">
-                                                                        <FolderOpen size={12} />
-                                                                    </div>
-                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Documents</span>
-                                                                </div>
-                                                                <p className="text-xl font-black text-white">{auditFiles.length}</p>
-                                                            </div>
-
-                                                            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('COMMENTS')}>
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <div className="p-1 rounded bg-amber-500/10 text-amber-400">
-                                                                        <MessageSquare size={12} />
-                                                                    </div>
-                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Activity</span>
-                                                                </div>
-                                                                <p className="text-xl font-black text-white">{(task.comments || []).length}</p>
-                                                            </div>
-
-                                                            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-indigo-500/20 transition-all cursor-pointer group col-span-2" onClick={() => setActiveDetailTab('REVIEW_CHECKLIST')}>
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="p-1 rounded bg-indigo-500/10 text-indigo-400">
-                                                                            <ShieldCheck size={12} />
-                                                                        </div>
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Review Protocol</span>
-                                                                    </div>
-                                                                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">LAYER 1/2/3</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 mt-1">
-                                                                    {[
-                                                                        { label: 'TL', done: !!task.teamLeadApprovedAt, color: 'brand' },
-                                                                        { label: 'ER', done: !!task.engagementReviewerApprovedAt, color: 'indigo' },
-                                                                        { label: 'SP', done: !!task.signingPartnerApprovedAt, color: 'rose' }
-                                                                    ].map(lv => (
-                                                                        <div key={lv.label} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg border transition-all ${
-                                                                            lv.done 
-                                                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                                                                                : 'bg-white/5 border-white/5 text-gray-600'
-                                                                        }`}>
-                                                                            {lv.done ? <CheckCircle2 size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />}
-                                                                            <span className="text-[9px] font-black">{lv.label}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {!isArchived && (
-                                                        <button 
-                                                            onClick={() => setActiveDetailTab('SETTINGS')}
-                                                            className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] transition-all border border-white/5 flex items-center justify-center gap-2"
-                                                        >
-                                                            <Settings2 size={12} /> Manage Engagement
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <TaskDetailsTab
+                                    task={task}
+                                    auditFiles={auditFiles}
+                                    setActiveDetailTab={setActiveDetailTab}
+                                    isArchived={isArchived}
+                                />
                             )}
 
                             {activeDetailTab === 'PROCEDURES' && (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-[1600px] w-full mx-auto p-3 md:p-4 space-y-4 pb-32">
-                                        
-                                        {/* Engagement Stepper Redesigned */}
-                                        <div className="bg-white dark:bg-white/5 rounded-[24px] p-2 flex items-center justify-between shadow-sm border border-black/5 dark:border-white/10 w-fit mx-auto">
-                                            {[
-                                                { id: AuditPhase.ONBOARDING, label: 'Onboarding', icon: <Map size={16} /> },
-                                                { id: AuditPhase.PLANNING_AND_EXECUTION, label: 'Planning and Execution', icon: <Activity size={16} /> },
-                                                { id: AuditPhase.REVIEW_AND_CONCLUSION, label: 'Review and Conclusion', icon: <CheckCircle2 size={16} /> }
-                                            ].map((p, i, arr) => {
-                                                const isActive = watch('auditPhase') === p.id;
-                                                const isPast = PHASE_ORDER[watch('auditPhase') as AuditPhase] > PHASE_ORDER[p.id];
-                                                
-                                                return (
-                                                    <React.Fragment key={p.id}>
-                                                        <button
-                                                            onClick={() => handlePhaseSwitch(p.id)}
-                                                            className={`flex items-center gap-3 px-6 py-2.5 rounded-full transition-all duration-300 ${
-                                                                isActive 
-                                                                    ? 'bg-emerald-50 dark:bg-brand-500/20 text-emerald-700 dark:text-brand-400' 
-                                                                    : isPast 
-                                                                        ? 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5' 
-                                                                        : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 opacity-60'
-                                                            }`}
-                                                        >
-                                                            <div className={`p-1 rounded-full ${isActive ? 'bg-emerald-100 dark:bg-brand-500/30' : ''}`}>
-                                                                {isPast ? <CheckCircle2 size={16} /> : p.icon}
-                                                            </div>
-                                                            <span className="text-[12px] font-bold tracking-tight">{p.label}</span>
-                                                        </button>
-                                                        {i < arr.length - 1 && <div className="w-px h-6 bg-black/5 dark:bg-white/5 mx-2" />}
-                                                    </React.Fragment>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <div className="grid grid-cols-1 w-full gap-y-8">
-                                            {[AuditPhase.ONBOARDING, AuditPhase.PLANNING_AND_EXECUTION, AuditPhase.REVIEW_AND_CONCLUSION].map(phase => {
-                                                const phaseSubtasks = (task.subtasks || []).filter(st => st.phase === phase);
-                                                const isCurrent = currentPhase === phase;
-                                                const isPast = PHASE_ORDER[phase] < PHASE_ORDER[currentPhase];
-                                                
-                                                if (!isCurrent && !isPast) return null;
-
-                                                return (
-                                                    <div key={phase} className={`space-y-4 bg-white dark:bg-white/[0.02] border border-black/5 dark:border-white/10 rounded-[28px] p-6 shadow-sm ${!isCurrent ? 'opacity-80' : ''}`}>
-                                                        {/* Phase Header */}
-                                                        <div className="flex items-center justify-between mb-4 px-2">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${
-                                                                    isCurrent 
-                                                                        ? 'bg-brand-500/10 text-brand-400 border-brand-500/20' 
-                                                                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                                }`}>
-                                                                    {PHASE_ICONS[phase]}
-                                                                </div>
-                                                                <div>
-                                                                    <h5 className="text-[13px] font-black uppercase tracking-widest text-white">
-                                                                        {PHASE_LABELS_FULL[phase]} {isCurrent && <span className="inline-flex items-center gap-1.5 ml-3 px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 text-[9px] border border-brand-500/20">● Active</span>}
-                                                                    </h5>
-                                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                                                                        {isPast ? 'Verification Log' : 'Execution Queue'}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="h-px flex-1 bg-black/5 dark:bg-white/5 mx-8" />
-                                                            <div className="text-right">
-                                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                                                    {phaseSubtasks.filter(s => s.isCompleted).length}/{phaseSubtasks.length} Done
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="space-y-3">
-                                                            {phaseSubtasks.length === 0 ? (
-                                                                <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-[24px] bg-white/[0.01]">
-                                                                    <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest font-bold">No sub-tasks defined for this phase</p>
-                                                                </div>
-                                                            ) : (
-                                                                phaseSubtasks.map((st, i) => renderSubtask(st, i))
-                                                            )}
-                                                        </div>
-
-
-
-                                                        {isCurrent && canAddSubtasks && (
-                                                            <div className="flex gap-3 items-center px-4 py-2 rounded-[20px] border border-white/5 bg-white/[0.02] mt-4 focus-within:border-brand-500/30 transition-all shadow-inner group">
-                                                                <Plus size={14} className="text-gray-600 group-focus-within:text-brand-400 transition-colors" />
-                                                                <input
-                                                                    type="text"
-                                                                    value={localSubtaskTitles[phase] || ''}
-                                                                    onChange={(e) => setLocalSubtaskTitles(prev => ({ ...prev, [phase]: e.target.value }))}
-                                                                    placeholder={`Add sub-task to ${PHASE_LABELS_FULL[phase]}...`}
-                                                                    className="flex-1 bg-transparent text-[12px] text-white outline-none font-bold placeholder:text-gray-700"
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') {
-                                                                            e.preventDefault();
-                                                                            handleQuickAddSubtask(phase);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
+                                <TaskSubtasksTab
+                                    task={task}
+                                    currentPhase={currentPhase}
+                                    watchedPhase={watch('auditPhase') as AuditPhase}
+                                    canAddSubtasks={canAddSubtasks}
+                                    localSubtaskTitles={localSubtaskTitles}
+                                    setLocalSubtaskTitles={setLocalSubtaskTitles}
+                                    handlePhaseSwitch={handlePhaseSwitch}
+                                    handleQuickAddSubtask={handleQuickAddSubtask}
+                                    renderSubtask={renderSubtask}
+                                />
                             )}
 
                             {activeDetailTab === 'EVIDENCE' && (
-                                <div className="flex-1 flex overflow-hidden">
-                                     {/* Left Pane: Folder Navigation */}
-                                    <div className="w-80 border-r border-white/[0.04] p-8 space-y-8 overflow-y-auto custom-scrollbar">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em]">Audit Repository</h4>
-                                            <button 
-                                                onClick={loadAuditFiles}
-                                                className="p-1.5 text-gray-500 hover:text-white transition-all"
-                                                title="Sync Repository"
-                                            >
-                                                <History size={14} className={isLoadingDocs ? 'animate-spin' : ''} />
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            {Object.entries(AUDIT_FOLDER_STRUCTURE).map(([key, def]) => {
-                                                const isSelected = selectedFolderForUpload === key;
-                                                const fileCount = auditFiles.filter(f => f.folderKey === key).length;
-                                                
-                                                return (
-                                                    <div key={key} className="space-y-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedFolderForUpload(key as any);
-                                                                setSelectedLineItemForUpload('');
-                                                            }}
-                                                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all border ${
-                                                                isSelected 
-                                                                    ? 'bg-brand-500 border-brand-400 text-white shadow-lg' 
-                                                                    : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-center gap-3 overflow-hidden">
-                                                                <FolderOpen size={16} className={isSelected ? 'text-white' : 'text-brand-500/60'} />
-                                                                <span className="text-[12px] font-bold truncate tracking-tight">{def.label}</span>
-                                                            </div>
-                                                            {fileCount > 0 && (
-                                                                <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black ${isSelected ? 'bg-white/20 text-white' : 'bg-brand-500/20 text-brand-400'}`}>
-                                                                    {fileCount}
-                                                                </span>
-                                                            )}
-                                                        </button>
-
-                                                        {isSelected && (
-                                                            <div className="ml-4 pl-4 border-l border-white/10 space-y-1 pt-1 pb-2">
-                                                                {/* Native Line Items (for B) */}
-                                                                {def.lineItems?.map(item => {
-                                                                    const isItemSelected = selectedLineItemForUpload === item;
-                                                                    const itemFileCount = auditFiles.filter(f => f.lineItem === item).length;
-                                                                    
-                                                                    return (
-                                                                        <button
-                                                                            key={item}
-                                                                            onClick={() => setSelectedLineItemForUpload(item)}
-                                                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-medium transition-all ${
-                                                                                isItemSelected ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-                                                                            }`}
-                                                                        >
-                                                                            <span className="truncate pr-2">{item}</span>
-                                                                            {itemFileCount > 0 && <span className="opacity-60">{itemFileCount}</span>}
-                                                                        </button>
-                                                                    );
-                                                                })}
-
-                                                                {/* Custom Sub-folders — Read-only display */}
-                                                                {customFolders.filter(f => f.folderKey === key && (key !== 'B' || f.lineItem === selectedLineItemForUpload)).map(folder => (
-                                                                    <div key={folder.id} className="flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-medium text-gray-400">
-                                                                        <div className="flex items-center gap-2 truncate">
-                                                                            <Folder size={12} className="text-amber-500/50" />
-                                                                            <span className="truncate">{folder.name}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* Right Pane: File Listing & Upload */}
-                                    <div className="flex-1 glass-pane bg-[#080a0e] flex flex-col overflow-hidden">
-                                        <div className="shrink-0 p-8 border-b border-white/[0.04] flex items-center justify-between bg-black/20">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
-                                                    <FileText size={18} className="text-brand-400" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-[14px] font-black text-white uppercase tracking-[0.2em]">Documentation Repository</h3>
-                                                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
-                                                        {selectedFolderForUpload ? `${AUDIT_FOLDER_STRUCTURE[selectedFolderForUpload as AuditFolderKey]?.label} ${selectedLineItemForUpload ? `→ ${selectedLineItemForUpload}` : ''}` : 'Select a folder to manage files'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {selectedFolderForUpload && (
-                                                <div className="flex items-center gap-3">
-                                                    <label className="flex items-center gap-2.5 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all shadow-lg shadow-brand-500/20 active:scale-95">
-                                                        <CloudUpload size={14} /> Upload Evidence
-                                                        <input 
-                                                            type="file" 
-                                                            className="hidden" 
-                                                            multiple
-                                                            onChange={(e) => handleFileUpload(e.target.files)}
-                                                            disabled={isUploadingDoc}
-                                                        />
-                                                    </label>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-                                            {isLoadingDocs ? (
-                                                <div className="h-full flex flex-col items-center justify-center py-24 gap-4 opacity-50">
-                                                    <Loader2 size={48} className="text-brand-500 animate-spin" strokeWidth={1.5} />
-                                                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-500">Synchronizing Vault...</p>
-                                                </div>
-                                            ) : !selectedFolderForUpload ? (
-                                                <div className="h-full flex flex-col items-center justify-center py-24 gap-6 text-center opacity-40">
-                                                    <div className="w-24 h-24 rounded-[32px] bg-white/5 border border-dashed border-white/20 flex items-center justify-center">
-                                                        <FolderOpen size={48} className="text-gray-700" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[15px] font-black uppercase tracking-[0.3em] text-white">Repository Offline</p>
-                                                        <p className="text-[10px] font-medium text-gray-600 uppercase tracking-[0.2em] mt-4">Select a target folder from the left pane to access documentation.</p>
-                                                    </div>
-                                                </div>
-                                            ) : (() => {
-                                                const currentFiles = auditFiles.filter(f => 
-                                                    f.folderKey === selectedFolderForUpload && 
-                                                    (!selectedLineItemForUpload || f.lineItem === selectedLineItemForUpload)
-                                                );
-
-                                                if (currentFiles.length === 0) {
-                                                    return (
-                                                        <div className="py-24 text-center border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.01] flex flex-col items-center gap-6">
-                                                            <FileSearch size={48} className="text-gray-800 opacity-20" />
-                                                            <div>
-                                                                <p className="text-[13px] font-black text-white uppercase tracking-[0.2em]">Vault is Empty</p>
-                                                                <p className="text-[10px] text-gray-700 font-bold uppercase tracking-widest mt-2 px-10">No documentation has been synchronized to this slot for the selected client and fiscal year.</p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <>
-                                                        {/* Read-Only Notice */}
-                                                        <div className="mb-5 flex items-start gap-3 px-4 py-3 rounded-2xl border"
-                                                            style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>
-                                                            <div className="shrink-0 mt-0.5">
-                                                                <ShieldCheck size={14} style={{ color: '#f59e0b' }} />
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f59e0b' }}>Read-Only View</p>
-                                                                <p className="text-[9px] font-medium mt-0.5" style={{ color: 'rgba(245,158,11,0.6)' }}>
-                                                                    Files displayed here are read-only references. To delete or reorganize files, use the <strong style={{ color: '#f59e0b' }}>Audit Documentation</strong> module with appropriate authorization.
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                                        {currentFiles.map(file => (
-                                                            <div key={file.id} className="group relative bg-[#0f1218] border border-white/5 rounded-2xl p-4 transition-all hover:bg-white/[0.03] hover:border-brand-500/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
-                                                                <div className="flex items-start justify-between mb-4">
-                                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${file.mimeType.includes('pdf') ? 'bg-rose-500/10 text-rose-400' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                                                                        {file.mimeType.includes('image') ? <ExternalLink size={18} /> : <FileText size={18} />}
-                                                                    </div>
-                                                                    <button 
-                                                                        onClick={() => window.open(GoogleDriveService.getFileView(file.appwriteFileId), '_blank')}
-                                                                        className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-white hover:bg-brand-500 transition-all opacity-0 group-hover:opacity-100"
-                                                                    >
-                                                                        <ExternalLink size={14} />
-                                                                    </button>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-[12px] font-bold text-gray-100 truncate pr-4" title={file.fileName}>{file.fileName}</p>
-                                                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
-                                                                        {Math.round(file.fileSize / 1024)} KB • {new Date(file.uploadedAt).toLocaleDateString()}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2">
-                                                                    <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-[7px] font-black text-brand-400">
-                                                                        {(file.uploadedByName || '?').substring(0, 2).toUpperCase()}
-                                                                    </div>
-                                                                    <span className="text-[9px] font-bold text-gray-600 truncate">{file.uploadedByName}</span>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                        </div>
-                                                    </>
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-                                </div>
+                                <TaskDocumentsTab
+                                    auditFiles={auditFiles}
+                                    customFolders={customFolders}
+                                    isLoadingDocs={isLoadingDocs}
+                                    isUploadingDoc={isUploadingDoc}
+                                    selectedFolderForUpload={selectedFolderForUpload}
+                                    selectedLineItemForUpload={selectedLineItemForUpload}
+                                    onSelectFolder={setSelectedFolderForUpload}
+                                    onSelectLineItem={setSelectedLineItemForUpload}
+                                    onLoadFiles={loadAuditFiles}
+                                    onFileUpload={handleFileUpload}
+                                />
                             )}
 
                             {activeDetailTab === 'OBSERVATIONS' && (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
-                                    <div className="max-w-[1600px] w-full mx-auto space-y-6">
-                                        <div className="flex items-center justify-between px-2">
-                                            <div className="flex flex-col gap-2">
-                                                <h4 className="text-[15px] font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                                                    Audit Observations
-                                                    <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-black border border-amber-500/10">
-                                                        {(task.observations || []).length} FINDINGS
-                                                    </span>
-                                                </h4>
-                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em]">Documentation of technical issues and internal control weaknesses</p>
-                                            </div>
-                                            {!isTaskCompleted && canEditTask && (
-                                                <button
-                                                    onClick={handleAddObservation}
-                                                    className="px-6 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all flex items-center gap-2 group"
-                                                >
-                                                    <Plus size={14} /> Log New Observation
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-6">
-                                            {(task.observations || []).length === 0 ? (
-                                                <div className="py-24 text-center border-2 border-dashed border-white/5 rounded-[48px] bg-white/[0.01]">
-                                                    <FileSearch size={64} className="mx-auto text-gray-800 opacity-20 mb-6" />
-                                                    <p className="text-[13px] font-black text-gray-300 uppercase tracking-[0.2em]">No Findings Recorded</p>
-                                                    <p className="text-[10px] text-gray-700 font-bold uppercase tracking-widest mt-2">Clear engagement. No technical observations found during execution.</p>
-                                                </div>
-                                            ) : (
-                                                task.observations!.map((obs, idx) => (
-                                                     <div key={obs.id} className="bg-[#0f1218] border border-white/5 rounded-[24px] p-6 space-y-5 relative group/obs hover:border-amber-500/20 transition-all shadow-xl">
-                                                         <div className="flex items-center justify-between">
-                                                             <div className="flex-1 flex items-center gap-4">
-                                                                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
-                                                                     <ShieldAlert size={18} />
-                                                                 </div>
-                                                                 <div className="flex-1 flex flex-col">
-                                                                    <input 
-                                                                        value={obs.title} 
-                                                                        onChange={e => handleUpdateObservation(obs.id, { title: e.target.value })}
-                                                                        readOnly={isTaskCompleted || !canEditTask || (isAdminOrMaster && user?.uid !== obs.createdBy && !isEngagementTeamMember)}
-                                                                        className="bg-transparent text-[16px] font-bold text-white border-none outline-none placeholder:text-gray-800 tracking-tight w-full"
-                                                                        placeholder="Observation Title..."
-                                                                    />
-                                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                                        <span className="text-[9px] font-black text-gray-700 uppercase tracking-widest">Created by:</span>
-                                                                        <span className="text-[9px] font-black text-amber-500/60 uppercase tracking-widest">{obs.createdByName || 'Unknown'}</span>
-                                                                    </div>
-                                                                 </div>
-                                                             </div>
-                                                             <div className="flex items-center gap-3">
-                                                                 <select 
-                                                                     value={obs.severity} 
-                                                                     onChange={e => handleUpdateObservation(obs.id, { severity: e.target.value as any })}
-                                                                     disabled={isTaskCompleted || !canEditTask}
-                                                                     className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
-                                                                         obs.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                                                                         obs.severity === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                                                         'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                                                     }`}
-                                                                 >
-                                                                     <option value="LOW">Low Risk</option>
-                                                                     <option value="MEDIUM">Medium Risk</option>
-                                                                     <option value="HIGH">High Risk</option>
-                                                                 </select>
-                                                                 {!isTaskCompleted && (user?.uid === obs.createdBy) && (
-                                                                     <button onClick={() => handleRemoveObservation(obs.id)} className="p-1.5 text-gray-700 hover:text-rose-400 transition-all opacity-0 group-hover/obs:opacity-100"><Trash2 size={14} /></button>
-                                                                 )}
-                                                             </div>
-                                                         </div>
-
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                            <div className="space-y-2">
-                                                                <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] ml-1 flex items-center gap-2"><div className="w-1 h-2.5 bg-amber-500 rounded-full" /> Detail & Context</label>
-                                                                <textarea 
-                                                                    value={obs.observation}
-                                                                    onChange={e => handleUpdateObservation(obs.id, { observation: e.target.value })}
-                                                                    readOnly={isTaskCompleted || !canEditTask}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-amber-500/30 transition-all min-h-[50px] shadow-inner resize-y"
-                                                                    placeholder="Describe the finding in detail..."
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] ml-1 flex items-center gap-2"><div className="w-1 h-2.5 bg-rose-500 rounded-full" /> Implication / Risk</label>
-                                                                <textarea 
-                                                                    value={obs.implication}
-                                                                    onChange={e => handleUpdateObservation(obs.id, { implication: e.target.value })}
-                                                                    readOnly={isTaskCompleted || !canEditTask}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-rose-500/30 transition-all min-h-[50px] shadow-inner resize-y"
-                                                                    placeholder="What is the potential impact of this issue?"
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2 md:col-span-2">
-                                                                <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] ml-1 flex items-center gap-2"><div className="w-1 h-2.5 bg-brand-500 rounded-full" /> Audit Recommendation</label>
-                                                                <textarea 
-                                                                    value={obs.recommendation}
-                                                                    onChange={e => handleUpdateObservation(obs.id, { recommendation: e.target.value })}
-                                                                    readOnly={isTaskCompleted || !canEditTask}
-                                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-[12px] text-gray-200 outline-none focus:border-brand-500/30 transition-all min-h-[50px] shadow-inner resize-y"
-                                                                    placeholder="Suggested management response or technical fix..."
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                                <TaskObservationsTab
+                                    observations={task.observations || []}
+                                    isTaskCompleted={isTaskCompleted}
+                                    canEditTask={canEditTask}
+                                    isAdminOrMaster={isAdminOrMaster}
+                                    isEngagementTeamMember={isEngagementTeamMember}
+                                    currentUserId={user?.uid}
+                                    onAdd={handleAddObservation}
+                                    onUpdate={handleUpdateObservation}
+                                    onRemove={handleRemoveObservation}
+                                />
                             )}
 
-                             {activeDetailTab === 'REVIEW_CHECKLIST' && (
-                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 bg-black/20">
-                                     <div className="max-w-[1600px] w-full mx-auto pb-32">
-                                         {renderReviewerChecklist()}
-                                     </div>
-                                 </div>
-                             )}
+                            {activeDetailTab === 'REVIEW_CHECKLIST' && (
+                                <TaskReviewChecklistTab
+                                    renderReviewerChecklist={renderReviewerChecklist}
+                                />
+                            )}
 
                             {activeDetailTab === 'COMMENTS' && (
-                                <div className="flex-1 overflow-hidden flex flex-col p-2">
-                                    <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col bg-[#0c1218]/40 border border-white/5 rounded-[32px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all">
-                                        <div className="flex-1 overflow-hidden p-4 md:p-6">
-                                            <TaskComments 
-                                                comments={task.comments} 
-                                                users={usersList} 
-                                                onAddComment={onAddComment} 
-                                            />
-                                        </div>
-                                    </div>
+                                <TaskCommentsTab
+                                    comments={task.comments}
+                                    users={usersList}
+                                    onAddComment={onAddComment}
+                                />
+                            )}
+
+                            {activeDetailTab === 'HISTORY' && task.id && (
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                                    <TaskHistoryTab taskId={task.id} />
                                 </div>
                             )}
 
@@ -2829,11 +2331,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </button>
                                     </div>
                                 )}
+
+                                {/* Sync Status Indicator */}
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-amber-500 animate-pulse' : isDirty ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500">
+                                        {isSaving ? 'Syncing...' : isDirty ? 'Unsaved Changes' : 'Cloud Synced'}
+                                    </span>
+                                </div>
                             </div>
 
                             <div className="flex gap-4">
                                 <button
-                                    onClick={handleCloseAttempt}
+                                    onClick={() => {
+                                        if (isDirty) setShowDiscardBanner(true);
+                                        else onClose();
+                                    }}
                                     className="px-8 py-2 bg-gray-200/50 hover:bg-gray-200 text-gray-700 dark:bg-transparent dark:text-gray-500 dark:hover:text-white dark:hover:bg-white/5 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all border border-gray-300/50 dark:border-white/5 active:scale-95 shadow-sm"
                                 >
                                     Exit Workspace
@@ -2841,11 +2354,15 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 {!isTaskCompleted && canEditTask && (
                                     <button
                                         onClick={handleSubmit(handleSave)}
-                                        disabled={isSaving}
-                                        className="px-8 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                                        disabled={isSaving || !isDirty}
+                                        className={`px-8 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 flex items-center gap-3 ${
+                                            isDirty 
+                                            ? 'bg-brand-500 hover:bg-brand-600 text-white' 
+                                            : 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
+                                        }`}
                                     >
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                        {task.id ? 'Save task' : 'Create Task'}
+                                        {task.id ? (isDirty ? 'Push Changes' : 'All Synced') : 'Create Task'}
                                     </button>
                                 )}
                             </div>

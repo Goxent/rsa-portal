@@ -1099,3 +1099,45 @@
 .animate-slide-up-sheet {
     animation: slide-up-sheet 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
+
+/* ============================================================
+   SKELETON LOADERS
+   ============================================================ */
+.skeleton-bg {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.skeleton-pulse {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 25%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.03) 75%
+    );
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -100% 0;
+    }
+    100% {
+        background-position: 100% 0;
+    }
+}
+
+.light .skeleton-bg {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.light .skeleton-pulse {
+    background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.03) 25%,
+        rgba(0, 0, 0, 0.08) 50%,
+        rgba(0, 0, 0, 0.03) 75%
+    );
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.5s infinite ease-in-out;
+}

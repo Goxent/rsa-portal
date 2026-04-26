@@ -1,3 +1,5 @@
+// ENV VARS USED — must be set in Vercel Dashboard > Settings > Environment Variables
+// (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
@@ -6,12 +8,12 @@ import { EmailService } from '../services/email';
 // Re-use the client-side config or env vars for simplicity
 // In a production serverless env, Admin SDK is preferred, but Client SDK works for simple queries.
 const firebaseConfig = {
-    apiKey: process.env.VITE_FIREBASE_API_KEY,
-    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.VITE_FIREBASE_APP_ID,
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID,
 };
 
 // Initialize Firebase (Singleton pattern)
@@ -96,15 +98,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     // Let's copy the logic or direct fetch to absolute URL?
                     // Safest: Use Resend SDK directly in this file.
 
-                    const { Resend } = await import('resend');
-                    // @ts-ignore - resend may not be in local node_modules yet but is in package.json
-                    const resend = new Resend(process.env.RESEND_API_KEY);
+                    const nodemailer = await import('nodemailer');
+                    const transporter = nodemailer.default.createTransport({
+                        host: 'smtp.gmail.com',
+                        port: 587,
+                        secure: false,
+                        auth: {
+                            user: process.env.EMAIL_USER,
+                            pass: process.env.EMAIL_PASS,
+                        },
+                        connectionTimeout: 10000,
+                    });
 
-                    // Construct Email HTML (Reuse 'Due Date Reminder' logic)
+                    // Construct Email HTML
                     const subject = `Reminder: Task Due Today - ${task.title}`;
-                    // Note: We can reuse the HTML generation if we export it, but for now let's inline a simplified/clean version 
-                    // matching the "Office Theme".
-
                     const html = `
                         <!DOCTYPE html>
                         <html>
@@ -145,8 +152,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         </html>
                     `;
 
-                    await resend.emails.send({
-                        from: `RSA System <${process.env.VITE_EMAIL_FROM || 'onboarding@resend.dev'}>`,
+                    await transporter.sendMail({
+                        from: `RSA System <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
                         to: userData.email,
                         subject,
                         html

@@ -1143,6 +1143,22 @@ export const AuthService = {
         return snapshot.docs.map(d => docConverter<Task>(d));
     },
 
+    subscribeToTasks: (
+        onData: (tasks: Task[]) => void,
+        onError: (err: Error) => void
+    ): (() => void) => {
+        const q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
+        return onSnapshot(q, 
+            (snapshot) => {
+                onData(snapshot.docs.map(d => docConverter<Task>(d)));
+            },
+            (error) => {
+                console.error("Firebase Tasks Snapshot Error:", error);
+                onError(error);
+            }
+        );
+    },
+
     getPaginatedTasks: async (lastDoc?: QueryDocumentSnapshot | null, pageSize: number = 20): Promise<{ tasks: Task[], lastVisible: QueryDocumentSnapshot | null }> => {
         let q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(pageSize));
 
@@ -1256,7 +1272,7 @@ export const AuthService = {
             message: `You have been assigned to: ${task.title}`,
             type: 'INFO',
             category: 'TASK',
-            link: '/tasks'
+            link: `/tasks?taskId=${task.id}`
         });
 
         // Email Notification
@@ -1277,12 +1293,13 @@ export const AuthService = {
                     );
 
                     if (!emailSent) {
-                        toast.error(`Task saved, but email to ${userData.displayName || 'User'} failed.`);
+                        toast.error(`Task saved, but email notification to ${userData.displayName || 'User'} failed. Please check backend email logs.`, { duration: 5000 });
                     }
                 }
             }
-        } catch (err) {
-            console.error("Failed to send email notif", err);
+        } catch (err: any) {
+            console.error("Failed to send email notification:", err);
+            toast.error("Email service error. Check console for details.");
         }
     },
 
@@ -1506,7 +1523,7 @@ export const AuthService = {
                 message: `"${task.title}" status changed from ${task.status} to ${newStatus}`,
                 type: 'INFO',
                 category: 'TASK',
-                link: '/tasks'
+                link: `/tasks?taskId=${task.id}`
             });
 
             // 2. Email Notification (Branded) - ONLY on Completion
@@ -1574,7 +1591,7 @@ export const AuthService = {
                             console.log(`Sending mention notification to ${targetUser.displayName}`);
 
                             // Send Email
-                            await EmailService.sendCommentMention(
+                            const emailSent = await EmailService.sendCommentMention(
                                 targetUser.email,
                                 targetUser.displayName,
                                 comment.userName || 'A Colleague',
@@ -1584,6 +1601,10 @@ export const AuthService = {
                                 `${window.location.origin}/#/tasks`
                             );
 
+                            if (!emailSent) {
+                                toast.error(`Mention email to ${targetUser.displayName} failed.`);
+                            }
+
                             // Send In-App Notification
                             await AuthService.createNotification({
                                 userId: targetUser.uid,
@@ -1591,7 +1612,7 @@ export const AuthService = {
                                 message: `${comment.userName || 'A Colleague'} mentioned you in ${task.title} and ${task.clientName || 'Internal Project'} along with the message: "${commentText}"`,
                                 type: 'INFO',
                                 category: 'TASK',
-                                link: '/tasks'
+                                link: `/tasks?taskId=${task.id}`
                             });
                         } else {
                             console.warn(`User ${name} mentioned but not authorized to view task.`);

@@ -1,8 +1,4 @@
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { Task, ClientProfile, AuditPhase } from '../types';
+import { Task, AuditPhase, Client } from '../types';
 
 /** Helper to format date purely for viewing */
 const formatDate = (dateStr?: string) => {
@@ -20,7 +16,10 @@ const safeText = (val: any): string => {
     return String(val);
 };
 
-export const exportTaskToExcel = async (task: Task, client?: ClientProfile | null): Promise<void> => {
+export const exportTaskToExcel = async (task: Task, client?: Client | null): Promise<void> => {
+    const { default: ExcelJS } = await import('exceljs');
+    const { saveAs } = await import('file-saver');
+
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'RSA System';
     workbook.created = new Date();
@@ -117,8 +116,8 @@ export const exportTaskToExcel = async (task: Task, client?: ClientProfile | nul
                 items.forEach(chk => {
                     const row = sheet3.addRow({
                         layer: '', // Blank for sub-items
-                        item: chk.isSectionHeader ? `--- ${chk.title} ---` : (chk.itemHead || chk.title),
-                        req: chk.requirementDef || '',
+                        item: chk.isSectionHeader ? `--- ${chk.title} ---` : chk.title,
+                        req: chk.minimumRequirement || '',
                         status: chk.isSectionHeader ? '' : chk.status,
                         reviewDate: chk.isSectionHeader ? '' : reviewDateStr,
                         comment: chk.comment || ''
@@ -163,7 +162,10 @@ export const exportTaskToExcel = async (task: Task, client?: ClientProfile | nul
 };
 
 
-export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void => {
+export const exportTaskToPDF = async (task: Task, client?: Client | null): Promise<void> => {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
+
     // A4 Landscape is often better for tabular data
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
     
@@ -266,8 +268,8 @@ export const exportTaskToPDF = (task: Task, client?: ClientProfile | null): void
                         ];
                     }
                     return [
-                        safeText(chk.itemHead || chk.title),
-                        safeText(chk.requirementDef),
+                        safeText(chk.title),
+                        safeText(chk.minimumRequirement),
                         safeText(chk.status),
                         dateStr,
                         safeText(chk.comment)

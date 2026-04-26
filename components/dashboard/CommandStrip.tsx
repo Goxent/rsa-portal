@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, CheckSquare, Bell, CalendarDays, TrendingUp, Wifi } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 // @ts-ignore
 import NepaliDate from 'nepali-date-converter';
 
@@ -52,6 +53,7 @@ const CommandStrip: React.FC<CommandStripProps> = ({
             accent: pendingTasksCount > 5 ? 'text-rose-600 dark:text-rose-400' : pendingTasksCount > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-brand-600 dark:text-brand-400',
             onClick: () => navigate('/tasks'),
         },
+
     ];
 
     return (

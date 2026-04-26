@@ -38,7 +38,7 @@ const Breadcrumbs: React.FC = () => {
 
     return (
         <div className="flex items-center text-sm text-gray-500">
-            <Link to="/dashboard" className="hover:text-white transition-colors flex items-center">
+            <Link to="/dashboard" className="hidden md:flex hover:text-white transition-colors items-center">
                 <Home size={14} />
             </Link>
 
@@ -47,8 +47,6 @@ const Breadcrumbs: React.FC = () => {
                 const isLast = index === pathnames.length - 1;
 
                 // Resolve readable name
-                // Heuristic: If it looks like an ID (long alphanumeric), try to keep it or use "Details"
-                // ideally we'd fetch the name, but for now let's just format it
                 let displayName = routeNameMap[value] || value.replace(/-/g, ' ');
                 displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
 
@@ -57,11 +55,13 @@ const Breadcrumbs: React.FC = () => {
 
                 return (
                     <React.Fragment key={to}>
-                        <ChevronRight size={14} className="mx-2 text-gray-600" />
+                        {!isLast && <ChevronRight size={14} className="hidden md:block mx-2 text-gray-600" />}
                         {isLast ? (
-                            <span className="font-medium text-white pointer-events-none">{displayName}</span>
+                            <span className={`font-semibold md:font-medium text-[var(--text-heading)] md:text-white pointer-events-none ${isLast ? 'text-[0.875rem] md:text-sm' : ''}`}>
+                                {displayName}
+                            </span>
                         ) : (
-                            <Link to={to} className="hover:text-amber-400 transition-colors">
+                            <Link to={to} className="hidden md:inline hover:text-amber-400 transition-colors">
                                 {displayName}
                             </Link>
                         )}

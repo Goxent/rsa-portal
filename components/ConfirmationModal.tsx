@@ -7,7 +7,7 @@ interface ConfirmationModalProps {
     onConfirm?: () => void;
     onSecondaryConfirm?: () => void;
     title: string;
-    message: string;
+    message: string | React.ReactNode;
     confirmLabel?: string;
     secondaryLabel?: string;
     cancelLabel?: string;
@@ -56,7 +56,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </div>
 
             <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-            <p className="text-gray-400 mb-6 text-sm leading-relaxed">{message}</p>
+            <div className="text-gray-400 mb-6 text-sm leading-relaxed text-left">{message}</div>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
                 <button

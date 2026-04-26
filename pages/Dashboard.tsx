@@ -16,6 +16,9 @@ import NepaliDate from 'nepali-date-converter';
 import GreetingsWidget from '../components/dashboard/widgets/GreetingsWidget';
 import FocusWidget from '../components/dashboard/widgets/FocusWidget';
 import ReviewerActionCenter from '../components/dashboard/widgets/ReviewerActionCenter';
+import { SkeletonCard } from '../components/common/SkeletonCard';
+import { Share, ExternalLink } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 // Helper interface for the unified schedule list
 interface ScheduleItem {
@@ -82,7 +85,7 @@ const Dashboard: React.FC = () => {
 
         const relTasks = isAdmin 
             ? allTasks.filter(t => t.status !== 'ARCHIVED') 
-            : allTasks.filter(t => t.assignedTo.includes(user.uid) && t.status !== 'ARCHIVED');
+            : allTasks.filter(t => t.assignedTo?.includes(user.uid) && t.status !== 'ARCHIVED');
 
         const statusCounts = { COMPLETED: 0, IN_PROGRESS: 0, UNDER_REVIEW: 0, NOT_STARTED: 0 };
         relTasks.forEach(t => {
@@ -123,7 +126,7 @@ const Dashboard: React.FC = () => {
             .filter(e => e.date >= todayStr && e.date <= cutoffDateStr)
             .map(e => ({ id: e.id, title: e.title, date: e.date, type: 'EVENT' as const, subType: e.type, description: e.time }));
 
-        const deadlineTasks = isAdmin ? allTasks : allTasks.filter(t => t.assignedTo.includes(user.uid));
+        const deadlineTasks = isAdmin ? allTasks : allTasks.filter(t => t.assignedTo?.includes(user.uid));
         const futureDeadlines = deadlineTasks
             .filter(t => t.dueDate >= todayStr && t.dueDate <= cutoffDateStr && t.status !== 'COMPLETED' && t.status !== 'ARCHIVED')
             .map(t => ({ id: t.id, title: t.title, date: t.dueDate, type: 'DEADLINE' as const, subType: t.priority, description: t.clientName }));
@@ -144,7 +147,7 @@ const Dashboard: React.FC = () => {
             const freeList: UserProfile[] = [];
             const staffOnly = allUsers.filter(u => u.role !== UserRole.ADMIN && u.role !== UserRole.MASTER_ADMIN);
             staffOnly.forEach(u => {
-                const uActive = activeTasksList.filter(t => t.assignedTo.includes(u.uid));
+                const uActive = activeTasksList.filter(t => t.assignedTo?.includes(u.uid));
                 if (uActive.length > 0) busyList.push({ ...u, taskCount: uActive.length });
                 else freeList.push(u);
             });
@@ -163,10 +166,10 @@ const Dashboard: React.FC = () => {
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
 
     // Command strip derived values
-    const myOpenTasks = allTasks.filter(t => t.assignedTo.includes(user?.uid ?? '') && t.status !== 'COMPLETED' && t.status !== 'ARCHIVED').length;
+    const myOpenTasks = allTasks.filter(t => t.assignedTo?.includes(user?.uid ?? '') && t.status !== 'COMPLETED' && t.status !== 'ARCHIVED').length;
     const todayStr = new Date().toLocaleDateString('en-CA');
     const completedToday = allTasks.filter(t =>
-        t.assignedTo.includes(user?.uid ?? '') &&
+        t.assignedTo?.includes(user?.uid ?? '') &&
         t.status === 'COMPLETED' &&
         (t.completedAt ?? '').startsWith(todayStr)
     ).length;
@@ -209,43 +212,58 @@ const Dashboard: React.FC = () => {
             />
 
             <div className="space-y-6 relative z-10 animate-in fade-in duration-700">
-                {/* 1. High Priority Alerts: Reviewer's Action Center */}
-                <ReviewerActionCenter 
-                    tasks={allTasks} 
-                    currentUser={user} 
-                    onViewTask={handleViewTask} 
-                />
-
-                {/* 2. Mobile-Only Priority: Attendance Widget (Visible only on mobile at top) */}
-                <div className="block xl:hidden">
-                    {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
-                </div>
-
-                {/* 3. Top Row: Greetings & Focus */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    <GreetingsWidget 
-                        pendingCount={myOpenTasks} 
-                        completedToday={completedToday} 
-                    />
-                    <FocusWidget />
-                </div>
-
-                {/* 4. Main Widget Ecosystem */}
-                <div className="flex flex-col gap-6">
-                    {/* Desktop-Only: Attendance Widget (Visible only on larger screens here) */}
-                    <div className="hidden xl:block">
-                        {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
+                {isLoading ? (
+                    <div className="space-y-6">
+                        <div className="h-40 bg-white/[0.03] rounded-3xl border border-white/5 animate-pulse" />
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <SkeletonCard height={200} lines={4} hasAvatar />
+                            <SkeletonCard height={200} lines={4} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[1, 2, 3].map(i => <SkeletonCard key={i} height={300} lines={6} />)}
+                        </div>
                     </div>
-                    
-                    {user && (
-                        <WidgetContainer
-                            userId={user.uid}
-                            userRole={user.role}
-                            dashboardData={dashboardData}
-                            isAdmin={isAdmin}
+                ) : (
+                    <>
+                        {/* 1. High Priority Alerts: Reviewer's Action Center */}
+                        <ReviewerActionCenter 
+                            tasks={allTasks} 
+                            currentUser={user} 
+                            onViewTask={handleViewTask} 
                         />
-                    )}
-                </div>
+
+                        {/* 2. Mobile-Only Priority: Attendance Widget (Visible only on mobile at top) */}
+                        <div className="block xl:hidden">
+                            {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
+                        </div>
+
+                        {/* 3. Top Row: Greetings & Focus */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <GreetingsWidget 
+                                pendingCount={myOpenTasks} 
+                                completedToday={completedToday} 
+                            />
+                            <FocusWidget />
+                        </div>
+
+                        {/* 4. Main Widget Ecosystem */}
+                        <div className="flex flex-col gap-6">
+                            {/* Desktop-Only: Attendance Widget (Visible only on larger screens here) */}
+                            <div className="hidden xl:block">
+                                {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
+                            </div>
+                            
+                            {user && (
+                                <WidgetContainer
+                                    userId={user.uid}
+                                    userRole={user.role}
+                                    dashboardData={dashboardData}
+                                    isAdmin={isAdmin}
+                                />
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
