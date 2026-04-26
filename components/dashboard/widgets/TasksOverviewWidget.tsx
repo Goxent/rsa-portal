@@ -48,7 +48,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
     const baseTasksForView = useMemo(() => {
         let base = recentTasks.filter(t => t.status !== TaskStatus.ARCHIVED);
         if (viewMode === 'MY' && user) {
-            base = base.filter(t => t.assignedTo.includes(user.uid));
+            base = base.filter(t => (t.assignedTo || []).includes(user.uid));
         }
         return base;
     }, [recentTasks, viewMode, user]);
@@ -234,7 +234,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
                                         )}
                                         <div className="flex items-center justify-between pt-1">
                                             <div className="flex -space-x-1.5 overflow-hidden">
-                                                {task.assignedTo.slice(0, 3).map(uid => (
+                                                {(task.assignedTo || []).slice(0, 3).map(uid => (
                                                     <div key={uid} className="w-5 h-5 rounded-full bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-[8px] font-black text-brand-600 dark:text-brand-400 ring-2 ring-white dark:ring-[#161b22]">
                                                         {userMap[uid]?.displayName?.[0] || 'U'}
                                                     </div>
