@@ -1910,6 +1910,55 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </span>
                                     </div>
                                 </div>
+                                
+                                {task.id && canEditTask && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowExportMenu(!showExportMenu)}
+                                            className="h-8 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 group shadow-sm"
+                                        >
+                                            <Download size={12} className="group-hover:translate-y-px transition-transform" />
+                                            Workpaper
+                                            <ChevronDown size={12} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        
+                                        <AnimatePresence>
+                                            {showExportMenu && (
+                                                <>
+                                                    <div className="fixed inset-0 z-[90]" onClick={() => setShowExportMenu(false)} />
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute right-0 top-full mt-2 w-56 bg-[#1a1f26] border border-white/10 rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.5)] overflow-hidden z-[100] p-1.5"
+                                                    >
+                                                        <button
+                                                            onClick={handleExportPDF}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-rose-500/20 group-hover:text-rose-400">
+                                                                <FileText size={14} />
+                                                            </div>
+                                                            Direct PDF Export
+                                                        </button>
+                                                        <div className="h-px bg-white/5 mx-2 my-0.5" />
+                                                        <button
+                                                            onClick={handleExportExcel}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 group-hover:text-emerald-400">
+                                                                <BarChart2 size={14} />
+                                                            </div>
+                                                            Full Excel Workbook
+                                                        </button>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
+
                                 <button
                                     onClick={handleCloseAttempt}
                                     className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-all border border-white/5 active:scale-95"
@@ -1920,7 +1969,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         </div>
 
                         {/* Secondary Navigation — Sticky & Responsive */}
-                        <div className="shrink-0 sticky top-0 bg-white/80 dark:bg-[#0c0e12]/90 backdrop-blur-md border-b border-black/5 dark:border-white/[0.04] px-4 md:px-8 py-2 md:py-3 flex items-center justify-between gap-4 z-[60]">
+                        <div className="shrink-0 sticky top-0 bg-white/80 dark:bg-[#0c0e12]/90 backdrop-blur-md border-b border-black/5 dark:border-white/[0.04] px-4 md:px-8 py-2 md:py-3 flex flex-wrap items-center justify-between gap-4 z-[60]">
                             {/* Main Tabs - Refactored for Mobile */}
                             <div className="flex items-center gap-1.5 md:gap-2 bg-gray-100 dark:bg-white/[0.03] p-1 rounded-full border border-black/5 dark:border-white/5 shadow-inner overflow-x-auto scrollbar-none max-w-full">
                                 {(task.id ? [
@@ -1962,53 +2011,6 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2">
-                                {task.id && canEditTask && (
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => setShowExportMenu(!showExportMenu)}
-                                            className="px-5 py-2 bg-white/5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 group shadow-sm"
-                                        >
-                                            <Download size={14} className="group-hover:translate-y-px transition-transform" />
-                                            Export Workpaper
-                                            <ChevronDown size={14} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        
-                                        <AnimatePresence>
-                                            {showExportMenu && (
-                                                <>
-                                                    <div className="fixed inset-0 z-[90]" onClick={() => setShowExportMenu(false)} />
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                        transition={{ duration: 0.15 }}
-                                                        className="absolute right-0 top-full mt-2 w-56 bg-[#1a1f26] border border-white/10 rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.5)] overflow-hidden z-[100] p-1.5"
-                                                    >
-                                                        <button
-                                                            onClick={handleExportPDF}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
-                                                        >
-                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-rose-500/20 group-hover:text-rose-400">
-                                                                <FileText size={14} />
-                                                            </div>
-                                                            Direct PDF Export
-                                                        </button>
-                                                        <div className="h-px bg-white/5 mx-2 my-0.5" />
-                                                        <button
-                                                            onClick={handleExportExcel}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
-                                                        >
-                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 group-hover:text-emerald-400">
-                                                                <BarChart2 size={14} />
-                                                            </div>
-                                                            Full Excel Workbook
-                                                        </button>
-                                                    </motion.div>
-                                                </>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                )}
 
                                 {activeDetailTab === 'PROCEDURES' && canAddSubtasks && (
                                     <button
