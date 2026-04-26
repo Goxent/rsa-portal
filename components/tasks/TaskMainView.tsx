@@ -25,7 +25,7 @@ interface TaskMainViewProps {
     selectedTaskIds: string[];
     onToggleSelection: (taskId: string) => void;
     groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE';
-    onQuickAdd: (status: TaskStatus, title: string) => Promise<void>;
+    onQuickAdd: (status: TaskStatus, title: string, phase: AuditPhase) => Promise<void>;
     clientsList: Client[];
     onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => void;
     onOpenReassign?: (taskId: string) => void;
@@ -130,9 +130,9 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
     const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
     const [quickAddTitle, setQuickAddTitle] = React.useState('');
 
-    const submitQuickAdd = async (status: TaskStatus) => {
+    const submitQuickAdd = async (status: TaskStatus, phase: AuditPhase) => {
         if (!quickAddTitle.trim()) return;
-        await onQuickAdd(status, quickAddTitle);
+        await onQuickAdd(status, quickAddTitle, phase);
         setQuickAddTitle('');
         setQuickAddStatus(null);
     };
@@ -337,7 +337,10 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                     <div className="h-full w-full flex-1 flex gap-8 overflow-x-auto px-8 py-6 kanban-scroll custom-scrollbar overflow-y-auto">
                         {PHASE_ORDER.map((phase, phaseIdx) => {
                             const pm = PHASE_META[phase];
-                            const phaseTasks = tasks.filter(t => (t.auditPhase || AuditPhase.ONBOARDING) === phase);
+                            const phaseTasks = tasks.filter(t => 
+                                (t.auditPhase || AuditPhase.ONBOARDING) === phase && 
+                                t.status !== TaskStatus.ARCHIVED
+                            );
                             const phaseTotal = phaseTasks.length;
                             const phaseCompleted = phaseTasks.filter(t => t.status === TaskStatus.COMPLETED).length;
                             const phaseProgress = phaseTotal > 0 ? Math.round((phaseCompleted / phaseTotal) * 100) : 0;
@@ -538,7 +541,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                                 value={quickAddTitle}
                                                                                 onChange={e => setQuickAddTitle(e.target.value)}
                                                                                 onKeyDown={e => {
-                                                                                    if (e.key === 'Enter') submitQuickAdd(status);
+                                                                                    if (e.key === 'Enter') submitQuickAdd(status, phase);
                                                                                     if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
                                                                                 }}
                                                                                 className="w-full bg-transparent text-[12px] text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none mb-2 font-medium"
@@ -553,7 +556,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                                         <X size={11} />
                                                                                     </button>
                                                                                     <button
-                                                                                        onClick={() => submitQuickAdd(status)}
+                                                                                        onClick={() => submitQuickAdd(status, phase)}
                                                                                         className="px-2.5 h-6 text-white rounded-md text-[10px] font-bold transition-all flex items-center gap-1"
                                                                                         style={{
                                                                                             backgroundColor: `${pm.accentHex}30`,
