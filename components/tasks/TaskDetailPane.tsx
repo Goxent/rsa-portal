@@ -122,7 +122,7 @@ const Field: React.FC<{
 
         <div className="flex items-center justify-between w-full">
             <label className={`text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 ${error ? 'text-rose-400' : 'text-gray-500'}`}>
-                {icon} {label}
+                {icon} {label} {error && <span className="text-rose-500 ml-1 animate-pulse">*</span>}
             </label>
             {extra && <div>{extra}</div>}
         </div>
@@ -246,7 +246,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     };
 
-    const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm<TaskFormValues>({
+    const { register, handleSubmit, reset, control, watch, setValue, formState: { errors, isDirty: formIsDirty, isValid: formIsValid } } = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
         defaultValues: {
             title: task.title || '',
@@ -2101,7 +2101,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         
                                         {/* Main Form Fields Grouped */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 p-6 md:p-8 bg-white/[0.02] border border-white/5 rounded-[32px] shadow-inner">
-                                            <Field label="Assignment Title" icon={<FileText size={14} className="text-brand-400" />} span2>
+                                            <Field label="Assignment Title" icon={<FileText size={14} className="text-brand-400" />} span2 error={!!errors.title}>
                                                 <input
                                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[14px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
                                                     placeholder="Enter engagement title..."
@@ -2351,18 +2351,21 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 >
                                     Exit Workspace
                                 </button>
-                                {!isTaskCompleted && canEditTask && (
+                                 {!isTaskCompleted && canEditTask && (
                                     <button
-                                        onClick={handleSubmit(handleSave)}
-                                        disabled={isSaving || !isDirty}
+                                        onClick={handleSubmit(handleSave, (errs) => {
+                                            const firstErr = Object.values(errs)[0];
+                                            if (firstErr) toast.error(firstErr.message as string);
+                                        })}
+                                        disabled={isSaving}
                                         className={`px-8 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 flex items-center gap-3 ${
-                                            isDirty 
-                                            ? 'bg-brand-500 hover:bg-brand-600 text-white' 
+                                            (formIsDirty || isDirty || !task.id) 
+                                            ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-brand-500/20' 
                                             : 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
                                         }`}
                                     >
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                        {task.id ? (isDirty ? 'Push Changes' : 'All Synced') : 'Create Task'}
+                                        {task.id ? (isDirty || formIsDirty ? 'Push Changes' : 'All Synced') : 'Create Task'}
                                     </button>
                                 )}
                             </div>
