@@ -43,7 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const emailUser = process.env.EMAIL_USER;
     const emailPass = process.env.EMAIL_PASS;
-    const emailFrom = process.env.EMAIL_FROM || emailUser;
+    // Support both EMAIL_FROM and MAIL_FROM per user's request
+    const emailFrom = process.env.EMAIL_FROM || process.env.MAIL_FROM || emailUser;
 
     if (!emailUser || !emailPass) {
         const errorMsg = 'CRITICAL ERROR: EMAIL_USER or EMAIL_PASS is not set in environment variables.';
@@ -55,14 +56,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        console.log(`Email Service: Attempting to send via Gmail/Nodemailer to ${parsedTo}`);
+        console.log(`Email Service: Attempting to send via Gmail Service to ${parsedTo}`);
+        console.log(`Email Service: Using sender address: ${emailFrom}`);
         
-        // Explicitly use port 587 and secure: false (which upgrades to STARTTLS) 
-        // as 'service: gmail' can sometimes be finicky in serverless environments.
+        // Use 'service: gmail' which is the recommended way for Gmail SMTP
+        // It automatically sets the correct host, port, and secure options.
         const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false, // true for 465, false for other ports
+            service: 'gmail',
             auth: {
                 user: emailUser,
                 pass: emailPass,

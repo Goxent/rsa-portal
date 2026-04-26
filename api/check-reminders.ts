@@ -92,17 +92,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     // it might fail in Node environment without full URL.
                     // Better to CALL the send-email function DIRECTLY or use the Resend SDK DIRECTLY here.
                     // To avoid circular dependency or URL issues, let's use Resend SDK directly here.
-
-                    // ACTUALLY, reusing the `EmailService` from `../services/email` might be tricky 
-                    // because it imports `fetch` relatively. 
-                    // Let's copy the logic or direct fetch to absolute URL?
-                    // Safest: Use Resend SDK directly in this file.
-
                     const nodemailer = await import('nodemailer');
                     const transporter = nodemailer.default.createTransport({
-                        host: 'smtp.gmail.com',
-                        port: 587,
-                        secure: false,
+                        service: 'gmail',
                         auth: {
                             user: process.env.EMAIL_USER,
                             pass: process.env.EMAIL_PASS,
@@ -133,8 +125,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                         <p style="margin: 0; color: #991b1b; font-size: 14px;">Client: <strong>${clientName}</strong></p>
                                     </div>
 
+                                    <!-- Use window.location.origin as a fallback if host is weird -->
                                     <div style="text-align: center; margin-top: 32px;">
-                                        <a href="https://${req.headers.host}/#/workflow" style="background-color: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">View Task</a>
+                                        <a href="https://${req.headers.host}/#/tasks" style="background-color: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">View Task</a>
                                     </div>
                                     
                                    <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
@@ -152,8 +145,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         </html>
                     `;
 
+                    const emailFrom = process.env.EMAIL_FROM || process.env.MAIL_FROM || process.env.EMAIL_USER;
+
                     await transporter.sendMail({
-                        from: `RSA System <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+                        from: `RSA System <${emailFrom}>`,
                         to: userData.email,
                         subject,
                         html
