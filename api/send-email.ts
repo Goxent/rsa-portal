@@ -42,35 +42,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
+    const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
     // Support both EMAIL_FROM and MAIL_FROM per user's request
     const emailFrom = process.env.EMAIL_FROM || process.env.MAIL_FROM || emailUser;
 
     if (!emailUser || !emailPass) {
-        const errorMsg = 'CRITICAL ERROR: EMAIL_USER or EMAIL_PASS is not set in environment variables.';
+        const errorMsg = 'CRITICAL ERROR: EMAIL_USER or EMAIL_PASS/EMAIL_PASSWORD is not set in environment variables.';
         console.error(`[Email Service] ${errorMsg}`);
         return res.status(500).json({ 
             error: 'Server configuration error: Missing Gmail/SMTP credentials.',
-            tip: 'Please set EMAIL_USER and EMAIL_PASS in your environment variables (Vercel Dashboard).'
+            tip: 'Please set EMAIL_USER and EMAIL_PASSWORD in your environment variables (Vercel Dashboard).'
         });
     }
 
     try {
-        console.log(`Email Service: Attempting to send via Gmail Service to ${parsedTo}`);
+        console.log(`Email Service: Attempting to send via Gmail SMTP (smtp.gmail.com) to ${parsedTo}`);
         console.log(`Email Service: Using sender address: ${emailFrom}`);
         
-        // Use 'service: gmail' which is the recommended way for Gmail SMTP
-        // It automatically sets the correct host, port, and secure options.
+        // Explicit configuration is often more stable in serverless environments than 'service: gmail'
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false, // Use STARTTLS
             auth: {
                 user: emailUser,
                 pass: emailPass,
             },
             // Increase timeout for serverless stability
-            connectionTimeout: 10000, 
-            greetingTimeout: 10000,
-            socketTimeout: 10000,
+            connectionTimeout: 15000, 
+            greetingTimeout: 15000,
+            socketTimeout: 15000,
+            dnsTimeout: 10000,
+            // Add internal logging if enabled
+            logger: process.env.NODE_ENV === 'development',
+            debug: process.env.NODE_ENV === 'development',
         });
 
         const mailOptions = {
@@ -95,16 +100,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         // Provide a helpful tip for common Gmail errors
-        let tip = 'Check your EMAIL_USER and EMAIL_PASS.';
+        let tip = 'Check your EMAIL_USER and EMAIL_PASSWORD.';
+        let userMessage = error.message || 'Unknown SMTP error';
+
         if (error.message?.includes('Invalid login') || error.responseCode === 535) {
             tip = 'Gmail rejected your login. Ensure you are using a 16-character APP PASSWORD, not your regular Google password, and that 2FA is enabled.';
+            userMessage = 'Gmail Authentication Failed (Check App Password)';
         } else if (error.code === 'ETIMEDOUT') {
-            tip = 'Connection timed out. This might be a temporary network issue.';
+            tip = 'Connection timed out. This might be a temporary network issue or Vercel outbound blocking.';
+            userMessage = 'Connection Timeout (SMTP server unreachable)';
+        } else if (error.code === 'EAUTH') {
+            tip = 'Authentication failed. Please verify your credentials.';
         }
 
         return res.status(500).json({ 
             error: 'Failed to send email', 
-            details: error.message,
+            details: userMessage,
             code: error.code,
             tip: tip
         });
