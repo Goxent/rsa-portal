@@ -756,14 +756,14 @@ export const AuthService = {
                 const adminDoc = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
                 const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
                 
-                const emailSent = await EmailService.sendStaffInvitation(
+                const result = await EmailService.sendStaffInvitation(
                     normalizedEmail,
                     staffData.displayName || 'Team Member',
                     adminName
                 );
 
-                if (!emailSent) {
-                    throw new Error("The invitation email could not be delivered. Please check the recipient email and try again.");
+                if (!result.success) {
+                    throw new Error(`The invitation email could not be delivered: ${result.error || 'Connection error'}. Please verify the email address or your SMTP settings.`);
                 }
             } catch (emailError: any) {
                 console.error("Failed to send invitation email:", emailError);
@@ -1281,7 +1281,7 @@ export const AuthService = {
             if (userDoc.exists()) {
                 const userData = userDoc.data() as UserProfile;
                 if (userData.email) {
-                    const emailSent = await EmailService.sendTaskAssignment(
+                    const result = await EmailService.sendTaskAssignment(
                         userData.email,
                         userData.displayName || 'Staff Member',
                         task.title,
@@ -1292,8 +1292,8 @@ export const AuthService = {
                         task.description
                     );
 
-                    if (!emailSent) {
-                        toast.error(`Task saved, but email notification to ${userData.displayName || 'User'} failed. Please check backend email logs.`, { duration: 5000 });
+                    if (!result.success) {
+                        toast.error(`Task saved, but email notification failed: ${result.error || 'SMTP Error'}.`, { duration: 6000 });
                     }
                 }
             }
@@ -1591,7 +1591,7 @@ export const AuthService = {
                             console.log(`Sending mention notification to ${targetUser.displayName}`);
 
                             // Send Email
-                            const emailSent = await EmailService.sendCommentMention(
+                            const result = await EmailService.sendCommentMention(
                                 targetUser.email,
                                 targetUser.displayName,
                                 comment.userName || 'A Colleague',
@@ -1601,8 +1601,8 @@ export const AuthService = {
                                 `${window.location.origin}/#/tasks`
                             );
 
-                            if (!emailSent) {
-                                toast.error(`Mention email to ${targetUser.displayName} failed.`);
+                            if (!result.success) {
+                                toast.error(`Mention email to ${targetUser.displayName} failed: ${result.error || 'SMTP Error'}`);
                             }
 
                             // Send In-App Notification
@@ -1815,13 +1815,16 @@ export const AuthService = {
             if (userDoc.exists()) {
                 const userData = userDoc.data() as UserProfile;
                 if (userData.email) {
-                    await EmailService.sendAttendanceStatusChange(
+                    const result = await EmailService.sendAttendanceStatusChange(
                         userData.email,
                         userData.displayName,
                         reqData.date,
                         'REJECTED',
                         reason
                     );
+                    if (!result.success) {
+                        toast.error(`Rejection email failed: ${result.error || 'SMTP Error'}`);
+                    }
                 }
             }
         } catch (err) {
@@ -1913,9 +1916,8 @@ export const AuthService = {
         return allEvents.filter(e => e.visibility === 'PUBLIC' || !e.visibility);
     },
 
-    /**
      * Resolve the set of user UIDs to notify based on event visibility rules.
-     * Returns { uids: string[] } — the creator is excluded (they already know).
+     * Returns UserProfile[] — the creator is included to ensure they receive a confirmation email.
      */
     resolveEventRecipients: async (
         event: Partial<CalendarEvent>,
@@ -1924,7 +1926,7 @@ export const AuthService = {
     ): Promise<UserProfile[]> => {
         // Fetch all users only once (caller can pass them in to avoid extra read)
         const users: UserProfile[] = allUsers || await AuthService.getAllUsers();
-        const activeUsers = users.filter(u => u.uid !== creatorId && u.status === 'Active');
+        const activeUsers = users.filter(u => u.status === 'Active');
 
         const { visibility, teamIds, department } = event as CalendarEvent;
 
@@ -2025,7 +2027,7 @@ export const AuthService = {
             try {
                 const profile = allUserProfiles[uid];
                 if (profile?.email) {
-                    await EmailService.sendEventInvitation(
+                    const result = await EmailService.sendEventInvitation(
                         profile.email,
                         profile.displayName || 'Colleague',
                         event.title,
@@ -2033,6 +2035,9 @@ export const AuthService = {
                         calendarLink,
                         event.type
                     );
+                    if (!result.success) {
+                        console.error(`Failed to send event email to ${uid}: ${result.error}`);
+                    }
                 }
             } catch (err) {
                 console.error(`Failed to send event email to ${uid}`, err);
@@ -2238,7 +2243,7 @@ export const AuthService = {
             if (userDoc.exists()) {
                 const userData = userDoc.data() as UserProfile;
                 if (userData.email) {
-                    await EmailService.sendLeaveStatusChange(
+                    const result = await EmailService.sendLeaveStatusChange(
                         userData.email,
                         userData.displayName,
                         leaveData.type,
@@ -2247,6 +2252,9 @@ export const AuthService = {
                         status,
                         reason
                     );
+                    if (!result.success) {
+                        toast.error(`Leave status email failed: ${result.error || 'SMTP Error'}`);
+                    }
                 }
             }
         } catch (err) {
