@@ -2,7 +2,7 @@ export const EmailService = {
     /**
      * Send an email using our Vercel Serverless Function (Gmail/SMTP via Nodemailer)
      */
-     sendEmail: async (to: string | { email: string; name: string }, subject: string, html: string, fromName?: string): Promise<boolean> => {
+     sendEmail: async (to: string | { email: string; name: string }, subject: string, html: string, fromName?: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         try {
             // Support absolute API URL if provided (important for GitHub Pages + Vercel API setup)
             const apiBase = import.meta.env.VITE_API_URL || '';
@@ -14,22 +14,24 @@ export const EmailService = {
 
             if (!response.ok) {
                 let detail = '';
+                let tip = '';
                 try {
                     const errorJson = await response.json();
                     detail = errorJson.details || errorJson.error || JSON.stringify(errorJson);
+                    tip = errorJson.tip;
                     // If there's a tip in the response, log it
-                    if (errorJson.tip) console.warn('Email Tip:', errorJson.tip);
+                    if (tip) console.warn('Email Tip:', tip);
                 } catch {
                     detail = await response.text();
                 }
                 console.error(`Email send failed | Status: ${response.status} (${response.statusText}) | Detail: ${detail}`);
-                return false;
+                return { success: false, error: detail, tip };
             }
 
-            return true;
+            return { success: true };
         } catch (error: any) {
             console.error('Email send failed | Network or Exception Error:', error);
-            return false;
+            return { success: false, error: error.message || 'Network error occurred' };
         }
     },
 
@@ -98,7 +100,7 @@ export const EmailService = {
         `;
     },
 
-    sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string, taskDescription?: string): Promise<boolean> => {
+    sendTaskAssignment: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string, dueDate: string, priority: string, taskDescription?: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `New Task Assigned: ${taskTitle} — ${clientName}`;
 
@@ -152,15 +154,34 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendEventInvitation: async (toEmail: string, userName: string, eventTitle: string, eventDate: string, eventLink: string, eventType?: string) => {
+    sendEventInvitation: async (toEmail: string, userName: string, eventTitle: string, eventDate: string, eventLink: string, eventType?: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const isHoliday = eventType === 'HOLIDAY';
         const subject = isHoliday ? `Holiday Notice: ${eventTitle}` : `You're Invited: ${eventTitle} on ${eventDate}`;
 
-        const d = new Date(eventDate + 'T00:00:00');
-        const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-        const day = d.getDate().toString();
-        const year = d.getFullYear().toString();
+        // Robust Date Parsing for the Calendar Icon
+        // eventDate might be "YYYY-MM-DD at HH:mm" or "MM/DD/YYYY at HH:mm"
+        const dateOnly = eventDate.split(' at ')[0].trim();
+        let d = new Date(dateOnly);
+        
+        // If standard parsing fails, try adding T00:00:00 or fixing common formats
+        if (isNaN(d.getTime())) {
+            // Try YYYY-MM-DD format
+            d = new Date(dateOnly + 'T00:00:00');
+        }
+        
+        // If still invalid and in MM/DD/YYYY format, try to rearrange
+        if (isNaN(d.getTime()) && dateOnly.includes('/')) {
+            const [m, day, y] = dateOnly.split('/');
+            if (m && day && y) {
+                d = new Date(`${y}-${m.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00`);
+            }
+        }
+        
+        const isValid = !isNaN(d.getTime());
+        const month = isValid ? d.toLocaleString('en-US', { month: 'short' }).toUpperCase() : 'DATE';
+        const day = isValid ? d.getDate().toString() : '!!';
+        const year = isValid ? d.getFullYear().toString() : '';
 
         const content = `
             <p style="font-size:16px; color:#1e293b; margin:0 0 10px; font-family:${fontStack};">
@@ -200,7 +221,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendDueDateReminder: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string) => {
+    sendDueDateReminder: async (toEmail: string, userName: string, taskTitle: string, taskLink: string, clientName: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `Urgent — Task Due Today: ${taskTitle}`;
 
@@ -263,7 +284,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, clientName: string, commentText: string, taskLink: string) => {
+    sendCommentMention: async (toEmail: string, userName: string, authorName: string, taskTitle: string, clientName: string, commentText: string, taskLink: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `${authorName} mentioned you in ${taskTitle}`;
         const content = `
@@ -287,7 +308,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendWorkflowStatusChange: async (toEmail: string, userName: string, taskTitle: string, oldStatus: string, newStatus: string, taskLink: string) => {
+    sendWorkflowStatusChange: async (toEmail: string, userName: string, taskTitle: string, oldStatus: string, newStatus: string, taskLink: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `Workflow Update: ${taskTitle} — ${oldStatus.replace(/_/g, ' ')} → ${newStatus.replace(/_/g, ' ')}`;
         
@@ -330,7 +351,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendLeaveStatusChange: async (toEmail: string, userName: string, leaveType: string, start: string, end: string, status: string, reason?: string) => {
+    sendLeaveStatusChange: async (toEmail: string, userName: string, leaveType: string, start: string, end: string, status: string, reason?: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `Leave ${status === 'APPROVED' ? 'Approved' : 'Rejected'}: ${leaveType} (${start} to ${end})`;
         
@@ -372,7 +393,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendAttendanceStatusChange: async (toEmail: string, userName: string, date: string, status: string, reason?: string) => {
+    sendAttendanceStatusChange: async (toEmail: string, userName: string, date: string, status: string, reason?: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `Attendance Log ${status}: ${date}`;
         
@@ -412,7 +433,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, 'RSA Portal');
     },
 
-    sendStaffInvitation: async (toEmail: string, userName: string, inviterName: string): Promise<boolean> => {
+    sendStaffInvitation: async (toEmail: string, userName: string, inviterName: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `${inviterName} invited you to join RSA Portal`;
         const signupLink = `${window.location.origin}/#/signup?email=${encodeURIComponent(toEmail)}`;
@@ -444,7 +465,7 @@ export const EmailService = {
         return EmailService.sendEmail({ email: toEmail, name: userName }, subject, html, `${inviterName} via RSA Portal`);
     },
 
-    sendOfficialNotice: async (toEmail: string, userName: string, title: string, contentText: string, priority: string): Promise<boolean> => {
+    sendOfficialNotice: async (toEmail: string, userName: string, title: string, contentText: string, priority: string): Promise<{ success: boolean; error?: string; tip?: string }> => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `Official Firm Notice: ${title}`;
         
