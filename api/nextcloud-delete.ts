@@ -26,7 +26,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(412).json({ error: 'Nextcloud credentials not configured' });
         }
 
-        const deleteUrl = `${baseUrl}/remote.php/dav/files/${username}/${fileId}`;
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        const deleteUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${fileId}`;
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
 
         const response = await fetch(deleteUrl, {

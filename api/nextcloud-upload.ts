@@ -28,7 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // WebDAV URL for Nextcloud
         // Format: {baseUrl}/remote.php/dav/files/{username}/{filePath}
-        const uploadUrl = `${baseUrl}/remote.php/dav/files/${username}/${fileName}`;
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        const uploadUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${fileName}`;
 
         // Basic Auth Header
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
@@ -53,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Return the URL where the file can be viewed
         // For Nextcloud, public links are different, but for authenticated access we can use the WebDAV URL or a direct link if known.
         // For now, we'll return the WebDAV URL as the ID and a likely preview URL.
-        const viewUrl = `${baseUrl}/index.php/apps/files/?dir=/&openfile=${fileName}`;
+        const viewUrl = `${cleanBaseUrl}/index.php/apps/files/?dir=/&openfile=${fileName}`;
 
         res.status(200).json({ 
             success: true, 
