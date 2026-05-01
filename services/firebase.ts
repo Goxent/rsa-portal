@@ -1916,6 +1916,7 @@ export const AuthService = {
         return allEvents.filter(e => e.visibility === 'PUBLIC' || !e.visibility);
     },
 
+    /**
      * Resolve the set of user UIDs to notify based on event visibility rules.
      * Returns UserProfile[] — the creator is included to ensure they receive a confirmation email.
      */

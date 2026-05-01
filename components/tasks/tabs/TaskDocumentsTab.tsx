@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { AUDIT_FOLDER_STRUCTURE, AuditFolderKey } from '../../../types';
 import { AuditDocFile, AuditDocFolder } from '../../../services/auditDocs';
-import { GoogleDriveService } from '../../../services/googleDrive';
+import { StorageService } from '../../../services/storage';
 
 export interface TaskDocumentsTabProps {
     auditFiles: AuditDocFile[];
@@ -203,7 +203,7 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
                                                 {file.mimeType.includes('image') ? <ExternalLink size={18} /> : <FileText size={18} />}
                                             </div>
                                             <button 
-                                                onClick={() => window.open(GoogleDriveService.getFileView(file.appwriteFileId), '_blank')}
+                                                onClick={() => window.open(StorageService.getViewUrl(file.appwriteFileId), '_blank')}
                                                 className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-white hover:bg-brand-500 transition-all opacity-0 group-hover:opacity-100"
                                             >
                                                 <ExternalLink size={14} />

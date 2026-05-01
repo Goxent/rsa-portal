@@ -1,5 +1,4 @@
-import { GoogleDriveService } from './googleDrive';
-import { AppwriteService } from './appwrite';
+import { NextcloudService } from './nextcloud';
 
 export interface StorageFile {
     id: string;
@@ -11,47 +10,23 @@ export interface StorageFile {
 export const StorageService = {
     /**
      * Upload a file and return its metadata including a viewable URL
+     * Now using Nextcloud as the sole storage provider.
      */
     upload: async (file: File): Promise<{ success: boolean; data?: StorageFile; error?: string }> => {
         try {
-            // 1. Try Google Drive First
-            try {
-                const uploadedFile = await GoogleDriveService.uploadFile(file);
-                const fileId = uploadedFile.$id;
-                const viewUrl = GoogleDriveService.getFileView(fileId);
-
-                return {
-                    success: true,
-                    data: {
-                        id: fileId,
-                        name: file.name,
-                        url: viewUrl,
-                        type: StorageService.getFileType(file.type)
-                    }
-                };
-            } catch (driveError: any) {
-                // If Drive fails because of configuration, fallback to Appwrite
-                const isConfigError = driveError.message?.includes('not configured') || 
-                                     driveError.message?.includes('MISSING_DRIVE_CREDENTIALS');
-                
-                if (isConfigError) {
-                    console.warn("Google Drive not configured, falling back to Appwrite...");
-                    const appwriteFile = await AppwriteService.uploadFile(file);
-                    return {
-                        success: true,
-                        data: {
-                            id: appwriteFile.$id,
-                            name: appwriteFile.name,
-                            url: AppwriteService.getFileView(appwriteFile.$id),
-                            type: StorageService.getFileType(file.type)
-                        }
-                    };
+            const uploadedFile = await NextcloudService.uploadFile(file);
+            return {
+                success: true,
+                data: {
+                    id: uploadedFile.$id, // No prefix needed as it's the only provider now
+                    name: file.name,
+                    url: uploadedFile.url,
+                    type: StorageService.getFileType(file.type)
                 }
-                throw driveError; // Re-throw if it's a different kind of error
-            }
+            };
         } catch (error: any) {
             console.error("Storage upload error:", error);
-            return { success: false, error: error.message || "Failed to upload file" };
+            return { success: false, error: error.message || "Failed to upload file to Nextcloud" };
         }
     },
 
@@ -70,14 +45,10 @@ export const StorageService = {
      */
     getViewUrl: (fileId: string): string => {
         if (!fileId) return '';
-        // If fileId looks like a Google Drive ID (usually longer and alphanumeric)
-        // vs Appwrite ID (usually shorter/custom). 
-        // For simplicity, we try Google Drive path first, then Appwrite.
         try {
-            if (fileId.length > 20) { // Typical Drive IDs are around 33 chars
-                return GoogleDriveService.getFileView(fileId);
-            }
-            return AppwriteService.getFileView(fileId);
+            // Remove 'nc-' prefix if it exists (from old records)
+            const cleanId = fileId.startsWith('nc-') ? fileId.replace('nc-', '') : fileId;
+            return NextcloudService.getFileView(cleanId);
         } catch (error) {
             console.error("Storage getViewUrl error:", error);
             return '';
@@ -90,10 +61,8 @@ export const StorageService = {
     getDownloadUrl: (fileId: string): string => {
         if (!fileId) return '';
         try {
-            if (fileId.length > 20) {
-                return GoogleDriveService.getFileDownload(fileId);
-            }
-            return AppwriteService.getFileDownload(fileId);
+            const cleanId = fileId.startsWith('nc-') ? fileId.replace('nc-', '') : fileId;
+            return NextcloudService.getFileView(cleanId);
         } catch (error) {
             console.error("Storage getDownloadUrl error:", error);
             return '';
@@ -105,15 +74,12 @@ export const StorageService = {
      */
     delete: async (fileId: string): Promise<{ success: boolean; error?: string }> => {
         try {
-            if (fileId.length > 20) {
-                await GoogleDriveService.deleteFile(fileId);
-            } else {
-                await AppwriteService.deleteFile(fileId);
-            }
+            const cleanId = fileId.startsWith('nc-') ? fileId.replace('nc-', '') : fileId;
+            await NextcloudService.deleteFile(cleanId);
             return { success: true };
         } catch (error: any) {
             console.error("Storage delete error:", error);
-            return { success: false, error: error.message || "Failed to delete file" };
+            return { success: false, error: error.message || "Failed to delete file from Nextcloud" };
         }
     }
 };

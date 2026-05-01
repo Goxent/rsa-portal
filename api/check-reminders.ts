@@ -94,12 +94,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     // To avoid circular dependency or URL issues, let's use Resend SDK directly here.
                     const nodemailer = await import('nodemailer');
                     const transporter = nodemailer.default.createTransport({
-                        service: 'gmail',
+                        host: 'smtp.gmail.com',
+                        port: 587,
+                        secure: false, // Use STARTTLS
                         auth: {
                             user: process.env.EMAIL_USER,
                             pass: process.env.EMAIL_PASS,
                         },
-                        connectionTimeout: 10000,
+                        connectionTimeout: 15000,
+                        greetingTimeout: 15000,
+                        socketTimeout: 15000,
+                        dnsTimeout: 10000,
                     });
 
                     // Construct Email HTML

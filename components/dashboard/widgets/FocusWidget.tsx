@@ -38,6 +38,7 @@ const FocusWidget: React.FC = () => {
     const [inputFocused, setInputFocused] = useState(false);
     const [celebratingId, setCelebratingId] = useState<string | null>(null);
     const [isSyncing, setIsSyncing]     = useState(false);
+    const [hasLoaded, setHasLoaded]     = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -53,10 +54,14 @@ const FocusWidget: React.FC = () => {
                 const data = snapshot.data();
                 if (data.currentFocusGoals) {
                     setGoals(data.currentFocusGoals);
+                } else {
+                    setGoals([]);
                 }
             }
+            setHasLoaded(true);
         }, (error) => {
-            console.error("Focus sync error:", error);
+            console.error("Focus Goals Listener Error:", error);
+            setHasLoaded(true); // Don't block UI if listener fails
         });
 
         return () => unsubscribe();
@@ -77,6 +82,12 @@ const FocusWidget: React.FC = () => {
     }, [user]);
 
     const persist = useCallback((next: FocusGoal[]) => {
+        // Prevent accidental overwrite if Firestore data hasn't loaded yet
+        if (!hasLoaded) {
+            console.warn("Attempted to persist focus goals before initial load. Aborting sync to prevent data loss.");
+            return;
+        }
+
         setGoals(next);
         
         // Debounce sync to Firestore
@@ -84,7 +95,7 @@ const FocusWidget: React.FC = () => {
         debounceTimerRef.current = setTimeout(() => {
             syncToFirestore(next);
         }, 500);
-    }, [syncToFirestore]);
+    }, [syncToFirestore, hasLoaded]);
 
     const handleAddGoal = (e?: React.FormEvent) => {
         e?.preventDefault();

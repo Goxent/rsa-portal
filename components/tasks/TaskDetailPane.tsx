@@ -9,7 +9,7 @@ import {
     Users, UserCheck, Shield, Lock, Unlock, ExternalLink, History, CloudUpload, FileText,
     MessageSquare, Zap, Settings2, Folder, Download, ChevronDown, CheckSquare
 } from 'lucide-react';
-import { GoogleDriveService } from '../../services/googleDrive';
+import { StorageService } from '../../services/storage';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation, ReviewChecklistItem } from '../../types';
 import { TASK_TYPE_LABELS, TASK_TYPE_ICONS } from '../../constants/taskTypeChecklists';
 import { useModal } from '../../context/ModalContext';
@@ -1126,7 +1126,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 {subtaskDocs.map(doc => (
                                     <a 
                                         key={doc.id}
-                                        href={GoogleDriveService.getFileView(doc.appwriteFileId)}
+                                        href={StorageService.getViewUrl(doc.appwriteFileId)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-brand-500/10 border border-brand-500/20 rounded-md text-brand-400 text-[9px] font-black uppercase tracking-tight hover:bg-brand-500/20 transition-all"
