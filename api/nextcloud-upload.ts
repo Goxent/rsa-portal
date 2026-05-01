@@ -64,6 +64,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
     } catch (error: any) {
         console.error('Nextcloud Upload Error:', error);
-        res.status(500).json({ error: error.message });
+        // Provide more context for "fetch failed" errors
+        const errorMessage = error.cause ? `${error.message} (Cause: ${error.cause})` : error.message;
+        res.status(500).json({ 
+            error: errorMessage,
+            code: error.code || 'UNKNOWN_ERROR',
+            suggestion: 'Ensure your Nextcloud server is accessible from the public internet and port 8080 is forwarded.'
+        });
     }
 }

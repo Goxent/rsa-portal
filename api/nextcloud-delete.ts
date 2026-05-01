@@ -45,6 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.status(200).json({ success: true, message: 'File deleted from Nextcloud' });
     } catch (error: any) {
         console.error('Nextcloud Delete Error:', error);
-        res.status(500).json({ error: error.message });
+        const errorMessage = error.cause ? `${error.message} (Cause: ${error.cause})` : error.message;
+        res.status(500).json({ 
+            error: errorMessage,
+            code: error.code || 'UNKNOWN_ERROR'
+        });
     }
 }
