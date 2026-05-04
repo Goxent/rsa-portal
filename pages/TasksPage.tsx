@@ -1527,6 +1527,15 @@ const TasksPage: React.FC = () => {
                                     )}
                                 </AnimatePresence>
                             </div>
+                            
+                            <button
+                                onClick={handleOpenCreate}
+                                disabled={!canCreateTask}
+                                className="h-[38px] px-4 md:px-5 bg-accent hover:bg-accent-light text-white rounded-xl text-[10px] font-black uppercase tracking-[0.14em] flex items-center gap-2 transition-all shadow-accent-glow disabled:opacity-50 active:scale-95 whitespace-nowrap"
+                            >
+                                <Plus size={16} strokeWidth={3} />
+                                <span className="hidden sm:inline">Create Assignment</span>
+                            </button>
 
                             <div className="flex items-center gap-2">
                                 {activeFilterCount > 0 && (
@@ -1703,14 +1712,7 @@ const TasksPage: React.FC = () => {
                                 )}
                             </button>
 
-                            <button
-                                onClick={handleOpenCreate}
-                                disabled={!canCreateTask}
-                                className="h-[38px] px-4 md:px-5 bg-accent hover:bg-accent-light text-white rounded-xl text-[10px] font-black uppercase tracking-[0.14em] flex items-center gap-2 transition-all shadow-accent-glow disabled:opacity-50 active:scale-95"
-                            >
-                                <Plus size={16} strokeWidth={3} />
-                                <span className="hidden sm:inline">Create</span>
-                            </button>
+
                         </div>
                     </div>
                 </div>
