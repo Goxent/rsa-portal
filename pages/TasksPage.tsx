@@ -1980,25 +1980,7 @@ const TasksPage: React.FC = () => {
                                     setSelectedTaskIds([taskId]);
                                     setShowBulkAssignMenu(true);
                                 }}
-                                onQuickAdd={async (status, title, phase) => {
-                                    try {
-                                        const newTask: any = {
-                                            title,
-                                            status,
-                                            auditPhase: phase,
-                                            priority: TaskPriority.MEDIUM,
-                                            assignedTo: [],
-                                            subtasks: [],
-                                            dueDate: getCurrentDateUTC(),
-                                            clientIds: [],
-                                            teamLeaderId: '',
-                                            comments: []
-                                        };
-                                        await createTaskMutation.mutateAsync(newTask);
-                                    } catch (error) {
-                                        console.error(error);
-                                    }
-                                }}
+
                             />
                         </div>
                     </>

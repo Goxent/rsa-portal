@@ -25,7 +25,7 @@ interface TaskMainViewProps {
     selectedTaskIds: string[];
     onToggleSelection: (taskId: string) => void;
     groupBy: 'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE';
-    onQuickAdd: (status: TaskStatus, title: string, phase: AuditPhase) => Promise<void>;
+
     clientsList: Client[];
     onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => void;
     onOpenReassign?: (taskId: string) => void;
@@ -123,19 +123,13 @@ function formatDate(d?: string) {
 const TaskMainView: React.FC<TaskMainViewProps> = ({
     viewMode, tasks, onDragEnd, handleOpenEdit, usersList,
     collapsedColumns, toggleColumnCollapse, selectedTaskId,
-    selectedTaskIds, onToggleSelection, groupBy, onQuickAdd, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll, onOpenClientDetail,
+    selectedTaskIds, onToggleSelection, groupBy, clientsList, onUpdateTaskStatus, onOpenReassign, onSelectAll, onOpenClientDetail,
     currentUser, canEditTask
 }) => {
     const isMobile = useMedia('(max-width: 768px)', false);
-    const [quickAddStatus, setQuickAddStatus] = React.useState<string | null>(null);
-    const [quickAddTitle, setQuickAddTitle] = React.useState('');
 
-    const submitQuickAdd = async (status: TaskStatus, phase: AuditPhase) => {
-        if (!quickAddTitle.trim()) return;
-        await onQuickAdd(status, quickAddTitle, phase);
-        setQuickAddTitle('');
-        setQuickAddStatus(null);
-    };
+
+
 
     const allSelected = tasks.length > 0 && selectedTaskIds.length === tasks.length;
 
@@ -518,74 +512,7 @@ const TaskMainView: React.FC<TaskMainViewProps> = ({
                                                                 )}
                                                             </div>
 
-                                                            {/* Quick-Add */}
-                                                            <div className="px-0.5 pb-1">
-                                                                <AnimatePresence mode="wait">
-                                                                    {quickAddStatus === droppableId ? (
-                                                                        <motion.div
-                                                                            key="input"
-                                                                            initial={{ opacity: 0, y: 4, scale: 0.98 }}
-                                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                                            exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                                                                            transition={{ duration: 0.12 }}
-                                                                            className="rounded-xl border p-2.5 shadow-xl mb-1 bg-[var(--bg-elevated)]"
-                                                                            style={{
-                                                                                borderColor: `${pm.accentHex}30`,
-                                                                                boxShadow: `0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px ${pm.accentHex}20`,
-                                                                            }}
-                                                                        >
-                                                                            <input
-                                                                                autoFocus
-                                                                                type="text"
-                                                                                placeholder="Task title..."
-                                                                                value={quickAddTitle}
-                                                                                onChange={e => setQuickAddTitle(e.target.value)}
-                                                                                onKeyDown={e => {
-                                                                                    if (e.key === 'Enter') submitQuickAdd(status, phase);
-                                                                                    if (e.key === 'Escape') { setQuickAddStatus(null); setQuickAddTitle(''); }
-                                                                                }}
-                                                                                className="w-full bg-transparent text-[12px] text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none mb-2 font-medium"
-                                                                            />
-                                                                            <div className="flex items-center justify-between">
-                                                                                <span className="text-[9px] text-slate-400 dark:text-slate-700 font-medium">↵ save · Esc cancel</span>
-                                                                                <div className="flex gap-1.5">
-                                                                                    <button
-                                                                                        onClick={() => { setQuickAddStatus(null); setQuickAddTitle(''); }}
-                                                                                        className="w-6 h-6 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors"
-                                                                                    >
-                                                                                        <X size={11} />
-                                                                                    </button>
-                                                                                    <button
-                                                                                        onClick={() => submitQuickAdd(status, phase)}
-                                                                                        className="px-2.5 h-6 text-white rounded-md text-[10px] font-bold transition-all flex items-center gap-1"
-                                                                                        style={{
-                                                                                            backgroundColor: `${pm.accentHex}30`,
-                                                                                            border: `1px solid ${pm.accentHex}50`,
-                                                                                            color: pm.accentHex,
-                                                                                        }}
-                                                                                    >
-                                                                                        <Plus size={10} /> Add
-                                                                                    </button>
-                                                                                </div>
-                                                                            </div>
-                                                                        </motion.div>
-                                                                    ) : (
-                                                                        <motion.button
-                                                                            key="btn"
-                                                                            initial={{ opacity: 0 }}
-                                                                            animate={{ opacity: 1 }}
-                                                                            exit={{ opacity: 0 }}
-                                                                            onClick={() => setQuickAddStatus(droppableId)}
-                                                                            className={`w-full py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 group/add transition-all duration-200 ${
-                                                                                snap.isDraggingOver ? 'opacity-0' : 'opacity-40 dark:opacity-20 hover:opacity-100 hover:bg-white/60 dark:hover:bg-white/[0.03]'
-                                                                            }`}
-                                                                            style={{ color: cfg.dotColor }}
-                                                                        >
-                                                                            <Plus size={11} className="group-hover/add:scale-125 transition-transform" /> Add task
-                                                                        </motion.button>
-                                                                    )}
-                                                                </AnimatePresence>
-                                                            </div>
+
                                                         </div>
                                                     )}
                                                     </Droppable>
