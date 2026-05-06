@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        const deleteUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${fileId}`;
+        const deleteUrl = `${cleanBaseUrl}/remote.php/webdav/${encodeURIComponent(fileId)}`;
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
 
         const response = await fetch(deleteUrl, {

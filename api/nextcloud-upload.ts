@@ -27,9 +27,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // WebDAV URL for Nextcloud
-        // Format: {baseUrl}/remote.php/dav/files/{username}/{filePath}
+        // Using /remote.php/webdav/ instead of /remote.php/dav/files/{username}/
+        // as it is more robust and automatically maps to the authenticated user's root.
         const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        const uploadUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${fileName}`;
+        const uploadUrl = `${cleanBaseUrl}/remote.php/webdav/${encodeURIComponent(fileName)}`;
 
         // Basic Auth Header
         const auth = Buffer.from(`${username}:${password}`).toString('base64');

@@ -72,6 +72,6 @@ export const NextcloudService = {
         if (!fileId) return '';
         // This is a guess based on standard Nextcloud structure
         // In a real scenario, we might store the full URL or use a proxy
-        return `${import.meta.env.VITE_NEXTCLOUD_URL}/index.php/apps/files/?dir=/&openfile=${fileId}`;
+        return `${import.meta.env.VITE_NEXTCLOUD_URL}/index.php/apps/files/?dir=/&openfile=${encodeURIComponent(fileId)}`;
     }
 };
