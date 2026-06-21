@@ -203,6 +203,13 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     // Track dirty state for unsaved changes guard
     useEffect(() => {
         if (task.id) {
+            // Reset lastSavedTask when opening a different task to prevent false autosave
+            if (task.id !== lastSavedTask.id) {
+                setLastSavedTask(task);
+                setIsDirty(false);
+                return;
+            }
+
             const hasChanges = task.title !== lastSavedTask.title || 
                               task.description !== lastSavedTask.description ||
                               task.priority !== lastSavedTask.priority;

@@ -654,15 +654,19 @@ const TasksPage: React.FC = () => {
         try {
             const taskToSave = cleanForFirestore(dataToSave);
 
-            if (isEditMode && dataToSave.id) {
-                // EXTREMELY IMPORTANT: Unpack comments out so it doesn't revert newer comments added to the DB
-                const { comments, ...updatesWithoutComments } = taskToSave;
+            if (dataToSave.id) {
+                if (isEditMode) {
+                    // EXTREMELY IMPORTANT: Unpack comments out so it doesn't revert newer comments added to the DB
+                    const { comments, ...updatesWithoutComments } = taskToSave;
 
-                const oldTask = tasks.find(t => t.id === dataToSave.id);
-                updateTaskMutation.mutate({ id: dataToSave.id, updates: updatesWithoutComments });
+                    const oldTask = tasks.find(t => t.id === dataToSave.id);
+                    updateTaskMutation.mutate({ id: dataToSave.id, updates: updatesWithoutComments });
 
-                if (oldTask && oldTask.status !== TaskStatus.COMPLETED && dataToSave.status === TaskStatus.COMPLETED) {
-                    triggerNextTemplateIfNeeded(dataToSave.id, TaskStatus.COMPLETED);
+                    if (oldTask && oldTask.status !== TaskStatus.COMPLETED && dataToSave.status === TaskStatus.COMPLETED) {
+                        triggerNextTemplateIfNeeded(dataToSave.id, TaskStatus.COMPLETED);
+                    }
+                } else {
+                    console.warn("Attempted to save an existing task without edit permissions. Ignoring.");
                 }
             } else {
                 createTaskMutation.mutate(taskToSave as Task);
