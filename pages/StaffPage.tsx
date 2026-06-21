@@ -105,17 +105,30 @@ const StaffPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDeleteStaff = async (staff: UserProfile) => {
+    const handleDeleteStaff = async (staff: UserProfile, forceDelete = false) => {
         if (user?.role !== UserRole.MASTER_ADMIN) {
             toast.error('Only Master Admins can delete staff members.');
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to delete ${staff.displayName}? This will remove their record from the directory.`)) return;
+        if (!forceDelete) {
+            if (!window.confirm(`Are you sure you want to delete ${staff.displayName}? This will remove their record from the directory.`)) return;
+        }
 
         try {
             setIsSaving(true);
-            await AuthService.deleteStaffUser(staff.uid, staff.email);
+            const result = await AuthService.deleteStaffUser(staff.uid, staff.email, forceDelete);
+            
+            if (result && result.blockingTaskCount > 0) {
+                const proceed = window.confirm(`This staff member has ${result.blockingTaskCount} active task dependencies. Reassign them before deleting, or confirm force delete.`);
+                if (proceed) {
+                    setIsSaving(false);
+                    return handleDeleteStaff(staff, true);
+                } else {
+                    return;
+                }
+            }
+
             toast.success('Staff member deleted successfully');
             // Refresh the list
             setFullUsers(prev => prev.filter(u => u.uid !== staff.uid));

@@ -1,24 +1,19 @@
 // ENV VARS USED — must be set in Vercel Dashboard > Settings > Environment Variables
 // (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 
-// Firebase client config (same as check-reminders.ts)
-const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID,
-};
-
-if (!getApps().length) {
-    initializeApp(firebaseConfig);
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+        })
+    });
 }
 
-const db = getFirestore();
+const db = admin.firestore();
 
 /**
  * Cleanup Old Comments — Vercel Cron Job
@@ -30,9 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Security: Require CRON_SECRET
     const authHeader = req.headers.authorization;
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        if (req.query.secret !== process.env.CRON_SECRET) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
@@ -46,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`Cutoff date: ${cutoffISO}`);
 
         // Fetch all tasks
-        const snapshot = await getDocs(collection(db, 'tasks'));
+        const snapshot = await db.collection('tasks').get();
 
         let tasksProcessed = 0;
         let tasksUpdated = 0;
@@ -70,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const removedCount = comments.length - recentComments.length;
 
             if (removedCount > 0) {
-                await updateDoc(doc(db, 'tasks', taskDoc.id), {
+                await db.collection('tasks').doc(taskDoc.id).update({
                     comments: recentComments,
                 });
                 tasksUpdated++;

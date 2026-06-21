@@ -12,6 +12,7 @@ export interface TaskDocumentsTabProps {
     customFolders: AuditDocFolder[];
     isLoadingDocs: boolean;
     isUploadingDoc: boolean;
+    uploadProgress: number;
     selectedFolderForUpload: AuditFolderKey | '';
     selectedLineItemForUpload: string;
     onSelectFolder: (key: AuditFolderKey | '') => void;
@@ -25,6 +26,7 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
     customFolders,
     isLoadingDocs,
     isUploadingDoc,
+    uploadProgress,
     selectedFolderForUpload,
     selectedLineItemForUpload,
     onSelectFolder,
@@ -132,8 +134,20 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
 
                     {selectedFolderForUpload && (
                         <div className="flex items-center gap-3">
+                            {isUploadingDoc && (
+                                <div className="flex flex-col items-end gap-1 mr-4">
+                                    <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest animate-pulse">Uploading {uploadProgress}%</span>
+                                    <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                        <div 
+                                            className="h-full bg-brand-500 transition-all duration-300 shadow-[0_0_8px_rgba(59,130,246,0.5)]" 
+                                            style={{ width: `${uploadProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             <label className="flex items-center gap-2.5 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all shadow-lg shadow-brand-500/20 active:scale-95">
-                                <CloudUpload size={14} /> Upload Evidence
+                                {isUploadingDoc ? <Loader2 size={14} className="animate-spin" /> : <CloudUpload size={14} />} 
+                                {isUploadingDoc ? 'Syncing...' : 'Upload Evidence'}
                                 <input 
                                     type="file" 
                                     className="hidden" 

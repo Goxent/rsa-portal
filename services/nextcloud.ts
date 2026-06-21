@@ -4,46 +4,65 @@ export const NextcloudService = {
     /**
      * Upload a file to Nextcloud via Vercel API proxy
      */
-    uploadFile: async (file: File): Promise<{ $id: string; name: string; sizeOriginal: number; mimeType: string; url: string }> => {
+    uploadFile: async (
+        file: File, 
+        onProgress?: (percent: number) => void
+    ): Promise<{ $id: string; name: string; sizeOriginal: number; mimeType: string; url: string }> => {
         // Convert file to base64
         const base64Data = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => {
                 const result = reader.result as string;
-                // Remove prefix: "data:image/png;base64,"
                 const base64 = result.split(',')[1];
                 resolve(base64);
             };
             reader.onerror = error => reject(error);
         });
 
-        const response = await fetch('/api/nextcloud-upload', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                fileName: `${Date.now()}-${file.name}`,
+        const fileName = `${Date.now()}-${file.name}`;
+        const mimeType = file.type || 'application/octet-stream';
+
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/nextcloud-upload');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && onProgress) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    onProgress(percent);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const data = JSON.parse(xhr.responseText);
+                    resolve({
+                        $id: data.id,
+                        name: file.name,
+                        sizeOriginal: file.size,
+                        mimeType: file.type,
+                        url: data.url
+                    });
+                } else {
+                    try {
+                        const error = JSON.parse(xhr.responseText);
+                        reject(new Error(error.error || 'Failed to upload to Nextcloud'));
+                    } catch {
+                        reject(new Error(`Upload failed with status ${xhr.status}`));
+                    }
+                }
+            };
+
+            xhr.onerror = () => reject(new Error('Network error during upload'));
+            
+            xhr.send(JSON.stringify({
+                fileName,
                 fileData: base64Data,
-                mimeType: file.type || 'application/octet-stream'
-            })
+                mimeType
+            }));
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to upload to Nextcloud');
-        }
-
-        const data = await response.json();
-
-        return {
-            $id: data.id,
-            name: file.name,
-            sizeOriginal: file.size,
-            mimeType: file.type,
-            url: data.url
-        };
     },
 
     /**

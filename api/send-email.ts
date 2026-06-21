@@ -2,22 +2,26 @@
 // (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import nodemailer from 'nodemailer';
+import verifyFirebaseToken from './_verifyFirebaseToken';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS for development/production
-    const allowedOrigin = process.env.APP_URL || process.env.FRONTEND_URL || '*'; 
+    const allowedOrigin = process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:5173'; 
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
         'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
     );
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
+
+    const caller = await verifyFirebaseToken(req, res);
+    if (!caller) return;
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
@@ -32,13 +36,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parse 'to' field safely
     let parsedTo: string = '';
     if (typeof to === 'string') {
-        parsedTo = to;
+        parsedTo = to.trim();
     } else if (Array.isArray(to)) {
-        parsedTo = to.map(t => typeof t === 'object' && t.email ? t.email : t).join(', ');
+        parsedTo = to.map(t => typeof t === 'object' && t.email ? t.email : t).join(', ').trim();
     } else if (typeof to === 'object' && to.email) {
-        parsedTo = to.email;
-    } else {
-        return res.status(400).json({ error: 'Invalid "to" recipient format.' });
+        parsedTo = to.email.trim();
+    }
+
+    if (!parsedTo || typeof parsedTo !== 'string') {
+        return res.status(400).json({ error: 'Invalid or missing "to" recipient format. Must be a non-empty string.' });
     }
 
     const emailUser = process.env.EMAIL_USER;

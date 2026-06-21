@@ -1,6 +1,6 @@
 import React from 'react';
 import { Briefcase, ClipboardCheck, Eye, FolderOpen, MessageSquare, ShieldCheck, CheckCircle2, Settings2 } from 'lucide-react';
-import { Task, AuditPhase } from '../../../types';
+import { Task, AuditPhase, UserProfile } from '../../../types';
 import { AuditDocFile } from '../../../services/auditDocs';
 
 export const PHASE_LABELS_FULL = {
@@ -11,6 +11,7 @@ export const PHASE_LABELS_FULL = {
 
 export interface TaskDetailsTabProps {
     task: Partial<Task>;
+    usersList: UserProfile[];
     auditFiles: AuditDocFile[];
     setActiveDetailTab: (tab: string) => void;
     isArchived: boolean;
@@ -18,10 +19,24 @@ export interface TaskDetailsTabProps {
 
 const TaskDetailsTab: React.FC<TaskDetailsTabProps> = ({
     task,
+    usersList,
     auditFiles,
     setActiveDetailTab,
     isArchived
 }) => {
+    const getMemberName = (uid?: string) => {
+        if (!uid) return null;
+        return usersList.find(u => u.uid === uid)?.displayName || 'Unknown';
+    };
+
+    const teamMembers = [
+        { role: 'Team Leader', id: task.teamLeaderId, color: 'brand' },
+        { role: 'QC Reviewer', id: task.engagementReviewerId, color: 'purple' },
+        { role: 'Signing Partner', id: task.signingPartnerId, color: 'rose' }
+    ].filter(m => m.id);
+
+    const assignedStaff = (task.assignedTo || []).map(uid => getMemberName(uid)).filter(Boolean) as string[];
+
     return (
         <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div className="max-w-[1600px] w-full mx-auto p-4 md:p-6 space-y-6 pb-32">
@@ -87,6 +102,65 @@ const TaskDetailsTab: React.FC<TaskDetailsTabProps> = ({
                                     <p className="text-[13px] text-gray-400 leading-relaxed font-semibold italic">
                                         "{task.description || 'No engagement scope defined.'}"
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Engagement Team Section */}
+                        <div className="bg-white dark:bg-white/5 rounded-[32px] p-8 border border-black/5 dark:border-white/10 shadow-sm">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
+                                        <CheckCircle2 size={20} className="text-brand-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-[14px] font-black text-white uppercase tracking-widest">Engagement Team</h4>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Assigned Staff & Hierarchy</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setActiveDetailTab('SETTINGS')}
+                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all border border-white/5"
+                                >
+                                    Modify Team
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Hierarchy Roles */}
+                                {teamMembers.length > 0 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {teamMembers.map((member) => (
+                                            <div key={member.role} className={`p-4 rounded-2xl bg-${member.color}-500/5 border border-${member.color}-500/10 flex items-center gap-3`}>
+                                                <div className={`w-8 h-8 rounded-xl bg-${member.color}-500/20 flex items-center justify-center text-[10px] font-bold text-${member.color}-400 uppercase`}>
+                                                    {getMemberName(member.id)?.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className={`text-[8px] font-black text-${member.color}-500/70 uppercase tracking-widest`}>{member.role}</p>
+                                                    <p className="text-[12px] font-bold text-white">{getMemberName(member.id)}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Assigned Staff List */}
+                                <div className="space-y-3">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Assigned Audit Staff</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {assignedStaff.length > 0 ? (
+                                            assignedStaff.map((name, idx) => (
+                                                <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+                                                    <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-[8px] font-bold text-brand-400 uppercase">
+                                                        {name.charAt(0)}
+                                                    </div>
+                                                    <span className="text-[11px] font-bold text-gray-300">{name}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-[11px] text-gray-600 italic">No staff members assigned to this engagement yet.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

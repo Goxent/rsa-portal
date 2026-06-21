@@ -19,6 +19,7 @@ interface StaffWorkload {
     uid: string;
     name: string;
     totalTasks: number;
+    estimatedWorkdays: number;  // NEW: primary workload measure
     highRisk: number;
     overdue: number;
     inProgress: number;
@@ -65,12 +66,16 @@ const getStatusStyle = (status: string) => {
 // ─── Staff Card ───────────────────────────────────────────────────────────────
 const StaffCard: React.FC<{
     staff: StaffWorkload;
-    maxTasks: number;
+    maxDays: number;
+    sprintCapacity: number;
     isSelected: boolean;
     onSelect: () => void;
-}> = ({ staff, maxTasks, isSelected, onSelect }) => {
+}> = ({ staff, maxDays, sprintCapacity, isSelected, onSelect }) => {
     const cap = getCapacityLevel(staff.totalTasks);
-    const barWidth = staff.totalTasks === 0 ? 3 : Math.min((staff.totalTasks / Math.max(maxTasks, 1)) * 100, 100);
+    const barWidth = staff.estimatedWorkdays === 0 ? 3 : Math.min((staff.estimatedWorkdays / Math.max(maxDays, 1)) * 100, 100);
+    // Sprint capacity progress bar
+    const sprintPct = Math.min((staff.estimatedWorkdays / Math.max(sprintCapacity, 1)) * 100, 100);
+    const sprintColor = sprintPct >= 100 ? '#ef4444' : sprintPct >= 70 ? '#f59e0b' : '#22c55e';
     const initials = staff.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
     // 4-Week Timeline Logic
@@ -122,9 +127,19 @@ const StaffCard: React.FC<{
                         </span>
                     </div>
 
-                    {/* Task count */}
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="text-[11px] text-gray-400 font-medium">{staff.totalTasks} active tasks</span>
+                    {/* Workload summary */}
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[12px] text-white font-bold">{staff.estimatedWorkdays} days estimated</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[11px] text-gray-500 font-medium">{staff.totalTasks} tasks</span>
+                    </div>
+                    {/* Sprint capacity progress bar */}
+                    <div className="w-full h-1.5 rounded-full bg-white/8 mb-2 overflow-hidden" title={`${Math.round(sprintPct)}% of sprint capacity`}>
+                        <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${sprintPct}%`, backgroundColor: sprintColor }}
+                        />
                     </div>
 
                     {/* 4-Week Timeline View (New) */}
@@ -233,6 +248,7 @@ const ResourcePlanningPage: React.FC = () => {
     const [search, setSearch] = useState('');
     const [showHeatmap, setShowHeatmap] = useState(true);
     const [overloadThreshold, setOverloadThreshold] = useState(5);
+    const [sprintCapacity, setSprintCapacity] = useState(10);
 
     const workloadData: StaffWorkload[] = useMemo(() => {
         return users.map(user => {
@@ -241,10 +257,12 @@ const ResourcePlanningPage: React.FC = () => {
                 t.status !== TaskStatus.COMPLETED &&
                 t.status !== TaskStatus.HALTED
             );
+            const estimatedWorkdays = userTasks.reduce((sum, t) => sum + ((t as any).estimatedDays || 1), 0);
             return {
                 uid: user.uid,
                 name: user.displayName || 'Unknown',
-                totalTasks: userTasks.length,
+                totalTasks: userTasks.length,           // keep for display
+                estimatedWorkdays,                       // NEW: primary workload measure
                 highRisk: userTasks.filter(t => t.riskLevel === 'HIGH').length,
                 overdue: userTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date()).length,
                 inProgress: userTasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
@@ -254,7 +272,7 @@ const ResourcePlanningPage: React.FC = () => {
     }, [users, tasks]);
 
     const activeTasks = tasks.filter(t => t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.HALTED);
-    const overloadedCount = workloadData.filter(d => d.totalTasks >= overloadThreshold).length;
+    const overloadedCount = workloadData.filter(d => d.estimatedWorkdays >= sprintCapacity).length;
     const freeCount = workloadData.filter(d => d.totalTasks === 0).length;
     const totalOverdue = workloadData.reduce((sum, d) => sum + d.overdue, 0);
     const totalHighRisk = workloadData.reduce((sum, d) => sum + d.highRisk, 0);
@@ -282,7 +300,7 @@ const ResourcePlanningPage: React.FC = () => {
     const filteredData = useMemo(() => {
         let data = [...workloadData];
         // Filter
-        if (filter === 'overloaded') data = data.filter(d => d.totalTasks >= overloadThreshold);
+        if (filter === 'overloaded') data = data.filter(d => d.estimatedWorkdays >= sprintCapacity);
         else if (filter === 'free') data = data.filter(d => d.totalTasks === 0);
         else if (filter === 'atrisk') data = data.filter(d => d.highRisk > 0 || d.overdue > 0);
         // Department Filter
@@ -302,9 +320,9 @@ const ResourcePlanningPage: React.FC = () => {
             return sortAsc ? diff : -diff;
         });
         return data;
-    }, [workloadData, filter, search, sortKey, sortAsc, overloadThreshold]);
+    }, [workloadData, filter, search, sortKey, sortAsc, overloadThreshold, sprintCapacity]);
 
-    const maxTasks = Math.max(...workloadData.map(d => d.totalTasks), 1);
+    const maxDays = Math.max(...workloadData.map(d => d.estimatedWorkdays), 1);
     const selectedStaff = workloadData.find(d => d.uid === selectedUser);
 
     const handleSort = (key: SortKey) => {
@@ -537,7 +555,8 @@ const ResourcePlanningPage: React.FC = () => {
                                 <StaffCard
                                     key={staff.uid}
                                     staff={staff}
-                                    maxTasks={maxTasks}
+                                    maxDays={maxDays}
+                                    sprintCapacity={sprintCapacity}
                                     isSelected={selectedUser === staff.uid}
                                     onSelect={() => setSelectedUser(prev => prev === staff.uid ? null : staff.uid)}
                                 />
@@ -636,11 +655,12 @@ const ResourcePlanningPage: React.FC = () => {
                             <h3 className="font-bold text-red-200 text-sm">Overloaded Staff ({overloadedCount})</h3>
                         </div>
                         <div className="space-y-2">
-                            {workloadData.filter(d => d.totalTasks >= overloadThreshold).map(d => (
+                            {workloadData.filter(d => d.estimatedWorkdays >= sprintCapacity).map(d => (
                                 <div key={d.uid} className="flex items-center justify-between text-xs">
                                     <span className="text-red-300 font-medium">{d.name}</span>
                                     <div className="flex items-center gap-3 text-gray-400">
-                                        <span>{d.totalTasks} tasks</span>
+                                        <span>{d.estimatedWorkdays} days</span>
+                                        <span className="text-gray-500">{d.totalTasks} tasks</span>
                                         {d.overdue > 0 && <span className="text-red-400">{d.overdue} overdue</span>}
                                     </div>
                                 </div>

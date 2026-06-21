@@ -94,10 +94,11 @@ export const AuditDocService = {
      */
     uploadFile: async (
         file: File,
-        meta: Omit<AuditDocFile, 'id' | 'appwriteFileId' | 'fileName' | 'fileSize' | 'mimeType' | 'uploadedAt'>
+        meta: Omit<AuditDocFile, 'id' | 'appwriteFileId' | 'fileName' | 'fileSize' | 'mimeType' | 'uploadedAt'>,
+        onProgress?: (progress: number) => void
     ): Promise<AuditDocFile> => {
         // 1. Push to Cloud Storage
-        const uploadResult = await StorageService.upload(file);
+        const uploadResult = await StorageService.upload(file, onProgress);
         if (!uploadResult.success || !uploadResult.data) {
             throw new Error(uploadResult.error || "Failed to upload to Nextcloud");
         }

@@ -248,6 +248,14 @@ const AttendanceWidget: React.FC = () => {
             return;
         }
 
+        // Guard: block clock-in if today's record is ON LEAVE
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        const todayRecord = attendanceHistory.find(r => r.date === todayStr);
+        if (todayRecord && (todayRecord as any).status === 'ON LEAVE') {
+            toast.error("You have approved leave for today. Contact admin to override.");
+            return;
+        }
+
         try {
             await clockInMutation.mutateAsync({
                 userId: user.uid,

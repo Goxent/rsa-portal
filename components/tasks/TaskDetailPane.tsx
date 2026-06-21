@@ -185,6 +185,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const [customFolders, setCustomFolders] = useState<AuditDocFolder[]>([]);
     const [isLoadingDocs, setIsLoadingDocs] = useState(false);
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadingSubtaskId, setUploadingSubtaskId] = useState<string | null>(null);
     const [selectedFolderForUpload, setSelectedFolderForUpload] = useState<AuditFolderKey | ''>('');
     const [selectedLineItemForUpload, setSelectedLineItemForUpload] = useState('');
@@ -436,6 +437,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
         if (subtaskId) setUploadingSubtaskId(subtaskId);
         else setIsUploadingDoc(true);
+        setUploadProgress(0);
 
         try {
             let uploadedCount = 0;
@@ -452,6 +454,9 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     uploadedByName: user?.displayName || 'System',
                     taskId: task.id,
                     subtaskId: subtaskId
+                }, (progress) => {
+                    // If multiple files, this logic might need adjustment, but for now simple progress
+                    setUploadProgress(progress);
                 });
                 uploadedCount++;
             }
@@ -469,6 +474,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         } finally {
             setIsUploadingDoc(false);
             setUploadingSubtaskId(null);
+            setUploadProgress(0);
         }
     };
 
@@ -2028,6 +2034,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             {activeDetailTab === 'OVERVIEW' && (
                                 <TaskDetailsTab
                                     task={task}
+                                    usersList={usersList}
                                     auditFiles={auditFiles}
                                     setActiveDetailTab={setActiveDetailTab}
                                     isArchived={isArchived}
@@ -2054,6 +2061,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     customFolders={customFolders}
                                     isLoadingDocs={isLoadingDocs}
                                     isUploadingDoc={isUploadingDoc}
+                                    uploadProgress={uploadProgress}
                                     selectedFolderForUpload={selectedFolderForUpload}
                                     selectedLineItemForUpload={selectedLineItemForUpload}
                                     onSelectFolder={setSelectedFolderForUpload}

@@ -38,6 +38,7 @@ import {
     startAfter,
     QueryDocumentSnapshot,
     arrayUnion,
+    arrayRemove,
     writeBatch
 } from 'firebase/firestore';
 import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification, RiskAreaDocument, AttendanceLogRequest, AuditPhase, WorkLog } from '../types';
@@ -229,12 +230,10 @@ const setupUserSession = async (uid: string, email: string, method: string, forc
         updatedSessions[s.sessionId] = s;
     }
 
-    // [REMOVED] Device limit enforcement disabled per request
-    /*
-    if (activeSessions.length >= 2 && !forceSessionId) {
+    // Device limit enforcement
+    if (activeSessions.length >= 3 && !forceSessionId) {
         throw new SessionLimitError(activeSessions, uid);
     }
-    */
 
     // If user chose to kick a specific session, remove it
     if (forceSessionId) {
@@ -786,13 +785,80 @@ export const AuthService = {
         }
     },
 
-    deleteStaffUser: async (uid: string, email: string) => {
+    deleteStaffUser: async (uid: string, email: string, forceDelete = false) => {
+        // STEP 1 — Pre-flight dependency check
+        const activeStatuses = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'PENDING_APPROVAL'];
+        const activeTasksSnap = await getDocs(
+            query(collection(db, 'tasks'), where('status', 'in', activeStatuses))
+        );
+
+        const blockingTaskIds = new Set<string>();
+        activeTasksSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const assignedTo = data.assignedTo || [];
+            if (
+                assignedTo.includes(uid) ||
+                data.teamLeaderId === uid ||
+                data.engagementReviewerId === uid ||
+                data.signingPartnerId === uid
+            ) {
+                blockingTaskIds.add(docSnap.id);
+            }
+        });
+
+        if (blockingTaskIds.size > 0 && forceDelete === false) {
+            return { blockingTaskCount: blockingTaskIds.size };
+        }
+
+        // STEP 2 — Execute deletes and cleanups
+        const batch = writeBatch(db);
+
+        // Fetch ALL tasks to clean up assignments (regardless of status)
+        const [assignedSnap, leaderSnap, reviewerSnap, partnerSnap] = await Promise.all([
+            getDocs(query(collection(db, 'tasks'), where('assignedTo', 'array-contains', uid))),
+            getDocs(query(collection(db, 'tasks'), where('teamLeaderId', '==', uid))),
+            getDocs(query(collection(db, 'tasks'), where('engagementReviewerId', '==', uid))),
+            getDocs(query(collection(db, 'tasks'), where('signingPartnerId', '==', uid)))
+        ]);
+
+        const taskUpdates: Record<string, any> = {};
+
+        assignedSnap.forEach(docSnap => {
+            const taskId = docSnap.id;
+            if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
+            taskUpdates[taskId].assignedTo = arrayRemove(uid);
+        });
+        leaderSnap.forEach(docSnap => {
+            const taskId = docSnap.id;
+            if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
+            taskUpdates[taskId].teamLeaderId = null;
+        });
+        reviewerSnap.forEach(docSnap => {
+            const taskId = docSnap.id;
+            if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
+            taskUpdates[taskId].engagementReviewerId = null;
+        });
+        partnerSnap.forEach(docSnap => {
+            const taskId = docSnap.id;
+            if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
+            taskUpdates[taskId].signingPartnerId = null;
+        });
+
+        const orphanedTasksCleared = Object.keys(taskUpdates).length;
+        for (const [taskId, updates] of Object.entries(taskUpdates)) {
+            batch.update(doc(db, 'tasks', taskId), updates);
+        }
+
         if (uid) {
-            await deleteDoc(doc(db, 'users', uid));
+            batch.delete(doc(db, 'users', uid));
         }
         if (email) {
-            await deleteDoc(doc(db, 'staffAllowlist', email.toLowerCase().trim()));
+            batch.delete(doc(db, 'staffAllowlist', email.toLowerCase().trim()));
         }
+
+        await batch.commit();
+
+        // STEP 3 — Audit Log
         if (auth.currentUser) {
             const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
             const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
@@ -802,9 +868,11 @@ export const AuthService = {
                 adminName,
                 uid,
                 email,
-                { email }
+                { email, forceDelete, orphanedTasksCleared }
             );
         }
+
+        return { blockingTaskCount: 0 };
     },
 
     /**
@@ -1407,8 +1475,16 @@ export const AuthService = {
                 const oldTaskDoc = await getDoc(doc(db, 'tasks', taskId));
                 const oldTask = oldTaskDoc.exists() ? (oldTaskDoc.data() as Task) : null;
 
+                if (oldTask && updates.status !== oldTask.status) {
+                    if (updates.status === TaskStatus.COMPLETED) {
+                        updates.completedAt = new Date().toISOString();
+                    } else if (oldTask.status === TaskStatus.COMPLETED) {
+                        updates.completedAt = null as any;
+                    }
+                }
+
                 if (oldTask && oldTask.status !== updates.status) {
-                    await AuthService.handleStatusChange(oldTask, updates.status);
+                    await AuthService.handleStatusChange(oldTask, updates.status, auth.currentUser?.uid ?? '');
                 }
             } catch (err) {
                 console.error("Workflow trigger failed:", err);
@@ -1489,10 +1565,27 @@ export const AuthService = {
 
     updateTaskStatusOnly: async (taskId: string, newStatus: TaskStatus): Promise<void> => {
         if (!auth.currentUser) throw new Error("Unauthenticated");
+        
+        const taskSnap = await getDoc(doc(db, 'tasks', taskId));
+        const currentStatus = taskSnap.exists() ? taskSnap.data().status : null;
+
+        const completedAtUpdate: Record<string, any> = {};
+        if (newStatus === TaskStatus.COMPLETED && currentStatus !== TaskStatus.COMPLETED) {
+            completedAtUpdate.completedAt = new Date().toISOString();
+        }
+        if (currentStatus === TaskStatus.COMPLETED && newStatus !== TaskStatus.COMPLETED) {
+            completedAtUpdate.completedAt = null;
+        }
+
         await updateDoc(doc(db, 'tasks', taskId), {
             status: newStatus,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            ...completedAtUpdate,
         });
+
+        if (currentStatus && currentStatus !== newStatus) {
+            await AuthService.handleStatusChange({ ...taskSnap.data(), id: taskId } as Task, newStatus, auth.currentUser?.uid ?? '');
+        }
 
         if (auth.currentUser) {
             const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -1508,10 +1601,12 @@ export const AuthService = {
         }
     },
 
-    handleStatusChange: async (task: Task, newStatus: TaskStatus) => {
+    handleStatusChange: async (task: Task, newStatus: TaskStatus, actingUserId: string) => {
         // 1. Internal Notification for all assignees & creator
         const recipients = new Set([...(task.assignedTo || []), task.createdBy]);
         if (task.teamLeaderId) recipients.add(task.teamLeaderId);
+
+        recipients.delete(actingUserId);
 
         for (const uid of recipients) {
             // Don't notify the person who made the change?
@@ -2237,6 +2332,38 @@ export const AuthService = {
             status,
             rejectionReason: reason || null
         });
+
+        if (status === 'APPROVED') {
+          const start = new Date(leaveData.startDate);
+          const end = new Date(leaveData.endDate);
+          const batch = writeBatch(db);
+
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+            const attendanceId = `${leaveData.userId}_${dateStr}_leave`;
+            const ref = doc(db, 'attendance', attendanceId);
+
+            // Only create if no record exists yet for this date
+            const existing = await getDoc(ref);
+            if (!existing.exists()) {
+              batch.set(ref, {
+                id: attendanceId,
+                userId: leaveData.userId,
+                userName: leaveData.userName,
+                date: dateStr,
+                status: 'ON LEAVE',
+                clockIn: null,
+                clockOut: null,
+                workHours: 0,
+                notes: `Approved ${leaveData.type} leave`,
+                leaveRequestId: id,
+                createdAt: new Date().toISOString(),
+              });
+            }
+          }
+          await batch.commit();
+        }
+
 
         // Notify User
         try {

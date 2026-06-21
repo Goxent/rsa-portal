@@ -91,14 +91,21 @@ service cloud.firestore {
     match /leaves/{leaveId} {
       allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && ((request.auth.uid == resource.data.userId && resource.data.status == 'PENDING') || isAdmin());
+      allow update: if isAuthenticated() && (
+        isAdmin()
+        || (
+          request.auth.uid == resource.data.userId
+          && resource.data.status == 'PENDING'
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'approvedBy', 'approvedAt'])
+        )
+      );
       allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
     // TASKS COLLECTION
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow create: if canCreateTask();
       
       allow update: if isAuthenticated() && (
         request.auth.uid in resource.data.assignedTo ||
@@ -146,8 +153,7 @@ service cloud.firestore {
     // NOTICES COLLECTION
     match /notices/{noticeId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
     
@@ -290,7 +296,11 @@ service cloud.firestore {
     }
 
     match /peer_reviews/{reviewId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        resource.data.reviewer_id == request.auth.uid ||
+        resource.data.reviewee_id == request.auth.uid ||
+        isAdmin()
+      );
       allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
     }
@@ -299,14 +309,14 @@ service cloud.firestore {
     match /auditDocFiles/{fileId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
 
     match /auditDocFolders/{folderId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
   }

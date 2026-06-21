@@ -1,61 +1,58 @@
 // ENV VARS USED — must be set in Vercel Dashboard > Settings > Environment Variables
 // (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, deleteDoc, query, where, limit } from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 
-const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID,
-};
-
-if (!getApps().length) {
-    initializeApp(firebaseConfig);
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+        })
+    });
 }
 
-const db = getFirestore();
+const db = admin.firestore();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const authHeader = req.headers.authorization;
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        if (req.query.secret !== process.env.CRON_SECRET) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
         console.log('Starting cleanup of old audit logs (>90 days)...');
 
-        const RETENTION_DAYS = 90;
+        // ICAN NSAS 230: audit documentation must be retained for 7 years minimum
+        const RETENTION_DAYS = 2555;
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
         const cutoffISO = cutoffDate.toISOString();
 
-        const q = query(
-            collection(db, 'auditLogs'), 
-            where('timestamp', '<', cutoffISO),
-            limit(1000)
-        );
-        const snapshot = await getDocs(q);
+        const q = db.collection('auditLogs')
+            .where('timestamp', '<', cutoffISO)
+            .where('category', 'in', ['OPERATIONAL', 'SESSION'])
+            .limit(1000);
+        const snapshot = await q.get();
 
-        let logsDeleted = 0;
+        let logsArchived = 0;
 
         for (const logDoc of snapshot.docs) {
-            await deleteDoc(doc(db, 'auditLogs', logDoc.id));
-            logsDeleted++;
+            await db.collection('auditLogs').doc(logDoc.id).update({
+                archived: true,
+                archivedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            logsArchived++;
         }
 
-        console.log(`Cleanup complete. Old audit logs removed: ${logsDeleted}`);
+        console.log(`Cleanup complete. Old audit logs archived: ${logsArchived}`);
 
         return res.status(200).json({
             success: true,
             retentionDays: RETENTION_DAYS,
             cutoffDate: cutoffISO,
-            logsDeleted,
+            logsArchived,
         });
 
     } catch (error: any) {

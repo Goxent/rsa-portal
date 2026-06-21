@@ -12,9 +12,12 @@ export const StorageService = {
      * Upload a file and return its metadata including a viewable URL
      * Now using Nextcloud as the sole storage provider.
      */
-    upload: async (file: File): Promise<{ success: boolean; data?: StorageFile; error?: string }> => {
+    upload: async (
+        file: File, 
+        onProgress?: (percent: number) => void
+    ): Promise<{ success: boolean; data?: StorageFile; error?: string }> => {
         try {
-            const uploadedFile = await NextcloudService.uploadFile(file);
+            const uploadedFile = await NextcloudService.uploadFile(file, onProgress);
             return {
                 success: true,
                 data: {

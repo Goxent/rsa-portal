@@ -48,15 +48,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         setProgress(10); // Fake progress start
 
         try {
-            // Simulate progress
-            const interval = setInterval(() => {
-                setProgress(prev => Math.min(prev + 10, 90));
-            }, 200);
-
-            const result = await StorageService.upload(file);
-
-            clearInterval(interval);
-            setProgress(100);
+            const result = await StorageService.upload(file, (p) => {
+                setProgress(p);
+            });
 
             if (result.success && result.data) {
                 onUploadComplete(result.data);

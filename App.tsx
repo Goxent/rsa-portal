@@ -222,7 +222,11 @@ const App: React.FC = () => {
                         <LazyPage><StaffDetailPage /></LazyPage>
                       </AdminRoute>
                     } />
-                    <Route path="settings" element={<LazyPage><SystemSettingsPage /></LazyPage>} />
+                    <Route path="settings" element={
+                      <AdminRoute>
+                        <LazyPage><SystemSettingsPage /></LazyPage>
+                      </AdminRoute>
+                    } />
                     <Route path="audit-log" element={
                       <AdminRoute>
                         <LazyPage><AuditLogPage /></LazyPage>

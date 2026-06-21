@@ -1,38 +1,26 @@
 // ENV VARS USED — must be set in Vercel Dashboard > Settings > Environment Variables
 // (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
-import { EmailService } from '../services/email';
-
-// Re-use the client-side config or env vars for simplicity
-// In a production serverless env, Admin SDK is preferred, but Client SDK works for simple queries.
-const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID,
-};
+import * as admin from 'firebase-admin';
 
 // Initialize Firebase (Singleton pattern)
-if (!getApps().length) {
-    initializeApp(firebaseConfig);
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+        })
+    });
 }
 
-const db = getFirestore();
+const db = admin.firestore();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Security Check (CRON_SECRET)
     const authHeader = req.headers.authorization;
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        // Allow manual testing if query param matches, or just require header
-        // Vercel Cron sends header automatically
-        // For security, strictly require it or a specific query param for testing
-        if (req.query.secret !== process.env.CRON_SECRET) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
@@ -50,13 +38,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`Looking for tasks due on: ${todayStr}`);
 
         // 3. Query Tasks
-        const q = query(
-            collection(db, 'tasks'),
-            where('dueDate', '==', todayStr),
-            where('status', '!=', 'COMPLETED') // Don't remind if already done
-        );
-
-        const snapshot = await getDocs(q);
+        const snapshot = await db.collection('tasks')
+            .where('dueDate', '==', todayStr)
+            .where('status', '!=', 'COMPLETED')
+            .get();
 
         if (snapshot.empty) {
             console.log("No tasks due today.");
@@ -77,11 +62,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             for (const uid of task.assignedTo) {
                 try {
                     // Fetch User Details
-                    const userDoc = await getDoc(doc(db, 'users', uid));
-                    if (!userDoc.exists()) continue;
+                    const userDoc = await db.collection('users').doc(uid).get();
+                    if (!userDoc.exists) continue;
 
                     const userData = userDoc.data();
-                    if (!userData.email) continue;
+                    if (!userData || !userData.email) continue;
 
                     // Determine Client Name
                     let clientName = task.clientName || 'Internal';
