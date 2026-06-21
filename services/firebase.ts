@@ -1485,6 +1485,10 @@ export const AuthService = {
 
                 if (oldTask && oldTask.status !== updates.status) {
                     await AuthService.handleStatusChange(oldTask, updates.status, auth.currentUser?.uid ?? '');
+                    
+                    if (updates.status === TaskStatus.COMPLETED) {
+                        await AuthService.triggerNextTemplateIfNeeded(taskId, updates.status, auth.currentUser?.uid ?? '');
+                    }
                 }
             } catch (err) {
                 console.error("Workflow trigger failed:", err);
@@ -1585,6 +1589,10 @@ export const AuthService = {
 
         if (currentStatus && currentStatus !== newStatus) {
             await AuthService.handleStatusChange({ ...taskSnap.data(), id: taskId } as Task, newStatus, auth.currentUser?.uid ?? '');
+            
+            if (newStatus === TaskStatus.COMPLETED) {
+                await AuthService.triggerNextTemplateIfNeeded(taskId, newStatus, auth.currentUser?.uid ?? '');
+            }
         }
 
         if (auth.currentUser) {
@@ -1640,6 +1648,86 @@ export const AuthService = {
             } catch (emailErr) {
                 console.error("Status Change Email failed", emailErr);
             }
+        }
+    },
+
+    triggerNextTemplateIfNeeded: async (taskId: string, newStatus: TaskStatus, actingUserId: string) => {
+        if (newStatus !== TaskStatus.COMPLETED) return;
+        
+        try {
+            const taskDoc = await getDoc(doc(db, 'tasks', taskId));
+            if (!taskDoc.exists()) return;
+            const task = { id: taskDoc.id, ...taskDoc.data() } as Task;
+            
+            if (!task.nextTemplateId) return;
+
+            const templateDoc = await getDoc(doc(db, 'task_templates', task.nextTemplateId));
+            if (!templateDoc.exists()) return;
+            const nextTemplate = { id: templateDoc.id, ...templateDoc.data() } as TaskTemplate;
+
+            const generatedSubtasks: SubTask[] = [];
+            const templateSubtasks = nextTemplate.subtaskDetails ||
+                nextTemplate.subtasks?.map((title: string) => ({ title })) || [];
+
+            const assignedSet = new Set<string>();
+
+            let usersList: any[] = [];
+            if (templateSubtasks.some((s: any) => s.assigneeRole)) {
+                 const usersSnap = await getDocs(collection(db, 'users'));
+                 usersList = usersSnap.docs.map(d => d.data());
+            }
+
+            templateSubtasks.forEach((s: any) => {
+                let assignedUserId: string | undefined = undefined;
+                if (s.assigneeRole && usersList.length > 0) {
+                    const matchedUser = usersList.find(u => u.role === s.assigneeRole);
+                    if (matchedUser) {
+                        assignedUserId = matchedUser.uid;
+                        assignedSet.add(matchedUser.uid);
+                    }
+                }
+
+                generatedSubtasks.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    title: s.title,
+                    isCompleted: false,
+                    createdAt: new Date().toISOString(),
+                    createdBy: actingUserId || 'system',
+                    assignedTo: assignedUserId ? [assignedUserId] : [],
+                    minimumRequirement: s.minimumRequirement,
+                    phase: s.phase
+                });
+            });
+
+            let dueDate = new Date().toISOString().split('T')[0];
+            if (nextTemplate.expectedDays) {
+                const d = new Date();
+                d.setDate(d.getDate() + nextTemplate.expectedDays);
+                dueDate = d.toISOString().split('T')[0];
+            }
+
+            const newTaskObj = {
+                title: nextTemplate.name + ' for ' + (task.clientName || 'Internal'),
+                description: nextTemplate.description || '',
+                priority: nextTemplate.priority || TaskPriority.MEDIUM,
+                status: TaskStatus.NOT_STARTED,
+                subtasks: [...(task.subtasks || []), ...generatedSubtasks],
+                dueDate: dueDate,
+                totalTimeSpent: 0,
+                nextTemplateId: nextTemplate.nextTemplateId || '',
+                templateId: nextTemplate.id,
+                clientIds: task.clientIds || [],
+                clientName: task.clientName || '',
+                assignedTo: task.assignedTo || Array.from(assignedSet),
+                teamLeaderId: task.teamLeaderId || actingUserId || '',
+                createdBy: actingUserId || 'system',
+                createdAt: new Date().toISOString(),
+                taskType: task.taskType || nextTemplate.taskType
+            };
+
+            await AuthService.saveTask(newTaskObj as Task, true);
+        } catch (err) {
+            console.error("Auto trigger failed", err);
         }
     },
 

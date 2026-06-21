@@ -392,13 +392,11 @@ const TasksPage: React.FC = () => {
     const [selectedClientForDetail, setSelectedClientForDetail] = useState<Client | null>(null);
     const [collapsedColumns, setCollapsedColumns] = useState<TaskStatus[]>([]);
 
-    const toggleTaskSelection = (taskId: string) => {
-
-
+    const toggleTaskSelection = useCallback((taskId: string) => {
         setSelectedTaskIds(prev =>
             prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
         );
-    };
+    }, []);
 
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -412,6 +410,7 @@ const TasksPage: React.FC = () => {
     const [formError, setFormError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Two useEffects syncing the same searchParam.staff are redundant — removed duplicate.
     // Initial query param check
     useEffect(() => {
         const staffParam = searchParams.get('staff');
@@ -446,13 +445,7 @@ const TasksPage: React.FC = () => {
 
 
 
-    // Auto-persistence removed in favor of URL state
-    useEffect(() => {
-        const staffParam = searchParams.get('staff');
-        if (staffParam && filterStaff !== staffParam) {
-            setFilterStaff(staffParam);
-        }
-    }, [searchParams, filterStaff]);
+    // Auto-persistence removed in favor of URL state (deduplicated from above)
 
     const allSelectedArchivable = useMemo(() => {
         if (selectedTaskIds.length === 0) return false;
@@ -522,7 +515,7 @@ const TasksPage: React.FC = () => {
 
     const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
 
-    const handleOpenCreate = () => {
+    const handleOpenCreate = useCallback(() => {
         if (!canCreateTask) return;
         setIsEditMode(false);
         setFormError('');
@@ -544,15 +537,17 @@ const TasksPage: React.FC = () => {
         setIsModalOpen(true);
         setDateMode('AD');
         setNewSubtaskTitle('');
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canCreateTask, filterTaskType]);
 
-    const handleOpenEdit = (task: Task) => {
+    const handleOpenEdit = useCallback((task: Task) => {
         setCurrentTask(task);
-        setIsEditMode(canEditTask(task)); // Strictly enforce isEditMode based on user involvement
+        setIsEditMode(canEditTask(task));
         setIsModalOpen(true);
         setSelectedTaskId(task.id);
         setNewSubtaskTitle('');
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, isAdminOrManager]);
 
     const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
         if (Array.isArray(obj)) {
@@ -571,78 +566,6 @@ const TasksPage: React.FC = () => {
     };
 
 
-    const triggerNextTemplateIfNeeded = async (taskId: string, newStatus: TaskStatus) => {
-        if (newStatus !== TaskStatus.COMPLETED) return;
-        const task = tasks.find(t => t.id === taskId);
-        if (!task || !task.nextTemplateId) return;
-
-        const nextTemplate = templates.find(t => t.id === task.nextTemplateId);
-        if (!nextTemplate) return;
-
-        const generatedSubtasks: SubTask[] = [];
-
-        // Strictly handle template subtasks (either detailed or simple strings)
-        const templateSubtasks = nextTemplate.subtaskDetails ||
-            nextTemplate.subtasks?.map(title => ({ title })) || [];
-
-        const assignedSet = new Set<string>();
-
-        templateSubtasks.forEach((s: any) => {
-            let assignedUserId: string | undefined = undefined;
-            if (s.assigneeRole) {
-                const matchedUser = usersList.find(u => u.role === s.assigneeRole);
-                if (matchedUser) {
-                    assignedUserId = matchedUser.uid;
-                    assignedSet.add(matchedUser.uid);
-                }
-            }
-
-            generatedSubtasks.push({
-                id: Math.random().toString(36).substr(2, 9),
-                title: s.title,
-                isCompleted: false,
-                createdAt: new Date().toISOString(),
-                createdBy: user?.uid || 'system',
-                assignedTo: assignedUserId ? [assignedUserId] : [],
-                minimumRequirement: s.minimumRequirement,
-                phase: s.phase
-            });
-        });
-
-        let dueDate = getCurrentDateUTC();
-        if (nextTemplate.expectedDays) {
-            const d = new Date();
-            d.setDate(d.getDate() + nextTemplate.expectedDays);
-            dueDate = d.toISOString().split('T')[0];
-        }
-
-        const newTaskObj = {
-            title: nextTemplate.name + ' for ' + (task.clientName || 'Internal'),
-            description: nextTemplate.description || '',
-            priority: nextTemplate.priority || TaskPriority.MEDIUM,
-            status: TaskStatus.NOT_STARTED,
-            // Cumulative: Inherit all subtasks from the previous task
-            subtasks: [...(task.subtasks || []), ...generatedSubtasks],
-            dueDate: dueDate,
-            totalTimeSpent: 0,
-            nextTemplateId: nextTemplate.nextTemplateId || '',
-            templateId: nextTemplate.id, // Set the new template ID
-            clientIds: task.clientIds || [],
-            clientName: task.clientName || '',
-            assignedTo: task.assignedTo || Array.from(assignedSet),
-            teamLeaderId: task.teamLeaderId || user?.uid || '',
-            createdBy: user?.uid || 'system',
-            createdAt: new Date().toISOString(),
-            taskType: task.taskType || nextTemplate.taskType // Preserve task type
-        };
-
-        try {
-            await createTaskMutation.mutateAsync(newTaskObj as Task);
-            toast.success(`Workflow Auto-triggered: ${nextTemplate.name}`);
-        } catch (e) {
-            console.error("Auto trigger failed", e);
-        }
-    };
 
     const handleSaveTask = async (taskData?: Partial<Task>) => {
         const dataToSave = taskData || currentTask;
@@ -661,10 +584,6 @@ const TasksPage: React.FC = () => {
 
                     const oldTask = tasks.find(t => t.id === dataToSave.id);
                     updateTaskMutation.mutate({ id: dataToSave.id, updates: updatesWithoutComments });
-
-                    if (oldTask && oldTask.status !== TaskStatus.COMPLETED && dataToSave.status === TaskStatus.COMPLETED) {
-                        triggerNextTemplateIfNeeded(dataToSave.id, TaskStatus.COMPLETED);
-                    }
                 } else {
                     console.warn("Attempted to save an existing task without edit permissions. Ignoring.");
                 }
@@ -819,9 +738,6 @@ const TasksPage: React.FC = () => {
                 }
 
                 await updateTaskMutation.mutateAsync({ id, updates });
-                if (newStatus === TaskStatus.COMPLETED && task.status !== TaskStatus.COMPLETED) {
-                    triggerNextTemplateIfNeeded(id, newStatus);
-                }
             }));
 
             if (authorizedIds.length < selectedTaskIds.length) {
@@ -1173,9 +1089,6 @@ const TasksPage: React.FC = () => {
         }
 
         updateTaskMutation.mutate({ id: taskId, updates });
-        if (finalStatus === TaskStatus.COMPLETED && task.status !== TaskStatus.COMPLETED) {
-            triggerNextTemplateIfNeeded(taskId, TaskStatus.COMPLETED);
-        }
     };
 
     const onDragEnd = (result: DropResult) => {
@@ -1321,9 +1234,6 @@ const TasksPage: React.FC = () => {
             }
             if (Object.keys(updates).length > 0) {
                 updateTaskMutation.mutate({ id: draggableId, updates });
-                if (newStatus === TaskStatus.COMPLETED && task.status !== TaskStatus.COMPLETED) {
-                    triggerNextTemplateIfNeeded(draggableId, TaskStatus.COMPLETED);
-                }
             }
         }
     };

@@ -11,6 +11,10 @@
         {
             "path": "/api/cleanup-audit-logs",
             "schedule": "0 3 * * *"
+        },
+        {
+            "path": "/api/auto-archive",
+            "schedule": "0 1 * * 0"
         }
     ],
     "headers": [

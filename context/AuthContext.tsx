@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { UserProfile } from '../types';
 import { AuthService, auth, db } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -180,21 +180,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const contextValue = useMemo(() => ({
+    user,
+    emailVerified,
+    loading,
+    login,
+    signup,
+    googleLogin,
+    logout,
+    refreshUser,
+    reloadUser,
+    isDemo: false as const
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [user, emailVerified, loading]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        emailVerified,
-        loading,
-        login,
-        signup,
-        googleLogin,
-        logout,
-        refreshUser,
-        reloadUser,
-        isDemo: false
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
