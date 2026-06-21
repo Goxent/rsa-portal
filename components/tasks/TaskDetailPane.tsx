@@ -18,6 +18,7 @@ import { TemplateService } from '../../services/templates';
 import { AuditDocService, AuditDocFile, AuditDocFolder } from '../../services/auditDocs';
 import { AUDIT_FOLDER_STRUCTURE, AuditFolderKey } from '../../types';
 import { AuditService } from '../../services/AuditService';
+import { AuthService } from '../../services/firebase';
 import { useDebounce } from 'react-use';
 import StaffSelect from '../StaffSelect';
 import ClientSelect from '../ClientSelect';
@@ -380,6 +381,24 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             setAuditFiles([]);
         }
     }, [isOpen, watchedClientId, watchedFiscalYear]);
+
+    // Smart Defaults: When a client is selected on a NEW task, auto-fill team from last engagement
+    useEffect(() => {
+        if (!watchedClientId || task.id) return; // Only for new tasks (no existing id)
+        let cancelled = false;
+
+        AuthService.getLastEngagementDefaults(watchedClientId).then((defaults) => {
+            if (!defaults || cancelled) return;
+            if (defaults.teamLeaderId)        setValue('teamLeaderId', defaults.teamLeaderId);
+            if (defaults.engagementReviewerId) setValue('engagementReviewerId', defaults.engagementReviewerId);
+            if (defaults.signingPartnerId)    setValue('signingPartnerId', defaults.signingPartnerId);
+            if (defaults.assignedTo?.length)  setValue('assignedTo', defaults.assignedTo);
+            toast.success('Team pre-filled from last engagement', { icon: '✨', duration: 3000 });
+        }).catch(() => {/* silent fail */});
+
+        return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [watchedClientId]);
 
     const loadAuditFiles = async () => {
         if (!watchedClientId || !watchedFiscalYear) return;

@@ -1211,6 +1211,39 @@ export const AuthService = {
         return snapshot.docs.map(d => docConverter<Task>(d));
     },
 
+    /**
+     * Smart Defaults: Returns the team assignments from the most recent task
+     * for the given clientId, so new tasks can be pre-filled automatically.
+     */
+    getLastEngagementDefaults: async (clientId: string): Promise<{
+        teamLeaderId: string;
+        engagementReviewerId: string;
+        signingPartnerId: string;
+        assignedTo: string[];
+    } | null> => {
+        if (!clientId) return null;
+        try {
+            const q = query(
+                collection(db, 'tasks'),
+                where('clientIds', 'array-contains', clientId),
+                orderBy('createdAt', 'desc'),
+                limit(1)
+            );
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) return null;
+            const last = snapshot.docs[0].data() as Task;
+            return {
+                teamLeaderId: last.teamLeaderId || '',
+                engagementReviewerId: last.engagementReviewerId || '',
+                signingPartnerId: last.signingPartnerId || '',
+                assignedTo: last.assignedTo || [],
+            };
+        } catch {
+            return null;
+        }
+    },
+
+
     subscribeToTasks: (
         onData: (tasks: Task[]) => void,
         onError: (err: Error) => void
