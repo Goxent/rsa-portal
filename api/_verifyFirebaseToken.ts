@@ -1,14 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 
 export interface DecodedToken {
     uid: string;
     email?: string;
 }
 
+const firebaseAdmin = admin.apps ? admin : (admin as any).default || admin;
+
 let adminInitError: Error | null = null;
 try {
-    if (!admin.apps.length) {
+    if (!firebaseAdmin.apps.length) {
         const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'rsa-system1';
         const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_EMAIL;
         let privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
@@ -18,8 +20,8 @@ try {
             privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
         }
 
-        admin.initializeApp({
-            credential: admin.credential.cert({
+        firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.cert({
                 projectId,
                 clientEmail,
                 privateKey
@@ -31,7 +33,7 @@ try {
     adminInitError = error;
 }
 
-export const getAdminDb = () => admin.firestore();
+export const getAdminDb = () => firebaseAdmin.firestore();
 
 export default async function verifyFirebaseToken(req: VercelRequest, res: VercelResponse): Promise<DecodedToken | null> {
     if (adminInitError) {
@@ -49,7 +51,7 @@ export default async function verifyFirebaseToken(req: VercelRequest, res: Verce
     const token = authHeader.split('Bearer ')[1].trim();
 
     try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
         return {
             uid: decodedToken.uid,
             email: decodedToken.email
