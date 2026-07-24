@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { fileId } = req.body;
         if (!fileId) return res.status(400).json({ error: 'fileId (fileName) required' });
 
-        const username = process.env.NEXTCLOUD_USERNAME;
+        const username = process.env.NEXTCLOUD_USER || process.env.NEXTCLOUD_USERNAME;
         const password = process.env.NEXTCLOUD_APP_PASSWORD;
         const baseUrl = process.env.NEXTCLOUD_URL;
 

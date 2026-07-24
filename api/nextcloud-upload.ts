@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(413).json({ error: 'File exceeds 10 MB limit.' });
         }
 
-        const username = process.env.NEXTCLOUD_USERNAME;
+        const username = process.env.NEXTCLOUD_USER || process.env.NEXTCLOUD_USERNAME;
         const password = process.env.NEXTCLOUD_APP_PASSWORD;
         const baseUrl = process.env.NEXTCLOUD_URL;
 
