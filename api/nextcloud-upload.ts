@@ -60,17 +60,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const uploadUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${folderPath}${encodedFileName}`;
 
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
+        const buffer = Buffer.from(fileData, 'base64');
         const baseHeaders: Record<string, string> = {
             'Authorization': `Basic ${auth}`,
             'Bypass-Tunnel-Reminder': 'true',
+            'Content-Length': String(buffer.byteLength),
         };
-        const buffer = Buffer.from(fileData, 'base64');
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
         let response = await fetch(uploadUrl, {
             method: 'PUT',
             headers: { ...baseHeaders, 'Content-Type': mimeType || 'application/octet-stream' },
             body: buffer,
+            signal: controller.signal,
         });
+        clearTimeout(timeout);
 
         // If folder doesn't exist (409 Conflict), create it then retry
         if (response.status === 409 && docsFolder) {
