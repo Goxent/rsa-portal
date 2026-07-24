@@ -51,23 +51,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const docsFolder = process.env.NEXTCLOUD_DOCS_FOLDER;
         const encodedFileName = encodeURIComponent(fileName);
         const encodedFolder = docsFolder ? encodeURIComponent(docsFolder) + '/' : '';
-        const uploadUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${encodedFolder}${encodedFileName}`;
+        const folderUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${encodedFolder}`;
+        const uploadUrl = `${folderUrl}${encodedFileName}`;
 
         // Basic Auth Header
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
+        const reqHeaders = {
+            'Authorization': `Basic ${auth}`,
+            'Bypass-Tunnel-Reminder': 'true'
+        };
 
         // Convert base64 fileData back to buffer
         const buffer = Buffer.from(fileData, 'base64');
 
-        const response = await fetch(uploadUrl, {
+        let response = await fetch(uploadUrl, {
             method: 'PUT',
             headers: {
-                'Authorization': `Basic ${auth}`,
+                ...reqHeaders,
                 'Content-Type': mimeType || 'application/octet-stream',
-                'Bypass-Tunnel-Reminder': 'true'
             },
             body: buffer
         });
+
+        if (response.status === 409 && docsFolder) {
+            // Folder might not exist, try to create it
+            const mkcolRes = await fetch(folderUrl, {
+                method: 'MKCOL',
+                headers: reqHeaders
+            });
+            
+            // Retry upload regardless of mkcol result (it might have been created simultaneously)
+            response = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    ...reqHeaders,
+                    'Content-Type': mimeType || 'application/octet-stream',
+                },
+                body: buffer
+            });
+        }
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -89,10 +111,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('Nextcloud Upload Error:', error);
         // Provide more context for "fetch failed" errors
         const errorMessage = error.cause ? `${error.message} (Cause: ${error.cause})` : error.message;
-        res.status(500).json({ 
+        
+        // Extract status if available in our thrown error string e.g., "Nextcloud Upload Failed: 409 ..."
+        let status = 500;
+        const statusMatch = errorMessage.match(/Failed: (\d{3})/);
+        if (statusMatch) {
+            status = parseInt(statusMatch[1], 10);
+        }
+
+        res.status(status).json({ 
             error: errorMessage,
             code: error.code || 'UNKNOWN_ERROR',
-            suggestion: 'Ensure your Nextcloud server is accessible from the public internet and port 8080 is forwarded.'
+            suggestion: 'Ensure your Nextcloud server is accessible, port 8080 is forwarded, and credentials are correct.'
         });
     }
 }
