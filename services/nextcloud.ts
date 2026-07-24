@@ -85,12 +85,12 @@ export const NextcloudService = {
     },
 
     /**
-     * Get view URL (if we have a consistent pattern, otherwise use the one from upload)
+     * Get a proxied download/view URL for a file via the Vercel API.
+     * This bypasses the localtunnel reminder and Nextcloud auth from the browser.
      */
     getFileView: (fileId: string): string => {
         if (!fileId) return '';
-        // This is a guess based on standard Nextcloud structure
-        // In a real scenario, we might store the full URL or use a proxy
-        return `${import.meta.env.VITE_NEXTCLOUD_URL}/index.php/apps/files/?dir=/&openfile=${encodeURIComponent(fileId)}`;
+        // Use the Vercel download proxy - it handles Nextcloud auth server-side
+        return `/api/nextcloud-download?fileId=${encodeURIComponent(fileId)}`;
     }
 };
