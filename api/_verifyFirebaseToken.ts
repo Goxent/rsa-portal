@@ -1,16 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
 export interface DecodedToken {
     uid: string;
     email?: string;
 }
 
-const firebaseAdmin = admin.apps ? admin : (admin as any).default || admin;
-
 let adminInitError: Error | null = null;
 try {
-    if (!firebaseAdmin.apps.length) {
+    if (getApps().length === 0) {
         const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'rsa-system1';
         const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_EMAIL;
         let privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
@@ -20,12 +20,12 @@ try {
             privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
         }
 
-        firebaseAdmin.initializeApp({
-            credential: firebaseAdmin.credential.cert({
+        initializeApp({
+            credential: cert({
                 projectId,
                 clientEmail,
                 privateKey
-            })
+            } as any)
         });
     }
 } catch (error: any) {
@@ -33,7 +33,7 @@ try {
     adminInitError = error;
 }
 
-export const getAdminDb = () => firebaseAdmin.firestore();
+export const getAdminDb = () => getFirestore();
 
 export default async function verifyFirebaseToken(req: VercelRequest, res: VercelResponse): Promise<DecodedToken | null> {
     if (adminInitError) {
@@ -51,7 +51,7 @@ export default async function verifyFirebaseToken(req: VercelRequest, res: Verce
     const token = authHeader.split('Bearer ')[1].trim();
 
     try {
-        const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+        const decodedToken = await getAuth().verifyIdToken(token);
         return {
             uid: decodedToken.uid,
             email: decodedToken.email
