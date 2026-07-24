@@ -1,4 +1,10 @@
 {
+    "functions": {
+        "api/nextcloud-upload.ts": {
+            "maxDuration": 60,
+            "memory": 1024
+        }
+    },
     "crons": [
         {
             "path": "/api/check-reminders",
