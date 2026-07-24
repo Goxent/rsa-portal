@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import verifyFirebaseToken from './_verifyFirebaseToken';
+import verifyFirebaseToken from './_verifyFirebaseToken.js';
 
 export const config = {
     api: {
