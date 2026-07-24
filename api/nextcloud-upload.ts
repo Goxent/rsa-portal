@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import verifyFirebaseToken from './_verifyFirebaseToken.js';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 export const config = {
     api: {
@@ -9,11 +10,19 @@ export const config = {
     },
 };
 
+function initFirebase() {
+    if (getApps().length > 0) return;
+    const projectId = process.env.FIREBASE_PROJECT_ID || 'rsa-system1';
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_EMAIL;
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
+    if (privateKey) {
+        privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+    }
+    initializeApp({ credential: cert({ projectId, clientEmail, privateKey } as any) });
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // Enable CORS
-    const allowedOrigin = process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
@@ -22,107 +31,93 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
     }
 
-    const caller = await verifyFirebaseToken(req, res);
-    if (!caller) return;
-
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    // Verify Firebase token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing or malformed Authorization header.' });
+    }
+    try {
+        initFirebase();
+        const token = authHeader.split('Bearer ')[1].trim();
+        await getAuth().verifyIdToken(token);
+    } catch (authErr: any) {
+        console.error('Auth error:', authErr.message);
+        return res.status(401).json({ error: 'Invalid or expired session. Please sign in again.', details: authErr.message });
+    }
 
     try {
         const { fileName, fileData, mimeType } = req.body;
         if (!fileName || !fileData) return res.status(400).json({ error: 'fileName and fileData required' });
 
-        if (Buffer.from(fileData, 'base64').byteLength > 10 * 1024 * 1024) {
-            return res.status(413).json({ error: 'File exceeds 10 MB limit.' });
+        const fileSizeBytes = Buffer.from(fileData, 'base64').byteLength;
+        if (fileSizeBytes > 20 * 1024 * 1024) {
+            return res.status(413).json({ error: 'File exceeds 20 MB limit.' });
         }
 
-        const username = process.env.NEXTCLOUD_USER || process.env.NEXTCLOUD_USERNAME;
+        const username = process.env.NEXTCLOUD_USER;
         const password = process.env.NEXTCLOUD_APP_PASSWORD;
         const baseUrl = process.env.NEXTCLOUD_URL;
 
         if (!username || !password || !baseUrl) {
-            return res.status(412).json({ error: 'Nextcloud credentials not configured' });
+            return res.status(412).json({
+                error: 'Nextcloud credentials not configured',
+                missing: { user: !username, password: !password, url: !baseUrl }
+            });
         }
 
-        // WebDAV URL for Nextcloud
-        // Reverting to the standard /remote.php/dav/files/{username}/{filePath}
-        // but ensuring proper encoding and adding a trailing slash after username.
         const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        
         const docsFolder = process.env.NEXTCLOUD_DOCS_FOLDER;
         const encodedFileName = encodeURIComponent(fileName);
-        const encodedFolder = docsFolder ? encodeURIComponent(docsFolder) + '/' : '';
-        const folderUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${encodedFolder}`;
-        const uploadUrl = `${folderUrl}${encodedFileName}`;
+        const folderPath = docsFolder ? `${docsFolder}/` : '';
+        const uploadUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${folderPath}${encodedFileName}`;
 
-        // Basic Auth Header
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
-        const reqHeaders = {
+        const baseHeaders = {
             'Authorization': `Basic ${auth}`,
-            'Bypass-Tunnel-Reminder': 'true'
+            'Bypass-Tunnel-Reminder': 'true',
         };
-
-        // Convert base64 fileData back to buffer
         const buffer = Buffer.from(fileData, 'base64');
 
         let response = await fetch(uploadUrl, {
             method: 'PUT',
-            headers: {
-                ...reqHeaders,
-                'Content-Type': mimeType || 'application/octet-stream',
-            },
-            body: buffer
+            headers: { ...baseHeaders, 'Content-Type': mimeType || 'application/octet-stream' },
+            body: buffer,
         });
 
+        // If folder doesn't exist, create it with MKCOL then retry
         if (response.status === 409 && docsFolder) {
-            // Folder might not exist, try to create it
-            const mkcolRes = await fetch(folderUrl, {
-                method: 'MKCOL',
-                headers: reqHeaders
-            });
-            
-            // Retry upload regardless of mkcol result (it might have been created simultaneously)
+            const folderUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${docsFolder}/`;
+            await fetch(folderUrl, { method: 'MKCOL', headers: baseHeaders });
             response = await fetch(uploadUrl, {
                 method: 'PUT',
-                headers: {
-                    ...reqHeaders,
-                    'Content-Type': mimeType || 'application/octet-stream',
-                },
-                body: buffer
+                headers: { ...baseHeaders, 'Content-Type': mimeType || 'application/octet-stream' },
+                body: buffer,
             });
         }
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Nextcloud Upload Failed: ${response.status} ${errorText}`);
+            return res.status(response.status).json({
+                error: `Nextcloud Upload Failed: ${response.status}`,
+                details: errorText.substring(0, 500),
+            });
         }
 
-        // Return the URL where the file can be viewed
-        // For Nextcloud, public links are different, but for authenticated access we can use the WebDAV URL or a direct link if known.
-        // For now, we'll return the WebDAV URL as the ID and a likely preview URL.
-        const viewUrl = `${cleanBaseUrl}/index.php/apps/files/?dir=/&openfile=${fileName}`;
-
-        res.status(200).json({ 
-            success: true, 
-            id: fileName, 
+        const viewUrl = `${cleanBaseUrl}/index.php/apps/files/?dir=/${docsFolder || ''}`;
+        res.status(200).json({
+            success: true,
+            id: fileName,
             url: viewUrl,
-            message: 'File uploaded to Nextcloud successfully'
+            message: 'File uploaded to Nextcloud successfully',
         });
     } catch (error: any) {
         console.error('Nextcloud Upload Error:', error);
-        // Provide more context for "fetch failed" errors
         const errorMessage = error.cause ? `${error.message} (Cause: ${error.cause})` : error.message;
-        
-        // Extract status if available in our thrown error string e.g., "Nextcloud Upload Failed: 409 ..."
-        let status = 500;
-        const statusMatch = errorMessage.match(/Failed: (\d{3})/);
-        if (statusMatch) {
-            status = parseInt(statusMatch[1], 10);
-        }
-
-        res.status(status).json({ 
+        res.status(500).json({
             error: errorMessage,
             code: error.code || 'UNKNOWN_ERROR',
-            suggestion: 'Ensure your Nextcloud server is accessible, port 8080 is forwarded, and credentials are correct.'
         });
     }
 }
