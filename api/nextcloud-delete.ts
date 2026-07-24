@@ -32,13 +32,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        const deleteUrl = `${cleanBaseUrl}/remote.php/webdav/${encodeURIComponent(fileId)}`;
+        const docsFolder = process.env.NEXTCLOUD_DOCS_FOLDER;
+        const encodedFileId = encodeURIComponent(fileId);
+        const encodedFolder = docsFolder ? encodeURIComponent(docsFolder) + '/' : '';
+        const deleteUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${encodedFolder}${encodedFileId}`;
+        
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
 
         const response = await fetch(deleteUrl, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Basic ${auth}`,
+                'Bypass-Tunnel-Reminder': 'true'
             }
         });
 

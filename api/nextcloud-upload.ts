@@ -1,6 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import verifyFirebaseToken from './_verifyFirebaseToken';
 
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '25mb',
+        },
+    },
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS
     const allowedOrigin = process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -39,7 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Reverting to the standard /remote.php/dav/files/{username}/{filePath}
         // but ensuring proper encoding and adding a trailing slash after username.
         const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-        const uploadUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${encodeURIComponent(fileName)}`;
+        
+        const docsFolder = process.env.NEXTCLOUD_DOCS_FOLDER;
+        const encodedFileName = encodeURIComponent(fileName);
+        const encodedFolder = docsFolder ? encodeURIComponent(docsFolder) + '/' : '';
+        const uploadUrl = `${cleanBaseUrl}/remote.php/dav/files/${username}/${encodedFolder}${encodedFileName}`;
 
         // Basic Auth Header
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
@@ -52,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             headers: {
                 'Authorization': `Basic ${auth}`,
                 'Content-Type': mimeType || 'application/octet-stream',
+                'Bypass-Tunnel-Reminder': 'true'
             },
             body: buffer
         });
