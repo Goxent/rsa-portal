@@ -222,6 +222,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     useDebounce(() => {
         if (task.id && isDirty && !isSaving) {
             const updates = {
+                id: task.id,
                 title: task.title,
                 description: task.description,
                 priority: task.priority

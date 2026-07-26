@@ -217,10 +217,33 @@ const AttendancePage: React.FC = () => {
             const isSaturday = d.getDay() === 6;
 
             targetUsers.forEach(u => {
+                // Determine if they missed clock out yesterday
+                const prevDate = new Date(d);
+                prevDate.setDate(prevDate.getDate() - 1);
+                const prevDateStr = prevDate.toISOString().split('T')[0];
+                const prevRecord = history.find(r => r.userId === u.uid && r.date === prevDateStr);
+                const isPrevClockOutMissing = prevRecord && prevRecord.clockIn && !prevRecord.clockOut && prevRecord.date < todayStr;
+
+                const formatNotes = (existingNotes: string) => {
+                    let text = existingNotes || '';
+                    if (text === '-') text = '';
+                    if (isPrevClockOutMissing) {
+                        if (!text.toLowerCase().includes('clock out missing')) {
+                            text = text ? `clock out missing. ${text}` : 'clock out missing';
+                        }
+                    }
+                    return text || '-';
+                };
+
                 // 1. Check Attendance Record
                 const record = history.find(r => r.userId === u.uid && r.date === dateStr);
                 if (record) {
-                    report.push({ ...record, userName: record.userName || u.displayName, type: 'RECORD' });
+                    report.push({ 
+                        ...record, 
+                        notes: formatNotes(record.notes || ''), 
+                        userName: record.userName || u.displayName, 
+                        type: 'RECORD' 
+                    });
                     return;
                 }
 
@@ -236,7 +259,7 @@ const AttendancePage: React.FC = () => {
                         date: dateStr,
                         status: 'ON LEAVE',
                         clientName: `Leave (${leave.type})`,
-                        notes: leave.reason,
+                        notes: formatNotes(leave.reason || ''),
                         type: 'LEAVE'
                     });
                     return;
@@ -251,7 +274,7 @@ const AttendancePage: React.FC = () => {
                         date: dateStr,
                         status: 'HOLIDAY',
                         clientName: holiday.title || 'Holiday',
-                        notes: 'Public Holiday',
+                        notes: formatNotes('Public Holiday'),
                         type: 'HOLIDAY'
                     });
                     return;
@@ -266,7 +289,7 @@ const AttendancePage: React.FC = () => {
                         date: dateStr,
                         status: 'WEEKEND',
                         clientName: 'Saturday',
-                        notes: 'Firm Weekend',
+                        notes: formatNotes('Firm Weekend'),
                         type: 'WEEKEND'
                     });
                     return;
@@ -290,7 +313,7 @@ const AttendancePage: React.FC = () => {
                     date: dateStr,
                     status: currentStatus,
                     clientName: '-',
-                    notes: '-',
+                    notes: formatNotes(''),
                     type: currentStatus
                 });
             });
@@ -298,7 +321,7 @@ const AttendancePage: React.FC = () => {
 
         let filtered = report;
         if (filterStatus !== 'ALL') {
-            filtered = report.filter(r => r.status === filterStatus || (filterStatus === 'PRESENT' && r.status === 'LATE'));
+            filtered = report.filter(r => r.status === filterStatus || (filterStatus === 'PRESENT' && (r.status === 'LATE' || r.status === 'COMPLETED')));
         }
 
         if (searchQuery) {
@@ -318,7 +341,7 @@ const AttendancePage: React.FC = () => {
         const today = getCurrentDateUTC();
         const todaysRecords = reportData.filter(r => r.date === today);
         return {
-            present: todaysRecords.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length,
+            present: todaysRecords.filter(r => r.status === 'PRESENT' || r.status === 'LATE' || r.status === 'COMPLETED').length,
             absent: todaysRecords.filter(r => r.status === 'ABSENT').length,
             onLeave: todaysRecords.filter(r => r.status === 'ON LEAVE').length,
             late: todaysRecords.filter(r => r.status === 'LATE').length,
@@ -347,7 +370,7 @@ const AttendancePage: React.FC = () => {
         catch { return '-'; }
     };
     const getPeriodStats = () => {
-        const totalPresent = reportData.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length;
+        const totalPresent = reportData.filter(r => r.status === 'PRESENT' || r.status === 'LATE' || r.status === 'COMPLETED').length;
         const totalAbsent = reportData.filter(r => r.status === 'ABSENT').length;
         const totalLeave = reportData.filter(r => r.status === 'ON LEAVE').length;
         const totalHoliday = reportData.filter(r => r.status === 'HOLIDAY' || r.status === 'WEEKEND').length;
@@ -430,7 +453,7 @@ const AttendancePage: React.FC = () => {
         });
 
         const getStatusColor = (status: string): [number, number, number] => {
-            if (status === 'PRESENT') return [220, 252, 231];
+            if (status === 'PRESENT' || status === 'COMPLETED') return [220, 252, 231];
             if (status === 'LATE') return [254, 243, 199];
             if (status === 'ABSENT') return [254, 226, 226];
             if (status === 'ON LEAVE') return [219, 234, 254];
@@ -620,6 +643,7 @@ const AttendancePage: React.FC = () => {
         // ── Data Rows ───────────────────────────────────────────────────
         const statusFill: Record<string, string> = {
             'PRESENT': 'FFD1FAE5',
+            'COMPLETED': 'FFD1FAE5',
             'LATE': 'FFFEF3C7',
             'ABSENT': 'FFFEE2E2',
             'ON LEAVE': 'FFDBEAFE',
@@ -1136,7 +1160,7 @@ const AttendancePage: React.FC = () => {
                                                                 fontSize: '0.6875rem',
                                                                 fontWeight: 600,
                                                                 background: 
-                                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.15)' :
+                                                                    (record.status === 'PRESENT' || record.status === 'COMPLETED') ? 'rgba(101,154,43,0.15)' :
                                                                     record.status === 'LATE' ? 'rgba(201,138,42,0.12)' :
                                                                     record.status === 'ABSENT' ? 'rgba(196,68,90,0.12)' :
                                                                     record.status === 'ON LEAVE' ? 'rgba(61,130,201,0.12)' :
@@ -1144,7 +1168,7 @@ const AttendancePage: React.FC = () => {
                                                                     record.status === 'WEEKEND' ? 'rgba(100,116,139,0.08)' :
                                                                     'var(--bg-main)',
                                                                 color:
-                                                                    record.status === 'PRESENT' ? 'var(--accent)' :
+                                                                    (record.status === 'PRESENT' || record.status === 'COMPLETED') ? 'var(--accent)' :
                                                                     record.status === 'LATE' ? 'var(--color-warning)' :
                                                                     record.status === 'ABSENT' ? 'var(--color-danger)' :
                                                                     record.status === 'ON LEAVE' ? 'var(--color-info)' :
@@ -1152,7 +1176,7 @@ const AttendancePage: React.FC = () => {
                                                                     record.status === 'WEEKEND' ? 'var(--text-muted)' :
                                                                     'var(--text-muted)',
                                                                 borderColor:
-                                                                    record.status === 'PRESENT' ? 'rgba(101,154,43,0.25)' :
+                                                                    (record.status === 'PRESENT' || record.status === 'COMPLETED') ? 'rgba(101,154,43,0.25)' :
                                                                     record.status === 'LATE' ? 'rgba(201,138,42,0.2)' :
                                                                     record.status === 'ABSENT' ? 'rgba(196,68,90,0.2)' :
                                                                     record.status === 'ON LEAVE' ? 'rgba(61,130,201,0.2)' :

@@ -522,7 +522,7 @@ const ClientDetailPage: React.FC = () => {
                                                     <td className="p-4 text-gray-300">{log.clockOut ? new Date(log.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
                                                     <td className="p-4 text-gray-200 font-medium">{log.workHours?.toFixed(1) || '—'}</td>
                                                     <td className="p-4 text-gray-400 max-w-[200px] truncate">{log.workDescription || '—'}</td>
-                                                    <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${log.status === 'PRESENT' ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{log.status}</span></td>
+                                                    <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${(log.status === 'PRESENT' || log.status === 'COMPLETED') ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{log.status}</span></td>
                                                 </tr>
                                             ))}</tbody>
                                         </table>

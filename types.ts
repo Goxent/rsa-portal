@@ -75,7 +75,7 @@ export interface AttendanceRecord {
   clockOut?: string; // ISO Timestamp
   notes?: string; // Used for Late Reason or Admin correction notes
   location?: { lat: number; lng: number };
-  status: 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'CORRECTED' | 'ON LEAVE';
+  status: 'PRESENT' | 'COMPLETED' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'CORRECTED' | 'ON LEAVE';
   workHours: number; // in hours
   // New Reporting Fields
   clientId?: string;

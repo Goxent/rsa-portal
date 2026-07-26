@@ -1,3 +1,5 @@
+import { auth } from './firebase';
+
 export const EmailService = {
     /**
      * Send an email using our Vercel Serverless Function (Gmail/SMTP via Nodemailer)
@@ -6,23 +8,36 @@ export const EmailService = {
         try {
             // Support absolute API URL if provided (important for GitHub Pages + Vercel API setup)
             const apiBase = import.meta.env.VITE_API_URL || '';
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            
+            // Add Firebase auth token if user is logged in
+            if (auth && auth.currentUser) {
+                try {
+                    const token = await auth.currentUser.getIdToken();
+                    headers['Authorization'] = `Bearer ${token}`;
+                } catch (e) {
+                    console.warn('Could not get Firebase token for email auth:', e);
+                }
+            }
+
             const response = await fetch(`${apiBase}/api/send-email`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ to, subject, html, fromName }),
             });
 
             if (!response.ok) {
                 let detail = '';
                 let tip = '';
+                const responseText = await response.text();
                 try {
-                    const errorJson = await response.json();
+                    const errorJson = JSON.parse(responseText);
                     detail = errorJson.details || errorJson.error || JSON.stringify(errorJson);
                     tip = errorJson.tip;
                     // If there's a tip in the response, log it
                     if (tip) console.warn('Email Tip:', tip);
                 } catch {
-                    detail = await response.text();
+                    detail = responseText || `HTTP Error ${response.status}: ${response.statusText}`;
                 }
                 console.error(`Email send failed | Status: ${response.status} (${response.statusText}) | Detail: ${detail}`);
                 return { success: false, error: detail, tip };

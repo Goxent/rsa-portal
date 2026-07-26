@@ -382,7 +382,7 @@ const StaffDetailPage: React.FC = () => {
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                              <div className="glass-panel p-4 rounded-xl flex gap-6 text-center divide-x divide-white/10">
                                 <div className="flex-1"><p className="text-2xl font-black text-white">{attendanceRecords.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Days Logged (60d)</p></div>
-                                <div className="flex-1"><p className="text-2xl font-black text-brand-400">{attendanceRecords.filter(a => a.status === 'PRESENT').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">On Time</p></div>
+                                <div className="flex-1"><p className="text-2xl font-black text-brand-400">{attendanceRecords.filter(a => a.status === 'PRESENT' || a.status === 'COMPLETED').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">On Time</p></div>
                                 <div className="flex-1"><p className="text-2xl font-black text-amber-400">{attendanceRecords.filter(a => a.status === 'LATE').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Late</p></div>
                                 <div className="flex-1"><p className="text-2xl font-black text-amber-400">{attendanceRecords.reduce((sum, a) => sum + (a.workHours || 0), 0).toFixed(1)}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Hours</p></div>
                             </div>
@@ -415,7 +415,7 @@ const StaffDetailPage: React.FC = () => {
                                                             <td className="p-4 text-gray-400">{record.clockOut ? new Date(record.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
                                                             <td className="p-4 text-center text-white font-bold">{record.workHours?.toFixed(1) || '—'}</td>
                                                             <td className="p-4 text-center">
-                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${record.status === 'PRESENT' ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{record.status}</span>
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${(record.status === 'PRESENT' || record.status === 'COMPLETED') ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{record.status}</span>
                                                             </td>
                                                             <td className="p-4 text-gray-400 text-xs truncate max-w-[200px]" title={record.workDescription}>{record.workDescription || '—'}</td>
                                                         </tr>

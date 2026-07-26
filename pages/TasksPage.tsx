@@ -568,7 +568,7 @@ const TasksPage: React.FC = () => {
 
 
     const handleSaveTask = async (taskData?: Partial<Task>) => {
-        const dataToSave = taskData || currentTask;
+        const dataToSave = taskData ? { ...currentTask, ...taskData } : currentTask;
         if (!dataToSave.title?.trim()) {
             setFormError("Title is required.");
             return;

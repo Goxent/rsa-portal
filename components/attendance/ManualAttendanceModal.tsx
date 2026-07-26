@@ -299,6 +299,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                 </label>
                                 <input
                                     type="time"
+                                    step="1"
                                     required
                                     className="w-full border px-4 py-2.5 text-sm outline-none transition-all tabular-nums"
                                     style={{ 
@@ -317,6 +318,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                 </label>
                                 <input
                                     type="time"
+                                    step="1"
                                     className="w-full border px-4 py-2.5 text-sm outline-none transition-all tabular-nums"
                                     style={{ 
                                         background: 'var(--bg-main)', 
