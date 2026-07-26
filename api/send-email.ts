@@ -2,7 +2,7 @@
 // (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import nodemailer from 'nodemailer';
-import verifyFirebaseToken from './_verifyFirebaseToken';
+import verifyFirebaseToken from './_verifyFirebaseToken.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS for development/production
