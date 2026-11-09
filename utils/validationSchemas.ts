@@ -13,6 +13,7 @@ export const taskSchema = z.object({
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
     status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'UNDER_REVIEW', 'HALTED', 'COMPLETED', 'ARCHIVED']),
     estimatedHours: z.number().min(0).optional(),
+    estimatedDays: z.number().min(1).max(365).optional(),
     tags: z.array(z.string()).optional(),
     assignedTo: z.array(z.string()).optional(),
     teamLeaderId: z.string().optional(),

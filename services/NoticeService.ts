@@ -7,6 +7,7 @@ import {
     orderBy, 
     updateDoc, 
     doc,
+    setDoc,
     arrayUnion
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -61,14 +62,14 @@ export const NoticeService = {
 
     /**
      * Fetch all notices relevant to the current user.
-     * If userId is provided, filters for that user or 'ALL'.
+     * If userId is provided, filters for that user or 'ALL', and hydrates read status from noticeReads.
      */
     getNotices: async (userId?: string): Promise<Notice[]> => {
         try {
             if (userId) {
                 // To bypass "Missing or insufficient permissions" errors, we query specifically for what the user is allowed to see.
                 // Firestore doesn't support 'OR' between array-contains and equality easily in one query.
-                // We run two queries in parallel: one for 'ALL' recipients and one for specific user ID.
+                // We run queries in parallel: one for 'ALL' recipients, one for specific user ID, and one for user read receipts.
                 
                 const qAll = query(
                     collection(db, 'notices'), 
@@ -82,19 +83,37 @@ export const NoticeService = {
                     orderBy('createdAt', 'desc')
                 );
 
-                const [snapAll, snapUser] = await Promise.all([
+                const qReads = query(
+                    collection(db, 'noticeReads'),
+                    where('userId', '==', userId)
+                );
+
+                const [snapAll, snapUser, snapReads] = await Promise.all([
                     getDocs(qAll),
-                    getDocs(qUser)
+                    getDocs(qUser),
+                    getDocs(qReads).catch(() => ({ docs: [] } as any))
                 ]);
 
-                // Merge and deduplicate (though unlikely to have duplicates between 'ALL' and specific array)
+                const readNoticeIds = new Set<string>();
+                snapReads.docs.forEach((docSnap: any) => {
+                    const data = docSnap.data();
+                    if (data?.noticeId) readNoticeIds.add(data.noticeId);
+                });
+
+                // Merge and deduplicate
                 const results: Notice[] = [];
                 const seenIds = new Set<string>();
 
-                [...snapAll.docs, ...snapUser.docs].forEach(doc => {
-                    if (!seenIds.has(doc.id)) {
-                        results.push({ id: doc.id, ...doc.data() } as Notice);
-                        seenIds.add(doc.id);
+                [...snapAll.docs, ...snapUser.docs].forEach(docSnap => {
+                    if (!seenIds.has(docSnap.id)) {
+                        const data = docSnap.data() as Notice;
+                        const existingReadBy = Array.isArray(data.readBy) ? [...data.readBy] : [];
+                        // CM1 Fix: Ensure user is reflected in readBy if recorded in noticeReads
+                        if (readNoticeIds.has(docSnap.id) && !existingReadBy.includes(userId)) {
+                            existingReadBy.push(userId);
+                        }
+                        results.push({ id: docSnap.id, ...data, readBy: existingReadBy });
+                        seenIds.add(docSnap.id);
                     }
                 });
 
@@ -106,8 +125,8 @@ export const NoticeService = {
                 const querySnapshot = await getDocs(q);
                 
                 const results: Notice[] = [];
-                querySnapshot.forEach((doc) => {
-                    results.push({ id: doc.id, ...doc.data() } as Notice);
+                querySnapshot.forEach((docSnap) => {
+                    results.push({ id: docSnap.id, ...docSnap.data() } as Notice);
                 });
                 return results;
             }
@@ -123,13 +142,27 @@ export const NoticeService = {
 
     /**
      * Mark a notice as read by a specific user.
+     * CM1 Fix: Write to dedicated noticeReads collection to avoid rule violation on notices doc.
      */
     markAsRead: async (noticeId: string, userId: string): Promise<void> => {
         try {
-            const noticeRef = doc(db, 'notices', noticeId);
-            await updateDoc(noticeRef, {
-                readBy: arrayUnion(userId)
-            });
+            // Write to dedicated noticeReads collection
+            const readRef = doc(db, 'noticeReads', `${noticeId}_${userId}`);
+            await setDoc(readRef, {
+                noticeId,
+                userId,
+                readAt: new Date().toISOString()
+            }, { merge: true });
+
+            // Best-effort update on notice doc itself if caller has admin permission
+            try {
+                const noticeRef = doc(db, 'notices', noticeId);
+                await updateDoc(noticeRef, {
+                    readBy: arrayUnion(userId)
+                });
+            } catch {
+                // Silently ignored for non-admin staff
+            }
         } catch (error) {
             console.error('Error marking notice as read:', error);
         }

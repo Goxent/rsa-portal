@@ -169,16 +169,20 @@ const CompliancePage: React.FC = () => {
             let createdCount = 0;
 
             for (const client of vatClients) {
+                const targetMonthNum = monthIdx === 0 ? 12 : monthIdx;
+                const targetYearNum = monthIdx === 0 ? year - 1 : year;
+                const deterministicTaskId = `vat_${client.id}_${targetYearNum}_${String(targetMonthNum).padStart(2, '0')}`;
                 const taskTitle = `VAT Return Filing - ${periodLabel} - ${client.name}`;
 
-                const alreadyExists = existingTasks.find(t => t.title === taskTitle);
+                // CP2 Fix: Check both deterministic task ID and title to avoid duplicate creation
+                const alreadyExists = existingTasks.some(t => t.id === deterministicTaskId || t.title === taskTitle);
 
                 if (!alreadyExists) {
                     const auditorId = client.auditorId || user.uid;
                     const auditorName = staffList.find(s => s.uid === auditorId)?.displayName || 'Focal Person';
 
                     const newTask: Task = {
-                        id: `vat_${client.id}_${monthIdx === 0 ? year - 1 : year}_${String(monthIdx === 0 ? 12 : monthIdx).padStart(2, '0')}`,
+                        id: deterministicTaskId,
                         title: taskTitle,
                         description: `Statutory VAT return filing for ${client.name} for the month of ${periodLabel}. Due by 25th ${monthNames[monthIdx]} ${year}.`,
                         status: TaskStatus.NOT_STARTED,
@@ -320,7 +324,12 @@ const CompliancePage: React.FC = () => {
                             <span className="text-[9px] text-[var(--color-warning)] font-bold mt-1 uppercase tracking-tighter">Available anytime for VAT filing</span>
                         )}
                     </div>
-                    {canEdit && (
+                    {!canEdit ? (
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-secondary)]/50 text-[var(--muted)] text-xs font-medium" title="Event creation requires Admin, Manager, or explicit compliance authorization.">
+                            <ShieldCheck size={14} className="opacity-60 text-[var(--accent)]" />
+                            <span>View-only Access</span>
+                        </div>
+                    ) : (
                         <button
                             onClick={() => {
                                 setEditingId(null);

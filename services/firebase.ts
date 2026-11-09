@@ -1081,10 +1081,29 @@ export const AuthService = {
 
     // --- CLIENTS ---
     getAllClients: async (): Promise<Client[]> => {
-        const q = query(collection(db, 'clients'));
-        const snapshot = await getDocs(q);
-        const clients = snapshot.docs.map(d => docConverter<Client>(d));
-        return clients.sort((a, b) => a.name.localeCompare(b.name));
+        try {
+            if (auth.currentUser) {
+                const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+                const role = userDoc.exists() ? userDoc.data().role : 'STAFF';
+                if (role !== 'ADMIN' && role !== 'MASTER_ADMIN' && role !== 'MANAGER') {
+                    // Regular staff: only fetch clients they are permitted to access (C2 fix)
+                    const q = query(
+                        collection(db, 'clients'),
+                        where('permittedStaff', 'array-contains', auth.currentUser.uid)
+                    );
+                    const snapshot = await getDocs(q);
+                    const clients = snapshot.docs.map(d => docConverter<Client>(d));
+                    return clients.sort((a, b) => a.name.localeCompare(b.name));
+                }
+            }
+            const q = query(collection(db, 'clients'));
+            const snapshot = await getDocs(q);
+            const clients = snapshot.docs.map(d => docConverter<Client>(d));
+            return clients.sort((a, b) => a.name.localeCompare(b.name));
+        } catch (error) {
+            console.error('Error fetching clients:', error);
+            return [];
+        }
     },
 
     addClient: async (client: Client) => {
@@ -1158,6 +1177,29 @@ export const AuthService = {
                 id,
                 'Client',
                 { status: 'Inactive' }
+            );
+        }
+    },
+
+    reactivateClient: async (id: string) => {
+        if (!auth.currentUser) throw new Error("Unauthenticated");
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+            const role = userDoc.data().role;
+            if (role !== UserRole.ADMIN && role !== UserRole.MASTER_ADMIN) {
+                throw new Error("Unauthorized: Only Admins can reactivate clients.");
+            }
+        }
+        await updateDoc(doc(db, 'clients', id), { status: 'Active' });
+        if (auth.currentUser) {
+            const userName = userDoc.exists() ? userDoc.data().displayName : 'Admin';
+            await logClientAction(
+                AuditAction.CLIENT_UPDATED,
+                auth.currentUser.uid,
+                userName,
+                id,
+                'Client',
+                { status: 'Active', action: 'reactivated' }
             );
         }
     },
@@ -2817,7 +2859,7 @@ export const AuthService = {
         const tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
         
         return tasks
-            .filter(t => t.archivedFiscalYear === fiscalYear)
+            .filter(t => (t.archivedFiscalYear === fiscalYear || (!t.archivedFiscalYear && t.fiscalYear === fiscalYear)))
             .sort((a, b) => {
                 const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
                 const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;

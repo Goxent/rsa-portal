@@ -638,6 +638,7 @@ const TasksPage: React.FC = () => {
             return;
         }
 
+        const taskToArchive = tasks.find(t => t.id === taskId);
         try {
             await updateTaskMutation.mutateAsync({
                 id: taskId,
@@ -645,7 +646,7 @@ const TasksPage: React.FC = () => {
                     status: TaskStatus.ARCHIVED,
                     archivedAt: new Date().toISOString(),
                     archivedBy: user?.uid,
-                    archivedFiscalYear: getNepaliFiscalYear(new Date())
+                    archivedFiscalYear: taskToArchive?.fiscalYear || getNepaliFiscalYear(taskToArchive?.completedAt || new Date())
                 }
             });
             toast.success('Engagement archived successfully');

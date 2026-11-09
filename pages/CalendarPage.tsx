@@ -7,6 +7,7 @@ import { Task, CalendarEvent, UserRole, UserProfile } from '../types';
 import { ComplianceEvent } from '../types/advanced';
 import { useAuth } from '../context/AuthContext';
 import EventModal from '../components/EventModal';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import EmptyState from '../components/common/EmptyState';
 import { generateRecurringInstances, canEditEvent, canDeleteEvent, getVisibilityBadge, formatEventTime } from '../utils/eventUtils';
 import { toBS, toAD } from '../utils/dates';
@@ -120,6 +121,14 @@ const CalendarPage: React.FC = () => {
 
     // UI State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        variant?: 'danger' | 'warning' | 'info';
+        onConfirm?: () => void;
+    }>({ open: false, title: '', message: '' });
     const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
     const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
 
@@ -162,7 +171,11 @@ const CalendarPage: React.FC = () => {
         }
         setMonth(newMonth);
         setYear(newYear);
-        setSelectedDate(null);
+        // CA4 Fix: Clamp selected day to valid days in the new month instead of resetting
+        if (selectedDate !== null) {
+            const maxDays = getDaysInMonth(newYear, newMonth);
+            setSelectedDate(Math.min(selectedDate, maxDays));
+        }
     };
 
     const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
@@ -188,15 +201,26 @@ const CalendarPage: React.FC = () => {
         }
     };
 
-    const handleDeleteEvent = async (event: CalendarEvent, e: React.MouseEvent) => {
+    const handleDeleteEvent = (event: CalendarEvent, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!user || !confirm('Are you sure you want to delete this event?')) return;
-        try {
-            await AuthService.deleteEvent(event.id, user.uid, user.role);
-            fetchItems();
-        } catch (error) {
-            console.error("Failed to delete event:", error);
-        }
+        if (!user) return;
+        setConfirmModal({
+            open: true,
+            title: 'Delete Event',
+            message: `Are you sure you want to delete "${event.title}"? This action cannot be undone.`,
+            confirmLabel: 'Delete Event',
+            variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await AuthService.deleteEvent(event.id, user.uid, user.role);
+                    fetchItems();
+                    toast.success('Event deleted');
+                } catch (error) {
+                    console.error("Failed to delete event:", error);
+                    toast.error("Failed to delete event");
+                }
+            }
+        });
     };
 
     const handleEditEvent = (event: CalendarEvent, e: React.MouseEvent) => {
@@ -267,30 +291,37 @@ const CalendarPage: React.FC = () => {
         }
     };
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = () => {
         if (!user || selectedEventIds.size === 0) return;
-        if (!confirm(`Delete ${selectedEventIds.size} events? This will remove all instances of recurring events.`)) return;
+        setConfirmModal({
+            open: true,
+            title: 'Delete Selected Events',
+            message: `Are you sure you want to delete ${selectedEventIds.size} events? This will remove all instances of recurring events.`,
+            confirmLabel: `Delete (${selectedEventIds.size})`,
+            variant: 'danger',
+            onConfirm: async () => {
+                setIsSaving(true);
+                try {
+                    const masterIds = new Set<string>();
+                    selectedEventIds.forEach(id => {
+                        masterIds.add(id.split('_')[0]);
+                    });
 
-        setIsSaving(true);
-        try {
-            const masterIds = new Set<string>();
-            selectedEventIds.forEach(id => {
-                masterIds.add(id.split('_')[0]);
-            });
+                    const promises = Array.from(masterIds).map(id =>
+                        AuthService.deleteEvent(id, user.uid, user.role)
+                    );
 
-            const promises = Array.from(masterIds).map(id =>
-                AuthService.deleteEvent(id, user.uid, user.role)
-            );
-
-            await Promise.all(promises);
-            fetchItems(); // Refresh
-            setSelectedEventIds(new Set());
-            toast.success("Events deleted successfully");
-        } catch (error: any) {
-            toast.error("Failed to delete some events");
-        } finally {
-            setIsSaving(false);
-        }
+                    await Promise.all(promises);
+                    fetchItems();
+                    setSelectedEventIds(new Set());
+                    toast.success("Events deleted successfully");
+                } catch (error: any) {
+                    toast.error("Failed to delete some events");
+                } finally {
+                    setIsSaving(false);
+                }
+            }
+        });
     };
 
     const handleBulkVisibility = async (visibility: string) => {
@@ -972,6 +1003,19 @@ const CalendarPage: React.FC = () => {
                 })() : undefined}
                 user={user!}
                 allUsers={allUsers}
+            />
+
+            <ConfirmationModal
+                isOpen={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmLabel={confirmModal.confirmLabel}
+                variant={confirmModal.variant}
+                onConfirm={() => {
+                    confirmModal.onConfirm?.();
+                    setConfirmModal(prev => ({ ...prev, open: false }));
+                }}
+                onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
             />
         </div>
         </div>

@@ -22,8 +22,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!caller) return;
 
     const { fileId } = req.query;
-    if (!fileId || typeof fileId !== 'string') {
-        return res.status(400).json({ error: 'fileId query param required' });
+    if (!fileId || typeof fileId !== 'string' || !/^[0-9]+-[\w.\- ]+$/.test(fileId)) {
+        return res.status(400).json({ error: 'Invalid or missing fileId parameter' });
     }
 
     const username = process.env.NEXTCLOUD_USER;
@@ -61,12 +61,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
         }
 
-        // Forward content headers to browser
+        // Forward content headers to browser with security hardening (AD1)
         const contentType = response.headers.get('content-type') || 'application/octet-stream';
         const contentLength = response.headers.get('content-length');
 
+        const isInlineSafe = contentType === 'application/pdf' || contentType.startsWith('image/');
+        const dispositionType = isInlineSafe ? 'inline' : 'attachment';
+        const sanitizedFilename = fileId.replace(/["\r\n]/g, '');
+
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Disposition', `inline; filename="${fileId}"`);
+        res.setHeader('Content-Disposition', `${dispositionType}; filename="${sanitizedFilename}"`);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
         if (contentLength) res.setHeader('Content-Length', contentLength);
         res.setHeader('Cache-Control', 'private, max-age=300');
 

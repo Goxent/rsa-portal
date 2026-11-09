@@ -3,7 +3,7 @@ import {
     Users, Plus, Search, Filter, FileText, MoreVertical,
     Edit, Trash2, Phone, Mail, MapPin, BadgeCheck, Building2,
     Briefcase, Calendar, X, Save, ChevronDown, CheckCircle2, User,
-    Download, FileSpreadsheet, AlertTriangle, ShieldCheck, Check
+    Download, FileSpreadsheet, AlertTriangle, ShieldCheck, Check, RotateCcw
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -192,20 +192,39 @@ const ClientsPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDeactivate = (id: string) => {
         setConfirmModal({
             open: true,
-            title: 'Delete Client',
-            message: 'Are you sure you want to delete this client? This action cannot be undone.',
-            confirmLabel: 'Delete',
-            variant: 'danger',
+            title: 'Deactivate Client',
+            message: 'Are you sure you want to deactivate this client? They will be marked as Inactive and their active assignments will pause.',
+            confirmLabel: 'Deactivate',
+            variant: 'warning',
             onConfirm: async () => {
                 try {
                     await AuthService.deleteClient(id);
-                    toast.success('Client deleted');
+                    toast.success('Client marked as Inactive');
                     loadData();
                 } catch (error) {
-                    toast.error('Failed to delete');
+                    toast.error('Failed to deactivate client');
+                }
+            }
+        });
+    };
+
+    const handleReactivate = (id: string) => {
+        setConfirmModal({
+            open: true,
+            title: 'Reactivate Client',
+            message: 'Are you sure you want to restore this client to Active status?',
+            confirmLabel: 'Reactivate',
+            variant: 'info',
+            onConfirm: async () => {
+                try {
+                    await AuthService.reactivateClient(id);
+                    toast.success('Client reactivated successfully');
+                    loadData();
+                } catch (error) {
+                    toast.error('Failed to reactivate client');
                 }
             }
         });
@@ -584,12 +603,23 @@ const ClientsPage: React.FC = () => {
                                                 </button>
                                             )}
                                             {isAdmin && (
-                                                <button
-                                                    onClick={() => handleDelete(client.id)}
-                                                    className="p-2 hover:bg-rose-500/20 rounded-lg text-white/70 hover:text-rose-400 transition-colors backdrop-blur-md"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                client.status === 'Inactive' ? (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleReactivate(client.id); }}
+                                                        title="Reactivate Client"
+                                                        className="p-2 hover:bg-emerald-500/20 rounded-lg text-white/70 hover:text-emerald-400 transition-colors backdrop-blur-md"
+                                                    >
+                                                        <RotateCcw size={14} />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeactivate(client.id); }}
+                                                        title="Deactivate Client"
+                                                        className="p-2 hover:bg-amber-500/20 rounded-lg text-white/70 hover:text-amber-400 transition-colors backdrop-blur-md"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )
                                             )}
                                         </div>
                                     )}

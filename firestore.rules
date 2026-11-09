@@ -56,6 +56,21 @@ service cloud.firestore {
       );
     }
 
+    // AD2: Helper to verify upload/creation permission for audit documentation files and folders
+    function canCreateAuditDoc() {
+      return isApproved() &&
+        request.resource.data.createdBy == request.auth.uid && (
+          isAdmin() ||
+          getUserRole() == 'MANAGER' ||
+          (
+            request.resource.data.clientId is string &&
+            exists(/databases/$(database)/documents/clients/$(request.resource.data.clientId)) &&
+            request.auth.uid in get(/databases/$(database)/documents/clients/$(request.resource.data.clientId)).data.get('permittedStaff', [])
+          )
+        );
+    }
+
+
     // ========================================================
     // AUDIT LOGS (AL1 Fix)
     // Only admins can read. Users can only write logs where actorId or userId matches their auth.uid
@@ -123,13 +138,23 @@ service cloud.firestore {
     }
     
     // ========================================================
-    // CLIENTS COLLECTION (C1 Fix)
-    // Only approved users can read clients
+    // CLIENTS COLLECTION (C1 & C2 Fixes)
+    // - Read: Admin OR (Approved AND (Manager OR permittedStaff))
+    // - Update: Admin OR (Approved AND permittedStaff AND documents/updatedAt only)
     // ========================================================
     match /clients/{clientId} {
-      allow read: if isApproved();
+      allow read: if isAdmin() || (
+        isApproved() && (
+          getUserRole() == 'MANAGER' ||
+          request.auth.uid in resource.data.get('permittedStaff', [])
+        )
+      );
       allow create, delete: if isAdmin();
-      allow update: if isAdmin() || (isApproved() && request.auth.uid in resource.data.get('permittedStaff', []));
+      allow update: if isAdmin() || (
+        isApproved() &&
+        request.auth.uid in resource.data.get('permittedStaff', []) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['documents', 'updatedAt'])
+      );
     }
 
     // ========================================================
@@ -225,10 +250,18 @@ service cloud.firestore {
       allow delete, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // NOTICES
+    // ========================================================
+    // NOTICES & NOTICE READS (CM1 Fix)
+    // ========================================================
     match /notices/{noticeId} {
       allow read: if isApproved();
       allow create, update, delete: if isAdmin();
+    }
+
+    match /noticeReads/{readId} {
+      allow read: if isApproved();
+      allow create, update: if isApproved() && request.auth.uid == request.resource.data.userId;
+      allow delete: if isAdmin();
     }
     
     // TEMPLATES & WORKFLOWS (Only Admin & Managers can edit)
@@ -293,24 +326,39 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // EVENTS
+    // ========================================================
+    // EVENTS (CA1 Fix)
+    // - Read allowed if approved AND (PUBLIC, creator, Admin, TEAM member, or DEPARTMENT match)
+    // ========================================================
     match /events/{eventId} {
-      allow read: if isApproved();
+      allow read: if isApproved() && (
+        resource.data.get('visibility', 'PUBLIC') == 'PUBLIC' ||
+        resource.data.get('createdBy', '') == request.auth.uid ||
+        isAdmin() ||
+        (resource.data.get('visibility', '') == 'TEAM' && request.auth.uid in resource.data.get('teamIds', [])) ||
+        (resource.data.get('visibility', '') == 'DEPARTMENT' && getUserDoc().get('department', '') == resource.data.get('department', ''))
+      );
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
     }
 
-    // AUDIT DOCUMENTATION
+    // ========================================================
+    // AUDIT DOCUMENTATION (AD2 Fix)
+    // - Create: Must be approved, createdBy == auth.uid, and either Admin, Manager, or client permitted staff
+    // - Read: approved users
+    // - Update: creator or Admin
+    // - Delete: Admin only
+    // ========================================================
     match /auditDocFiles/{fileId} {
       allow read: if isApproved();
-      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      allow create: if canCreateAuditDoc();
       allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
 
     match /auditDocFolders/{folderId} {
       allow read: if isApproved();
-      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      allow create: if canCreateAuditDoc();
       allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }

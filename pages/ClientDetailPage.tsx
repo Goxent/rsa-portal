@@ -518,8 +518,8 @@ const ClientDetailPage: React.FC = () => {
                                                 <tr key={log.id} className="border-b border-white/5 hover:bg-white/5">
                                                     <td className="p-4 text-gray-300">{new Date(log.date).toLocaleDateString()}</td>
                                                     <td className="p-4 text-white font-medium">{log.userName}</td>
-                                                    <td className="p-4 text-gray-300">{log.clockIn ? new Date(log.clockIn).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
-                                                    <td className="p-4 text-gray-300">{log.clockOut ? new Date(log.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
+                                                    <td className="p-4 text-gray-300">{log.clockIn ? (log.clockIn.includes(':') && !log.clockIn.includes('T') ? log.clockIn : (isNaN(new Date(log.clockIn).getTime()) ? log.clockIn : new Date(log.clockIn).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}))) : '—'}</td>
+                                                    <td className="p-4 text-gray-300">{log.clockOut ? (log.clockOut.includes(':') && !log.clockOut.includes('T') ? log.clockOut : (isNaN(new Date(log.clockOut).getTime()) ? log.clockOut : new Date(log.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}))) : '—'}</td>
                                                     <td className="p-4 text-gray-200 font-medium">{log.workHours?.toFixed(1) || '—'}</td>
                                                     <td className="p-4 text-gray-400 max-w-[200px] truncate">{log.workDescription || '—'}</td>
                                                     <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${(log.status === 'PRESENT' || log.status === 'COMPLETED') ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{log.status}</span></td>

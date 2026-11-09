@@ -279,6 +279,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             priority: task.priority || TaskPriority.MEDIUM,
             status: task.status || TaskStatus.NOT_STARTED,
             estimatedHours: task.totalTimeSpent || 0,
+            estimatedDays: task.estimatedDays || undefined,
             assignedTo: task.assignedTo || [],
             teamLeaderId: task.teamLeaderId || '',
             engagementReviewerId: task.engagementReviewerId || '',
@@ -305,6 +306,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     priority: TaskPriority.MEDIUM,
                     status: TaskStatus.NOT_STARTED,
                     estimatedHours: 0,
+                    estimatedDays: undefined,
                     assignedTo: [],
                     teamLeaderId: '',
                     engagementReviewerId: '',
@@ -326,6 +328,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     priority: task.priority || TaskPriority.MEDIUM,
                     status: task.status || TaskStatus.NOT_STARTED,
                     estimatedHours: task.totalTimeSpent || 0,
+                    estimatedDays: task.estimatedDays || undefined,
                     assignedTo: task.assignedTo || [],
                     teamLeaderId: task.teamLeaderId || '',
                     engagementReviewerId: task.engagementReviewerId || '',
@@ -630,6 +633,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             status: data.status,
             startDate: data.startDate,
             dueDate: data.dueDate,
+            estimatedDays: data.estimatedDays,
             assignedTo: data.assignedTo?.filter(id => id && id.trim() !== '') || [],
             teamLeaderId: data.teamLeaderId,
             engagementReviewerId: data.engagementReviewerId,
@@ -2398,6 +2402,18 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             disabled={!canManageTeam}
                                                         />
                                                     )}
+                                                />
+                                            </Field>
+
+                                            <Field label="Estimated Days" icon={<Calendar size={14} className="text-amber-400" />}>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="365"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-[13px] font-medium text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
+                                                    placeholder="e.g. 5"
+                                                    {...register('estimatedDays', { valueAsNumber: true })}
+                                                    disabled={!canManageTeam || isTaskCompleted}
                                                 />
                                             </Field>
 

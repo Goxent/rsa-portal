@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { userKeys } from '../hooks/useStaff';
 import { getAvatarColor, getInitials } from '../utils/userUtils';
 import toast from 'react-hot-toast';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 const StaffPage: React.FC = () => {
     React.useEffect(() => {
@@ -26,6 +27,14 @@ const StaffPage: React.FC = () => {
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        variant?: 'danger' | 'warning' | 'info';
+        onConfirm?: () => void;
+    }>({ open: false, title: '', message: '' });
     const [isEditing, setIsEditing] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [formError, setFormError] = useState('');
@@ -103,32 +112,25 @@ const StaffPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDeleteStaff = async (staff: UserProfile, forceDelete = false) => {
-        if (user?.role !== UserRole.MASTER_ADMIN) {
-            toast.error('Only Master Admins can delete staff members.');
-            return;
-        }
-
-        if (!forceDelete) {
-            if (!window.confirm(`Are you sure you want to delete ${staff.displayName}? This will remove their record from the directory.`)) return;
-        }
-
+    const executeDeleteStaff = async (staff: UserProfile, forceDelete = false) => {
         try {
             setIsSaving(true);
             const result = await AuthService.deleteStaffUser(staff.uid, staff.email, forceDelete);
             
             if (result && result.blockingTaskCount > 0) {
-                const proceed = window.confirm(`This staff member has ${result.blockingTaskCount} active task dependencies. Reassign them before deleting, or confirm force delete.`);
-                if (proceed) {
-                    setIsSaving(false);
-                    return handleDeleteStaff(staff, true);
-                } else {
-                    return;
-                }
+                setIsSaving(false);
+                setConfirmModal({
+                    open: true,
+                    title: 'Active Task Dependencies',
+                    message: `This staff member has ${result.blockingTaskCount} active task dependencies. Reassign them before deleting, or confirm force delete.`,
+                    confirmLabel: 'Force Delete',
+                    variant: 'danger',
+                    onConfirm: () => executeDeleteStaff(staff, true)
+                });
+                return;
             }
 
             toast.success('Staff member deleted successfully');
-            // Refresh the list
             setFullUsers(prev => prev.filter(u => u.uid !== staff.uid));
             await refetch();
         } catch (error) {
@@ -137,6 +139,27 @@ const StaffPage: React.FC = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleDeleteStaff = (staff: UserProfile, forceDelete = false) => {
+        if (user?.role !== UserRole.MASTER_ADMIN) {
+            toast.error('Only Master Admins can delete staff members.');
+            return;
+        }
+
+        if (forceDelete) {
+            executeDeleteStaff(staff, true);
+            return;
+        }
+
+        setConfirmModal({
+            open: true,
+            title: 'Delete Staff Member',
+            message: `Are you sure you want to delete ${staff.displayName}? This will remove their record from the directory.`,
+            confirmLabel: 'Delete Staff',
+            variant: 'danger',
+            onConfirm: () => executeDeleteStaff(staff, false)
+        });
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -711,6 +734,19 @@ const StaffPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationModal
+                isOpen={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmLabel={confirmModal.confirmLabel}
+                variant={confirmModal.variant}
+                onConfirm={() => {
+                    confirmModal.onConfirm?.();
+                    setConfirmModal(prev => ({ ...prev, open: false }));
+                }}
+                onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+            />
         </div>
         </div>
     );
