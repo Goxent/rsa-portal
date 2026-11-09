@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+﻿import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -7,7 +7,7 @@ import {
     Trash2, Save, Loader2, CheckCircle2, Check, Eye, Map,
     Sparkles, Book, ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen,
     Users, UserCheck, Shield, Lock, Unlock, ExternalLink, History, CloudUpload, FileText,
-    MessageSquare, Zap, Settings2, Folder, Download, ChevronDown, CheckSquare
+    MessageSquare, Zap, Settings2, Folder, Download, ChevronDown, CheckSquare, Building2
 } from 'lucide-react';
 import { StorageService } from '../../services/storage';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskComment, Resource, AuditPhase, Template, TemplateFolder, TaskType, AuditObservation, ReviewChecklistItem } from '../../types';
@@ -28,7 +28,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { taskSchema, TaskFormValues } from '../../utils/validationSchemas';
-import { convertADToBS, generateFiscalYearOptions } from '../../utils/nepaliDate';
+import { convertADToBS, generateFiscalYearOptions, formatDateDual } from '../../utils/nepaliDate';
 import { exportTaskToExcel, exportTaskToPDF } from '../../utils/taskExportUtils';
 import { useMedia } from 'react-use';
 import TaskCommentsTab from './tabs/TaskCommentsTab';
@@ -97,7 +97,7 @@ const isPhaseVisible = (subtaskPhase: AuditPhase | undefined, currentPhase: Audi
     return PHASE_ORDER[subtaskPhase] <= PHASE_ORDER[currentPhase];
 };
 
-// ── Icon Mapping for Engagement Framework ──
+// â”€â”€ Icon Mapping for Engagement Framework â”€â”€
 const ICON_MAP: Record<string, any> = {
     ShieldCheck: <ShieldCheck size={20} />,
     Scale: <Scale size={20} />,
@@ -109,7 +109,7 @@ const ICON_MAP: Record<string, any> = {
     Activity: <Activity size={20} />
 };
 
-// ── Reusable boxed field wrapper ──────────────────────────────────────────
+// â”€â”€ Reusable boxed field wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Field: React.FC<{
     label: string;
     icon: React.ReactNode;
@@ -194,10 +194,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     const [newFolderName, setNewFolderName] = useState('');
     const [selectingFolderSubtaskId, setSelectingFolderSubtaskId] = useState<string | null>(null);
     const [showExportMenu, setShowExportMenu] = useState(false);
+    // A6/U5 fix: Inline query composer (replaces browser prompt() calls)
+    const [queryModal, setQueryModal] = useState<{ subtaskId: string; mode: 'RAISE' | 'REPLY'; } | null>(null);
+    const [queryText, setQueryText] = useState('');
+
+    const client = useMemo(() => {
+        const cid = task.clientIds?.[0] || task.clientId;
+        return clientsList.find(c => c.id === cid);
+    }, [clientsList, task.clientIds, task.clientId]);
+
+    const openQueryCount = useMemo(() => {
+        return (task.subtasks || []).filter(s => s.queryStatus === 'OPEN' || s.queryStatus === 'RESOLVED').length;
+    }, [task.subtasks]);
 
     const descRef = useRef<HTMLTextAreaElement | null>(null);
     
-    // ── AUTOSAVE LOGIC ──
+    // â”€â”€ AUTOSAVE LOGIC â”€â”€
     const [isDirty, setIsDirty] = useState(false);
     const [lastSavedTask, setLastSavedTask] = useState<Partial<Task>>(task);
 
@@ -279,7 +291,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     });
 
-    // ── Sync form when task prop changes (e.g. after save or task switch) ──
+    // â”€â”€ Sync form when task prop changes (e.g. after save or task switch) â”€â”€
     useEffect(() => {
         if (isOpen) {
             if (!task.id) {
@@ -394,7 +406,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             if (defaults.engagementReviewerId) setValue('engagementReviewerId', defaults.engagementReviewerId);
             if (defaults.signingPartnerId)    setValue('signingPartnerId', defaults.signingPartnerId);
             if (defaults.assignedTo?.length)  setValue('assignedTo', defaults.assignedTo);
-            toast.success('Team pre-filled from last engagement', { icon: '✨', duration: 3000 });
+            toast.success('Team pre-filled from last engagement', { icon: 'âœ¨', duration: 3000 });
         }).catch(() => {/* silent fail */});
 
         return () => { cancelled = true; };
@@ -589,7 +601,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         // Enforce Review Logic on completion attempt
         if (data.status === TaskStatus.COMPLETED) {
             if (data.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION) {
-                toast.error("Engagement must be in the Review & Conclusion phase before it can be completed.", { icon: '🔒' });
+                toast.error("Engagement must be in the Review & Conclusion phase before it can be completed.", { icon: 'ðŸ”’' });
                 return;
             }
             // Only require sign-off for roles that are actually assigned
@@ -605,7 +617,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     !erOk && 'QC Reviewer',
                     !spOk && 'Signing Partner'
                 ].filter(Boolean).join(', ');
-                toast.error(`Missing sign-off from: ${missing}. Please complete the Reviewer Checklist before marking as completed.`, { icon: '🔒' });
+                toast.error(`Missing sign-off from: ${missing}. Please complete the Reviewer Checklist before marking as completed.`, { icon: 'ðŸ”’' });
                 return;
             }
         }
@@ -623,7 +635,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             engagementReviewerId: data.engagementReviewerId,
             signingPartnerId: data.signingPartnerId,
             // Sign-off timestamps are write-once, set only by the sign-off action.
-            // Always preserve the task prop values — never override from form data,
+            // Always preserve the task prop values â€” never override from form data,
             // which could be undefined if the field isn't registered in react-hook-form.
             teamLeadApprovedAt: task.teamLeadApprovedAt,
             engagementReviewerApprovedAt: task.engagementReviewerApprovedAt,
@@ -647,6 +659,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     const toggleSubtask = (id: string, evidenceText?: string) => {
         if (isTaskCompleted) return;
+        // A4: Stale sign-off lock - procedures cannot be altered once review sign-off has commenced
+        if (task.teamLeadApprovedAt || task.engagementReviewerApprovedAt || task.signingPartnerApprovedAt) {
+            toast.error("Procedures are locked because review sign-off has commenced. Reopen review before modifying.", { icon: '🔒' });
+            return;
+        }
         const updated = [...(task.subtasks || [])];
         const idx = updated.findIndex(u => u.id === id);
         if (idx > -1) {
@@ -657,19 +674,23 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             const isTaskTeamLeader = user?.uid === task.teamLeaderId;
             
             if (!isAssigned && !isTaskTeamLeader) {
-                toast.error("Only assigned staff members or the Task Team Leader can mark this procedure as complete.", { icon: '🔒' });
+                toast.error("Only assigned staff members or the Task Team Leader can mark this procedure as complete.", { icon: 'ðŸ”’' });
                 return;
             }
 
             if (!st.isCompleted && st.isEvidenceMandatory && !st.evidenceProvided && !evidenceText) {
-                toast.error("Evidence is mandatory to mark this procedure as complete. Please provide it below.", { icon: '🛑' });
+                toast.error("Evidence is mandatory to mark this procedure as complete. Please provide it below.", { icon: 'ðŸ›‘' });
                 return;
             }
             updated[idx] = {
                 ...st,
                 isCompleted: !st.isCompleted,
                 evidenceProvided: evidenceText ? true : st.evidenceProvided,
-                evidenceText: evidenceText || st.evidenceText
+                evidenceText: evidenceText || st.evidenceText,
+                // A1 fix: Record who performed the work and when (ISA 230)
+                completedBy: !st.isCompleted ? (user?.uid || undefined) : undefined,
+                completedByName: !st.isCompleted ? (user?.displayName || 'Unknown') : undefined,
+                completedAt: !st.isCompleted ? new Date().toISOString() : undefined,
             };
             onChange({ subtasks: updated });
         }
@@ -689,7 +710,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 (item.reviewerRole === 'SP' && isSigningPartner);
                 
             if (!isAuthorized) {
-                toast.error(`Only the assigned ${item.reviewerRole} can update this item.`, { icon: '🔒' });
+                toast.error(`Only the assigned ${item.reviewerRole} can update this item.`, { icon: 'ðŸ”’' });
                 return;
             }
 
@@ -724,7 +745,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 (item.reviewerRole === 'SP' && isSigningPartner);
                 
             if (!isAuthorized) {
-                toast.error(`Only the assigned ${item.reviewerRole} can modify this item.`, { icon: '🔒' });
+                toast.error(`Only the assigned ${item.reviewerRole} can modify this item.`, { icon: 'ðŸ”’' });
                 return;
             }
 
@@ -770,7 +791,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             (item.reviewerRole === 'SP' && isSigningPartner);
 
         if (!isAuthorized) {
-            toast.error(`Action Restricted: Only the assigned ${item.reviewerRole} can delete this protocol item.`, { icon: '🔒' });
+            toast.error(`Action Restricted: Only the assigned ${item.reviewerRole} can delete this protocol item.`, { icon: 'ðŸ”’' });
             return;
         }
 
@@ -778,6 +799,74 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             const updated = (task.reviewChecklist || []).filter(i => i.id !== id);
             onChange({ reviewChecklist: updated });
         }
+    };
+
+    // A8: Review outcome - Request Changes workflow with round tracking
+    const handleRequestChanges = async (role: 'TL' | 'ER' | 'SP') => {
+        if (isTaskCompleted) return;
+        const reason = window.prompt("Enter review notes / reason for requested changes:");
+        if (!reason || !reason.trim()) return;
+
+        const nextRound = (task.reviewRound || 0) + 1;
+        const now = new Date().toISOString();
+        const updates: any = {
+            status: TaskStatus.IN_PROGRESS,
+            reviewStatus: 'CHANGES_REQUESTED',
+            reviewRound: nextRound,
+            reviewReturnReason: reason.trim(),
+        };
+
+        // Reset current and downstream sign-offs upon changes request
+        if (role === 'TL') {
+            updates.teamLeadApprovedAt = null;
+            updates.teamLeadSignOff = null;
+            updates.engagementReviewerApprovedAt = null;
+            updates.engagementReviewerSignOff = null;
+            updates.signingPartnerApprovedAt = null;
+            updates.signingPartnerSignOff = null;
+        } else if (role === 'ER') {
+            updates.engagementReviewerApprovedAt = null;
+            updates.engagementReviewerSignOff = null;
+            updates.signingPartnerApprovedAt = null;
+            updates.signingPartnerSignOff = null;
+        } else if (role === 'SP') {
+            updates.signingPartnerApprovedAt = null;
+            updates.signingPartnerSignOff = null;
+        }
+
+        onChange(updates);
+        toast.promise(
+            (async () => {
+                await onSave(updates);
+                if (user) {
+                    await AuditService.logAction(
+                        'REVIEW_CHANGES_REQUESTED',
+                        { uid: user.uid, displayName: user.displayName || 'Reviewer' },
+                        { id: task.id!, name: task.title },
+                        { role, round: nextRound, reason: reason.trim(), at: now }
+                    );
+
+                    // Notify team assignees and Team Leader
+                    const recipients = new Set([...(task.assignedTo || []), task.teamLeaderId, task.createdBy].filter(Boolean) as string[]);
+                    recipients.delete(user.uid);
+                    for (const uid of recipients) {
+                        await AuthService.createNotification({
+                            userId: uid,
+                            title: `Changes Requested (${role}): ${task.title}`,
+                            message: `Review Round ${nextRound}: ${reason.trim()}`,
+                            type: 'WARNING',
+                            category: 'TASK',
+                            link: `/tasks?taskId=${task.id}`
+                        });
+                    }
+                }
+            })(),
+            {
+                loading: 'Returning task with changes requested...',
+                success: `Task returned for revision (Round ${nextRound})`,
+                error: 'Failed to return task.',
+            }
+        );
     };
 
     const handleReviewSignOff = (role: 'TL' | 'ER' | 'SP') => {
@@ -795,16 +884,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                              (role === 'SP' && isSigningPartner);
 
         if (!isAuthorized) {
-            toast.error(`Strict Security: Only the assigned ${role} can perform this sign-off.`, { icon: '🛡️' });
+            toast.error(`Strict Security: Only the assigned ${role} can perform this sign-off.`, { icon: 'ðŸ›¡ï¸' });
             return;
         }
 
-        // Sequential Hierarchy Check — skip unassigned layers
+        // Sequential Hierarchy Check â€” skip unassigned layers
         // ER can sign only if TL has signed OR no TL is assigned
         if (role === 'ER') {
             const tlAssigned = !!task.teamLeaderId;
             if (tlAssigned && !task.teamLeadApprovedAt) {
-                toast.error("Team Leader sign-off must be completed first.", { icon: '🔒' });
+                toast.error("Team Leader sign-off must be completed first.", { icon: 'ðŸ”’' });
                 return;
             }
         }
@@ -813,11 +902,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             const tlAssigned = !!task.teamLeaderId;
             const erAssigned = !!task.engagementReviewerId;
             if (tlAssigned && !task.teamLeadApprovedAt) {
-                toast.error("Team Leader sign-off must be completed first.", { icon: '🔒' });
+                toast.error("Team Leader sign-off must be completed first.", { icon: 'ðŸ”’' });
                 return;
             }
             if (erAssigned && !task.engagementReviewerApprovedAt) {
-                toast.error("QC Reviewer sign-off must be completed first.", { icon: '🔒' });
+                toast.error("QC Reviewer sign-off must be completed first.", { icon: 'ðŸ”’' });
                 return;
             }
         }
@@ -837,16 +926,26 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
         const updates: any = {};
         const now = new Date().toISOString();
+        // A2 fix: Store full signer identity, not just a timestamp (ISA 230 / review integrity)
+        const signOffRecord = {
+            uid: user?.uid || 'unknown',
+            name: user?.displayName || 'Unknown',
+            role: role,
+            at: now,
+        };
         if (role === 'TL') {
             updates.teamLeadApprovedAt = now;
+            updates.teamLeadSignOff = signOffRecord;
             setValue('teamLeadApprovedAt', now);
         }
         if (role === 'ER') {
             updates.engagementReviewerApprovedAt = now;
+            updates.engagementReviewerSignOff = signOffRecord;
             setValue('engagementReviewerApprovedAt', now);
         }
         if (role === 'SP') {
             updates.signingPartnerApprovedAt = now;
+            updates.signingPartnerSignOff = signOffRecord;
             setValue('signingPartnerApprovedAt', now);
         }
 
@@ -871,7 +970,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 success: `${role} Sign-off Secured and Persisted!`,
                 error: `Failed to persist ${role} sign-off. Please try again.`,
             },
-            { icon: '🔒' }
+            { icon: 'ðŸ”’' }
         );
     };
 
@@ -894,13 +993,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     ...st,
                     queryStatus: 'OPEN',
                     queryComment: data,
-                    queryRaisedBy: user?.displayName || 'Reviewer',
-                    queryRaisedAt: new Date().toISOString()
+                    queryRaisedBy: user?.uid || 'unknown',
+                    queryRaisedByName: user?.displayName || 'Reviewer',
+                    queryRaisedAt: new Date().toISOString(),
+                    queryReply: undefined,
+                    queryClearedBy: undefined,
+                    queryClearedAt: undefined,
                 };
             } else if (action === 'REPLY') {
                 updated[idx] = { ...st, queryStatus: 'RESOLVED', queryReply: data };
             } else if (action === 'CLEAR') {
-                updated[idx] = { ...st, queryStatus: 'CLEARED' };
+                updated[idx] = {
+                    ...st,
+                    queryStatus: 'CLEARED',
+                    queryClearedBy: user?.uid,
+                    queryClearedAt: new Date().toISOString(),
+                };
             }
             onChange({ subtasks: updated });
         }
@@ -956,11 +1064,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             // RBAC: Only creator can edit. Engagement team cannot edit others'. Admin view only.
             const isCreator = user?.uid === obs.createdBy;
             if (!isCreator && !isAdminOrMaster) {
-                toast.error("Access Restricted: Only the creator can modify this observation.", { icon: '🔒' });
+                toast.error("Access Restricted: Only the creator can modify this observation.", { icon: 'ðŸ”’' });
                 return;
             }
             if (isAdminOrMaster && !isCreator) {
-                toast.error("Admins have view-only access to audit observations.", { icon: '👁️' });
+                toast.error("Admins have view-only access to audit observations.", { icon: 'ðŸ‘ï¸' });
                 return;
             }
 
@@ -977,11 +1085,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
         const isCreator = user?.uid === obs.createdBy;
         if (!isCreator && !isAdminOrMaster) {
-            toast.error("Access Restricted: Only the creator can delete this observation.", { icon: '🔒' });
+            toast.error("Access Restricted: Only the creator can delete this observation.", { icon: 'ðŸ”’' });
             return;
         }
         if (isAdminOrMaster && !isCreator) {
-            toast.error("Admins cannot delete audit observations.", { icon: '🔒' });
+            toast.error("Admins cannot delete audit observations.", { icon: 'ðŸ”’' });
             return;
         }
 
@@ -992,7 +1100,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handlePhaseSwitch = (newPhase: AuditPhase) => {
-        // Free navigation — users can jump to any phase at any time
+        // Free navigation â€” users can jump to any phase at any time
         // to view, add, or manage subtasks regardless of completion status
         if (newPhase === currentPhase) return;
         setValue('auditPhase', newPhase);
@@ -1152,6 +1260,13 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         {st.addedByName && !st.isAutoGenerated && (
                             <p className="text-[9px] text-emerald-500 font-bold tracking-widest mt-1 opacity-70">ADDED BY: {st.addedByName}</p>
                         )}
+                        {/* A1: Working paper tick mark showing preparer identity and timestamp */}
+                        {st.isCompleted && st.completedByName && (
+                            <div className="flex items-center gap-1.5 mt-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle2 size={10} className="text-emerald-500" />
+                                <span>Checked by {st.completedByName}{st.completedAt ? ` on ${new Date(st.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+                            </div>
+                        )}
 
                         {/* Attached Evidence Pills */}
                         {subtaskDocs.length > 0 && (
@@ -1264,11 +1379,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </AnimatePresence>
                         </div>
 
-                        {(user?.role === 'ADMIN' || user?.uid === task.engagementReviewerId || user?.uid === task.signingPartnerId) && !isCleared && (
+                        {(isAdminOrMaster || user?.role === UserRole.MANAGER || user?.uid === task.teamLeaderId || user?.uid === task.engagementReviewerId || user?.uid === task.signingPartnerId) && !isCleared && (
                             <button
                                 onClick={() => {
-                                    const comment = prompt("Enter Review Note / Query:");
-                                    if (comment) handleSubtaskAction(st.id, 'RAISE_QUERY', comment);
+                                    setQueryText(''); setQueryModal({ subtaskId: st.id, mode: 'RAISE' });
                                 }}
                                 className="p-1 px-1.5 text-amber-500 hover:bg-amber-500/10 rounded transition-all"
                                 title="Query"
@@ -1279,8 +1393,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         {hasQuery && (user?.uid === task.assignedTo?.[0] || user?.role === 'ADMIN' || (Array.isArray(st.assignedTo) && st.assignedTo.includes(user?.uid || ''))) && (
                             <button
                                 onClick={() => {
-                                    const reply = prompt("Enter Response to Query:");
-                                    if (reply) handleSubtaskAction(st.id, 'REPLY', reply);
+                                    setQueryText(''); setQueryModal({ subtaskId: st.id, mode: 'REPLY' });
                                 }}
                                 className="p-1 px-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded transition-all"
                                 title="Reply to Query"
@@ -1288,7 +1401,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 <ClipboardCheck size={13} />
                             </button>
                         )}
-                        {isResolved && (user?.role === 'ADMIN' || user?.uid === task.engagementReviewerId || user?.uid === task.signingPartnerId) && (
+                        {isResolved && (isAdminOrMaster || user?.uid === st.queryRaisedBy || user?.uid === task.teamLeaderId || user?.uid === task.engagementReviewerId || user?.uid === task.signingPartnerId) && (
                             <button
                                 onClick={() => handleSubtaskAction(st.id, 'CLEAR')}
                                 className="p-1 px-1.5 text-brand-500 hover:bg-brand-500/10 rounded transition-all"
@@ -1449,7 +1562,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         'SP': task.signingPartnerApprovedAt
                     }[layer];
 
-                    // Sequential hierarchy — skip unassigned layers
+                    // A2 fix: Retrieve the full signer identity record
+                    const signOffRecord = {
+                        'TL': task.teamLeadSignOff,
+                        'ER': task.engagementReviewerSignOff,
+                        'SP': task.signingPartnerSignOff
+                    }[layer];
+
+                    // Sequential hierarchy â€” skip unassigned layers
                     const tlAssigned = !!task.teamLeaderId;
                     const erAssigned = !!task.engagementReviewerId;
                     // TL layer is always first or skipped if unassigned
@@ -1518,7 +1638,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 reviewerRole: layer
                                                             }));
                                                             onChange({ reviewChecklist: [...(task.reviewChecklist || []), ...mappedChecklist] });
-                                                            toast.success(`Checklist integrated from ${matchingTemplate.name}`, { icon: '✨' });
+                                                            toast.success(`Checklist integrated from ${matchingTemplate.name}`, { icon: 'âœ¨' });
                                                             e.target.value = ""; // Reset selector
                                                         }
                                                     }}
@@ -1730,7 +1850,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </h4>
                                     <div className="text-lg font-black text-white italic truncate max-w-2xl">
                                         {isSignedOff 
-                                            ? `Digital Protocol Verified & Sealed by ${meta.role}.` 
+                                            ? `Digital Protocol Verified & Sealed by ${signOffRecord?.name || meta.role}.` 
                                             : !canSignOff && task.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION 
                                                 ? `Sign-off is only available during the ${AuditPhase.REVIEW_AND_CONCLUSION.replace(/_/g, ' ')} phase.`
                                                 : task.status === TaskStatus.COMPLETED
@@ -1739,7 +1859,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </div>
                                     {isSignedOff && (
                                         <p className="text-[11px] font-bold text-emerald-400 flex items-center gap-2 mt-1">
-                                            <CheckCircle2 size={14} /> Signed on {new Date(signOffDate!).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            <CheckCircle2 size={14} /> {signOffRecord?.name ? `${signOffRecord.name} \u00B7 ` : ''}Signed on {new Date(signOffDate!).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                                         </p>
                                     )}
                                 </div>
@@ -1799,7 +1919,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             }));
 
             if (isComprehensiveMapping) {
-                toast.success(`Comprehensive Protocol Integrated: All phases populated.`, { icon: '🔄' });
+                toast.success(`Comprehensive Protocol Integrated: All phases populated.`, { icon: 'ðŸ”„' });
             }
         }
 
@@ -1845,10 +1965,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
             onChange(updates);
             if (newSubtasks.length > 0 && !toast.loading) {
-                toast.success(`Imported protocol requirements into engagement workspace`, { icon: '📥' });
+                toast.success(`Imported protocol requirements into engagement workspace`, { icon: 'ðŸ“¥' });
             }
         } else {
-            toast.error(`No protocol items found for this template mapping.`, { icon: '⚠️' });
+            toast.error(`No protocol items found for this template mapping.`, { icon: 'âš ï¸' });
         }
 
         setImportPhase(null);
@@ -1858,13 +1978,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     // Helper to render read-only approval status in the Settings tab.
     // Sign-off can ONLY be performed via the Reviewer Checklist tab by the assigned reviewer.
-    const ApprovalStatusBadge = ({ approvedAt, isInFinalPhase }: { approvedAt?: string; isInFinalPhase: boolean }) => {
+    // A2 fix: Show signer name from SignOffRecord if available, else fall back to timestamp alone
+    const ApprovalStatusBadge = ({ approvedAt, signOff, isInFinalPhase }: { approvedAt?: string; signOff?: { uid: string; name: string; at: string }; isInFinalPhase: boolean }) => {
         if (approvedAt) {
+            const signerName = signOff?.name;
+            const signerDate = signOff?.at || approvedAt;
             return (
-                <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full" title={signerName ? `Signed by ${signerName} on ${new Date(signerDate).toLocaleString()}` : undefined}>
                     <CheckCircle2 size={11} className="text-emerald-400" />
                     <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                        Signed · {new Date(approvedAt).toLocaleDateString()}
+                        {signerName ? `${signerName} \u00B7 ` : 'Signed \u00B7 '}{new Date(signerDate).toLocaleDateString()}
                     </span>
                 </div>
             );
@@ -1884,6 +2007,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     return (
+        <>
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
@@ -1905,54 +2029,104 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                         className="relative w-full max-w-[1440px] h-[95vh] bg-white dark:bg-[#0c0e12] shadow-[0_32px_128px_rgba(0,0,0,0.4)] flex flex-col rounded-3xl overflow-hidden"
                     >
-                        {/* Header — Slim & High Density */}
-                        <div className="shrink-0 px-8 py-2.5 border-b border-black/5 dark:border-white/[0.04] flex justify-between items-center bg-gray-50/50 dark:bg-[#0c0e12]/50 backdrop-blur-xl z-[60]">
-                            <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center border border-brand-500/20 shadow-inner">
-                                    <Shield size={16} className="text-brand-400" />
+                        {/* Header — Executive & Scannable */}
+                        <div className="shrink-0 px-6 py-3 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface/90 backdrop-blur-xl z-[60]">
+                            <div className="flex items-start md:items-center gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center flex-shrink-0 text-accent">
+                                    <Shield size={16} />
                                 </div>
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-col min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {client?.name && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onOpenClientDetail?.(client.id)}
+                                                className="text-xs font-bold text-accent hover:underline flex items-center gap-1 truncate max-w-[220px]"
+                                                title={client.name}
+                                            >
+                                                <Building2 size={12} className="flex-shrink-0" />
+                                                <span className="truncate">{client.name}</span>
+                                            </button>
+                                        )}
                                         {task.taskType && (
-                                            <span className="px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-400 text-[9px] font-black uppercase tracking-widest border border-brand-500/20 shadow-sm">
+                                            <span className="px-2 py-0.5 rounded-md bg-secondary text-muted text-[10px] font-semibold border border-border">
                                                 {TASK_TYPE_LABELS[task.taskType] || task.taskType}
                                             </span>
                                         )}
                                         {watchedFiscalYear && (
-                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-500/20 shadow-sm">
+                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
                                                 FY {watchedFiscalYear}
                                             </span>
                                         )}
+                                        {task.status && (
+                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-surface border border-border text-muted">
+                                                {task.status.replace(/_/g, ' ')}
+                                            </span>
+                                        )}
                                     </div>
-                                    <h3 className="text-[15px] font-bold text-white tracking-tight leading-tight mt-0.5">{watch('title') || task.title || 'Untitled Engagement'}</h3>
+                                    <h2 className="text-base font-bold text-heading tracking-tight leading-tight mt-1 truncate">
+                                        {watch('title') || task.title || 'Untitled Engagement'}
+                                    </h2>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4">
-                                <div className="flex flex-col items-end mr-4">
-                                    <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-none">Overall Progress</span>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                            <div className="flex items-center gap-3 ml-auto flex-shrink-0">
+                                {/* 3-Layer Sign-off Pipeline Status */}
+                                <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-secondary/80 border border-border text-xs">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted mr-1">Sign-Offs</span>
+                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.teamLeadSignOff ? 'bg-emerald-500/15 text-emerald-400 font-semibold' : 'text-muted'}`}>
+                                        <span>TL</span>
+                                        {task.teamLeadSignOff ? <Check size={11} className="text-emerald-400" /> : <span className="opacity-40">○</span>}
+                                    </div>
+                                    <span className="text-border text-[10px]">→</span>
+                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.engagementReviewerSignOff ? 'bg-emerald-500/15 text-emerald-400 font-semibold' : 'text-muted'}`}>
+                                        <span>ER</span>
+                                        {task.engagementReviewerSignOff ? <Check size={11} className="text-emerald-400" /> : <span className="opacity-40">○</span>}
+                                    </div>
+                                    <span className="text-border text-[10px]">→</span>
+                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.signingPartnerSignOff ? 'bg-emerald-500/15 text-emerald-400 font-semibold' : 'text-muted'}`}>
+                                        <span>SP</span>
+                                        {task.signingPartnerSignOff ? <Check size={11} className="text-emerald-400" /> : <span className="opacity-40">○</span>}
+                                    </div>
+                                </div>
+
+                                {/* Due Date Indicator */}
+                                {task.dueDate && (
+                                    <div className="hidden sm:flex flex-col items-end text-right">
+                                        <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Due Date</span>
+                                        <span className="text-xs font-semibold text-heading">
+                                            {formatDateDual(task.dueDate).bs} <span className="text-muted font-normal text-[10px]">({formatDateDual(task.dueDate).ad})</span>
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Progress */}
+                                <div className="hidden md:flex flex-col items-end">
+                                    <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Progress</span>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <div className="w-20 h-1.5 bg-secondary rounded-full overflow-hidden border border-border">
                                             <div 
-                                                className="h-full bg-gradient-to-r from-emerald-500 to-brand-500 transition-all duration-1000"
-                                                style={{ width: `${Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / (task.subtasks || []).length) * 100 || 0)}%` }}
+                                                className="h-full bg-accent transition-all duration-500"
+                                                style={{ width: `${Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / Math.max(1, (task.subtasks || []).length)) * 100 || 0)}%` }}
                                             />
                                         </div>
-                                        <span className="text-[11px] font-black text-brand-400 leading-none">
-                                            {Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / (task.subtasks || []).length) * 100 || 0)}%
+                                        <span className="text-xs font-bold text-accent">
+                                            {Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / Math.max(1, (task.subtasks || []).length)) * 100 || 0)}%
                                         </span>
                                     </div>
                                 </div>
-                                
+
+                                {/* Workpaper Export Dropdown */}
                                 {task.id && canEditTask && (
                                     <div className="relative">
                                         <button
+                                            type="button"
                                             onClick={() => setShowExportMenu(!showExportMenu)}
-                                            className="h-8 px-4 bg-white/5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 group shadow-sm"
+                                            className="h-8 px-2.5 bg-secondary hover:bg-surface border border-border text-muted hover:text-heading rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
                                         >
-                                            <Download size={12} className="group-hover:translate-y-px transition-transform" />
-                                            Workpaper
-                                            <ChevronDown size={12} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
+                                            <Download size={12} />
+                                            <span className="hidden sm:inline">Export</span>
+                                            <ChevronDown size={11} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
                                         </button>
                                         
                                         <AnimatePresence>
@@ -1964,24 +2138,26 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                                         transition={{ duration: 0.15 }}
-                                                        className="absolute right-0 top-full mt-2 w-56 bg-[#1a1f26] border border-white/10 rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.5)] overflow-hidden z-[100] p-1.5"
+                                                        className="absolute right-0 top-full mt-2 w-56 bg-secondary border border-border rounded-xl shadow-xl overflow-hidden z-[100] p-1 backdrop-blur-xl"
                                                     >
                                                         <button
+                                                            type="button"
                                                             onClick={handleExportPDF}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
+                                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-surface text-muted hover:text-heading text-xs font-medium transition-colors text-left"
                                                         >
-                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-rose-500/20 group-hover:text-rose-400">
-                                                                <FileText size={14} />
+                                                            <div className="w-6 h-6 rounded bg-rose-500/10 flex items-center justify-center text-rose-400">
+                                                                <FileText size={12} />
                                                             </div>
                                                             Direct PDF Export
                                                         </button>
-                                                        <div className="h-px bg-white/5 mx-2 my-0.5" />
+                                                        <div className="h-px bg-border mx-2 my-0.5" />
                                                         <button
+                                                            type="button"
                                                             onClick={handleExportExcel}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 text-gray-300 text-[11px] font-black uppercase tracking-widest transition-all text-left group"
+                                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-surface text-muted hover:text-heading text-xs font-medium transition-colors text-left"
                                                         >
-                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 group-hover:text-emerald-400">
-                                                                <BarChart2 size={14} />
+                                                            <div className="w-6 h-6 rounded bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                                                                <BarChart2 size={12} />
                                                             </div>
                                                             Full Excel Workbook
                                                         </button>
@@ -1993,64 +2169,66 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 )}
 
                                 <button
+                                    type="button"
                                     onClick={handleCloseAttempt}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-all border border-white/5 active:scale-95"
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-heading hover:bg-secondary border border-border transition-colors"
                                 >
-                                    <X size={18} />
+                                    <X size={16} />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Secondary Navigation — Sticky & Responsive */}
-                        <div className="shrink-0 sticky top-0 bg-white/80 dark:bg-[#0c0e12]/90 backdrop-blur-md border-b border-black/5 dark:border-white/[0.04] px-4 md:px-8 py-2 md:py-3 flex flex-wrap items-center justify-between gap-4 z-[60]">
-                            {/* Main Tabs - Refactored for Mobile */}
-                            <div className="flex items-center gap-1.5 md:gap-2 bg-gray-100 dark:bg-white/[0.03] p-1 rounded-full border border-black/5 dark:border-white/5 shadow-inner overflow-x-auto scrollbar-none max-w-full">
+                        {/* Secondary Navigation — Segmented Tabs */}
+                        <div className="shrink-0 sticky top-0 bg-surface/90 backdrop-blur-md border-b border-border px-6 py-2 flex flex-wrap items-center justify-between gap-3 z-[50]">
+                            <div className="flex items-center gap-1 bg-secondary/80 p-1 rounded-lg border border-border shadow-xs overflow-x-auto scrollbar-none max-w-full">
                                 {(task.id ? [
-                                    { id: 'OVERVIEW', label: 'Details', icon: <Settings2 size={14} /> },
-                                    { id: 'PROCEDURES', label: 'Subtasks', icon: <CheckSquare size={14} />, badge: `${(task.subtasks || []).filter(s => s.isCompleted).length}/${(task.subtasks || []).length}` },
-                                    { id: 'COMMENTS', label: 'Comments', icon: <MessageSquare size={14} />, badge: (task.comments || []).length },
-                                    { id: 'EVIDENCE', label: 'Documents', icon: <FolderOpen size={14} />, badge: auditFiles.length },
-                                    { id: 'OBSERVATIONS', label: 'Observations', icon: <Eye size={14} />, badge: (task.observations || []).length },
-                                    { id: 'HISTORY', label: 'History', icon: <History size={14} /> },
-                                    { id: 'REVIEW_CHECKLIST', label: 'Review', icon: <ShieldCheck size={14} />, desktopOnly: true },
-                                    ...(isArchived ? [] : [{ id: 'SETTINGS', label: 'Setup', icon: <Activity size={14} />, adminOnly: true }])
+                                    { id: 'OVERVIEW', label: 'Overview', icon: <Settings2 size={13} /> },
+                                    { id: 'PROCEDURES', label: 'Procedures', icon: <CheckSquare size={13} />, badge: `${(task.subtasks || []).filter(s => s.isCompleted).length}/${(task.subtasks || []).length}` },
+                                    { id: 'REVIEW_CHECKLIST', label: 'Review & Sign-Off', icon: <ShieldCheck size={13} />, badge: openQueryCount > 0 ? `${openQueryCount} Q` : undefined, badgeColor: 'bg-amber-500/20 text-amber-400' },
+                                    { id: 'OBSERVATIONS', label: 'Observations', icon: <Eye size={13} />, badge: (task.observations || []).length > 0 ? (task.observations || []).length : undefined },
+                                    { id: 'EVIDENCE', label: 'Workpapers', icon: <FolderOpen size={13} />, badge: auditFiles.length > 0 ? auditFiles.length : undefined },
+                                    { id: 'COMMENTS', label: 'Discussion', icon: <MessageSquare size={13} />, badge: (task.comments || []).length > 0 ? (task.comments || []).length : undefined },
+                                    { id: 'HISTORY', label: 'Audit Trail', icon: <History size={13} /> },
+                                    ...(isArchived ? [] : [{ id: 'SETTINGS', label: 'Setup', icon: <Activity size={13} />, adminOnly: true }])
                                 ] : [
-                                    { id: 'SETTINGS', label: 'Task Detail', icon: <Settings2 size={14} /> },
-                                    { id: 'PROCEDURES', label: 'Subtasks', icon: <CheckSquare size={14} /> }
+                                    { id: 'SETTINGS', label: 'Engagement Setup', icon: <Settings2 size={13} /> },
+                                    { id: 'PROCEDURES', label: 'Procedures', icon: <CheckSquare size={13} /> }
                                 ]).map((tab: any) => {
                                     if (tab.desktopOnly && isMobile) return null;
+                                    if (tab.adminOnly && !isAdminOrMaster) return null;
                                     const isActive = activeDetailTab === tab.id;
                                     return (
                                         <button
                                             key={tab.id}
+                                            type="button"
                                             onClick={() => setActiveDetailTab(tab.id as any)}
-                                            className={`relative flex items-center gap-2 px-3 md:px-6 py-2 rounded-[28px] text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${
+                                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                                                 isActive 
-                                                    ? 'bg-brand-500 text-white shadow-md' 
-                                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
+                                                    ? 'bg-surface text-heading font-semibold shadow-xs border border-border/80' 
+                                                    : 'text-muted hover:text-heading hover:bg-surface/50'
                                             }`}
                                         >
-                                            <span className={`transition-colors ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-500'}`}>{tab.icon}</span>
-                                            <span className="hidden min-[480px]:inline">{tab.label}</span>
+                                            <span className={isActive ? 'text-accent' : 'text-muted'}>{tab.icon}</span>
+                                            <span>{tab.label}</span>
                                             {tab.badge !== undefined && (
-                                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] leading-none ${isActive ? 'bg-white/20 text-white' : 'bg-brand-500/10 text-brand-500 dark:bg-brand-500/20 dark:text-brand-400'}`}>
+                                                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-none ${tab.badgeColor || (isActive ? 'bg-accent/15 text-accent' : 'bg-surface text-muted border border-border')}`}>
                                                     {tab.badge}
                                                 </span>
                                             )}
-                                            {isActive && <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-emerald-400 rounded-full border border-white dark:border-[#0c0e12]" />}
                                         </button>
                                     );
                                 })}
                             </div>
 
                             <div className="flex items-center gap-2">
-
                                 {activeDetailTab === 'PROCEDURES' && canAddSubtasks && (
                                     <button
+                                        type="button"
                                         onClick={(e) => { e.preventDefault(); setImportPhase(currentPhase); }}
-                                        className="px-6 py-2 bg-emerald-50 text-emerald-700 dark:bg-brand-500/10 border border-emerald-200 dark:border-brand-500/30 dark:text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 dark:hover:bg-brand-500/20 transition-all flex items-center gap-2 group shadow-sm"
+                                        className="h-[30px] px-3 bg-secondary hover:bg-surface border border-border text-xs font-medium text-muted hover:text-heading rounded-lg transition-all flex items-center gap-1.5 shadow-xs"
                                     >
-                                        <Sparkles size={14} className="group-hover:animate-spin" /> Import Protocol
+                                        <Sparkles size={13} className="text-accent" />
+                                        <span>Import Protocol</span>
                                     </button>
                                 )}
                             </div>
@@ -2249,7 +2427,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <Field 
                                                     label="Team Leader" 
                                                     icon={<UserCheck size={14} className="text-emerald-400" />}
-                                                    extra={<ApprovalStatusBadge approvedAt={watch('teamLeadApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
+                                                    extra={<ApprovalStatusBadge approvedAt={watch('teamLeadApprovedAt')} signOff={task.teamLeadSignOff} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="teamLeaderId" control={control} render={({ field }) => (
                                                         <StaffSelect users={usersList.filter(u => (watch('assignedTo') || []).includes(u.uid))} value={field.value || ''} onChange={field.onChange} placeholder="Select Team Leader..." disabled={!!watch('teamLeadApprovedAt') || !canManageTeam} compact />
@@ -2259,7 +2437,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <Field 
                                                     label="QC Reviewer" 
                                                     icon={<Shield size={14} className="text-purple-400" />}
-                                                    extra={<ApprovalStatusBadge approvedAt={watch('engagementReviewerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
+                                                    extra={<ApprovalStatusBadge approvedAt={watch('engagementReviewerApprovedAt')} signOff={task.engagementReviewerSignOff} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="engagementReviewerId" control={control} render={({ field }) => (
                                                         <StaffSelect 
@@ -2276,7 +2454,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 <Field 
                                                     label="Signing Partner" 
                                                     icon={<Award size={14} className="text-rose-400" />}
-                                                    extra={<ApprovalStatusBadge approvedAt={watch('signingPartnerApprovedAt')} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
+                                                    extra={<ApprovalStatusBadge approvedAt={watch('signingPartnerApprovedAt')} signOff={task.signingPartnerSignOff} isInFinalPhase={currentPhase === AuditPhase.REVIEW_AND_CONCLUSION} />}
                                                 >
                                                     <Controller name="signingPartnerId" control={control} render={({ field }) => (
                                                         <StaffSelect 
@@ -2338,7 +2516,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             )}
                         </div>
 
-                        {/* Footer — Slim & High Density */}
+                        {/* Footer â€” Slim & High Density */}
                         <div className="shrink-0 px-8 py-2 border-t border-black/5 dark:border-white/[0.04] bg-gray-50/80 dark:bg-[#0c0e12] backdrop-blur-md flex justify-between items-center z-[60] rounded-b-3xl">
                             <div className="flex items-center gap-6">
                                 {isEditMode && canManageTask && !isTaskCompleted && (
@@ -2554,6 +2732,53 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 )}
             </AnimatePresence>
         </AnimatePresence>
+
+        {/* A6/U5: Inline Review Query / Reply Modal (replaces browser prompt) — rendered outside AnimatePresence but inside fragment */}
+        {queryModal && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setQueryModal(null)} />
+                <div className="relative z-10 bg-[#13141a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                    <h3 className="text-[13px] font-black uppercase tracking-widest text-white mb-1">
+                        {queryModal.mode === 'RAISE' ? 'Raise Review Query' : 'Reply to Query'}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 mb-4">
+                        {queryModal.mode === 'RAISE' ? 'Describe the issue or question for the preparer.' : 'Provide your response to the reviewer query.'}
+                    </p>
+                    <textarea
+                        className="w-full h-28 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-[12px] text-white placeholder-slate-600 resize-none focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/30"
+                        placeholder={queryModal.mode === 'RAISE' ? 'Enter your review note or query...' : 'Enter your response...'}
+                        value={queryText}
+                        onChange={e => setQueryText(e.target.value)}
+                        autoFocus
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                if (queryText.trim()) {
+                                    handleSubtaskAction(queryModal.subtaskId, queryModal.mode === 'RAISE' ? 'RAISE_QUERY' : 'REPLY', queryText.trim());
+                                    setQueryModal(null); setQueryText('');
+                                }
+                            }
+                        }}
+                    />
+                    <div className="flex justify-end gap-3 mt-4">
+                        <button onClick={() => setQueryModal(null)} className="px-4 py-2 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all">Cancel</button>
+                        <button
+                            disabled={!queryText.trim()}
+                            onClick={() => {
+                                if (queryText.trim()) {
+                                    handleSubtaskAction(queryModal.subtaskId, queryModal.mode === 'RAISE' ? 'RAISE_QUERY' : 'REPLY', queryText.trim());
+                                    setQueryModal(null); setQueryText('');
+                                }
+                            }}
+                            className="px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest bg-brand-600 hover:bg-brand-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                            {queryModal.mode === 'RAISE' ? 'Raise Query' : 'Submit Reply'}
+                        </button>
+                    </div>
+                    <p className="text-[9px] text-slate-600 mt-2 text-right">Ctrl+Enter to submit</p>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 

@@ -1,21 +1,27 @@
 // ENV VARS USED — must be set in Vercel Dashboard > Settings > Environment Variables
 // (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
             privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-        })
+        } as any)
     });
 }
 
-const db = admin.firestore();
+const db = getFirestore();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+    if (!process.env.CRON_SECRET) {
+        console.error('CRON_SECRET environment variable is not configured.');
+        return res.status(500).json({ error: 'Server misconfiguration: CRON_SECRET not set.' });
+    }
+
     const authHeader = req.headers.authorization;
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -41,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         for (const logDoc of snapshot.docs) {
             await db.collection('auditLogs').doc(logDoc.id).update({
                 archived: true,
-                archivedAt: admin.firestore.FieldValue.serverTimestamp()
+                archivedAt: FieldValue.serverTimestamp()
             });
             logsArchived++;
         }

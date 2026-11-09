@@ -141,6 +141,17 @@ const AttendanceWidget: React.FC = () => {
         const todayRecord = attendanceHistory.find(r => r.date === todayStr);
 
         if (todayRecord) {
+            // A3 Fix: Handle approved leave records where clockIn is null
+            if (todayRecord.status === 'ON LEAVE' || !todayRecord.clockIn) {
+                setStatus('COMPLETED');
+                setCurrentRecordId(todayRecord.id);
+                setClockInTime(null);
+                setClockOutTime(null);
+                setTotalWorkHours(0);
+                if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
+                return;
+            }
+
             if (!todayRecord.clockOut) {
                 setStatus('CLOCKED_IN');
                 setCurrentRecordId(todayRecord.id);

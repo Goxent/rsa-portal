@@ -3,18 +3,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check if user is authenticated
+    // ========================================================
+    // HELPER FUNCTIONS & AUTHENTICATION
+    // ========================================================
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // HELPERS
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function getUserRole() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : 'STAFF';
+      return userExists() ? getUserDoc().role : 'STAFF';
     }
     
     function isAdmin() {
       return isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
+    }
+
+    function isMasterAdmin() {
+      return isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
+    }
+
+    // S1 Fix: Approved / Active user check
+    // Restricts sensitive org reads (tasks, clients, attendance, docs) to verified Active users
+    function isApproved() {
+      return isAuthenticated() && userExists() && getUserDoc().get('status', '') == 'Active';
     }
 
     // Security & Validation Helpers
@@ -22,103 +41,153 @@ service cloud.firestore {
     function isSafeString(val, maxLen) { return isString(val) && val.size() <= maxLen; }
     function checkKeys(requiredKeys) { return request.resource.data.keys().hasAll(requiredKeys); }
 
+    // Protected user profile fields that only ADMIN/MASTER_ADMIN can set/change
+    function protectedUserFields() {
+      return ['role', 'status', 'isOnboardingComplete', 'isSetupComplete', 'taskCreationAuthorized', 'complianceCreationAuthorized'];
+    }
+
     // Returns true for admins, managers, or users granted explicit task-creation authorization
     function canCreateTask() {
-      return isAuthenticated() && (
+      return isApproved() && (
         getUserRole() == 'ADMIN' ||
         getUserRole() == 'MASTER_ADMIN' ||
         getUserRole() == 'MANAGER' ||
-        (
-          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('taskCreationAuthorized', false) == true
-        )
+        getUserDoc().get('taskCreationAuthorized', false) == true
       );
     }
 
-    // AUDIT LOGS - Only admins can read, authenticated users can write (logging)
+    // ========================================================
+    // AUDIT LOGS (AL1 Fix)
+    // Only admins can read. Users can only write logs where actorId or userId matches their auth.uid
+    // ========================================================
     match /auditLogs/{logId} {
-      allow read: if isAuthenticated() && (getUserRole() == 'ADMIN' || getUserRole() == 'MASTER_ADMIN');
-      allow create: if isAuthenticated();
-      allow update, delete: if false; // Audit logs are immutable
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && (
+        request.resource.data.get('actorId', '') == request.auth.uid ||
+        request.resource.data.get('userId', '') == request.auth.uid
+      );
+      allow update, delete: if false; // Audit logs are strictly immutable
     }
 
-    // USERS COLLECTION
+    // ========================================================
+    // USERS COLLECTION (S1 & S2 Fixes)
+    // - Non-admins cannot alter their role, status, or authorization flags
+    // - Only MASTER_ADMIN can assign ADMIN or MASTER_ADMIN role
+    // - Only MASTER_ADMIN or ADMIN can delete pending/invited placeholder records
+    // ========================================================
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      // Allow deletion by MASTER_ADMIN, or allow migration flow to clean up pending_ or invited_ placeholders
-      allow delete: if isAuthenticated() && (getUserRole() == 'MASTER_ADMIN' || userId.matches('^pending_.*') || userId.matches('^invited_.*'));
 
-      // Allow users to manage their own settings (like dashboard layout)
+      allow create: if isAuthenticated() && (
+        // Self-creation during signup: must default to STAFF and cannot self-approve
+        (request.auth.uid == userId 
+          && (!request.resource.data.keys().hasAny(protectedUserFields()) || 
+              (request.resource.data.get('role', 'STAFF') == 'STAFF' && request.resource.data.get('status', 'Pending Approval') == 'Pending Approval'))
+        ) ||
+        // Admin creation: Only Master Admin can assign ADMIN or MASTER_ADMIN
+        (isAdmin() && (
+          !request.resource.data.keys().hasAny(['role']) ||
+          request.resource.data.role in ['STAFF', 'MANAGER'] ||
+          isMasterAdmin()
+        ))
+      );
+
+      allow update: if isAuthenticated() && (
+        // Regular user updating their own profile: cannot touch protected fields
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedUserFields())) ||
+        // Admin update: Only Master Admin can grant ADMIN or MASTER_ADMIN roles
+        (isAdmin() && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
+          (request.resource.data.role in ['STAFF', 'MANAGER'] && resource.data.get('role', '') in ['STAFF', 'MANAGER']) ||
+          isMasterAdmin()
+        ))
+      );
+
+      // Only Master Admin can delete real users; Admins can delete pending/invited placeholders
+      allow delete: if isAuthenticated() && (
+        isMasterAdmin() || 
+        (isAdmin() && (userId.matches('^pending_.*') || userId.matches('^invited_.*')))
+      );
+
       match /settings/{settingId} {
         allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       }
     }
 
-    // STAFF ALLOWLIST — Used before auth account is created
+    // ========================================================
+    // STAFF ALLOWLIST
+    // ========================================================
     match /staffAllowlist/{email} {
-      allow read: if isAuthenticated(); // Restrict to authenticated users for discovery protection
+      allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
     
-    // CLIENTS COLLECTION
+    // ========================================================
+    // CLIENTS COLLECTION (C1 Fix)
+    // Only approved users can read clients
+    // ========================================================
     match /clients/{clientId} {
-      allow read: if isAuthenticated();
+      allow read: if isApproved();
       allow create, delete: if isAdmin();
-      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid in resource.data.get('permittedStaff', []));
+      allow update: if isAdmin() || (isApproved() && request.auth.uid in resource.data.get('permittedStaff', []));
     }
 
-    // ATTENDANCE COLLECTION
+    // ========================================================
+    // ATTENDANCE COLLECTION (A1-A5 & S5 Fixes)
+    // Update checks EXISTING resource.data.userId to prevent tampering
+    // ========================================================
     match /attendance/{attendanceId} {
-      allow read: if isAuthenticated();
-      // Enforce schema on create
-      allow create: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isAdmin())
-                    && checkKeys(['userId', 'date', 'status'])
-                    && isSafeString(request.resource.data.userId, 128);
-      allow update: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isAdmin());
+      allow read: if isApproved();
+      allow create: if isAuthenticated() && 
+                    (request.auth.uid == request.resource.data.userId || isAdmin()) &&
+                    checkKeys(['userId', 'date', 'status']) &&
+                    isSafeString(request.resource.data.userId, 128);
+      allow update: if isAuthenticated() && 
+                    (request.auth.uid == resource.data.userId || isAdmin());
       allow delete: if isAdmin();
     }
 
-    // ATTENDANCE REQUESTS COLLECTION
+    // ATTENDANCE REQUESTS
     match /attendanceRequests/{requestId} {
       allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update, delete: if isAdmin();
     }
     
-    // LEAVE REQUESTS COLLECTION
+    // ========================================================
+    // LEAVE REQUESTS (L1-L3 & S5 Fixes)
+    // ========================================================
     match /leaves/{leaveId} {
       allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isAuthenticated() && (
-        isAdmin()
-        || (
-          request.auth.uid == resource.data.userId
-          && resource.data.status == 'PENDING'
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'approvedBy', 'approvedAt'])
+        isAdmin() || (
+          request.auth.uid == resource.data.userId &&
+          resource.data.status == 'PENDING' &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'approvedBy', 'approvedAt'])
         )
       );
       allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
-    // TASKS COLLECTION
+    // ========================================================
+    // TASKS COLLECTION (W1-W3 Governance)
+    // ========================================================
     match /tasks/{taskId} {
-      allow read: if isAuthenticated();
+      allow read: if isApproved();
       allow create: if canCreateTask();
       
-      allow update: if isAuthenticated() && (
+      allow update: if isApproved() && (
         request.auth.uid in resource.data.assignedTo ||
         resource.data.createdBy == request.auth.uid ||
         request.auth.uid == resource.data.get('teamLeaderId', '') ||
         isAdmin() ||
         getUserRole() == 'MANAGER'
       ) && (
-        // 1. ARCHIVED LOCKDOWN: Archived tasks cannot be edited by ANYONE (even Admins)
-        // This ensures the total integrity of historical audit documentation.
+        // 1. ARCHIVED LOCKDOWN: Archived tasks cannot be edited by anyone
         resource.data.get('status', '') != 'ARCHIVED'
       ) && (
-        // 2. GOVERNANCE LOCKDOWN: Completed tasks in Review & Conclusion can only be reopened/modified by Admin
+        // 2. GOVERNANCE LOCKDOWN: Completed tasks in Review & Conclusion can only be reopened by Admin
         (!(resource.data.status == 'COMPLETED' && resource.data.auditPhase == 'REVIEW_AND_CONCLUSION' && request.resource.data.status != 'COMPLETED') || isAdmin())
       ) && (
         // 3. SIGN-OFF PROTECTION: Only designated roles or Admins can sign off
@@ -131,7 +200,7 @@ service cloud.firestore {
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['signingPartnerApprovedAt'])) ||
         (request.auth.uid == resource.data.get('signingPartnerId', '') || isAdmin())
       ) && (
-        // 4. COMPLETION GATE: Enforce sign-offs before status becomes COMPLETED (Admins can bypass)
+        // 4. COMPLETION GATE: Enforce sign-offs before status becomes COMPLETED
         (request.resource.data.get('status', '') != 'COMPLETED') ||
         (isAdmin() || (
             resource.data.get('teamLeadApprovedAt', '') != '' &&
@@ -143,83 +212,57 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // NOTIFICATIONS COLLECTION
+    // ========================================================
+    // NOTIFICATIONS
+    // ========================================================
     match /notifications/{notificationId} {
-        allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == 'ALL');
-        allow create: if isAuthenticated();
-        allow delete, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == 'ALL');
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.createdBy == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // NOTICES COLLECTION
+    // NOTICES
     match /notices/{noticeId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAdmin();
+      allow read: if isApproved();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // TEMPLATES & WORKFLOWS (Only Admin & Managers can edit)
+    match /templates/{templateId} {
+      allow read: if isApproved();
+      allow create, update: if isAdmin() || getUserRole() == 'MANAGER';
       allow delete: if isAdmin();
     }
+
+    match /task_templates/{templateId} {
+      allow read: if isApproved();
+      allow create, update, delete: if isAdmin() || getUserRole() == 'MANAGER';
+    }
     
-    // TEMPLATES (Advanced)
-    match /templates/{templateId} {
-      allow read: if isAuthenticated();
-      // Allow creation/update by any auth user (or restrict to Admin if preferred)
-      allow create, update: if isAuthenticated();
-      allow delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    match /template_folders/{folderId} {
+      allow read: if isApproved();
+      allow create, update, delete: if isAdmin() || getUserRole() == 'MANAGER';
+    }
+    
+    match /workflows/{workflowId} {
+      allow read: if isApproved();
+      allow create, update, delete: if isAdmin() || getUserRole() == 'MANAGER';
     }
 
-    // TASK TEMPLATES (Simple)
-    // WORKFLOWS
-    // Covered below in ADVANCED FEATURES COLLECTIONS
-    
-    // =============================================
-    // ADVANCED FEATURES COLLECTIONS
-    // =============================================
-    
     // TIME TRACKING
     match /timeEntries/{entryId} {
       allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
-    
-    // CHAT CHANNELS - Admin-only creation, member-based read access
-    match /chatChannels/{channelId} {
-      // Anyone can read channels they're a member of
-      allow read: if isAuthenticated() && 
-        request.auth.uid in resource.data.members;
-      
-      // Only admins can create channels
-      allow create: if isAdmin();
-      
-      // Only admins can update or delete channels
-      // Allow members to update ONLY if adding themselves (joining) - omitted for now as logic is complex
-      allow update, delete: if isAdmin();
-    }
-    
-    // CHAT MESSAGES - Members can read/write in their channels
-    match /chatMessages/{messageId} {
-      // Can read messages from channels you're a member of
-      // Note: This requires a get() call which costs 1 read. 
-      allow read: if isAuthenticated() && 
-        request.auth.uid in get(/databases/$(database)/documents/chatChannels/$(resource.data.channelId)).data.members;
-      
-      // Can create messages in channels you're a member of
-      allow create: if isAuthenticated() && 
-        request.auth.uid in get(/databases/$(database)/documents/chatChannels/$(request.resource.data.channelId)).data.members;
-      
-      // Can only update your own messages (for read receipts)
-      allow update: if isAuthenticated() && 
-        request.auth.uid == resource.data.senderId;
-      
-      // Can only delete your own messages
-      allow delete: if isAuthenticated() && 
-        request.auth.uid == resource.data.senderId;
-    }
-    
+
     // COMPLIANCE EVENTS
     match /complianceEvents/{eventId} {
-      // All authenticated users can read
-      allow read: if isAuthenticated();
-      
-      // Only admins can create, update, or delete
+      allow read: if isApproved();
       allow create, update, delete: if isAdmin();
     }
 
@@ -227,95 +270,47 @@ service cloud.firestore {
     match /smart_reminders/{reminderId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // REMINDER PREFERENCES
     match /reminder_preferences/{userId} {
       allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
-    
-    // TEMPLATES
-    match /task_templates/{templateId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // TEMPLATE FOLDERS
-    match /template_folders/{folderId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // WORKFLOWS
-    match /workflows/{workflowId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // KNOWLEDGE BASE (Resources)
+
+    // KNOWLEDGE BASE / RESOURCES
     match /knowledge_base/{resourceId} {
-      // All authenticated users can read
-      allow read: if isAuthenticated();
-      
-      // Admins and Managers can create, update, or delete
-      allow create, update, delete: if isAdmin() || (isAuthenticated() && getUserRole() == 'MANAGER');
+      allow read: if isApproved();
+      allow create, update, delete: if isAdmin() || getUserRole() == 'MANAGER';
     }
 
-    // EVENTS (Consolidated Rule)
-    match /events/{eventId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        resource.data.createdBy == request.auth.uid || isAdmin()
-      );
-    }
-
-    // RESOURCES COLLECTION
     match /resources/{resourceId} {
-      // All authenticated users can read resources
-      allow read: if isAuthenticated();
-      
-      // Admins and Managers can create, update, or delete
-      // Admins and Managers can create, update, or delete
-      // Using a custom check for Manager if needed, or just isAdmin() for now
-      allow create, update, delete: if isAdmin() || (isAuthenticated() && getUserRole() == 'MANAGER');
+      allow read: if isApproved();
+      allow create, update, delete: if isAdmin() || getUserRole() == 'MANAGER';
     }
 
-    // CATEGORIES COLLECTION
     match /resource_categories/{categoryId} {
-      allow read: if isAuthenticated();
+      allow read: if isApproved();
       allow create, update, delete: if isAdmin();
     }
 
-    // PERFORMANCE COLLECTIONS
-    match /performance_cycles/{cycleId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /peer_reviews/{reviewId} {
-      allow read: if isAuthenticated() && (
-        resource.data.reviewer_id == request.auth.uid ||
-        resource.data.reviewee_id == request.auth.uid ||
-        isAdmin()
-      );
+    // EVENTS
+    match /events/{eventId} {
+      allow read: if isApproved();
       allow create: if isAuthenticated();
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
     }
 
-    // AUDIT DOCUMENTATION SYSTEM
+    // AUDIT DOCUMENTATION
     match /auditDocFiles/{fileId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if isApproved();
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
       allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
 
     match /auditDocFolders/{folderId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if isApproved();
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
       allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }

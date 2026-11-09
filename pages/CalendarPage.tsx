@@ -85,6 +85,10 @@ const DroppableDay = ({ dateStr, isToday, isSelected, onClick, children }: any) 
 };
 
 const CalendarPage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'Calendar — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
     const { user } = useAuth();
     const isMobile = useMedia('(max-width: 768px)', false);
 

@@ -87,7 +87,7 @@ const Dashboard: React.FC = () => {
             ? allTasks.filter(t => t.status !== 'ARCHIVED') 
             : allTasks.filter(t => t.assignedTo?.includes(user.uid) && t.status !== 'ARCHIVED');
 
-        const statusCounts = { COMPLETED: 0, IN_PROGRESS: 0, UNDER_REVIEW: 0, NOT_STARTED: 0 };
+        const statusCounts = { COMPLETED: 0, IN_PROGRESS: 0, UNDER_REVIEW: 0, NOT_STARTED: 0, HALTED: 0 };
         relTasks.forEach(t => {
             if (statusCounts[t.status as keyof typeof statusCounts] !== undefined)
                 statusCounts[t.status as keyof typeof statusCounts]++;
@@ -98,6 +98,7 @@ const Dashboard: React.FC = () => {
             { name: 'In Progress', value: statusCounts.IN_PROGRESS },
             { name: 'Review', value: statusCounts.UNDER_REVIEW },
             { name: 'Pending', value: statusCounts.NOT_STARTED },
+            { name: 'Halted', value: statusCounts.HALTED },
         ];
 
         const now = new Date();
@@ -120,7 +121,8 @@ const Dashboard: React.FC = () => {
         datePlus30.setDate(datePlus30.getDate() + 30);
         const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
         const cutoffDate = datePlus30 > endOfNextMonth ? datePlus30 : endOfNextMonth;
-        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+        // D3 Fix: Use local date formatting (en-CA) instead of UTC toISOString
+        const cutoffDateStr = cutoffDate.toLocaleDateString('en-CA');
 
         const futureEvents = allEvents
             .filter(e => e.date >= todayStr && e.date <= cutoffDateStr)
@@ -161,9 +163,14 @@ const Dashboard: React.FC = () => {
             upcomingSchedule: mergedSchedule, relevantTasks: relTasks,
             staffStats: sStats,
         };
-    }, [user, allTasks, usersForMap, allEvents, lateCount]);
+    }, [user, allTasks, usersForMap, allEvents]);
 
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+
+    React.useEffect(() => {
+        document.title = 'Dashboard — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
 
     // Command strip derived values
     const myOpenTasks = allTasks.filter(t => t.assignedTo?.includes(user?.uid ?? '') && t.status !== 'COMPLETED' && t.status !== 'ARCHIVED').length;
@@ -179,7 +186,6 @@ const Dashboard: React.FC = () => {
     }, []);
     const adDate = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const workDayPct = Math.min(Math.max(Math.round(((new Date().getHours() - 9) / 8) * 100), 0), 100);
-
     // Next 7 days schedule for sidebar
     const next7Days = useMemo(() => {
         const today = new Date().toLocaleDateString('en-CA');
@@ -232,12 +238,7 @@ const Dashboard: React.FC = () => {
                             onViewTask={handleViewTask} 
                         />
 
-                        {/* 2. Mobile-Only Priority: Attendance Widget (Visible only on mobile at top) */}
-                        <div className="block xl:hidden">
-                            {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
-                        </div>
-
-                        {/* 3. Top Row: Greetings & Focus */}
+                        {/* 2. Top Row: Greetings & Focus */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <GreetingsWidget 
                                 pendingCount={myOpenTasks} 
@@ -246,13 +247,15 @@ const Dashboard: React.FC = () => {
                             <FocusWidget />
                         </div>
 
+                        {/* 3. Attendance Widget - single responsive instance */}
+                        {user?.role !== UserRole.MASTER_ADMIN && (
+                            <div className="w-full">
+                                <AttendanceWidget />
+                            </div>
+                        )}
+
                         {/* 4. Main Widget Ecosystem */}
                         <div className="flex flex-col gap-6">
-                            {/* Desktop-Only: Attendance Widget (Visible only on larger screens here) */}
-                            <div className="hidden xl:block">
-                                {user?.role !== UserRole.MASTER_ADMIN && <AttendanceWidget />}
-                            </div>
-                            
                             {user && (
                                 <WidgetContainer
                                     userId={user.uid}

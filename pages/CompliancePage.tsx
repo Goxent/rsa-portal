@@ -27,10 +27,16 @@ const formatDateWithBS = (dateStr: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     const np = new NepaliDate(date);
-    return `${date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })} (BS: ${np.getYear()}-${np.getMonth() + 1}-${np.getDate()})`;
+    const ad = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const bs = `${np.getYear()}-${String(np.getMonth() + 1).padStart(2, '0')}-${String(np.getDate()).padStart(2, '0')}`;
+    return `${ad} · ${bs} BS`;
 };
 
 const CompliancePage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'Compliance — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
     const { user } = useAuth();
     const { openModal } = useModal();
     const [events, setEvents] = useState<ComplianceEvent[]>([]);
@@ -172,12 +178,12 @@ const CompliancePage: React.FC = () => {
                     const auditorName = staffList.find(s => s.uid === auditorId)?.displayName || 'Focal Person';
 
                     const newTask: Task = {
-                        id: `t_vac_${Date.now()}_${client.id}`,
+                        id: `vat_${client.id}_${monthIdx === 0 ? year - 1 : year}_${String(monthIdx === 0 ? 12 : monthIdx).padStart(2, '0')}`,
                         title: taskTitle,
                         description: `Statutory VAT return filing for ${client.name} for the month of ${periodLabel}. Due by 25th ${monthNames[monthIdx]} ${year}.`,
                         status: TaskStatus.NOT_STARTED,
                         priority: TaskPriority.HIGH,
-                        dueDate: new Date().toISOString().split('T')[0], // ASAP
+                        dueDate: new NepaliDate(year, monthIdx, 25).toJsDate().toLocaleDateString('en-CA'), // Due on 25th BS
                         assignedTo: [auditorId],
                         assignedToNames: [auditorName],
                         clientIds: [client.id],
@@ -300,9 +306,9 @@ const CompliancePage: React.FC = () => {
                     <div className="flex flex-col items-end">
                         <button
                             onClick={syncCompliance}
-                            disabled={isSyncing || !isSyncDay}
+                            disabled={isSyncing}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-md)] text-sm font-bold transition-all border ${
-                                isSyncing || !isSyncDay 
+                                isSyncing 
                                     ? 'bg-[var(--bg-secondary)] text-[var(--muted)] border-[var(--border)] cursor-not-allowed' 
                                     : 'bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/20 hover:bg-[var(--accent)]/20'
                             }`}
@@ -310,8 +316,8 @@ const CompliancePage: React.FC = () => {
                             {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
                             Sync Compliance
                         </button>
-                        {!isSyncDay && (
-                            <span className="text-[9px] text-[var(--color-warning)] font-bold mt-1 uppercase tracking-tighter">Available on 24th & 25th BS Only</span>
+                        {false && (
+                            <span className="text-[9px] text-[var(--color-warning)] font-bold mt-1 uppercase tracking-tighter">Available anytime for VAT filing</span>
                         )}
                     </div>
                     {canEdit && (

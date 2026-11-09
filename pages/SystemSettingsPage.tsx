@@ -12,6 +12,10 @@ import { getNepaliFiscalYear, generateFiscalYearOptions } from '../utils/nepaliD
 import { toast } from 'react-hot-toast';
 
 const SystemSettingsPage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'System Settings — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
     const { user } = useAuth();
     const navigate = useNavigate();
     const [users, setUsers] = useState<UserProfile[]>([]);

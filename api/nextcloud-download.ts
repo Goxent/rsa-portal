@@ -1,9 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import verifyFirebaseToken from './_verifyFirebaseToken.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const allowedOrigin = process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
@@ -13,6 +16,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    // S3 Fix: Require Firebase token authentication
+    const caller = await verifyFirebaseToken(req, res);
+    if (!caller) return;
 
     const { fileId } = req.query;
     if (!fileId || typeof fileId !== 'string') {

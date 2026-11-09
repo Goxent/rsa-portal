@@ -26,6 +26,11 @@ const LoginPage: React.FC = () => {
   const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    document.title = 'Sign In — RSA';
+    return () => { document.title = 'RSA'; };
+  }, []);
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
@@ -154,11 +159,8 @@ const LoginPage: React.FC = () => {
         <div className="flex flex-col items-center mb-10 text-center">
             <RSALogo size="md" className="mb-6 scale-110" />
             
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-500/80 mb-2">
-                Unified Portal
-            </p>
-            <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Login To Identity</h2>
-            <p className="text-gray-500 text-[12px] font-medium leading-relaxed">Authorized RSA Personnel Only.</p>
+            <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Welcome Back</h2>
+            <p className="text-gray-500 text-[12px] font-medium leading-relaxed">Sign in to your RSA account</p>
         </div>
 
         {rateLimitError && (
@@ -168,7 +170,7 @@ const LoginPage: React.FC = () => {
               {rateLimitError}
             </div>
             {rateLimitError.includes("invitation") && (
-              <Link to={`/signup?email=${encodeURIComponent(watchEmail)}`} className="text-[10px] font-black uppercase tracking-widest text-brand-400 hover:text-brand-300 transition-colors ml-7">
+              <Link to={`/signup?email=${encodeURIComponent(watchEmail)}`} className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors ml-7">
                 Complete Signup Now →
               </Link>
             )}
@@ -177,7 +179,7 @@ const LoginPage: React.FC = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest ml-1">Email</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Email</label>
             <div className="relative group">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-brand-400 transition-colors z-10" size={16} />
               <input
@@ -187,13 +189,13 @@ const LoginPage: React.FC = () => {
                 {...register('email')}
               />
             </div>
-            {errors.email && <p className="text-rose-400 text-[9px] font-bold mt-1 px-1">{errors.email.message}</p>}
+            {errors.email && <p className="text-rose-400 text-xs font-bold mt-1 px-1">{errors.email.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <div className="flex justify-between items-center ml-1">
-              <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Password</label>
-              <Link to="/forgot-password"  className="text-[9px] font-black text-brand-400 hover:text-brand-300 uppercase tracking-widest transition-colors">Recover Access</Link>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</label>
+              <Link to="/forgot-password" className="text-xs font-semibold text-brand-400 hover:text-brand-300 uppercase tracking-wider transition-colors">Forgot password?</Link>
             </div>
             <div className="relative group">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-brand-400 transition-colors z-10" size={16} />
@@ -206,12 +208,13 @@ const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 hover:text-white transition-colors"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {errors.password && <p className="text-rose-400 text-[9px] font-bold mt-1 px-1">{errors.password.message}</p>}
+            {errors.password && <p className="text-rose-400 text-xs font-bold mt-1 px-1">{errors.password.message}</p>}
           </div>
 
           <button
@@ -223,7 +226,7 @@ const LoginPage: React.FC = () => {
               <Loader2 size={18} className="animate-spin" />
             ) : (
               <>
-                <span className="relative z-10">Authenticate</span>
+                <span className="relative z-10">Sign In</span>
                 <ArrowRight size={16} className="relative z-10 group-hover:translate-x-1 transition-transform" />
                 <div className="absolute inset-x-0 bottom-0 h-[100%] bg-gradient-to-t from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
               </>
@@ -233,20 +236,21 @@ const LoginPage: React.FC = () => {
 
         <div className="relative my-10 text-center flex items-center justify-center">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-            <span className="relative z-10 px-4 text-[10px] font-black text-gray-700 uppercase tracking-[0.3em] bg-[#0c1015] rounded-full py-0.5 border border-white/5">Integrations</span>
+            <span className="relative z-10 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-[#0c1015] rounded-full py-0.5 border border-white/5">or</span>
         </div>
 
         <button
           type="button"
           onClick={handleGoogleLogin}
+          aria-label="Sign in with Google"
           className="w-full h-[52px] bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 text-[10px] text-gray-300 shadow-sm active:scale-[0.98]"
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
-          Single Sign-on
+          Continue with Google
         </button>
 
         <div className="mt-8 space-y-4">
-          <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest text-center">New staff identity?</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">New to RSA?</p>
           <div className="grid grid-cols-1 gap-3">
             <Link 
               to="/signup" 
@@ -257,8 +261,8 @@ const LoginPage: React.FC = () => {
                   <UserPlus size={18} />
                 </div>
                 <div className="text-left">
-                  <span className="block text-[11px] font-black text-white uppercase tracking-wider">Accept Invitation</span>
-                  <span className="block text-[9px] font-bold text-gray-600 mt-1 uppercase tracking-widest">First-time Workspace Setup</span>
+                  <span className="block text-[11px] font-black text-white uppercase tracking-wider">Create Account</span>
+                  <span className="block text-[9px] font-bold text-gray-600 mt-1 uppercase tracking-widest">Set up your account</span>
                 </div>
               </div>
               <ArrowRight size={16} className="text-gray-700 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" />
@@ -269,7 +273,7 @@ const LoginPage: React.FC = () => {
         <div className="mt-12 text-center space-y-4">
           <div className="flex items-center justify-center gap-2 text-[10px] font-black text-gray-800 uppercase tracking-widest pt-4 border-t border-white/5">
             <ShieldCheck size={12} className="text-brand-500/40" />
-            Secure End-to-End Encryption
+            Secured with end-to-end encryption
           </div>
         </div>
       </motion.div>

@@ -9,6 +9,7 @@ import {
     List, CheckCircle2, Info, ChevronDown,
     ClipboardCheck, CheckCircle, Clock, AlertTriangle, ShieldCheck, Search, Users
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
 import {
@@ -34,7 +35,7 @@ import { AuditWorkspace, NEPALI_FISCAL_YEARS, NavLevel, WifiGate } from '../comp
 
 const AuditDocumentationPage: React.FC = () => {
     const { user } = useAuth();
-    const { status: wifiStatus, retry: retryWifi } = useOfficeWifiCheck();
+    const { status: wifiStatus, retry: retryWifi, publicIp, lastChecked } = useOfficeWifiCheck();
 
     const [clients, setClients] = useState<Client[]>([]);
     const [loadingClients, setLoadingClients] = useState(true);
@@ -65,7 +66,57 @@ const AuditDocumentationPage: React.FC = () => {
     const [globalSelectedStaffId, setGlobalSelectedStaffId] = useState<string | null>(null);
     const [allStaff, setAllStaff] = useState<UserProfile[]>([]);
     
+    // Initialize Workspace Modal
+    const [isInitModalOpen, setIsInitModalOpen] = useState(false);
+    const [initClientId, setInitClientId] = useState('');
+    const [initFY, setInitFY] = useState(NEPALI_FISCAL_YEARS[0]);
+    const [savingInit, setSavingInit] = useState(false);
+    const [clientSearchText, setClientSearchText] = useState('');
+    const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+    const clientDropdownRef = useRef<HTMLDivElement>(null);
+    
     const isReadOnly = user?.role === UserRole.STAFF;
+    const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
+
+    // Derive workspace entries: one per (client, FY) pair that has been initialized
+    const workspaces = React.useMemo(() => {
+        const entries: { client: Client; fy: string }[] = [];
+        clients.forEach(client => {
+            const years = client.activeAuditYears || [];
+            years.forEach(fy => entries.push({ client, fy }));
+        });
+        return entries;
+    }, [clients]);
+    
+    const filteredWorkspaces = workspaces.filter(w =>
+        w.client.name.toLowerCase().includes(filterText.toLowerCase()) ||
+        w.fy.toLowerCase().includes(filterText.toLowerCase())
+    );
+
+    const handleInitWorkspace = async () => {
+        if (!initClientId || !initFY) return;
+        const client = clients.find(c => c.id === initClientId);
+        if (!client) return;
+        const existing = client.activeAuditYears || [];
+        if (existing.includes(initFY)) {
+            toast.error(`Workspace for ${client.name} / ${initFY} already exists.`);
+            return;
+        }
+        setSavingInit(true);
+        try {
+            const updated = [...existing, initFY];
+            await AuthService.updateClient(initClientId, { activeAuditYears: updated });
+            setClients(prev => prev.map(c => c.id === initClientId ? { ...c, activeAuditYears: updated } : c));
+            toast.success(`Workspace initialized: ${client.name} / ${initFY}`);
+            setIsInitModalOpen(false);
+            setClientSearchText('');
+            setIsClientDropdownOpen(false);
+        } catch (e: any) {
+            toast.error(`Failed: ${e.message}`);
+        } finally {
+            setSavingInit(false);
+        }
+    };
 
     // Load clients
     useEffect(() => {
@@ -142,6 +193,17 @@ const AuditDocumentationPage: React.FC = () => {
         })();
     }, [selectedClientId, selectedFY, selectedTaskId]);
 
+    // Click-outside for client search dropdown
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (clientDropdownRef.current && !clientDropdownRef.current.contains(e.target as Node)) {
+                setIsClientDropdownOpen(false);
+            }
+        };
+        if (isClientDropdownOpen) document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [isClientDropdownOpen]);
+
     const navigate = (index: number) => {
         setNavStack(prev => prev.slice(0, index + 1));
     };
@@ -167,8 +229,9 @@ const AuditDocumentationPage: React.FC = () => {
 
     const selectedClient = clients.find(c => c.id === selectedClientId);
 
-    const handleClientSelect = (clientId: string) => {
+    const handleClientSelect = (clientId: string, fy: string) => {
         setSelectedClientId(clientId);
+        setSelectedFY(fy);
         setFilterText('');
     };
 
@@ -190,7 +253,7 @@ const AuditDocumentationPage: React.FC = () => {
             </div>
         );
     }
-    if (wifiStatus === 'REMOTE' || wifiStatus === 'ERROR') return <WifiGate retry={retryWifi} />;
+    if (wifiStatus === 'REMOTE' || wifiStatus === 'ERROR') return <WifiGate retry={retryWifi} publicIp={publicIp} />;
 
     // Staff with no permitted clients
     if (!loadingClients && clients.length === 0 && user?.role === UserRole.STAFF) {
@@ -290,44 +353,7 @@ const AuditDocumentationPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Fiscal Year & Tasks only shown if client selected */}
-                {selectedClientId && (
-                    <>
-                        {/* Fiscal Year */}
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
-                            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                            <CalendarDays size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                            <select
-                                value={selectedFY}
-                                onChange={e => setSelectedFY(e.target.value)}
-                                className="text-sm font-semibold outline-none bg-transparent cursor-pointer"
-                                style={{ color: 'var(--text-heading)' }}
-                            >
-                                {NEPALI_FISCAL_YEARS.map(fy => <option key={fy} value={fy}>{fy}</option>)}
-                            </select>
-                        </div>
 
-                        {/* Engagement / Task Selector */}
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
-                            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                            <ClipboardCheck size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                            <select
-                                value={selectedTaskId}
-                                onChange={e => { setSelectedTaskId(e.target.value); setNavStack([{ kind: 'root' }]); }}
-                                className="text-sm font-semibold outline-none max-w-[200px] bg-transparent cursor-pointer"
-                                style={{ color: 'var(--text-heading)' }}
-                                disabled={loadingTasks}
-                            >
-                                <option value="ALL">All Engagements</option>
-                                {clientTasks.map(t => (
-                                    <option key={t.id} value={t.id}>
-                                        {t.taskType ? `[${t.taskType}] ` : ''}{t.title}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </>
-                )}
 
                 <div className="flex-1" />
 
@@ -375,118 +401,257 @@ const AuditDocumentationPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Client Selection Grid (Shown if no client selected) ── */}
+            {/* ── Workspace Selection Grid (Shown if no client selected) ── */}
             {!selectedClientId ? (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                     <div className="max-w-6xl mx-auto space-y-6">
                         
-                        {/* Header & Search */}
-                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-heading)' }}>
-                                    Select Client
-                                </h1>
-                                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                                    Choose a client to view or manage their audit documentation.
+                                <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-heading)' }}>Audit Workspaces</h1>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                    {filteredWorkspaces.length} workspace{filteredWorkspaces.length !== 1 ? 's' : ''} across {clients.length} client{clients.length !== 1 ? 's' : ''}
                                 </p>
                             </div>
-                            <div className="relative w-full md:w-80">
-                                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                                <input
-                                    type="text"
-                                    placeholder="Search clients..."
-                                    value={filterText}
-                                    onChange={(e) => setFilterText(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm transition-all focus:outline-none"
-                                    style={{ 
-                                        background: 'var(--bg-surface)', 
-                                        border: '1px solid var(--border)',
-                                        color: 'var(--text-heading)'
-                                    }}
-                                />
+                            <div className="flex items-center gap-2">
+                                <div className="relative">
+                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search client or year…"
+                                        value={filterText}
+                                        onChange={(e) => setFilterText(e.target.value)}
+                                        className="pl-9 pr-4 py-2 rounded-xl text-sm transition-all focus:outline-none w-56"
+                                        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
+                                    />
+                                </div>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => { setInitClientId(''); setClientSearchText(''); setIsClientDropdownOpen(false); setIsInitModalOpen(true); }}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+                                        style={{ background: 'var(--accent)', color: '#fff' }}
+                                    >
+                                        <FolderPlus size={15} /> New Workspace
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-                        {/* Client Grid/List */}
-                        <div className={isGrid 
-                            ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-                            : "space-y-3 w-full"
-                        }>
-                            {clients
-                                .filter(c => c.name.toLowerCase().includes(filterText.toLowerCase()))
-                                .map(client => (
-                                <button
-                                    key={client.id}
-                                    onClick={() => handleClientSelect(client.id)}
-                                    className={`group text-left rounded-2xl transition-all duration-300 active:scale-[0.99] border relative overflow-hidden ${
-                                        isGrid ? "p-5 flex flex-col h-full hover:-translate-y-1 hover:shadow-xl" : "p-4 flex items-center gap-6 hover:bg-white/[0.03] hover:border-white/10"
-                                    }`}
-                                    style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
-                                >
-                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                                        style={{ background: isGrid ? 'radial-gradient(circle at 50% 0%, var(--accent-dim) 0%, transparent 70%)' : 'linear-gradient(to right, var(--accent-dim), transparent)' }} />
-                                    
-                                    <div className={`relative z-10 flex gap-4 ${isGrid ? "flex-col h-full" : "items-center flex-1"}`}>
-                                        <div className={`${isGrid ? "w-12 h-12" : "w-14 h-14"} rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:rotate-3`}
+                        {/* Workspace Cards */}
+                        {loadingClients ? (
+                            <div className="flex items-center justify-center py-20">
+                                <Loader2 size={24} className="animate-spin" style={{ color: 'var(--accent)' }} />
+                            </div>
+                        ) : filteredWorkspaces.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                                    style={{ background: 'var(--bg-surface)', border: '2px dashed var(--border)' }}>
+                                    <FolderOpen size={24} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-heading)' }}>
+                                        {filterText ? 'No matches' : 'No Workspaces Yet'}
+                                    </p>
+                                    <p className="text-xs max-w-xs" style={{ color: 'var(--text-muted)' }}>
+                                        {filterText ? 'Try a different search term.' : isAdmin
+                                            ? 'Use "New Workspace" to create one.'
+                                            : 'No workspaces have been set up for you yet.'}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : isGrid ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                                <AnimatePresence>
+                                {filteredWorkspaces.map(({ client, fy }, i) => (
+                                    <motion.button
+                                        key={`${client.id}-${fy}`}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.96 }}
+                                        transition={{ duration: 0.16, delay: i * 0.03 }}
+                                        onClick={() => handleClientSelect(client.id, fy)}
+                                        className="group text-left p-5 rounded-xl flex flex-col h-44 relative overflow-hidden"
+                                        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                                        whileHover={{ y: -2, borderColor: 'var(--accent)' }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <div className="flex items-start justify-between mb-auto">
+                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                                                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                                                <Building2 size={17} style={{ color: 'var(--text-muted)' }} />
+                                            </div>
+                                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
+                                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' }}>
+                                                {fy.replace('-', '/')}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold leading-snug mb-1 line-clamp-2" style={{ color: 'var(--text-heading)' }}>
+                                                {client.name}
+                                            </p>
+                                            <p className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                                                Open workspace <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                                            </p>
+                                        </div>
+                                    </motion.button>
+                                ))}
+                                </AnimatePresence>
+                            </div>
+                        ) : (
+                            <div className="space-y-1.5">
+                                <AnimatePresence>
+                                {filteredWorkspaces.map(({ client, fy }, i) => (
+                                    <motion.button
+                                        key={`${client.id}-${fy}`}
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.13, delay: i * 0.02 }}
+                                        onClick={() => handleClientSelect(client.id, fy)}
+                                        className="group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-150"
+                                        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                                        whileHover={{ x: 2, borderColor: 'var(--accent)' }}
+                                        whileTap={{ scale: 0.99 }}
+                                    >
+                                        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
                                             style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                                            <Building2 size={isGrid ? 24 : 28} style={{ color: 'var(--accent)' }} />
+                                            <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-3">
-                                                <h3 className={`${isGrid ? "text-base" : "text-lg"} font-bold line-clamp-2 leading-snug`} style={{ color: 'var(--text-heading)' }}>
-                                                    {client.name}
-                                                </h3>
-                                                {!isGrid && <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">ACTIVE</span>}
-                                            </div>
-                                            {!isGrid && (
-                                                <div className="flex items-center gap-4 mt-1.5">
-                                                    <div className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                                                        <FolderOpen size={12} className="text-amber-500" />
-                                                        <span>Documentation Repository</span>
-                                                    </div>
-                                                    {!isReadOnly && (
-                                                        <div className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                                                            <Shield size={12} className="text-brand-500" />
-                                                            <span>{client.permittedStaff?.length || 0} Staff with access</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                            <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-heading)' }}>
+                                                {client.name}
+                                            </p>
+                                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Audit Documentation Vault</p>
                                         </div>
-                                        
-                                        {isGrid ? (
-                                            <div className="mt-auto pt-4 flex items-center justify-between text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
-                                                <span>View Documents</span>
-                                                <ArrowLeft size={14} className="rotate-180 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" style={{ color: 'var(--accent)' }} />
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-4">
-                                                <div className="hidden md:flex flex-col items-end mr-4">
-                                                    <p className="text-[10px] font-black text-white/20 uppercase tracking-tighter">Engagement Vault</p>
-                                                    <p className="text-xs font-bold text-white/60">OPEN REPOSITORY</p>
-                                                </div>
-                                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
-                                                    <ChevronRight size={18} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </button>
-                            ))}
-                            {clients.filter(c => c.name.toLowerCase().includes(filterText.toLowerCase())).length === 0 && (
-                                <div className="col-span-full py-12 text-center">
-                                    <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>No clients found matching "{filterText}"</p>
-                                </div>
-                            )}
-                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
+                                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' }}>
+                                                {fy.replace('-', '/')}
+                                            </span>
+                                            {!isReadOnly && (client.permittedStaff?.length ?? 0) > 0 && (
+                                                <span className="text-xs hidden md:block" style={{ color: 'var(--text-muted)' }}>
+                                                    {client.permittedStaff!.length} staff
+                                                </span>
+                                            )}
+                                            <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" style={{ color: 'var(--text-muted)' }} />
+                                        </div>
+                                    </motion.button>
+                                ))}
+                                </AnimatePresence>
+                            </div>
+                        )}
                     </div>
                 </div>
-            ) : (
+) : (
                 <div className="flex-1 min-h-0 flex flex-col p-4 md:p-6 w-full h-full max-w-7xl mx-auto">
-             <AuditWorkspace clientId={selectedClientId} clientName={selectedClient?.name || 'Unknown Client'} />
-         </div>
+                    <AuditWorkspace clientId={selectedClientId} clientName={selectedClient?.name || 'Unknown Client'} initialFY={selectedFY} />
+                </div>
             )}
-    {/* ── Client Permission Modal ── */}
+
+            {/* ── Initialize Workspace Modal ── */}
+            <AnimatePresence>
+            {isInitModalOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+                >
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsInitModalOpen(false)} />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.93, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.93, y: 20 }}
+                        transition={{ type: 'spring', damping: 25 }}
+                        className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+                        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                    >
+                        {/* Header */}
+                        <div className="p-6 border-b flex items-center gap-4" style={{ borderColor: 'var(--border)' }}>
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                                style={{ background: 'var(--accent-dim)', border: '1px solid rgba(var(--accent-rgb,101,154,43),0.3)' }}>
+                                <FolderPlus size={22} style={{ color: 'var(--accent)' }} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold" style={{ color: 'var(--text-heading)' }}>Initialize Workspace</h2>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Create a new audit documentation workspace for a client and fiscal year.</p>
+                            </div>
+                            <button onClick={() => setIsInitModalOpen(false)} className="ml-auto p-2 rounded-full hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-5">
+                            <div>
+                                <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Client</label>
+                                <select
+                                    value={initClientId}
+                                    onChange={e => setInitClientId(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl text-sm font-semibold outline-none transition-colors"
+                                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
+                                >
+                                    <option value="">— Select a Client —</option>
+                                    {clients
+                                        .slice()
+                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                        .map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Fiscal Year</label>
+                                <select
+                                    value={initFY}
+                                    onChange={e => setInitFY(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl text-sm font-semibold outline-none transition-colors"
+                                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
+                                >
+                                    {NEPALI_FISCAL_YEARS.map(fy => (
+                                        <option key={fy} value={fy}>{fy.replace('-', '/')}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {initClientId && (() => {
+                                const c = clients.find(x => x.id === initClientId);
+                                const already = c?.activeAuditYears?.includes(initFY);
+                                return already ? (
+                                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold"
+                                        style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>
+                                        <AlertTriangle size={14} /> This workspace already exists.
+                                    </div>
+                                ) : null;
+                            })()}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 pb-6 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setIsInitModalOpen(false)}
+                                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors hover:bg-white/5"
+                                style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleInitWorkspace}
+                                disabled={!initClientId || savingInit}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
+                                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary, var(--accent)))', color: '#fff' }}
+                            >
+                                {savingInit ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><CheckCircle2 size={14} /> Create Workspace</>}
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+            </AnimatePresence>
+            
+            {/* ── Client Permission Modal ── */}
             {isPermissionModalOpen && selectedClient && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div 
@@ -556,12 +721,20 @@ const AuditDocumentationPage: React.FC = () => {
                                                             toast.error('Failed to update permissions');
                                                         }
                                                     }}
-                                                    className="shrink-0 w-12 h-6 rounded-full relative transition-colors duration-300"
-                                                    style={{ background: isPermitted ? 'var(--accent)' : 'var(--bg-surface)', border: isPermitted ? 'none' : '1px solid var(--border)' }}
                                                 >
-                                                    <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 shadow-sm"
-                                                        style={{ left: isPermitted ? 'calc(100% - 20px)' : '4px' }}
-                                                    />
+                                                    <div 
+                                                        className="w-11 h-6 rounded-full relative transition-colors duration-300 flex items-center px-0.5 shrink-0"
+                                                        style={{
+                                                            background: isPermitted ? '#10b981' : 'var(--border-mid, rgba(125,125,125,0.3))'
+                                                        }}
+                                                    >
+                                                        <div 
+                                                            className="w-5 h-5 rounded-full bg-white transition-transform duration-300 shadow-md"
+                                                            style={{
+                                                                transform: isPermitted ? 'translateX(20px)' : 'translateX(0px)'
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </button>
                                             </div>
                                         );
@@ -575,24 +748,25 @@ const AuditDocumentationPage: React.FC = () => {
 
             {/* ── Global Staff-wise Access Modal ── */}
             {isGlobalAccessModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="w-full max-w-5xl h-full max-h-[85vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl border border-white/10"
-                        style={{ background: 'var(--bg-elevated)' }}>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full max-w-5xl h-full max-h-[85vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl border"
+                        style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
                         
                         {/* Header */}
-                        <div className="px-6 py-5 flex items-center justify-between border-b border-white/5 bg-white/2">
+                        <div className="px-6 py-5 flex items-center justify-between border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
                                     <ShieldCheck size={20} className="text-amber-500" />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white">Global Staff Access Manager</h2>
-                                    <p className="text-[11px] text-white/50 uppercase tracking-widest font-bold">Manage client permissions staff-wise</p>
+                                    <h2 className="text-lg font-bold" style={{ color: 'var(--text-heading)' }}>Global Staff Access Manager</h2>
+                                    <p className="text-[11px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-muted)' }}>Manage client permissions staff-wise</p>
                                 </div>
                             </div>
                             <button 
                                 onClick={() => { setIsGlobalAccessModalOpen(false); setGlobalSelectedStaffId(null); }}
-                                className="p-2 rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white"
+                                className="p-2 rounded-xl transition-colors hover:bg-white/10"
+                                style={{ color: 'var(--text-muted)' }}
                             >
                                 <X size={20} />
                             </button>
@@ -602,15 +776,16 @@ const AuditDocumentationPage: React.FC = () => {
                         <div className="flex-1 flex min-h-0">
                             
                             {/* Staff List Sidebar */}
-                            <div className="w-72 border-r border-white/5 flex flex-col bg-black/10">
-                                <div className="p-4 border-b border-white/5">
+                            <div className="w-72 border-r flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
+                                <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
                                     <div className="relative">
-                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                                         <input 
                                             type="text"
                                             placeholder="Find staff..."
                                             value={staffFilter}
-                                            className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-500/50 transition-all font-medium"
+                                            className="w-full pl-9 pr-4 py-2 rounded-xl text-xs font-medium focus:outline-none transition-all"
+                                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
                                             onChange={(e) => setStaffFilter(e.target.value)}
                                         />
                                     </div>
@@ -625,17 +800,20 @@ const AuditDocumentationPage: React.FC = () => {
                                             className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 group ${
                                                 globalSelectedStaffId === s.uid 
                                                     ? 'bg-amber-500 text-white shadow-lg' 
-                                                    : 'hover:bg-white/5 text-white/60 hover:text-white'
+                                                    : 'hover:bg-white/5'
                                             }`}
+                                            style={{
+                                                color: globalSelectedStaffId === s.uid ? '#fff' : 'var(--text-heading)'
+                                            }}
                                         >
                                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black border transition-colors ${
-                                                globalSelectedStaffId === s.uid ? 'bg-white/20 border-white/30' : 'bg-white/5 border-white/10'
+                                                globalSelectedStaffId === s.uid ? 'bg-white/20 border-white/30 text-white' : 'bg-white/10 border-white/10'
                                             }`}>
                                                 {(s.displayName || 'U').charAt(0)}
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
                                                 <p className="text-xs font-bold truncate">{s.displayName}</p>
-                                                <p className={`text-[9px] ${globalSelectedStaffId === s.uid ? 'text-white/70' : 'text-white/30'}`}>
+                                                <p className="text-[9px] opacity-70">
                                                     {s.role || 'Staff'}
                                                 </p>
                                             </div>
@@ -646,22 +824,22 @@ const AuditDocumentationPage: React.FC = () => {
                             </div>
 
                             {/* Client Access Content */}
-                            <div className="flex-1 flex flex-col min-w-0 bg-black/5">
+                            <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--bg-elevated)' }}>
                                 {globalSelectedStaffId ? (
                                     <>
                                         {/* Staff Header */}
-                                        <div className="px-8 py-5 flex items-center justify-between border-b border-white/5 bg-white/[0.01]">
+                                        <div className="px-8 py-5 flex items-center justify-between border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="text-sm font-bold text-white">
+                                                <h3 className="text-sm font-bold" style={{ color: 'var(--text-heading)' }}>
                                                     Permissions for <span className="text-amber-500">{allStaff.find(s => s.uid === globalSelectedStaffId)?.displayName}</span>
                                                 </h3>
                                                 <div className="flex items-center gap-4 mt-1.5">
-                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/40">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                                         Allowed: {clients.filter(c => c.permittedStaff?.includes(globalSelectedStaffId)).length}
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/40">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>
+                                                        <div className="w-2 h-2 rounded-full bg-gray-400 opacity-40" />
                                                         Total: {clients.length}
                                                     </div>
                                                 </div>
@@ -669,19 +847,20 @@ const AuditDocumentationPage: React.FC = () => {
                                             
                                             {/* Client Search within Permission List */}
                                             <div className="relative w-64">
-                                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                                                 <input 
                                                     type="text"
                                                     placeholder="Search clients..."
                                                     value={globalClientFilter}
                                                     onChange={(e) => setGlobalClientFilter(e.target.value)}
-                                                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-500/50 transition-all font-medium"
+                                                    className="w-full pl-9 pr-4 py-2 rounded-xl text-xs font-medium focus:outline-none transition-all"
+                                                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
                                                 />
                                             </div>
                                         </div>
 
                                         {/* Client List */}
-                                        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 {clients
                                                     .filter(c => c.name.toLowerCase().includes(globalClientFilter.toLowerCase()))
@@ -713,30 +892,40 @@ const AuditDocumentationPage: React.FC = () => {
                                                             <button
                                                                 key={client.id}
                                                                 onClick={handleToggle}
-                                                                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group ${
-                                                                    isPermitted 
-                                                                        ? 'bg-emerald-500/10 border-emerald-500/30' 
-                                                                        : 'bg-white/2 border-white/5 hover:bg-white/5 hover:border-white/10'
-                                                                }`}
+                                                                className="flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 group text-left"
+                                                                style={{
+                                                                    background: isPermitted ? 'rgba(16,185,129,0.12)' : 'var(--bg-surface)',
+                                                                    borderColor: isPermitted ? 'rgba(16,185,129,0.35)' : 'var(--border)'
+                                                                }}
                                                             >
-                                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                                                                    isPermitted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-white/20'
-                                                                }`}>
+                                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                                                    style={{
+                                                                        background: isPermitted ? 'rgba(16,185,129,0.2)' : 'var(--bg-elevated)',
+                                                                        color: isPermitted ? '#10b981' : 'var(--text-muted)'
+                                                                    }}>
                                                                     <Building2 size={20} />
                                                                 </div>
-                                                                <div className="flex-1 text-left min-w-0">
-                                                                    <p className={`text-xs font-bold truncate ${isPermitted ? 'text-white' : 'text-white/40'}`}>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-xs font-bold truncate" style={{ color: 'var(--text-heading)' }}>
                                                                         {client.name}
                                                                     </p>
-                                                                    <p className={`text-[9px] font-bold ${isPermitted ? 'text-emerald-500' : 'text-white/20'}`}>
+                                                                    <p className="text-[9px] font-black tracking-wider uppercase mt-0.5"
+                                                                        style={{ color: isPermitted ? '#10b981' : 'var(--text-muted)' }}>
                                                                         {isPermitted ? 'GRANTED' : 'NO ACCESS'}
                                                                     </p>
                                                                 </div>
+                                                                {/* Toggle Switch */}
                                                                 <div 
-                                                                    className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isPermitted ? 'bg-emerald-500' : 'bg-white/10'}`}
+                                                                    className="w-11 h-6 rounded-full relative transition-colors duration-300 flex items-center px-0.5 shrink-0"
+                                                                    style={{
+                                                                        background: isPermitted ? '#10b981' : 'var(--border-mid, rgba(125,125,125,0.3))'
+                                                                    }}
                                                                 >
-                                                                    <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.75 transition-all duration-300 shadow-sm ${isPermitted ? 'right-0.75' : 'left-0.75'}`} 
-                                                                        style={{ top: '3px' }}
+                                                                    <div 
+                                                                        className="w-5 h-5 rounded-full bg-white transition-transform duration-300 shadow-md"
+                                                                        style={{
+                                                                            transform: isPermitted ? 'translateX(20px)' : 'translateX(0px)'
+                                                                        }}
                                                                     />
                                                                 </div>
                                                             </button>
@@ -747,11 +936,11 @@ const AuditDocumentationPage: React.FC = () => {
                                     </>
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-40">
-                                        <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mb-6">
-                                            <Users size={32} />
+                                        <div className="w-20 h-20 rounded-full border-2 border-dashed flex items-center justify-center mb-6" style={{ borderColor: 'var(--text-muted)' }}>
+                                            <Users size={32} style={{ color: 'var(--text-muted)' }} />
                                         </div>
-                                        <h3 className="text-xl font-bold text-white mb-2">Select a Staff Member</h3>
-                                        <p className="text-xs max-w-xs leading-relaxed">Choose a staff member from the left sidebar to manage their client permissions.</p>
+                                        <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-heading)' }}>Select a Staff Member</h3>
+                                        <p className="text-xs max-w-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>Choose a staff member from the left sidebar to manage their client permissions.</p>
                                     </div>
                                 )}
                             </div>

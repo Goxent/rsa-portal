@@ -87,6 +87,10 @@ const ClockWidget = () => {
 };
 
 const AttendancePage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'Attendance — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
     const { user } = useAuth();
     const location = useLocation();
 

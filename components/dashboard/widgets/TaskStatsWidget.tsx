@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Loader, Eye, Pause, BarChart3 } from 'lucide-react';
+import { CheckCircle2, Loader, Eye, Pause, BarChart3, AlertOctagon } from 'lucide-react';
 
 interface TaskStatsWidgetProps {
     taskData?: { name: string; value: number }[];
@@ -10,6 +10,7 @@ const STATUS_CONFIG = [
     { key: 'In Progress', icon: Loader, color: 'text-brand-500', bar: 'bg-brand-400', ring: 'var(--accent-glow)', bg: 'bg-brand-400/10' },
     { key: 'Review', icon: Eye, color: 'text-status-pending', bar: 'bg-status-pending', ring: 'var(--status-pending)', bg: 'bg-status-pending-dim' },
     { key: 'Pending', icon: Pause, color: 'text-brand-300 dark:text-brand-700/50', bar: 'bg-slate-300 dark:bg-brand-900/30', ring: 'var(--accent-dim)', bg: 'bg-brand-900/10' },
+    { key: 'Halted', icon: AlertOctagon, color: 'text-status-halted', bar: 'bg-status-halted', ring: 'var(--status-halted)', bg: 'bg-status-halted-dim' },
 ];
 
 const TaskStatsWidget: React.FC<TaskStatsWidgetProps> = ({ taskData = [] }) => {

@@ -43,6 +43,7 @@ const ArchivedTasksPage = lazy(() => import('./pages/ArchivedTasksPage'));
 const AuditDocumentationPage = lazy(() => import('./pages/AuditDocumentationPage'));
 const CommunicationPage = lazy(() => import('./pages/CommunicationPage'));
 const NoticesPage = lazy(() => import('./pages/NoticesPage'));
+const PolicyPage = lazy(() => import('./pages/PolicyPage'));
 
 // Suspense wrapper for lazy-loaded components with Error Boundary
 const LazyPage = ({ children }: { children: React.ReactNode }) => {
@@ -109,6 +110,32 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return <PageLoader />;
 
   if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// SE1 / AL3 Fix: Master Admin Route Wrapper
+const MasterAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <PageLoader />;
+
+  if (!user || user.role !== UserRole.MASTER_ADMIN) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// RP1 Fix: Allow Admins and Managers to access Resource Planning
+const AdminOrManagerRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <PageLoader />;
+
+  if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN && user.role !== UserRole.MANAGER)) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -204,13 +231,15 @@ const App: React.FC = () => {
                     <Route path="archived-tasks" element={<AdminRoute><LazyPage><ArchivedTasksPage /></LazyPage></AdminRoute>} />
                     <Route path="calendar" element={<LazyPage><CalendarPage /></LazyPage>} />
                     <Route path="workload" element={
-                      <AdminRoute>
+                      <AdminOrManagerRoute>
                         <LazyPage><ResourcePlanningPage /></LazyPage>
-                      </AdminRoute>
+                      </AdminOrManagerRoute>
                     } />
                     <Route path="resources" element={<Navigate to="/templates" replace />} />
 
                     <Route path="knowledge-base" element={<Navigate to="/templates" replace />} />
+                    <Route path="policy" element={<LazyPage><PolicyPage /></LazyPage>} />
+                    <Route path="handbook" element={<Navigate to="/policy" replace />} />
                     <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />
                     <Route path="staff" element={
                       <AdminRoute>
@@ -223,14 +252,14 @@ const App: React.FC = () => {
                       </AdminRoute>
                     } />
                     <Route path="settings" element={
-                      <AdminRoute>
+                      <MasterAdminRoute>
                         <LazyPage><SystemSettingsPage /></LazyPage>
-                      </AdminRoute>
+                      </MasterAdminRoute>
                     } />
                     <Route path="audit-log" element={
-                      <AdminRoute>
+                      <MasterAdminRoute>
                         <LazyPage><AuditLogPage /></LazyPage>
-                      </AdminRoute>
+                      </MasterAdminRoute>
                     } />
                     <Route path="audit-docs" element={
                       <LazyPage><AuditDocumentationPage /></LazyPage>

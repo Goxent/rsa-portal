@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import {
     Folder, FileText, Search, ExternalLink, Grid, List,
     BookOpen, FileCheck, Eye, X, Sparkles, Send, Bot,
@@ -45,7 +46,7 @@ const fmtSize = (bytes?: number) => {
 };
 
 const renderMd = (text: string) => {
-    const html = text
+    const rawHtml = text
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold text-white mt-4 mb-2">$1</h3>')
         .replace(/^## (.+)$/gm,  '<h2 class="text-xl font-bold text-white mt-5 mb-2">$1</h2>')
@@ -55,7 +56,8 @@ const renderMd = (text: string) => {
         .replace(/^- (.+)$/gm,   '<li class="ml-4 list-disc text-gray-300">$1</li>')
         .replace(/\n\n/g, '</p><p class="mb-3 text-gray-300">')
         .replace(/\n/g, '<br/>');
-    return `<p class="mb-3 text-gray-300">${html}</p>`;
+    const formatted = `<p class="mb-3 text-gray-300">${rawHtml}</p>`;
+    return DOMPurify.sanitize(formatted);
 };
 
 const colorFor = (id: string, type: string) => {

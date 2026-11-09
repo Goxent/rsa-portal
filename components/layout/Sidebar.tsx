@@ -21,7 +21,8 @@ import {
     PinOff,
     Activity,
     Megaphone,
-    Bell
+    Bell,
+    BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -47,6 +48,7 @@ const ALL_NAV_ITEMS = [
     { id: 'staff', to: '/staff', icon: Users, label: 'Staff Directory', adminOnly: true },
     { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true, managerAllowed: true },
     { id: 'templates', to: '/templates', icon: Library, label: 'Resources' },
+    { id: 'policy', to: '/policy', icon: BookOpen, label: 'Office Policy' },
     { id: 'archived-tasks', to: '/archived-tasks', icon: Archive, label: 'Archived Tasks', adminOnly: true },
     { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', masterAdminOnly: true },
     { id: 'audit-docs', to: '/audit-docs', icon: FolderArchive, label: 'Audit Documentation' },

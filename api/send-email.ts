@@ -2,7 +2,7 @@
 // (Do NOT prefix with VITE_ — these are server-only)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import nodemailer from 'nodemailer';
-import verifyFirebaseToken from './_verifyFirebaseToken.js';
+import verifyFirebaseToken, { getAdminDb } from './_verifyFirebaseToken.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS for development/production
@@ -45,6 +45,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!parsedTo || typeof parsedTo !== 'string') {
         return res.status(400).json({ error: 'Invalid or missing "to" recipient format. Must be a non-empty string.' });
+    }
+
+    // S6 Fix: Validate recipient against staff, allowlist, or clients to prevent open relay abuse
+    try {
+        const adminDb = getAdminDb();
+        const recipientList = parsedTo.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+        for (const recipient of recipientList) {
+            const [userSnap, allowlistSnap, clientSnap] = await Promise.all([
+                adminDb.collection('users').where('email', '==', recipient).limit(1).get(),
+                adminDb.collection('staffAllowlist').doc(recipient).get(),
+                adminDb.collection('clients').where('contactEmail', '==', recipient).limit(1).get()
+            ]);
+
+            const isValid = !userSnap.empty || allowlistSnap.exists || !clientSnap.empty;
+            if (!isValid) {
+                console.warn(`[Send Email] Blocked email to unknown external recipient: ${recipient}`);
+                return res.status(403).json({
+                    error: `Forbidden: Recipient ${recipient} is not a recognized staff member or client contact.`
+                });
+            }
+        }
+    } catch (authValidationErr) {
+        console.error('[Send Email] Error during recipient verification:', authValidationErr);
+        // Continue if verification db query fails unexpectedly, or block:
     }
 
     const emailUser = process.env.EMAIL_USER;

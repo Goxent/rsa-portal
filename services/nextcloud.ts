@@ -23,9 +23,11 @@ export const NextcloudService = {
         const fileName = `${Date.now()}-${file.name}`;
         const mimeType = file.type || 'application/octet-stream';
 
+        const apiBase = import.meta.env.VITE_API_URL ? (import.meta.env.VITE_API_URL as string).replace(/\/$/, '') : '';
+
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/nextcloud-upload');
+            xhr.open('POST', `${apiBase}/api/nextcloud-upload`);
             xhr.setRequestHeader('Content-Type', 'application/json');
 
             xhr.upload.onprogress = (event) => {
@@ -55,7 +57,7 @@ export const NextcloudService = {
                 }
             };
 
-            xhr.onerror = () => reject(new Error('Network error during upload'));
+            xhr.onerror = () => reject(new Error('Network error during upload (Check API connection)'));
             
             xhr.send(JSON.stringify({
                 fileName,
@@ -70,7 +72,8 @@ export const NextcloudService = {
      */
     deleteFile: async (fileId: string): Promise<void> => {
         if (!fileId) return;
-        const res = await fetch('/api/nextcloud-delete', {
+        const apiBase = import.meta.env.VITE_API_URL ? (import.meta.env.VITE_API_URL as string).replace(/\/$/, '') : '';
+        const res = await fetch(`${apiBase}/api/nextcloud-delete`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

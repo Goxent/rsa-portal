@@ -8,9 +8,12 @@ import {
     CloudUpload, FolderX, FilePlus2, ArrowLeft, LayoutGrid,
     List, CheckCircle2, Info, ChevronDown,
     ClipboardCheck, CheckCircle, Clock, AlertTriangle, ShieldCheck, Search, Users,
-    FileImage, FileVideo, FilePdf, Star, Grid3x3, Rows3, FolderClosed,
+    FileImage, FileVideo, Star, Grid3x3, Rows3, FolderClosed,
     UploadCloud, SortAsc, Filter, MoreHorizontal, HardDrive
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { useAuth } from '../../context/AuthContext';
 import { AuthService } from '../../services/firebase';
 import {
@@ -93,26 +96,85 @@ interface UploadQueueItem {
 
 // ─── WiFi Gate ────────────────────────────────────────────────────────────────
 
-export const WifiGate: React.FC<{ retry: () => void }> = ({ retry }) => (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
-        <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-8 shadow-2xl"
-            style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.05))', border: '1px solid rgba(239,68,68,0.3)' }}>
-            <Lock size={40} style={{ color: '#f87171' }} />
+export const WifiGate: React.FC<{ retry: () => void; publicIp?: string | null }> = ({ retry, publicIp }) => (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
+        {/* Animated pulsing lock */}
+        <div className="relative mb-8">
+            <motion.div
+                animate={{ scale: [1, 1.08, 1] }}
+                transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+                className="w-28 h-28 rounded-[2rem] flex items-center justify-center shadow-2xl relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.05))', border: '1px solid rgba(239,68,68,0.35)' }}>
+                <div className="absolute inset-0 bg-white/3 backdrop-blur-sm" />
+                <Wifi size={44} style={{ color: '#f87171' }} className="relative z-10" />
+            </motion.div>
+            {/* Outer glow rings */}
+            <div className="absolute inset-0 rounded-[2rem] animate-ping opacity-10"
+                style={{ background: 'rgba(239,68,68,0.3)', animationDuration: '2s' }} />
         </div>
-        <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-heading)' }}>Office Network Access Only</h2>
-        <p className="text-sm max-w-md leading-relaxed mb-2" style={{ color: 'var(--text-muted)' }}>
-            Audit Documentation is restricted to the RSA office network. Connect to office WiFi or VPN and retry.
+
+        <h2 className="text-2xl font-black mb-3 tracking-tight" style={{ color: 'var(--text-heading)' }}>
+            Office Network Required
+        </h2>
+        <p className="text-sm max-w-md leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>
+            Audit Documentation is classified and restricted to the <strong style={{ color: 'var(--text-heading)' }}>RSA office LAN/WiFi</strong> only.
+            Remote access is not permitted for security compliance.
         </p>
-        <p className="text-xs mb-8 font-mono px-3 py-1 rounded-full"
-            style={{ color: 'var(--text-muted)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)' }}>
-            \\RSAFILESERVER (local NAS integration coming soon)
-        </p>
+
+        {/* Steps */}
+        <div className="w-full max-w-sm mb-7 space-y-2 text-left">
+            {[
+                { n: '1', text: 'Connect your device to the RSA office WiFi or LAN cable.' },
+                { n: '2', text: 'Ensure you are not using a VPN or mobile hotspot.' },
+                { n: '3', text: 'Click "Retry" once connected.' },
+            ].map(step => (
+                <div key={step.n} className="flex items-start gap-3 px-4 py-3 rounded-xl"
+                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5"
+                        style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>{step.n}</span>
+                    <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-muted)' }}>{step.text}</p>
+                </div>
+            ))}
+        </div>
+
+        {publicIp && (
+            <p className="text-xs mb-5 font-mono px-3 py-1.5 rounded-full flex items-center gap-2"
+                style={{ color: '#f87171', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)' }}>
+                <AlertTriangle size={11} /> Detected IP: {publicIp} — not recognized as office network
+            </p>
+        )}
+
         <button onClick={retry}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-105"
-            style={{ background: 'linear-gradient(135deg,#659a2b,#3f6018)', color: '#fff' }}>
+            className="flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-lg"
+            style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.9),rgba(220,38,38,0.9))', color: '#fff' }}>
             <RefreshCw size={16} /> Retry Connection
         </button>
-    </div>
+    </motion.div>
+);
+
+// ─── Security Lock Screen ──────────────────────────────────────────────────────
+
+export const SecurityLockScreen: React.FC<{ clientName: string }> = ({ clientName }) => (
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}
+        className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center px-6 rounded-2xl"
+        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+        <motion.div 
+            initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.1 }}
+            className="w-28 h-28 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.05))', border: '1px solid rgba(245,158,11,0.3)' }}>
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-xl"></div>
+            <Shield size={48} style={{ color: '#f59e0b' }} className="relative z-10 drop-shadow-lg" />
+        </motion.div>
+        <h2 className="text-3xl font-black mb-4 tracking-tight" style={{ color: 'var(--text-heading)' }}>Access Denied</h2>
+        <p className="text-base max-w-md leading-relaxed mb-8" style={{ color: 'var(--text-muted)' }}>
+            You do not have permission to view audit documentation for <strong style={{ color: 'var(--text-body)' }}>{clientName}</strong>. This area is restricted to authorized engagement staff only.
+        </p>
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
+            style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <Info size={14} /> Request access from an Admin or Engagement Manager.
+        </div>
+    </motion.div>
 );
 
 // ─── Upload Status Panel ───────────────────────────────────────────────────────
@@ -192,11 +254,17 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
 
     if (isGrid) {
         return (
-            <div
-                className={`group relative rounded-xl p-4 flex flex-col gap-3 transition-all duration-150 cursor-pointer select-none`}
+            <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                whileHover={{ y: -4, scale: 1.02 }}
+                className={`group relative rounded-xl p-4 flex flex-col gap-3 transition-colors duration-150 cursor-pointer select-none`}
                 style={{
                     background: isSelected ? 'rgba(var(--accent-rgb, 101,154,43), 0.12)' : 'var(--bg-elevated)',
                     border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                    boxShadow: isSelected ? '0 8px 24px rgba(0,0,0,0.1)' : 'none'
                 }}
                 onClick={onSelect}
                 onDoubleClick={() => canPreview && window.open(viewUrl, '_blank')}
@@ -205,7 +273,7 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                 <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto relative"
                     style={{ background: `${mimeColor}18`, border: `1px solid ${mimeColor}30` }}>
                     <MimeIcon size={28} style={{ color: mimeColor }} />
-                    <span className="absolute -bottom-1.5 -right-1.5 text-[8px] font-black px-1.5 py-0.5 rounded-md text-white uppercase"
+                    <span className="absolute -bottom-1.5 -right-1.5 text-[8px] font-black px-1.5 py-0.5 rounded-md text-white uppercase shadow-sm"
                         style={{ background: mimeColor }}>
                         {getMimeLabel(file.mimeType).split(' ')[0].substring(0, 4)}
                     </span>
@@ -220,13 +288,15 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
                     <button
                         onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/15 transition-colors"
-                        style={{ color: 'var(--text-muted)' }}>
-                        <MoreVertical size={14} />
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/15 transition-colors backdrop-blur-md"
+                        style={{ color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)' }}>
+                        <MoreVertical size={14} className="text-white" />
                     </button>
+                    <AnimatePresence>
                     {menuOpen && (
-                        <div className="absolute right-0 top-8 w-44 rounded-xl shadow-2xl overflow-hidden z-50 border"
-                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)' }}>
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                            className="absolute right-0 top-8 w-44 rounded-xl shadow-2xl overflow-hidden z-50 border"
+                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)', backdropFilter: 'blur(16px)' }}>
                             {canPreview && (
                                 <a href={viewUrl} target="_blank" rel="noopener noreferrer"
                                     className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-white/8 transition-colors"
@@ -249,17 +319,22 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-red-500/10 transition-colors text-left text-red-500">
                                 <Trash2 size={13} /> Delete
                             </button>
-                        </div>
+                        </motion.div>
                     )}
+                    </AnimatePresence>
                 </div>
-            </div>
+            </motion.div>
         );
     }
 
     // LIST VIEW — Google Drive style row
     return (
-        <div
-            className={`group flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-100 cursor-pointer select-none`}
+        <motion.div
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`group flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-100 cursor-pointer select-none`}
             style={{
                 background: isSelected ? 'rgba(var(--accent-rgb, 101,154,43), 0.10)' : 'transparent',
                 outline: isSelected ? '1px solid var(--accent)' : 'none',
@@ -269,8 +344,8 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
             onDoubleClick={() => canPreview && window.open(viewUrl, '_blank')}
         >
             {/* Icon */}
-            <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: `${mimeColor}15` }}>
+            <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
+                style={{ background: `${mimeColor}15`, border: `1px solid ${mimeColor}20` }}>
                 <MimeIcon size={16} style={{ color: mimeColor }} />
             </div>
 
@@ -298,7 +373,7 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
 
             {/* Size */}
             <div className="w-20 shrink-0 text-right">
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatBytes(file.fileSize)}</p>
+                <p className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{formatBytes(file.fileSize)}</p>
             </div>
 
             {/* Actions */}
@@ -324,9 +399,11 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                         style={{ color: 'var(--text-muted)' }} title="More options">
                         <MoreVertical size={13} />
                     </button>
+                    <AnimatePresence>
                     {menuOpen && (
-                        <div className="absolute right-0 top-8 w-44 rounded-xl shadow-2xl overflow-hidden z-50 border"
-                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)' }}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                            className="absolute right-0 top-8 w-44 rounded-xl shadow-2xl overflow-hidden z-50 border"
+                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)', backdropFilter: 'blur(16px)' }}>
                             <button onClick={() => { setMenuOpen(false); onEditNotes(); }}
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-white/8 transition-colors text-left"
                                 style={{ color: 'var(--text-body)' }}>
@@ -337,11 +414,12 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-red-500/10 transition-colors text-left text-red-500">
                                 <Trash2 size={13} /> Delete
                             </button>
-                        </div>
+                        </motion.div>
                     )}
+                    </AnimatePresence>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
@@ -368,13 +446,18 @@ const SubFolderRow: React.FC<SubFolderRowProps> = ({ folder, isGrid, onClick, on
 
     if (isGrid) {
         return (
-            <div
-                className="group relative rounded-xl p-4 flex flex-col gap-3 transition-all duration-150 cursor-pointer hover:bg-white/5"
+            <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                whileHover={{ y: -4, scale: 1.02 }}
+                className="group relative rounded-xl p-4 flex flex-col gap-3 transition-colors duration-150 cursor-pointer"
                 style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                 onClick={onClick}
                 onDoubleClick={onClick}
             >
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto"
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto shadow-inner"
                     style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}>
                     <FolderOpen size={28} style={{ color: '#f59e0b' }} />
                 </div>
@@ -384,21 +467,24 @@ const SubFolderRow: React.FC<SubFolderRowProps> = ({ folder, isGrid, onClick, on
                 </div>
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
                     <button onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/15 transition-colors"
-                        style={{ color: 'var(--text-muted)' }}>
-                        <MoreVertical size={14} />
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/15 transition-colors backdrop-blur-md"
+                        style={{ color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)' }}>
+                        <MoreVertical size={14} className="text-white" />
                     </button>
+                    <AnimatePresence>
                     {menuOpen && (
-                        <div className="absolute right-0 top-8 w-40 rounded-xl shadow-2xl overflow-hidden z-50 border"
-                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)' }}>
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                            className="absolute right-0 top-8 w-40 rounded-xl shadow-2xl overflow-hidden z-50 border"
+                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)', backdropFilter: 'blur(16px)' }}>
                             <button onClick={() => { setMenuOpen(false); onDelete(); }}
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-red-500/10 transition-colors text-left text-red-500">
                                 <Trash2 size={13} /> Delete Folder
                             </button>
-                        </div>
+                        </motion.div>
                     )}
+                    </AnimatePresence>
                 </div>
-            </div>
+            </motion.div>
         );
     }
 
@@ -460,12 +546,13 @@ interface FolderContentProps {
     onEnterSubFolder: (folder: AuditDocFolder) => void;
     isGrid: boolean;
     isReadOnly?: boolean;
+    searchQuery?: string;
 }
 
 const FolderContent: React.FC<FolderContentProps> = ({
     folderKey, lineItem, lineItemLabel, customFolderId,
     clientId, clientName, fiscalYear, userId, userName,
-    taskId, onEnterSubFolder, isGrid, isReadOnly,
+    taskId, onEnterSubFolder, isGrid, isReadOnly, searchQuery = '',
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -474,6 +561,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
     const [subFolders, setSubFolders] = useState<AuditDocFolder[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
+    const [zipping, setZipping] = useState(false);
     const [dragging, setDragging] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [showNewFolder, setShowNewFolder] = useState(false);
@@ -548,17 +636,15 @@ const FolderContent: React.FC<FolderContentProps> = ({
         }
     };
 
-    const handleCreateFolder = async () => {
-        if (!newFolderName.trim()) return;
+    const handleCreateFolder = async (name: string) => {
+        if (!name.trim()) return;
         setSavingFolder(true);
         try {
             const created = await AuditDocService.createFolder({
                 clientId, clientName, fiscalYear, folderKey, lineItem,
-                name: newFolderName.trim(), createdBy: userId, createdByName: userName,
+                name: name.trim(), createdBy: userId, createdByName: userName,
             });
             setSubFolders(prev => [...prev, created]);
-            setNewFolderName('');
-            setShowNewFolder(false);
             toast.success(`"${created.name}" created`);
         } catch (e: any) {
             toast.error(e.message);
@@ -590,8 +676,47 @@ const FolderContent: React.FC<FolderContentProps> = ({
         }
     };
 
-    const isEmpty = !loading && files.length === 0 && subFolders.length === 0;
-    const totalItems = subFolders.length + files.length;
+    const handleDownloadZip = async () => {
+        if (filteredFiles.length === 0) {
+            toast.error("No files to download in this folder.");
+            return;
+        }
+        setZipping(true);
+        const toastId = toast.loading('Preparing ZIP file...');
+        try {
+            const zip = new JSZip();
+            const folderName = `${clientName} - ${folderKey}${lineItem ? `-${lineItem}` : ''}`;
+            const zipFolder = zip.folder(folderName);
+            
+            if (zipFolder) {
+                const promises = filteredFiles.map(async (file) => {
+                    try {
+                        const url = StorageService.getDownloadUrl(file.appwriteFileId);
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        zipFolder.file(file.fileName, blob);
+                    } catch (e) {
+                        console.error(`Failed to fetch ${file.fileName}`, e);
+                    }
+                });
+                
+                await Promise.all(promises);
+                const content = await zip.generateAsync({ type: 'blob' });
+                saveAs(content, `${folderName}.zip`);
+                toast.success("Folder downloaded successfully", { id: toastId });
+            }
+        } catch (error: any) {
+            toast.error(`ZIP download failed: ${error.message}`, { id: toastId });
+        } finally {
+            setZipping(false);
+        }
+    };
+
+    const filteredFiles = files.filter(f => f.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredFolders = subFolders.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const isEmpty = !loading && filteredFiles.length === 0 && filteredFolders.length === 0;
+    const totalItems = filteredFolders.length + filteredFiles.length;
 
     return (
         <div
@@ -602,48 +727,66 @@ const FolderContent: React.FC<FolderContentProps> = ({
             ref={dropZoneRef}
         >
             {/* Drag overlay */}
+            <AnimatePresence>
             {dragging && (
-                <div className="absolute inset-0 z-40 flex flex-col items-center justify-center rounded-xl pointer-events-none"
-                    style={{ background: 'rgba(101,154,43,0.08)', border: '2px dashed var(--accent)' }}>
-                    <UploadCloud size={48} style={{ color: 'var(--accent)' }} className="mb-3 animate-bounce" />
-                    <p className="text-base font-bold" style={{ color: 'var(--accent)' }}>Drop files to upload</p>
-                    <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>They'll be added to this folder</p>
-                </div>
+                <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl pointer-events-none"
+                    style={{ background: 'rgba(var(--bg-elevated-rgb, 15,23,42), 0.7)', backdropFilter: 'blur(8px)', border: '2px dashed var(--accent)' }}>
+                    <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: 'spring' }} className="flex flex-col items-center justify-center p-8 rounded-3xl" style={{ background: 'var(--bg-surface)', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+                        <UploadCloud size={64} style={{ color: 'var(--accent)' }} className="mb-4 animate-bounce" />
+                        <p className="text-xl font-black" style={{ color: 'var(--text-heading)' }}>Drop files to upload</p>
+                        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>They will be instantly secured in this audit folder</p>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
 
             {/* Toolbar */}
-            {!isReadOnly && (
-                <div className="shrink-0 px-4 py-2.5 flex items-center gap-2 flex-wrap"
-                    style={{ borderBottom: '1px solid var(--border)' }}>
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 shadow-sm"
-                        style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-secondary))', color: '#fff' }}>
-                        {uploading
-                            ? <><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Uploading…</>
-                            : <><UploadCloud size={15} /> Upload Files</>}
-                    </button>
-                    <input ref={fileInputRef} type="file" multiple className="hidden"
-                        onChange={e => { if (e.target.files?.length) doUpload(Array.from(e.target.files)); }} />
-
-                    {!customFolderId && (
+            <div className="shrink-0 px-4 py-2.5 flex items-center gap-2 flex-wrap"
+                style={{ borderBottom: '1px solid var(--border)' }}>
+                {!isReadOnly && (
+                    <>
                         <button
-                            onClick={() => { setShowNewFolder(true); setNewFolderName(''); }}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-white/8 active:scale-95"
-                            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-mid)', color: 'var(--text-body)' }}>
-                            <FolderPlus size={15} /> New Folder
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 shadow-sm"
+                            style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-secondary))', color: '#fff' }}>
+                            {uploading
+                                ? <><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Uploading…</>
+                                : <><UploadCloud size={15} /> Upload Files</>}
                         </button>
-                    )}
+                        <input ref={fileInputRef} type="file" multiple className="hidden"
+                            onChange={e => { if (e.target.files?.length) doUpload(Array.from(e.target.files)); }} />
 
-                    <div className="flex-1" />
-                    {totalItems > 0 && (
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-                            {totalItems} item{totalItems !== 1 ? 's' : ''}
-                        </span>
-                    )}
-                </div>
-            )}
+                        {!customFolderId && (
+                            <button
+                                onClick={() => { setShowNewFolder(true); setNewFolderName(''); }}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-white/8 active:scale-95"
+                                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-mid)', color: 'var(--text-body)' }}>
+                                <FolderPlus size={15} /> New Folder
+                            </button>
+                        )}
+                    </>
+                )}
+                
+                <button
+                    onClick={handleDownloadZip}
+                    disabled={zipping || filteredFiles.length === 0}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-white/5 active:scale-95 disabled:opacity-60 shadow-sm border"
+                    style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}>
+                    {zipping
+                        ? <><Loader2 size={15} className="animate-spin" /> Zipping…</>
+                        : <><FolderArchive size={15} style={{ color: 'var(--accent)' }} /> Download as ZIP</>}
+                </button>
+
+                <div className="flex-1" />
+                {totalItems > 0 && (
+                    <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+                        {totalItems} item{totalItems !== 1 ? 's' : ''}
+                    </span>
+                )}
+            </div>
 
             {/* New Folder Input */}
             {showNewFolder && (
@@ -654,13 +797,13 @@ const FolderContent: React.FC<FolderContentProps> = ({
                         type="text"
                         value={newFolderName}
                         onChange={e => setNewFolderName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') setShowNewFolder(false); }}
+                        onKeyDown={e => { if (e.key === 'Enter') handleCreateFolder(newFolderName); if (e.key === 'Escape') setShowNewFolder(false); }}
                         placeholder="New folder name…"
                         className="flex-1 max-w-xs px-3 py-1.5 rounded-lg text-sm outline-none"
                         style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-mid)', color: 'var(--text-body)' }}
                         autoFocus
                     />
-                    <button onClick={handleCreateFolder} disabled={savingFolder || !newFolderName.trim()}
+                    <button onClick={() => handleCreateFolder(newFolderName)} disabled={savingFolder || !newFolderName.trim()}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105 disabled:opacity-50"
                         style={{ background: 'var(--accent)', color: '#fff' }}>
                         {savingFolder ? '…' : 'Create'}
@@ -710,42 +853,46 @@ const FolderContent: React.FC<FolderContentProps> = ({
                         </div>
                     </div>
                 ) : isGrid ? (
-                    <div className="p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
-                        {subFolders.map(sf => (
+                    <motion.div layout className="p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                        <AnimatePresence>
+                        {filteredFolders.map(sf => (
                             <SubFolderRow key={sf.id} folder={sf} isGrid
                                 onClick={() => onEnterSubFolder(sf)}
                                 onDelete={() => handleDeleteFolder(sf)} />
                         ))}
-                        {files.map(f => (
+                        {filteredFiles.map(f => (
                             <FileRow key={f.id} file={f} isGrid
                                 isSelected={selectedId === f.id}
                                 onSelect={() => setSelectedId(prev => prev === f.id ? null : f.id)}
                                 onDelete={() => handleDelete(f)}
                                 onEditNotes={() => setEditNotes({ file: f, notes: f.notes || '' })} />
                         ))}
-                    </div>
+                        </AnimatePresence>
+                    </motion.div>
                 ) : (
-                    <div className="px-2 py-1">
-                        {subFolders.length > 0 && (
+                    <motion.div layout className="px-2 py-1">
+                        <AnimatePresence>
+                        {filteredFolders.length > 0 && (
                             <div className="mb-1">
-                                {subFolders.map(sf => (
+                                {filteredFolders.map(sf => (
                                     <SubFolderRow key={sf.id} folder={sf}
                                         onClick={() => onEnterSubFolder(sf)}
                                         onDelete={() => handleDeleteFolder(sf)} />
                                 ))}
                             </div>
                         )}
-                        {subFolders.length > 0 && files.length > 0 && (
+                        {filteredFolders.length > 0 && filteredFiles.length > 0 && (
                             <div className="mx-3 my-1.5 h-px" style={{ background: 'var(--border)' }} />
                         )}
-                        {files.map(f => (
+                        {filteredFiles.map(f => (
                             <FileRow key={f.id} file={f}
                                 isSelected={selectedId === f.id}
                                 onSelect={() => setSelectedId(prev => prev === f.id ? null : f.id)}
                                 onDelete={() => handleDelete(f)}
                                 onEditNotes={() => setEditNotes({ file: f, notes: f.notes || '' })} />
                         ))}
-                    </div>
+                        </AnimatePresence>
+                    </motion.div>
                 )}
             </div>
 
@@ -1064,13 +1211,14 @@ interface AuditWorkspaceProps {
     clientId: string;
     clientName: string;
     isReadOnly?: boolean;
+    initialFY?: string;
 }
 
-export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, clientName, isReadOnly }) => {
+export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, clientName, isReadOnly, initialFY }) => {
     const { user } = useAuth();
-    const { status: wifiStatus, retry: retryWifi } = useOfficeWifiCheck();
+    const { status: wifiStatus, retry: retryWifi, publicIp, lastChecked } = useOfficeWifiCheck();
 
-    const [selectedFY, setSelectedFY] = useState(NEPALI_FISCAL_YEARS[0]);
+    const [selectedFY, setSelectedFY] = useState(initialFY || NEPALI_FISCAL_YEARS[0]);
     const [clientTasks, setClientTasks] = useState<Task[]>([]);
     const [loadingTasks, setLoadingTasks] = useState(false);
     const [selectedTaskId, setSelectedTaskId] = useState<string>('ALL');
@@ -1084,9 +1232,13 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
     const activeKey = currentLevel.kind === 'root' ? null :
         (currentLevel as any).folderKey as AuditFolderKey;
 
+    const [clientData, setClientData] = useState<Client | null>(null);
+    const [loadingClient, setLoadingClient] = useState(true);
+
     useEffect(() => {
         if (!clientId) return;
         setLoadingTasks(true);
+        setLoadingClient(true);
         AuthService.getAllTasks().then(allTasks => {
             const matching = allTasks.filter(t =>
                 (t.clientIds?.includes(clientId) || t.clientId === clientId) &&
@@ -1094,6 +1246,12 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
             );
             setClientTasks(matching);
         }).catch(() => { }).finally(() => setLoadingTasks(false));
+
+        AuthService.getAllClients().then(clients => {
+            const c = clients.find(x => x.id === clientId);
+            setClientData(c || null);
+            setLoadingClient(false);
+        }).catch(() => setLoadingClient(false));
 
         (async () => {
             try {
@@ -1131,18 +1289,32 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
         }]);
     };
 
-    if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN && user.role !== UserRole.STAFF)) {
+    if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.MASTER_ADMIN && user.role !== UserRole.STAFF && user.role !== UserRole.MANAGER)) {
         return <div className="flex items-center justify-center p-10"><p style={{ color: 'var(--text-muted)' }}>Access restricted.</p></div>;
     }
-    if (wifiStatus === 'CHECKING') {
+    
+    if (loadingClient || wifiStatus === 'CHECKING') {
         return (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Verifying office network…</p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{loadingClient ? 'Loading client data…' : 'Verifying office network…'}</p>
             </div>
         );
     }
-    if (wifiStatus === 'REMOTE' || wifiStatus === 'ERROR') return <WifiGate retry={retryWifi} />;
+    
+    if (wifiStatus === 'REMOTE' || wifiStatus === 'ERROR') return <WifiGate retry={retryWifi} publicIp={publicIp} />;
+
+    // RBAC Security Check
+    const permitted = clientData?.permittedStaff || [];
+    const readOnlyList = clientData?.readOnlyStaff || [];
+    
+    if (user.role === UserRole.STAFF) {
+        if (!permitted.includes(user.uid)) {
+            return <SecurityLockScreen clientName={clientData?.name || clientName} />;
+        }
+    }
+    
+    const userIsReadOnly = isReadOnly || (user.role === UserRole.STAFF && readOnlyList.includes(user.uid));
 
     const getNavLabel = (level: NavLevel): string => {
         if (level.kind === 'root') return 'Documents';
@@ -1227,16 +1399,6 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
             {/* ── Body: sidebar + main ── */}
             <div className="flex-1 min-h-0 flex overflow-hidden">
 
-                {/* Left sidebar */}
-                <Sidebar
-                    navStack={navStack}
-                    fileCounts={fileCounts}
-                    folderCounts={folderCounts}
-                    onNavigateRoot={() => setNavStack([{ kind: 'root' }])}
-                    onEnterFolder={enterMainFolder}
-                    activeKey={activeKey}
-                />
-
                 {/* Main content area */}
                 <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
@@ -1270,17 +1432,19 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                     {/* Content */}
                     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                         {currentLevel.kind === 'root' && (
-                            // Root: show 5 audit folders as big drive-style rows
-                            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                {/* Column headers */}
-                                <div className="flex items-center gap-3 px-3 py-2 border-b text-[10px] font-bold uppercase tracking-wider"
-                                    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
-                                    <div className="w-8 shrink-0" />
-                                    <div className="flex-1">Name</div>
-                                    <div className="hidden md:block w-28 shrink-0">Files</div>
-                                    <div className="w-28 shrink-0 text-right">Folders</div>
-                                </div>
-                                <div className="px-2 py-1">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
+                                <div className="space-y-1.5">
+                                    {/* Repository header */}
+                                    <div className="mb-5">
+                                        <h2 className="text-base font-bold" style={{ color: 'var(--text-heading)' }}>
+                                            {clientName}
+                                        </h2>
+                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                            Audit Repository · {selectedFY.replace('-', '/')}
+                                        </p>
+                                    </div>
+
+                                    {/* Folder rows */}
                                     {(Object.keys(AUDIT_FOLDER_STRUCTURE) as AuditFolderKey[]).map(key => {
                                         const f = AUDIT_FOLDER_STRUCTURE[key];
                                         const meta = FOLDER_META[key];
@@ -1288,30 +1452,42 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                                         const fc = fileCounts[key] || 0;
                                         const foc = folderCounts[key] || 0;
                                         return (
-                                            <button
+                                            <motion.button
                                                 key={key}
+                                                whileHover={{ x: 2, borderColor: meta.color }}
+                                                whileTap={{ scale: 0.99 }}
                                                 onClick={() => enterMainFolder(key)}
-                                                onDoubleClick={() => enterMainFolder(key)}
-                                                className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150 hover:bg-white/5">
-                                                <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
-                                                    style={{ background: meta.bg }}>
-                                                    <Icon size={16} style={{ color: meta.color }} />
+                                                className="group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all duration-150"
+                                                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                            >
+                                                <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                                                    style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
+                                                    <Icon size={18} style={{ color: meta.color }} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>{f.label}</p>
-                                                    <p className="text-[11px] truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{f.description}</p>
-                                                </div>
-                                                <div className="hidden md:block w-28 shrink-0">
-                                                    <p className="text-xs" style={{ color: fc > 0 ? meta.color : 'var(--text-muted)' }}>
-                                                        {fc > 0 ? `${fc} file${fc !== 1 ? 's' : ''}` : '—'}
+                                                    <p className="text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>
+                                                        {f.label}
+                                                    </p>
+                                                    <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
+                                                        {f.description}
                                                     </p>
                                                 </div>
-                                                <div className="w-28 shrink-0 text-right">
-                                                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                                        {foc > 0 ? `${foc} folder${foc !== 1 ? 's' : ''}` : '—'}
-                                                    </p>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    {fc > 0 && (
+                                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md"
+                                                            style={{ background: meta.bg, color: meta.color }}>
+                                                            {fc} file{fc !== 1 ? 's' : ''}
+                                                        </span>
+                                                    )}
+                                                    {foc > 0 && (
+                                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md"
+                                                            style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+                                                            {foc} folder{foc !== 1 ? 's' : ''}
+                                                        </span>
+                                                    )}
+                                                    <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" style={{ color: 'var(--text-muted)' }} />
                                                 </div>
-                                            </button>
+                                            </motion.button>
                                         );
                                     })}
                                 </div>
@@ -1344,7 +1520,8 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                                     userId={user.uid} userName={user.displayName}
                                     taskId={selectedTaskId !== 'ALL' ? selectedTaskId : undefined}
                                     onEnterSubFolder={enterSubFolder}
-                                    isGrid={isGrid} isReadOnly={isReadOnly}
+                                    isGrid={isGrid} isReadOnly={userIsReadOnly}
+                                    searchQuery={searchQuery}
                                 />
                             </>
                         )}
@@ -1359,7 +1536,8 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                                 userId={user.uid} userName={user.displayName}
                                 taskId={selectedTaskId !== 'ALL' ? selectedTaskId : undefined}
                                 onEnterSubFolder={enterSubFolder}
-                                isGrid={isGrid} isReadOnly={isReadOnly}
+                                isGrid={isGrid} isReadOnly={userIsReadOnly}
+                                searchQuery={searchQuery}
                             />
                         )}
 
@@ -1373,7 +1551,8 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                                 userId={user.uid} userName={user.displayName}
                                 taskId={selectedTaskId !== 'ALL' ? selectedTaskId : undefined}
                                 onEnterSubFolder={() => {}}
-                                isGrid={isGrid} isReadOnly={isReadOnly}
+                                isGrid={isGrid} isReadOnly={userIsReadOnly}
+                                searchQuery={searchQuery}
                             />
                         )}
                     </div>

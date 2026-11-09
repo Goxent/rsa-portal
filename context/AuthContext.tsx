@@ -77,17 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             });
 
-            // 3. Admin background tasks
-            if (AuthService.isAdmin(userData.role)) {
-                const today = new Date().toISOString().split('T')[0];
-                const lastCleanup = AuthService.getLastAuditCleanup();
-                if (lastCleanup !== today) {
-                    AuthService.cleanupOldAuditLogs().then(() => {
-                        AuthService.setLastAuditCleanup(today);
-                    }).catch(console.error);
-                }
-            }
-            
+            // 3. Admin background tasks (Audit logs are retained for 7 years and handled by server cron)
             AuthService.cleanupOldNotifications(firebaseUser.uid, AuthService.isAdmin(userData.role)).catch(console.error);
           }
         } catch (err) {

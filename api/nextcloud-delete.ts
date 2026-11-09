@@ -1,7 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import verifyFirebaseToken from './_verifyFirebaseToken.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const allowedOrigin = process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-secret');
 
@@ -14,14 +17,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Lightweight secret-based auth (no firebase-admin needed)
-    const secret = process.env.API_SECRET;
-    if (secret) {
-        const provided = req.headers['x-api-secret'] || req.headers.authorization?.replace('Bearer ', '');
-        if (provided !== secret) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-    }
+    // S3 Fix: Require Firebase token authentication
+    const caller = await verifyFirebaseToken(req, res);
+    if (!caller) return;
 
     try {
         const { fileId } = req.body;

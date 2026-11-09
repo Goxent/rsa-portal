@@ -1,5 +1,5 @@
 import { collection, addDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 
 export enum AuditAction {
     // User Management
@@ -76,8 +76,12 @@ export interface AuditLog {
  */
 export const createAuditLog = async (log: Omit<AuditLog, 'timestamp'>) => {
     try {
+        const callerUid = auth.currentUser?.uid;
+        const safeUserId = callerUid || log.userId;
         await addDoc(collection(db, 'auditLogs'), {
             ...log,
+            userId: safeUserId,
+            actorId: safeUserId,
             timestamp: new Date().toISOString(),
             ipAddress: 'N/A', // Could be enhanced with IP detection
         });

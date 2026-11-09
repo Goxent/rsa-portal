@@ -15,6 +15,7 @@ import { AuthService } from '../services/firebase';
 import { toast } from 'react-hot-toast';
 import StaffSelect from '../components/StaffSelect';
 import { SkeletonCard } from '../components/common/SkeletonCard';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { getAvatarColor, getInitials } from '../utils/userUtils';
 
 import { INITIAL_CLIENTS } from '../constants/initialClients';
@@ -24,6 +25,11 @@ const ClientsPage: React.FC = () => {
     const navigate = useNavigate();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
     const isStaff = user?.role === UserRole.STAFF;
+
+    React.useEffect(() => {
+        document.title = 'Clients — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
 
     // Data State
     const [clients, setClients] = useState<Client[]>([]);
@@ -42,6 +48,17 @@ const ClientsPage: React.FC = () => {
     const [permissionSaving, setPermissionSaving] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
+        onConfirm?: () => void;
+        confirmLabel?: string;
+        cancelLabel?: string;
+        variant?: 'danger' | 'warning' | 'info';
+    }>({
+        open: false, title: '', message: '', variant: 'danger'
+    });
 
     // Form State
     const initialFormState: Partial<Client> = {
@@ -86,20 +103,27 @@ const ClientsPage: React.FC = () => {
         }
     };
 
-    const handleSeedClients = async () => {
-        if (!confirm(`Are you sure you want to seed ${INITIAL_CLIENTS.length} clients from the preset list? Duplicates will be skipped.`)) return;
-
-        setIsSeeding(true);
-        try {
-            const result = await AuthService.seedClients(INITIAL_CLIENTS);
-            toast.success(`Seeding Complete! Added: ${result.added}, Skipped: ${result.skipped}`);
-            loadData();
-        } catch (error) {
-            console.error("Seeding failed:", error);
-            toast.error("Failed to seed clients");
-        } finally {
-            setIsSeeding(false);
-        }
+    const handleSeedClients = () => {
+        setConfirmModal({
+            open: true,
+            title: 'Seed Client Data',
+            message: `Are you sure you want to seed ${INITIAL_CLIENTS.length} clients from the preset list? Duplicates will be skipped.`,
+            confirmLabel: 'Seed Clients',
+            variant: 'warning',
+            onConfirm: async () => {
+                setIsSeeding(true);
+                try {
+                    const result = await AuthService.seedClients(INITIAL_CLIENTS);
+                    toast.success(`Seeding Complete! Added: ${result.added}, Skipped: ${result.skipped}`);
+                    loadData();
+                } catch (error) {
+                    console.error("Seeding failed:", error);
+                    toast.error("Failed to seed clients");
+                } finally {
+                    setIsSeeding(false);
+                }
+            }
+        });
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -168,15 +192,23 @@ const ClientsPage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this client?')) return;
-        try {
-            await AuthService.deleteClient(id);
-            toast.success('Client deleted');
-            loadData();
-        } catch (error) {
-            toast.error('Failed to delete');
-        }
+    const handleDelete = (id: string) => {
+        setConfirmModal({
+            open: true,
+            title: 'Delete Client',
+            message: 'Are you sure you want to delete this client? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            variant: 'danger',
+            onConfirm: async () => {
+                try {
+                    await AuthService.deleteClient(id);
+                    toast.success('Client deleted');
+                    loadData();
+                } catch (error) {
+                    toast.error('Failed to delete');
+                }
+            }
+        });
     };
 
     const handleExport = async (type: 'pdf' | 'excel') => {
@@ -386,14 +418,14 @@ const ClientsPage: React.FC = () => {
                             <button
                                 onClick={() => handleExport('pdf')}
                                 className="p-3 md:p-2.5 rounded-xl text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-rose-900/10"
-                                title="Export PDF"
+                                title="Export PDF" aria-label="Export PDF"
                             >
                                 <FileText size={20} />
                             </button>
                             <button
                                 onClick={() => handleExport('excel')}
                                 className="p-3 md:p-2.5 rounded-xl text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-/10"
-                                title="Export Excel"
+                                title="Export Excel" aria-label="Export to Excel"
                             >
                                 <FileSpreadsheet size={20} />
                             </button>
@@ -542,7 +574,7 @@ const ClientsPage: React.FC = () => {
                                         </div>
                                     </div>
                                     {(canEditClient(client) || isAdmin) && (
-                                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-1 transform translate-x-2 group-hover:translate-x-0">
+                                        <div className="opacity-70 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-1">
                                             {canEditClient(client) && (
                                                 <button
                                                     onClick={() => handleEdit(client)}
@@ -916,6 +948,19 @@ const ClientsPage: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmLabel={confirmModal.confirmLabel}
+                variant={confirmModal.variant}
+                onConfirm={() => {
+                    confirmModal.onConfirm?.();
+                    setConfirmModal(prev => ({ ...prev, open: false }));
+                }}
+                onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+            />
         </div>
         </div>
     );

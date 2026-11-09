@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
-    LayoutGrid, List as ListIcon, UserCircle2, ChevronDown, Check, Sparkles, Plus, Filter, Search,
+    LayoutGrid, List as ListIcon, UserCircle2, UserCheck, ChevronDown, Check, Sparkles, Plus, Filter, Search,
     Trash2, X, FileSpreadsheet, FileText, Activity, ArrowRight, GanttChartSquare, Layers
 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -59,6 +59,10 @@ const PHASE_LABELS = {
 };
 
 const TasksPage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'Tasks â€” RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
 
     // Fetch Compliance Events for Modal
     const { data: complianceEvents = [] } = useQuery({
@@ -179,6 +183,7 @@ const TasksPage: React.FC = () => {
     // Bulk Actions State
     const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
     const [showBulkAssignMenu, setShowBulkAssignMenu] = useState(false);
+    const [bulkAssignMode, setBulkAssignMode] = useState<'REPLACE' | 'ADD'>('REPLACE');
     const [showWorkflowMenu, setShowWorkflowMenu] = useState(false);
     const workflowMenuRef = useRef<HTMLDivElement>(null);
     const statusMenuRef = useRef<HTMLDivElement>(null);
@@ -410,7 +415,7 @@ const TasksPage: React.FC = () => {
     const [formError, setFormError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
-    // Two useEffects syncing the same searchParam.staff are redundant — removed duplicate.
+    // Two useEffects syncing the same searchParam.staff are redundant â€” removed duplicate.
     // Initial query param check
     useEffect(() => {
         const staffParam = searchParams.get('staff');
@@ -908,7 +913,7 @@ const TasksPage: React.FC = () => {
             doc.setPage(i);
             doc.setFontSize(7);
             doc.setTextColor(150, 160, 175);
-            doc.text('R. SAPKOTA & ASSOCIATES — Confidential', 14, doc.internal.pageSize.height - 8);
+            doc.text('R. SAPKOTA & ASSOCIATES â€” Confidential', 14, doc.internal.pageSize.height - 8);
             doc.text(`Page ${i} of ${pageCount} `, 196, doc.internal.pageSize.height - 8, { align: 'right' });
         }
 
@@ -1115,7 +1120,7 @@ const TasksPage: React.FC = () => {
             if (task.status === TaskStatus.COMPLETED &&
                 task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) {
                 if (!isAdmin) {
-                    toast.error('Governance Lockdown: Only Admins can reopen a fully completed assignment in the final phase.', { icon: '🔒' });
+                    toast.error('Governance Lockdown: Only Admins can reopen a fully completed assignment in the final phase.', { icon: 'ðŸ”’' });
                     return;
                 }
             }
@@ -1123,7 +1128,7 @@ const TasksPage: React.FC = () => {
             const updates: any = {};
             if (task.auditPhase !== newPhase) {
 
-                // ── Compliance Gate: Check for Mandatory Evidence before allowing Phase change ──
+                // â”€â”€ Compliance Gate: Check for Mandatory Evidence before allowing Phase change â”€â”€
                 const currentOrder = PHASE_ORDER[task.auditPhase as AuditPhase || AuditPhase.ONBOARDING];
                 const nextOrder = PHASE_ORDER[newPhase as AuditPhase];
 
@@ -1135,7 +1140,7 @@ const TasksPage: React.FC = () => {
                     );
 
                     if (missingEvidence.length > 0) {
-                        toast.error(`Compliance Gate: Mandatory evidence missing for ${missingEvidence.length} item(s). Transition to ${PHASE_LABELS[newPhase as AuditPhase]} blocked.`, { icon: '🛑' });
+                        toast.error(`Compliance Gate: Mandatory evidence missing for ${missingEvidence.length} item(s). Transition to ${PHASE_LABELS[newPhase as AuditPhase]} blocked.`, { icon: 'ðŸ›‘' });
                         return; // Block the drag update
                     }
                 }
@@ -1185,7 +1190,7 @@ const TasksPage: React.FC = () => {
                 }
             }
             if (task.status !== newStatus) {
-                // ── Compliance Gate: Interactive Decision Modal ──
+                // â”€â”€ Compliance Gate: Interactive Decision Modal â”€â”€
                 if (newStatus === TaskStatus.COMPLETED) {
                     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
                     const isTL = user?.uid === task.teamLeaderId;
@@ -1343,142 +1348,94 @@ const TasksPage: React.FC = () => {
     return (
         <div className="relative h-full w-full flex flex-col overflow-hidden bg-surface">
             {/* --- REFINED UNIFIED TOOLBAR --- */}
-            <header className="flex-none bg-surface backdrop-blur-xl border-b border-border relative z-40 transition-colors duration-300">
-                <div className="flex flex-col border-b border-border/50">
-                    <div className="flex flex-wrap items-center gap-3 px-4 py-3 md:flex-nowrap">
+            <header className="flex-none bg-surface/90 backdrop-blur-md border-b border-border relative z-40 transition-colors duration-200">
+                <div className="flex flex-col">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 md:flex-nowrap">
 
-                        {/* LEFT: View Mode Toggle */}
-                        <div
-                            className="flex-shrink-0 inline-flex"
-                            style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: '3px', border: '1px solid var(--border)' }}
-                        >
-                            {([
-                                { id: 'LIST', label: 'List', Icon: ListIcon, desktopOnly: false },
-                                { id: 'KANBAN', label: 'Board', Icon: LayoutGrid, desktopOnly: true },
-                                { id: 'TIMELINE', label: 'Timeline', Icon: GanttChartSquare, desktopOnly: true },
-                            ] as const).map(({ id, label, Icon, desktopOnly }) => {
-                                if (desktopOnly && isMobile) return null;
-                                const isActive = viewMode === id;
-                                return (
-                                    <button
-                                        key={id}
-                                        onClick={() => setViewMode(id as any)}
-                                        className="flex items-center gap-1.5 transition-all"
-                                        style={{
-                                            height: '30px',
-                                            padding: '0 0.75rem',
-                                            fontSize: '0.8125rem',
-                                            fontWeight: isActive ? 600 : 400,
-                                            borderRadius: 'var(--radius-sm)',
-                                            color: isActive ? 'var(--text-heading)' : 'var(--text-muted)',
-                                            background: isActive ? 'var(--bg-secondary)' : 'transparent',
-                                            boxShadow: isActive ? 'var(--shadow-card)' : 'none',
-                                        }}
-                                    >
-                                        <Icon size={13} />
-                                        {label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-
-                        {/* CENTER: Search & Workflow Dropdown */}
-                        <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[400px] order-3 md:order-2">
-                            {/* NEW: Workflow Selector Dropdown */}
-                            <div className="relative" ref={workflowMenuRef}>
-                                <button
-                                    onClick={() => setShowWorkflowMenu(!showWorkflowMenu)}
-                                    className={`h-[38px] px-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${filterTaskType !== 'ALL'
-                                            ? 'bg-accent/10 border-accent/40 text-accent'
-                                            : 'bg-secondary border-border text-muted hover:text-heading hover:border-border-mid'
-                                        }`}
-                                >
-                                    <Layers size={13} className={filterTaskType !== 'ALL' ? 'text-accent' : 'text-muted'} />
-                                    <span className="max-w-[120px] truncate">
-                                        {filterTaskType === 'ALL' ? 'Workflows' : filterTaskType.replace(/_/g, ' ')}
-                                    </span>
-                                    <ChevronDown size={11} className={`transition-transform duration-300 ${showWorkflowMenu ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                <AnimatePresence>
-                                    {showWorkflowMenu && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 8 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 8 }}
-                                            className="absolute top-full left-0 mt-2 w-64 border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl"
-                                            style={{ background: 'var(--bg-secondary)' }}
-                                        >
-                                            <div className="p-2 space-y-0.5">
-                                                <button
-                                                    onClick={() => { setFilterTaskType('ALL'); setShowWorkflowMenu(false); }}
-                                                    className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${filterTaskType === 'ALL' ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-surface hover:text-heading'}`}
-                                                >
-                                                    All Workflows
-                                                    {filterTaskType === 'ALL' && <Check size={12} />}
-                                                </button>
-                                                <div className="h-px bg-border my-1 mx-2" />
-                                                {Object.values(TaskType).filter(t => t !== TaskType.OTHER).map((type, idx) => {
-                                                    const isSelected = filterTaskType === type;
-                                                    const count = tasks.filter(t => t.taskType === type).length;
-                                                    return (
-                                                        <button
-                                                            key={type || `type-${idx}`}
-                                                            onClick={() => { setFilterTaskType(type); setShowWorkflowMenu(false); }}
-                                                            className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold text-left transition-all flex items-center justify-between ${isSelected ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-surface hover:text-heading'}`}
-                                                        >
-                                                            <div className="flex items-center gap-2">
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-accent' : 'bg-border-mid'}`} />
-                                                                {type.replace(/_/g, ' ')}
-                                                            </div>
-                                                            {count > 0 && <span className="text-[9px] opacity-40">{count}</span>}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                            
-                            <button
-                                onClick={handleOpenCreate}
-                                disabled={!canCreateTask}
-                                className="h-[38px] px-4 md:px-5 bg-accent hover:bg-accent-light text-white rounded-xl text-[10px] font-black uppercase tracking-[0.14em] flex items-center gap-2 transition-all shadow-accent-glow disabled:opacity-50 active:scale-95 whitespace-nowrap"
+                        {/* LEFT: View Mode Toggle & Quick Action Pills */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <div
+                                className="inline-flex items-center p-0.5 rounded-lg border border-border bg-secondary/80 shadow-sm"
                             >
-                                <Plus size={16} strokeWidth={3} />
-                                <span className="hidden sm:inline">Create Assignment</span>
+                                {([
+                                    { id: 'LIST', label: 'List', Icon: ListIcon, desktopOnly: false },
+                                    { id: 'KANBAN', label: 'Board', Icon: LayoutGrid, desktopOnly: true },
+                                    { id: 'TIMELINE', label: 'Timeline', Icon: GanttChartSquare, desktopOnly: true },
+                                ] as const).map(({ id, label, Icon, desktopOnly }) => {
+                                    if (desktopOnly && isMobile) return null;
+                                    const isActive = viewMode === id;
+                                    return (
+                                        <button
+                                            key={id}
+                                            onClick={() => setViewMode(id as any)}
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                                isActive
+                                                    ? 'bg-surface text-heading shadow-xs font-bold border border-border/60'
+                                                    : 'text-muted hover:text-heading hover:bg-surface/50'
+                                            }`}
+                                        >
+                                            <Icon size={13} />
+                                            <span>{label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Quick Filter: My Work */}
+                            <button
+                                onClick={() => setFilterStaff(filterStaff === user?.uid ? 'ALL' : (user?.uid || 'ALL'))}
+                                title="Filter assignments assigned to me"
+                                className={`h-[30px] px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all border ${
+                                    filterStaff === user?.uid
+                                        ? 'bg-accent/15 border-accent/40 text-accent font-semibold shadow-xs'
+                                        : 'bg-secondary/70 border-border text-muted hover:text-heading hover:bg-secondary'
+                                }`}
+                            >
+                                <UserCheck size={13} />
+                                <span>My Work</span>
                             </button>
 
-                            <div className="flex items-center gap-2">
-                                {activeFilterCount > 0 && (
-                                    <button
-                                        onClick={() => updateFilters({
-                                            status: null, priority: null, client: null, staff: null,
-                                            auditor: null, type: null, search: '', start: null, end: null
-                                        })}
-                                        className="h-[38px] px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
-                                    >
-                                        Clear ({activeFilterCount})
-                                    </button>
+                            {/* Quick Filter: In Review */}
+                            <button
+                                onClick={() => setFilterStatus(filterStatus === TaskStatus.UNDER_REVIEW ? 'ALL' : TaskStatus.UNDER_REVIEW)}
+                                title="Filter assignments pending review"
+                                className={`h-[30px] px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all border ${
+                                    filterStatus === TaskStatus.UNDER_REVIEW
+                                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-400 font-semibold shadow-xs'
+                                        : 'bg-secondary/70 border-border text-muted hover:text-heading hover:bg-secondary'
+                                }`}
+                            >
+                                <ShieldCheck size={13} />
+                                <span>In Review</span>
+                                {statusStats.UNDER_REVIEW > 0 && (
+                                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300 font-bold leading-none">
+                                        {statusStats.UNDER_REVIEW}
+                                    </span>
                                 )}
-
-                            </div>
-
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors" size={13} />
-                                <input
-                                    type="text"
-                                    placeholder="Search assignments, clients, or IDs..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full h-[38px] bg-secondary border border-border hover:border-accent/30 rounded-xl pl-9 pr-3 text-[11px] text-heading placeholder:text-muted focus:outline-none focus:border-accent/50 focus:bg-surface transition-all shadow-sm"
-                                />
-                            </div>
+                            </button>
                         </div>
 
-                        {/* Bulk Actions — contextual bar */}
+                        {/* CENTER: Search Bar */}
+                        <div className="relative flex-1 min-w-[180px] max-w-[340px] group order-3 md:order-2">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors" size={13} />
+                            <input
+                                type="text"
+                                placeholder="Search assignments, clients, or IDs..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full h-[32px] bg-secondary/80 border border-border hover:border-accent/30 rounded-lg pl-8 pr-7 text-xs text-heading placeholder:text-muted focus:outline-none focus:border-accent/50 focus:bg-surface transition-all shadow-xs"
+                            />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-heading p-0.5 transition-colors"
+                                >
+                                    <X size={12} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Bulk Actions Contextual Bar */}
                         <AnimatePresence>
                             {selectedTaskIds.length > 0 && (
                                 <motion.div
@@ -1486,22 +1443,22 @@ const TasksPage: React.FC = () => {
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: isMobile ? 20 : 0, scale: 0.95 }}
                                     className={`${isMobile
-                                            ? 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 bg-slate-900/90 border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex-row'
-                                            : 'flex items-center gap-2 flex-shrink-0 bg-accent/10 border border-accent/30 rounded-xl px-2 py-1 shadow-accent-glow'
+                                            ? 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 bg-slate-900/90 border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]'
+                                            : 'flex items-center gap-2 flex-shrink-0 bg-accent/10 border border-accent/30 rounded-lg px-2 py-1 shadow-xs'
                                         } flex items-center gap-2 backdrop-blur-xl transition-all`}
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-[10px] font-black tabular-nums px-2 py-0.5 rounded-lg ${isMobile ? 'bg-accent/20 text-accent' : 'bg-accent/20 text-accent'}`}>
-                                            {selectedTaskIds.length} <span className="hidden sm:inline">Selected</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[11px] font-bold text-accent px-1.5 py-0.5 rounded bg-accent/20">
+                                            {selectedTaskIds.length} Selected
                                         </span>
-                                        <div className="w-px h-4 bg-accent/20" />
+                                        <div className="w-px h-3.5 bg-accent/30" />
                                     </div>
 
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1">
                                         <div className="relative" ref={statusMenuRef}>
                                             <button
                                                 onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
-                                                className={`h-[28px] px-2.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all ${isMobile ? 'bg-white/5 text-indigo-300' : 'hover:bg-white/5 text-indigo-300'}`}
+                                                className="h-[26px] px-2 rounded-md text-[11px] font-semibold flex items-center gap-1 text-indigo-300 hover:bg-white/5 transition-colors"
                                             >
                                                 Status <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkStatusMenu ? 'rotate-180' : ''}`} />
                                             </button>
@@ -1511,7 +1468,7 @@ const TasksPage: React.FC = () => {
                                                         initial={{ opacity: 0, y: isMobile ? -8 : 8 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         exit={{ opacity: 0, y: isMobile ? -8 : 8 }}
-                                                        className={`absolute ${isMobile ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-44 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden py-1.5 backdrop-blur-xl`}
+                                                        className={`absolute ${isMobile ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-44 bg-secondary border border-border rounded-xl shadow-xl z-[100] overflow-hidden py-1 backdrop-blur-xl`}
                                                     >
                                                         {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.ARCHIVED].filter(s => {
                                                             if (s !== TaskStatus.ARCHIVED) return true;
@@ -1520,10 +1477,9 @@ const TasksPage: React.FC = () => {
                                                             <button
                                                                 key={status}
                                                                 onClick={() => { handleBulkStatusChange(status as TaskStatus); setShowBulkStatusMenu(false); }}
-                                                                className="w-full px-4 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-between group"
+                                                                className="w-full px-3 py-1.5 text-left text-xs font-medium text-muted hover:bg-surface hover:text-heading transition-colors flex items-center justify-between"
                                                             >
                                                                 {status.replace(/_/g, ' ')}
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${status === TaskStatus.ARCHIVED ? 'bg-purple-500/40 group-hover:bg-purple-400' : 'bg-indigo-500/40 group-hover:bg-indigo-400'}`} />
                                                             </button>
                                                         ))}
                                                     </motion.div>
@@ -1534,7 +1490,7 @@ const TasksPage: React.FC = () => {
                                         <div className="relative" ref={assignMenuRef}>
                                             <button
                                                 onClick={() => setShowBulkAssignMenu(!showBulkAssignMenu)}
-                                                className={`h-[28px] px-2.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all ${isMobile ? 'bg-white/5 text-cyan-400' : 'hover:bg-white/5 text-cyan-400'}`}
+                                                className="h-[26px] px-2 rounded-md text-[11px] font-semibold flex items-center gap-1 text-cyan-300 hover:bg-white/5 transition-colors"
                                             >
                                                 Assign <ChevronDown size={10} className={`transition-transform duration-200 ${showBulkAssignMenu ? 'rotate-180' : ''}`} />
                                             </button>
@@ -1544,19 +1500,19 @@ const TasksPage: React.FC = () => {
                                                         initial={{ opacity: 0, y: isMobile ? -8 : 8 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         exit={{ opacity: 0, y: isMobile ? -8 : 8 }}
-                                                        className={`absolute ${isMobile ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-52 bg-secondary border border-border rounded-2xl shadow-2xl z-[100] overflow-hidden backdrop-blur-xl`}
+                                                        className={`absolute ${isMobile ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-52 bg-secondary border border-border rounded-xl shadow-xl z-[100] overflow-hidden backdrop-blur-xl`}
                                                     >
-                                                        <div className="px-4 py-2.5 border-b border-slate-100 dark:border-white/[0.05] bg-slate-50 dark:bg-white/[0.02]">
-                                                            <p className="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest text-center">Assign to Team</p>
+                                                        <div className="px-3 py-1.5 border-b border-border bg-surface/50">
+                                                            <p className="text-[9px] font-bold text-muted uppercase tracking-wider text-center">Assign to Team</p>
                                                         </div>
-                                                        <div className="max-h-64 overflow-y-auto custom-scrollbar p-1">
+                                                        <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
                                                             {usersList.map((st, idx) => (
                                                                 <button
                                                                     key={st.uid || `staff-${idx}`}
-                                                                    onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
-                                                                    className="w-full px-3 py-2 text-left text-[11px] font-semibold text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-indigo-600 dark:hover:text-white transition-colors rounded-xl flex items-center gap-2.5"
+                                                                    onClick={() => { handleBulkReassign(st.uid, bulkAssignMode); setShowBulkAssignMenu(false); }}
+                                                                    className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-muted hover:bg-surface hover:text-heading transition-colors rounded-lg flex items-center gap-2"
                                                                 >
-                                                                    <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center text-[9px] font-black text-indigo-400 border border-indigo-500/20">
+                                                                    <div className="w-5 h-5 rounded bg-accent/10 flex items-center justify-center text-[9px] font-bold text-accent">
                                                                         {getInitials(st.displayName)}
                                                                     </div>
                                                                     <span className="truncate">{st.displayName}</span>
@@ -1568,21 +1524,21 @@ const TasksPage: React.FC = () => {
                                             </AnimatePresence>
                                         </div>
 
-                                        <div className="w-px h-4 bg-indigo-500/20" />
+                                        <div className="w-px h-3.5 bg-accent/20 mx-0.5" />
 
                                         <button
                                             onClick={handleBulkDelete}
                                             title="Delete selected tasks"
-                                            className="w-[28px] h-[28px] flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all"
+                                            className="w-[26px] h-[26px] flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-md transition-colors"
                                         >
-                                            <Trash2 size={13} />
+                                            <Trash2 size={12} />
                                         </button>
 
                                         <button
                                             onClick={() => setSelectedTaskIds([])}
-                                            className="w-[28px] h-[28px] flex items-center justify-center bg-white/5 hover:bg-white/10 text-gray-400 rounded-lg transition-all"
+                                            className="w-[26px] h-[26px] flex items-center justify-center text-muted hover:text-heading hover:bg-surface rounded-md transition-colors"
                                         >
-                                            <X size={13} />
+                                            <X size={12} />
                                         </button>
                                     </div>
                                 </motion.div>
@@ -1590,43 +1546,108 @@ const TasksPage: React.FC = () => {
                         </AnimatePresence>
 
                         {/* RIGHT ACTIONS */}
-                        <div className="flex items-center gap-2 ml-auto order-2 md:order-3">
-                            {/* Templates */}
+                        <div className="flex items-center gap-2 ml-auto order-2 md:order-3 flex-shrink-0">
+                            {/* Workflow Selector */}
+                            <div className="relative" ref={workflowMenuRef}>
+                                <button
+                                    onClick={() => setShowWorkflowMenu(!showWorkflowMenu)}
+                                    className={`h-[32px] px-3 flex items-center gap-1.5 text-xs font-medium rounded-lg border transition-all ${filterTaskType !== 'ALL'
+                                            ? 'bg-accent/15 border-accent/40 text-accent font-semibold'
+                                            : 'bg-secondary/70 border-border text-muted hover:text-heading hover:border-border-mid'
+                                        }`}
+                                >
+                                    <Layers size={13} className={filterTaskType !== 'ALL' ? 'text-accent' : 'text-muted'} />
+                                    <span className="max-w-[110px] truncate">
+                                        {filterTaskType === 'ALL' ? 'Workflows' : filterTaskType.replace(/_/g, ' ')}
+                                    </span>
+                                    <ChevronDown size={11} className={`transition-transform duration-200 ${showWorkflowMenu ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {showWorkflowMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 6 }}
+                                            className="absolute top-full right-0 mt-1.5 w-60 border border-border rounded-xl shadow-xl z-[100] overflow-hidden backdrop-blur-xl bg-secondary"
+                                        >
+                                            <div className="p-1.5 space-y-0.5">
+                                                <button
+                                                    onClick={() => { setFilterTaskType('ALL'); setShowWorkflowMenu(false); }}
+                                                    className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors flex items-center justify-between ${filterTaskType === 'ALL' ? 'bg-accent/15 text-accent font-semibold' : 'text-muted hover:bg-surface hover:text-heading'}`}
+                                                >
+                                                    All Workflows
+                                                    {filterTaskType === 'ALL' && <Check size={12} />}
+                                                </button>
+                                                <div className="h-px bg-border my-1 mx-1" />
+                                                {Object.values(TaskType).filter(t => t !== TaskType.OTHER).map((type, idx) => {
+                                                    const isSelected = filterTaskType === type;
+                                                    const count = tasks.filter(t => t.taskType === type).length;
+                                                    return (
+                                                        <button
+                                                            key={type || `type-${idx}`}
+                                                            onClick={() => { setFilterTaskType(type); setShowWorkflowMenu(false); }}
+                                                            className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors flex items-center justify-between ${isSelected ? 'bg-accent/15 text-accent font-semibold' : 'text-muted hover:bg-surface hover:text-heading'}`}
+                                                        >
+                                                            <div className="flex items-center gap-2 truncate">
+                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSelected ? 'bg-accent' : 'bg-border-mid'}`} />
+                                                                <span className="truncate">{type.replace(/_/g, ' ')}</span>
+                                                            </div>
+                                                            {count > 0 && <span className="text-[10px] text-muted opacity-60 ml-2">{count}</span>}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            {/* Filters Toggle Button */}
+                            <button
+                                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                                className={`h-[32px] px-3 flex items-center gap-1.5 rounded-lg border text-xs font-medium transition-all ${showFilterPanel || activeFilterCount > 0
+                                        ? 'bg-accent/15 border-accent/40 text-accent font-semibold shadow-xs'
+                                        : 'bg-secondary/70 border-border text-muted hover:text-heading hover:border-border-mid'
+                                    }`}
+                            >
+                                <Filter size={13} />
+                                <span className="hidden sm:inline">Filters</span>
+                                {activeFilterCount > 0 && (
+                                    <span className="w-4 h-4 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center ml-0.5 leading-none">
+                                        {activeFilterCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Presets */}
                             <button
                                 onClick={() => setIsTemplateModalOpen(true)}
                                 disabled={!canCreateTask}
-                                className="h-[38px] px-3 md:px-4 bg-secondary border border-border rounded-xl flex items-center gap-2 text-[10px] font-black tracking-widest text-muted hover:text-heading transition-all disabled:opacity-50"
+                                title="Manage Task Templates"
+                                className="h-[32px] px-2.5 bg-secondary/70 border border-border rounded-lg flex items-center gap-1.5 text-xs font-medium text-muted hover:text-heading hover:border-border-mid transition-all disabled:opacity-50"
                             >
                                 <Sparkles size={13} className="text-accent" />
-                                <span className="hidden sm:inline">PRESETS</span>
+                                <span className="hidden lg:inline">Presets</span>
                             </button>
 
                             {/* Export Group */}
                             {!isStaff && (
-                                <div className="flex items-center gap-1 bg-secondary border border-border p-1 rounded-xl h-[38px]">
-                                    <button onClick={handleExportPDF} title="Export PDF" className="w-[30px] h-full flex items-center justify-center hover:bg-status-halted/10 text-status-halted rounded-lg transition-all"><FileText size={14} /></button>
-                                    <button onClick={() => handleExportExcel()} title="Export Excel" className="w-[30px] h-full flex items-center justify-center hover:bg-status-completed/10 text-status-completed rounded-lg transition-all"><FileSpreadsheet size={14} /></button>
+                                <div className="hidden xl:flex items-center gap-0.5 bg-secondary/70 border border-border p-0.5 rounded-lg h-[32px]">
+                                    <button onClick={handleExportPDF} title="Export PDF Summary" className="w-7 h-full flex items-center justify-center hover:bg-surface text-muted hover:text-rose-400 rounded transition-colors"><FileText size={13} /></button>
+                                    <button onClick={() => handleExportExcel()} title="Export Excel Workbook" className="w-7 h-full flex items-center justify-center hover:bg-surface text-muted hover:text-emerald-400 rounded transition-colors"><FileSpreadsheet size={13} /></button>
                                 </div>
                             )}
 
-                            {/* Filters Button */}
+                            {/* Create Assignment CTA */}
                             <button
-                                onClick={() => setShowFilterPanel(!showFilterPanel)}
-                                className={`h-[38px] px-3 md:px-4 flex items-center gap-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${showFilterPanel || activeFilterCount > 0
-                                        ? 'bg-accent/15 border-accent/40 text-accent shadow-accent-glow'
-                                        : 'bg-secondary border-border text-muted hover:text-heading'
-                                    }`}
+                                onClick={handleOpenCreate}
+                                disabled={!canCreateTask}
+                                className="h-[32px] px-3.5 bg-accent hover:opacity-90 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50 active:scale-95 whitespace-nowrap"
                             >
-                                <Filter size={13} className={activeFilterCount > 0 ? 'animate-pulse' : ''} />
-                                <span className="hidden sm:inline">FILTERS</span>
-                                {activeFilterCount > 0 && (
-                                    <div className="w-4 h-4 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center ml-1">
-                                        {activeFilterCount}
-                                    </div>
-                                )}
+                                <Plus size={14} strokeWidth={2.5} />
+                                <span className="hidden sm:inline">New Assignment</span>
                             </button>
-
-
                         </div>
                     </div>
                 </div>
@@ -1685,7 +1706,7 @@ const TasksPage: React.FC = () => {
             )}
 
 
-            {/* Filter Popover Panel — slides down when Filters button is clicked */}
+            {/* Filter Popover Panel â€” slides down when Filters button is clicked */}
             <AnimatePresence>
                 {showFilterPanel && (
                     <motion.div
@@ -1775,12 +1796,12 @@ const TasksPage: React.FC = () => {
                 )}
             </AnimatePresence>
 
-            {/* Active Filter Pills — slim conditional row */}
+            {/* Active Filter Pills â€” slim conditional row */}
             {(searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' || filterStaff !== 'ALL' || filterClient !== 'ALL' || filterAuditor !== 'ALL' || (dateRange.start || dateRange.end)) && (
                 <div className="flex items-center gap-1.5 px-4 py-1.5 border-t border-white/[0.03] overflow-x-auto scrollbar-none">
                     {searchTerm && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
-                            🔍 {searchTerm}
+                            ðŸ” {searchTerm}
                             <button onClick={() => setSearchTerm('')} className="hover:text-white transition-colors"><X size={10} /></button>
                         </div>
                     )}
@@ -1816,7 +1837,7 @@ const TasksPage: React.FC = () => {
                     )}
                     {(dateRange.start || dateRange.end) && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[9px] font-bold text-amber-400 flex-shrink-0">
-                            {dateRange.start || '…'} – {dateRange.end || '…'}
+                            {dateRange.start || 'â€¦'} â€“ {dateRange.end || 'â€¦'}
                             <button onClick={() => setDateRange({ start: '', end: '' })} className="hover:text-white transition-colors"><X size={10} /></button>
                         </div>
                     )}

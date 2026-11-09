@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+﻿import { initializeApp } from 'firebase/app';
 import {
     getAuth,
     signInWithEmailAndPassword,
@@ -41,7 +41,7 @@ import {
     arrayRemove,
     writeBatch
 } from 'firebase/firestore';
-import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification, RiskAreaDocument, AttendanceLogRequest, AuditPhase, WorkLog } from '../types';
+import { UserRole, UserProfile, Client, Task, AttendanceRecord, TaskStatus, TaskPriority, CalendarEvent, LeaveRequest, Resource, AppNotification, RiskAreaDocument, AttendanceLogRequest, AuditPhase, WorkLog, TaskTemplate, SubTask } from '../types';
 import { getNepaliFiscalYear } from '../utils/nepaliDate';
 import { getCurrentDateUTC } from '../utils/dates';
 import { EmailService } from './email';
@@ -189,7 +189,7 @@ const getDeviceName = (): string => {
     return model ? `${model} (${browser})` : `${browser} on ${os}`;
 };
 
-// Custom error class for session limit — now includes full session metadata
+// Custom error class for session limit â€” now includes full session metadata
 export class SessionLimitError extends Error {
     sessions: Array<SessionMetadata>;
     uid: string;
@@ -786,8 +786,9 @@ export const AuthService = {
     },
 
     deleteStaffUser: async (uid: string, email: string, forceDelete = false) => {
-        // STEP 1 — Pre-flight dependency check
-        const activeStatuses = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'PENDING_APPROVAL'];
+        // STEP 1 â€” Pre-flight dependency check
+        // ST1: Use correct TaskStatus enum values â€” block deletion if user has active (non-finished) tasks
+        const activeStatuses = [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.UNDER_REVIEW, TaskStatus.HALTED];
         const activeTasksSnap = await getDocs(
             query(collection(db, 'tasks'), where('status', 'in', activeStatuses))
         );
@@ -810,8 +811,8 @@ export const AuthService = {
             return { blockingTaskCount: blockingTaskIds.size };
         }
 
-        // STEP 2 — Execute deletes and cleanups
-        const batch = writeBatch(db);
+        // STEP 2 â€” Execute deletes and cleanups
+        // (Batch writes are now chunked below; no single batch object needed here)
 
         // Fetch ALL tasks to clean up assignments (regardless of status)
         const [assignedSnap, leaderSnap, reviewerSnap, partnerSnap] = await Promise.all([
@@ -824,41 +825,62 @@ export const AuthService = {
         const taskUpdates: Record<string, any> = {};
 
         assignedSnap.forEach(docSnap => {
+            // ST2: Skip ARCHIVED tasks â€” Firestore rules lock them and would fail the entire batch
+            const docData = docSnap.data();
+            if (docData.status === TaskStatus.ARCHIVED) return;
             const taskId = docSnap.id;
             if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
             taskUpdates[taskId].assignedTo = arrayRemove(uid);
         });
         leaderSnap.forEach(docSnap => {
+            // ST2: Skip ARCHIVED tasks
+            const docData = docSnap.data();
+            if (docData.status === TaskStatus.ARCHIVED) return;
             const taskId = docSnap.id;
             if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
             taskUpdates[taskId].teamLeaderId = null;
         });
         reviewerSnap.forEach(docSnap => {
+            // ST2: Skip ARCHIVED tasks
+            const docData = docSnap.data();
+            if (docData.status === TaskStatus.ARCHIVED) return;
             const taskId = docSnap.id;
             if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
             taskUpdates[taskId].engagementReviewerId = null;
         });
         partnerSnap.forEach(docSnap => {
+            // ST2: Skip ARCHIVED tasks
+            const docData = docSnap.data();
+            if (docData.status === TaskStatus.ARCHIVED) return;
             const taskId = docSnap.id;
             if (!taskUpdates[taskId]) taskUpdates[taskId] = {};
             taskUpdates[taskId].signingPartnerId = null;
         });
 
         const orphanedTasksCleared = Object.keys(taskUpdates).length;
-        for (const [taskId, updates] of Object.entries(taskUpdates)) {
-            batch.update(doc(db, 'tasks', taskId), updates);
+
+        // ST2: Chunk batch writes (Firestore limit is 500 ops per batch; leave room for user doc delete)
+        const BATCH_SIZE = 450;
+        const taskEntries = Object.entries(taskUpdates);
+        for (let i = 0; i < taskEntries.length; i += BATCH_SIZE) {
+            const chunkBatch = writeBatch(db);
+            taskEntries.slice(i, i + BATCH_SIZE).forEach(([taskId, updates]) => {
+                chunkBatch.update(doc(db, 'tasks', taskId), updates);
+            });
+            await chunkBatch.commit();
         }
 
+        // Delete user doc and allowlist entry in a separate batch
+        const userDeleteBatch = writeBatch(db);
         if (uid) {
-            batch.delete(doc(db, 'users', uid));
+            userDeleteBatch.delete(doc(db, 'users', uid));
         }
         if (email) {
-            batch.delete(doc(db, 'staffAllowlist', email.toLowerCase().trim()));
+            userDeleteBatch.delete(doc(db, 'staffAllowlist', email.toLowerCase().trim()));
         }
+        await userDeleteBatch.commit();
 
-        await batch.commit();
-
-        // STEP 3 — Audit Log
+        // STEP 3 â€” Audit Log
         if (auth.currentUser) {
             const adminDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
             const adminName = adminDoc.exists() ? adminDoc.data().displayName : 'Admin';
@@ -1086,9 +1108,18 @@ export const AuthService = {
         return ref.id;
     },
 
-    updateClient: async (client: Client) => {
-        const { id, ...data } = client;
-        await updateDoc(doc(db, 'clients', id), data);
+    updateClient: async (clientOrId: Client | string, updates?: Partial<Client>) => {
+        let clientId: string;
+        let data: Partial<Client>;
+        if (typeof clientOrId === 'string') {
+            clientId = clientOrId;
+            data = updates || {};
+        } else {
+            const { id, ...rest } = clientOrId;
+            clientId = id;
+            data = rest;
+        }
+        await updateDoc(doc(db, 'clients', clientId), data);
         if (auth.currentUser) {
             const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
             const userName = userDoc.exists() ? userDoc.data().displayName : 'User';
@@ -1096,8 +1127,8 @@ export const AuthService = {
                 AuditAction.CLIENT_UPDATED,
                 auth.currentUser.uid,
                 userName,
-                id,
-                data.name,
+                clientId,
+                data.name || 'Client Data',
                 { updates: data }
             );
         }
@@ -1141,6 +1172,18 @@ export const AuthService = {
         const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
         const dateStr = now.toLocaleDateString('en-CA');
 
+        // A1: Determine LATE status using Nepal time (UTC+5:45)
+        const LATE_THRESHOLD_HOUR = 10;
+        const LATE_THRESHOLD_MINUTE = 15;
+        const nepalOffsetMs = (5 * 60 + 45) * 60 * 1000;
+        const nepalTime = new Date(now.getTime() + nepalOffsetMs);
+        const nepalHour = nepalTime.getUTCHours();
+        const nepalMinute = nepalTime.getUTCMinutes();
+        const isLateClockIn =
+            nepalHour > LATE_THRESHOLD_HOUR ||
+            (nepalHour === LATE_THRESHOLD_HOUR && nepalMinute > LATE_THRESHOLD_MINUTE);
+        const clockInStatus: AttendanceRecord['status'] = isLateClockIn ? 'LATE' : 'PRESENT';
+
         // Fetch User Profile for display name
         let userName = 'User';
         try {
@@ -1179,7 +1222,7 @@ export const AuthService = {
             userName,
             date: dateStr,
             clockIn: timeStr,
-            status: 'PRESENT',
+            status: clockInStatus, // A1: 'PRESENT' if on time, 'LATE' if after 10:15 AM Nepal time
             notes: finalNotes,
             workHours: 0,
             workLogs: workLogs || [],
@@ -1523,29 +1566,16 @@ export const AuthService = {
     updateTask: async (taskId: string, updates: Partial<Task>) => {
         if (!auth.currentUser) throw new Error("Unauthenticated");
 
-        // Handle Status Change Workflow
-        if (updates.status) {
-            try {
-                const oldTaskDoc = await getDoc(doc(db, 'tasks', taskId));
-                const oldTask = oldTaskDoc.exists() ? (oldTaskDoc.data() as Task) : null;
+        // Fetch old state before updating
+        const oldTaskDoc = await getDoc(doc(db, 'tasks', taskId));
+        const oldTask = oldTaskDoc.exists() ? (oldTaskDoc.data() as Task) : null;
+        const statusChanged = oldTask && updates.status && updates.status !== oldTask.status;
 
-                if (oldTask && updates.status !== oldTask.status) {
-                    if (updates.status === TaskStatus.COMPLETED) {
-                        updates.completedAt = new Date().toISOString();
-                    } else if (oldTask.status === TaskStatus.COMPLETED) {
-                        updates.completedAt = null as any;
-                    }
-                }
-
-                if (oldTask && oldTask.status !== updates.status) {
-                    await AuthService.handleStatusChange(oldTask, updates.status, auth.currentUser?.uid ?? '');
-                    
-                    if (updates.status === TaskStatus.COMPLETED) {
-                        await AuthService.triggerNextTemplateIfNeeded(taskId, updates.status, auth.currentUser?.uid ?? '');
-                    }
-                }
-            } catch (err) {
-                console.error("Workflow trigger failed:", err);
+        if (statusChanged) {
+            if (updates.status === TaskStatus.COMPLETED) {
+                updates.completedAt = new Date().toISOString();
+            } else if (oldTask.status === TaskStatus.COMPLETED) {
+                updates.completedAt = null as any;
             }
         }
 
@@ -1571,15 +1601,36 @@ export const AuthService = {
 
         const sanitizedUpdates = sanitizeDeep(updates);
 
-
+        // W1 Fix: Save to Firestore FIRST before executing any side-effects
         await updateDoc(doc(db, 'tasks', taskId), {
             ...sanitizedUpdates,
             updatedAt: new Date().toISOString()
         });
 
+        // W1 Fix: Side effects run only AFTER successful database update
+        if (statusChanged && oldTask) {
+            try {
+                await AuthService.handleStatusChange(oldTask, updates.status!, auth.currentUser?.uid ?? '');
+            } catch (statusErr) {
+                console.error("Status change side-effect error:", statusErr);
+            }
+
+            if (updates.status === TaskStatus.COMPLETED) {
+                try {
+                    await AuthService.triggerNextTemplateIfNeeded(taskId, updates.status, auth.currentUser?.uid ?? '');
+                } catch (templateErr) {
+                    console.error("Follow-on template trigger error:", templateErr);
+                }
+            }
+        }
+
         // Handle Assignee Change Notifications
         if (updates.assignedTo) {
-            await AuthService.handleAssigneeNotifications(taskId, updates, false);
+            try {
+                await AuthService.handleAssigneeNotifications(taskId, updates, false);
+            } catch (assigneeErr) {
+                console.error("Assignee notification error:", assigneeErr);
+            }
         }
 
         // --- AUTO-ARCHIVING LOGIC (NEW) ---
@@ -1664,6 +1715,25 @@ export const AuthService = {
     },
 
     handleStatusChange: async (task: Task, newStatus: TaskStatus, actingUserId: string) => {
+        // A7 fix: Notify the next reviewer in the sign-off chain on hand-off to Under Review
+        if (newStatus === TaskStatus.UNDER_REVIEW) {
+            const nextReviewerUid =
+                // If TL not yet signed → notify TL; else if ER not yet signed → notify ER; else SP
+                (!task.teamLeadApprovedAt && task.teamLeaderId) ? task.teamLeaderId
+                : (!task.engagementReviewerApprovedAt && task.engagementReviewerId) ? task.engagementReviewerId
+                : task.signingPartnerId || null;
+            if (nextReviewerUid && nextReviewerUid !== actingUserId) {
+                await AuthService.createNotification({
+                    userId: nextReviewerUid,
+                    title: `Review Ready: ${task.title}`,
+                    message: `"${task.title}" is awaiting your review sign-off.`,
+                    type: 'INFO',
+                    category: 'TASK',
+                    link: `/tasks?taskId=${task.id}`
+                });
+            }
+        }
+
         // 1. Internal Notification for all assignees & creator
         const recipients = new Set([...(task.assignedTo || []), task.createdBy]);
         if (task.teamLeaderId) recipients.add(task.teamLeaderId);
@@ -1677,7 +1747,14 @@ export const AuthService = {
             await AuthService.createNotification({
                 userId: uid,
                 title: 'Task Status Updated',
-                message: `"${task.title}" status changed from ${task.status} to ${newStatus}`,
+                message: (() => {
+                    const labels: Record<string, string> = {
+                        NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress',
+                        UNDER_REVIEW: 'Under Review', HALTED: 'On Hold',
+                        COMPLETED: 'Completed', ARCHIVED: 'Archived',
+                    };
+                    return `"${task.title}" moved from ${labels[task.status] || task.status} to ${labels[newStatus] || newStatus}`;
+                })(),
                 type: 'INFO',
                 category: 'TASK',
                 link: `/tasks?taskId=${task.id}`
@@ -1713,6 +1790,12 @@ export const AuthService = {
             if (!taskDoc.exists()) return;
             const task = { id: taskDoc.id, ...taskDoc.data() } as Task;
             
+            // W2 Fix: Duplicate guard â€” if follow-on task was already created, do not recreate
+            if (task.nextTaskId) {
+                console.log(`Task ${taskId} already created follow-on task ${task.nextTaskId}. Skipping duplicate.`);
+                return;
+            }
+
             if (!task.nextTemplateId) return;
 
             const templateDoc = await getDoc(doc(db, 'task_templates', task.nextTemplateId));
@@ -1753,33 +1836,49 @@ export const AuthService = {
                 });
             });
 
-            let dueDate = new Date().toISOString().split('T')[0];
+            let dueDate = new Date().toLocaleDateString('en-CA');
             if (nextTemplate.expectedDays) {
                 const d = new Date();
                 d.setDate(d.getDate() + nextTemplate.expectedDays);
-                dueDate = d.toISOString().split('T')[0];
+                dueDate = d.toLocaleDateString('en-CA');
             }
+
+            // W3 Fix: Only copy uncompleted subtasks from parent + new template subtasks
+            const uncompletedParentSubtasks = (task.subtasks || []).filter(st => !st.isCompleted);
+
+            // W3 Fix: Merge template role-assignees with engagement team
+            const combinedAssignees = Array.from(new Set([
+                ...(task.assignedTo || []),
+                ...Array.from(assignedSet)
+            ])).filter(Boolean);
 
             const newTaskObj = {
                 title: nextTemplate.name + ' for ' + (task.clientName || 'Internal'),
                 description: nextTemplate.description || '',
                 priority: nextTemplate.priority || TaskPriority.MEDIUM,
                 status: TaskStatus.NOT_STARTED,
-                subtasks: [...(task.subtasks || []), ...generatedSubtasks],
+                subtasks: [...uncompletedParentSubtasks, ...generatedSubtasks],
                 dueDate: dueDate,
                 totalTimeSpent: 0,
                 nextTemplateId: nextTemplate.nextTemplateId || '',
                 templateId: nextTemplate.id,
                 clientIds: task.clientIds || [],
                 clientName: task.clientName || '',
-                assignedTo: task.assignedTo || Array.from(assignedSet),
+                assignedTo: combinedAssignees,
                 teamLeaderId: task.teamLeaderId || actingUserId || '',
                 createdBy: actingUserId || 'system',
                 createdAt: new Date().toISOString(),
                 taskType: task.taskType || nextTemplate.taskType
             };
 
-            await AuthService.saveTask(newTaskObj as Task, true);
+            const createdTask = await AuthService.saveTask(newTaskObj as Task, true);
+
+            // W2 Fix: Record nextTaskId on parent task to prevent duplicate generation
+            if (createdTask?.id) {
+                await updateDoc(doc(db, 'tasks', taskId), {
+                    nextTaskId: createdTask.id
+                });
+            }
         } catch (err) {
             console.error("Auto trigger failed", err);
         }
@@ -1921,7 +2020,7 @@ export const AuthService = {
         };
         const ref = await addDoc(collection(db, 'attendanceRequests'), newRequest);
         
-        // ── Notify Admins ──────────────────────────────────────────────
+        // â”€â”€ Notify Admins â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         try {
             const users = await AuthService.getAllUsers();
             const admins = users.filter(u => 
@@ -2155,7 +2254,7 @@ export const AuthService = {
 
     /**
      * Resolve the set of user UIDs to notify based on event visibility rules.
-     * Returns UserProfile[] — the creator is included to ensure they receive a confirmation email.
+     * Returns UserProfile[] â€” the creator is included to ensure they receive a confirmation email.
      */
     resolveEventRecipients: async (
         event: Partial<CalendarEvent>,
@@ -2168,22 +2267,22 @@ export const AuthService = {
 
         const { visibility, teamIds, department } = event as CalendarEvent;
 
-        // TEAM  → only the selected teamIds
+        // TEAM  â†’ only the selected teamIds
         if (visibility === 'TEAM' && teamIds && teamIds.length > 0) {
             return activeUsers.filter(u => teamIds.includes(u.uid));
         }
 
-        // PUBLIC, FIRM_EVENT, HOLIDAY → everyone
+        // PUBLIC, FIRM_EVENT, HOLIDAY â†’ everyone
         if (visibility === 'PUBLIC') {
             return activeUsers;
         }
 
-        // DEPARTMENT → same department
+        // DEPARTMENT â†’ same department
         if (visibility === 'DEPARTMENT' && department) {
             return activeUsers.filter(u => u.department === department);
         }
 
-        // PRIVATE → no one else
+        // PRIVATE â†’ no one else
         return [];
     },
 
@@ -2214,11 +2313,11 @@ export const AuthService = {
         const calendarLink = `${window.location.origin}/#/calendar`;
         const dateLabel = event.date + (event.time ? ' at ' + event.time : '');
 
-        // ── Determine recipients ──────────────────────────────────────────────
+        // â”€â”€ Determine recipients â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // 1. Visibility-based recipients (TEAM / PUBLIC / DEPARTMENT)
         const visibilityRecipients = await AuthService.resolveEventRecipients(event, event.createdBy);
 
-        // 2. Explicit participant invitees (RSVP list) — merge without duplicates
+        // 2. Explicit participant invitees (RSVP list) â€” merge without duplicates
         const participantIds = new Set(event.participants || []);
         const visibilityIds = new Set(visibilityRecipients.map(u => u.uid));
         const allRecipientIds = new Set([...visibilityIds, ...participantIds]);
@@ -2236,9 +2335,9 @@ export const AuthService = {
             } catch { /* skip bad refs */ }
         }
 
-        // ── Send notifications and emails ─────────────────────────────────────
+        // â”€â”€ Send notifications and emails â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const notifTitle = event.type === 'FIRM_EVENT' || event.type === 'HOLIDAY'
-            ? `📅 ${event.type === 'HOLIDAY' ? 'Holiday' : 'Firm Event'}: ${event.title}`
+            ? `ðŸ“… ${event.type === 'HOLIDAY' ? 'Holiday' : 'Firm Event'}: ${event.title}`
             : `New Event: ${event.title}`;
 
         for (const uid of allRecipientIds) {
@@ -2438,7 +2537,7 @@ export const AuthService = {
                 { leave }
             );
 
-            // ── Notify Admins ──────────────────────────────────────────────
+            // â”€â”€ Notify Admins â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             try {
                 const users = await AuthService.getAllUsers();
                 const admins = users.filter(u => 
@@ -2481,7 +2580,10 @@ export const AuthService = {
           const batch = writeBatch(db);
 
           for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-            const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+            // L3 Fix: Skip Saturdays (Nepal standard weekly holiday)
+            if (d.getDay() === 6) continue;
+
+            const dateStr = d.toLocaleDateString('en-CA');
             const attendanceId = `${leaveData.userId}_${dateStr}_leave`;
             const ref = doc(db, 'attendance', attendanceId);
 
@@ -2657,24 +2759,38 @@ export const AuthService = {
         
         const tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
         
-        // Filter those that belong to the target fiscal year
+        // AR1 & AR2 Fix:
+        // - AR1: Filter by task's own engagement fiscalYear (fallback to completedAt FY only if unset)
+        // - AR2: For multi-phase audits, only archive if reached REVIEW_AND_CONCLUSION
         const toArchive = tasks.filter(t => {
-            if (!t.completedAt) return false;
-            return getNepaliFiscalYear(t.completedAt) === fiscalYear;
+            const taskFY = t.fiscalYear || (t.completedAt ? getNepaliFiscalYear(t.completedAt) : null);
+            if (taskFY !== fiscalYear) return false;
+
+            // If task has an auditPhase, only archive if it is in REVIEW_AND_CONCLUSION
+            if (t.auditPhase && t.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION && t.auditPhase !== 'REVIEW_AND_CONCLUSION') {
+                return false;
+            }
+
+            return true;
         });
         
         if (toArchive.length === 0) return 0;
         
-        const batch = writeBatch(db);
-        toArchive.forEach(t => {
-            const ref = doc(db, 'tasks', t.id);
-            batch.update(ref, {
-                status: TaskStatus.ARCHIVED,
-                archivedFiscalYear: fiscalYear
+        // Chunk batch writes to stay well below 500 ops Firestore limit
+        const BATCH_SIZE = 450;
+        for (let i = 0; i < toArchive.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            const chunk = toArchive.slice(i, i + BATCH_SIZE);
+            chunk.forEach(t => {
+                const ref = doc(db, 'tasks', t.id);
+                batch.update(ref, {
+                    status: TaskStatus.ARCHIVED,
+                    archivedFiscalYear: fiscalYear,
+                    archivedAt: new Date().toISOString()
+                });
             });
-        });
-        
-        await batch.commit();
+            await batch.commit();
+        }
         
         // Log action
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -2799,47 +2915,12 @@ export const AuthService = {
     },
 
     /**
-     * Delete audit logs older than 90 days.
-     * Uses batching to overcome Firestore transaction limits.
+     * AL2: Client-side audit log deletion removed.
+     * ICAN NSAS 230 requires 7-year audit log retention, managed exclusively by the server-side cron.
      */
     cleanupOldAuditLogs: async () => {
-        try {
-            const date = new Date();
-            date.setDate(date.getDate() - 90);
-            const cutoffDate = date.toISOString();
-
-            const q = query(
-                collection(db, 'auditLogs'),
-                where('timestamp', '<', cutoffDate)
-            );
-
-            const snapshot = await getDocs(q);
-
-            if (snapshot.empty) return;
-
-            console.log(`Cleaning up ${snapshot.size} old audit logs`);
-
-            const batchSize = 500;
-            const batches = [];
-
-            for (let i = 0; i < snapshot.docs.length; i += batchSize) {
-                const chunk = snapshot.docs.slice(i, i + batchSize);
-                const batch = import('firebase/firestore').then(async ({ writeBatch }) => {
-                    const firebaseBatch = writeBatch(db);
-                    chunk.forEach(doc => {
-                        firebaseBatch.delete(doc.ref);
-                    });
-                    await firebaseBatch.commit();
-                });
-                batches.push(batch);
-            }
-
-            await Promise.all(batches);
-        } catch (error: any) {
-            if (error.code !== 'permission-denied') {
-                console.error("Failed to cleanup old audit logs:", error);
-            }
-        }
+        // No-op: Audit logs are immutable and managed server-side
+        return;
     },
 
     getLastAuditCleanup: (): string | null => {
@@ -2908,7 +2989,7 @@ export const AuthService = {
 
 export const isDemoMode = false;
 
-// ── New Query Methods (added to AuthService above via object spread workaround) ──
+// â”€â”€ New Query Methods (added to AuthService above via object spread workaround) â”€â”€
 // These are standalone exports that delegate to AuthService-style patterns
 
 export const getAuditLogsByClientId = async (clientId: string): Promise<AuditLog[]> => {

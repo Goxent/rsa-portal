@@ -13,7 +13,7 @@ import { leaveSchema, LeaveFormValues } from '../utils/validationSchemas';
 import LeaveCalendar from '../components/leave/LeaveCalendar';
 import NepaliDate from 'nepali-date-converter';
 
-const ARTICLESHIP_LEAVE_LIMIT = 120; // 3 Years Total
+import { ARTICLESHIP_LEAVE_LIMIT } from '../constants/leaveConfig';
 
 // Convert an AD ISO date string to BS formatted string
 const toBSStr = (adStr: string): string => {
@@ -83,6 +83,10 @@ const getCurrentNepaliYearRange = () => {
 };
 
 const LeavePage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'Leave — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
     const { user } = useAuth();
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
     const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
@@ -129,11 +133,20 @@ const LeavePage: React.FC = () => {
 
     const myApprovedLeaves = leaves.filter(l => l.status === 'APPROVED' && (!isAdmin || l.userId === user?.uid));
 
+    // L1 Fix: Count working days only (Sunday to Friday; Saturday is day 6)
     const calculateDays = (start: string, end: string) => {
+        if (!start || !end) return 0;
         const s = new Date(start);
         const e = new Date(end);
-        const diffTime = Math.abs(e.getTime() - s.getTime());
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        if (s > e) return 0;
+
+        let workingDays = 0;
+        for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+            if (d.getDay() !== 6) { // Skip Saturday
+                workingDays++;
+            }
+        }
+        return workingDays;
     };
 
     const isArticleTrainee = user?.position === 'Article Trainee';
@@ -161,6 +174,28 @@ const LeavePage: React.FC = () => {
 
     const onSubmit = async (data: LeaveFormValues) => {
         if (isSaving) return;
+
+        // L2 Fix: Validate start and end dates
+        if (data.startDate > data.endDate) {
+            toast.error('End date must be on or after start date.');
+            return;
+        }
+
+        // L2 Fix: Check for overlapping leaves with existing pending or approved requests
+        const hasOverlap = myApprovedLeaves.some(l => {
+            if (l.status === 'REJECTED') return false;
+            return (
+                (data.startDate >= l.startDate && data.startDate <= l.endDate) ||
+                (data.endDate >= l.startDate && data.endDate <= l.endDate) ||
+                (data.startDate <= l.startDate && data.endDate >= l.endDate)
+            );
+        });
+
+        if (hasOverlap) {
+            toast.error('You already have a leave request covering this date range.');
+            return;
+        }
+
         setIsSaving(true);
         try {
             const request: LeaveRequest = {
@@ -172,7 +207,7 @@ const LeavePage: React.FC = () => {
                 endDate: data.endDate,
                 reason: data.reason,
                 status: 'PENDING',
-                createdAt: new Date().toISOString().split('T')[0]
+                createdAt: new Date().toLocaleDateString('en-CA')
             };
             await AuthService.requestLeave(request);
             await loadLeaves();

@@ -11,6 +11,10 @@ import { getAvatarColor, getInitials } from '../utils/userUtils';
 import toast from 'react-hot-toast';
 
 const StaffPage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'Staff — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
     const { user } = useAuth();
     const navigate = useNavigate();
 
@@ -67,13 +71,7 @@ const StaffPage: React.FC = () => {
         }
     }, [isAdmin]);
 
-    useEffect(() => {
-        const allowed = [UserRole.ADMIN, UserRole.MASTER_ADMIN] as string[];
-        if (user && !allowed.includes(user.role)) {
-            navigate('/dashboard');
-            return;
-        }
-    }, [user, navigate]);
+    // Admin access is guarded at route level via AdminRoute in App.tsx
 
     const handleOpenAdd = () => {
         setIsEditing(false);
