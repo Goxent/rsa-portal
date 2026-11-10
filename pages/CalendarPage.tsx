@@ -48,14 +48,14 @@ const DraggableTask = ({ task, canDrag }: { task: Task, canDrag: boolean }) => {
     return (
         <div
             ref={setNodeRef}
-            style={style}
+            style={{ ...style, background: 'var(--accent-dim)', borderColor: 'var(--border-accent)' }}
             {...listeners}
             {...attributes}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand-500/20 border border-brand-500/30 hover:bg-brand-500/30 transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md border transition-colors ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
             onClick={(e) => { e.stopPropagation(); }}
         >
-            <div className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-            <div className="text-[10.5px] text-brand-900 dark:text-brand-50 truncate font-bold leading-none">
+            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--accent)' }}></div>
+            <div className="text-[11px] truncate font-bold leading-none" style={{ color: 'var(--text-heading)' }}>
                 {task.clientName || task.title}
             </div>
         </div>
@@ -71,15 +71,19 @@ const DroppableDay = ({ dateStr, isToday, isSelected, onClick, children }: any) 
         <div
             ref={setNodeRef}
             onClick={onClick}
-            className={`group relative min-h-[120px] p-3 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${isToday
-                ? 'border-brand-500/50 bg-gradient-to-br from-brand-500/20 to-brand-/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-                : isSelected
-                    ? 'border-amber-500/50 bg-gradient-to-br from-blue-600/20 to-amber-900/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[1.02] z-10'
-                    : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07] hover:shadow-xl hover:scale-[1.01] hover:z-10'
-                } ${isOver ? 'ring-2 ring-amber-500 bg-amber-500/10 border-amber-500/50' : ''}`}
+            className={`group relative min-h-[110px] p-2.5 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col ${
+                isToday
+                    ? 'border-l-4'
+                    : isSelected
+                        ? 'border-l-4 scale-[1.01] z-10'
+                        : 'hover:-translate-y-0.5'
+            } ${isOver ? 'ring-2 ring-offset-1' : ''}`}
+            style={{
+                background: isToday ? 'var(--accent-dim)' : isSelected ? 'var(--bg-elevated)' : 'var(--bg-surface)',
+                borderColor: isToday ? 'var(--accent)' : isSelected ? 'var(--border-accent)' : 'var(--border)',
+                borderLeftColor: isToday ? 'var(--accent)' : isSelected ? 'var(--accent)' : undefined
+            }}
         >
-            {/* Hover Effect Light */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             {children}
         </div>
     );
@@ -438,12 +442,12 @@ const CalendarPage: React.FC = () => {
                         {selectedDate && (
                             <div className="space-y-3">
                                 {[...selectedDayTasks, ...selectedDayEvents].length === 0 ? (
-                                    <div className="py-12 bg-white/5 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center px-6">
+                                    <div className="py-8 rounded-xl border border-dashed flex flex-col items-center justify-center text-center px-4" style={{ borderColor: 'var(--border)' }}>
                                         <CalendarIcon size={32} className="text-gray-600 mb-3 opacity-20" />
                                         <p className="text-sm text-gray-400 font-medium">No schedule for this day</p>
                                         <button 
                                             onClick={() => handleOpenEventModal(selectedDate)}
-                                            className="mt-4 text-[11px] font-black text-amber-500 uppercase tracking-widest hover:underline"
+                                            className="mt-3 text-[11px] font-bold uppercase tracking-wider hover:underline" style={{ color: 'var(--accent)' }}
                                         >
                                             Add Entry
                                         </button>
@@ -453,9 +457,9 @@ const CalendarPage: React.FC = () => {
                                         {selectedDayTasks.map((task) => (
                                             <div 
                                                 key={task.id}
-                                                className="p-4 bg-gradient-to-br from-brand-900/40 to-black/40 border border-brand-500/20 rounded-2xl flex items-center gap-4 group"
+                                                className="p-3 rounded-lg border flex items-center gap-3 transition-colors" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                                             >
-                                                <div className="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400 border border-brand-500/30">
+                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)', color: 'var(--accent)' }}>
                                                     <CheckCircle2 size={18} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -473,9 +477,9 @@ const CalendarPage: React.FC = () => {
                                             <div 
                                                 key={ev.id}
                                                 onClick={(e) => handleEditEvent(ev, e)}
-                                                className="p-4 bg-gradient-to-br from-white/5 to-black/20 border border-white/10 rounded-2xl flex items-center gap-4 group active:scale-[0.98] transition-all"
+                                                className="p-3 rounded-lg border flex items-center gap-3 transition-colors" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                                             >
-                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: `${ev.color}15`, borderColor: `${ev.color}30`, color: ev.color }}>
+                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: `${ev.color}15`, borderColor: `${ev.color}30`, color: ev.color }}>
                                                     <Clock size={18} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -510,7 +514,7 @@ const CalendarPage: React.FC = () => {
             >
                 <div className="grid grid-cols-7 gap-3 lg:gap-4 mb-2">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                        <div key={d} className={`text-center text-[11px] font-black uppercase tracking-[0.2em] py-2 ${i === 6 ? 'text-rose-500 drop-shadow-sm' : 'text-brand-500'}`}>
+                        <div key={d} className="text-center text-[11px] font-bold uppercase tracking-[0.15em] py-1.5" style={{ color: i === 6 ? 'var(--color-danger)' : 'var(--text-muted)' }}>
                             {d}
                         </div>
                     ))}
@@ -543,7 +547,7 @@ const CalendarPage: React.FC = () => {
                                             : 'text-gray-300 group-hover:bg-white/10'}`}>
                                         {day}
                                     </span>
-                                    <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 rounded-full bg-black/20 border border-white/5">
+                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                                         {bsDay}
                                     </span>
                                 </div>
@@ -779,42 +783,44 @@ const CalendarPage: React.FC = () => {
                 {/* Header Section */}
                 <div className="flex flex-col xl:flex-row justify-between items-center gap-6 shrink-0">
                     <div>
-                        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                            <CalendarIcon className="text-amber-400" />
+                        <h1 className="text-xl font-bold flex items-center gap-2.5" style={{ color: 'var(--text-heading)' }}>
+                            <CalendarIcon size={20} style={{ color: 'var(--accent)' }} />
                             Firm Calendar
                         </h1>
-                    <p className="text-sm text-gray-400">Track task deadlines, meetings, and important firm events.</p>
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Track task deadlines, meetings, and important firm events.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4">
                     {/* View Toggle */}
-                    <div className="flex bg-white/10 p-1.5 rounded-xl border border-white/10 backdrop-blur-md">
+                    <div className="inline-flex items-center p-0.5 rounded-lg border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                         <button
                             onClick={() => setViewMode('GRID')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'GRID' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${viewMode === 'GRID' ? 'shadow-xs border' : ''}`}
+                            style={{ background: viewMode === 'GRID' ? 'var(--bg-secondary)' : 'transparent', color: viewMode === 'GRID' ? 'var(--text-heading)' : 'var(--text-muted)', borderColor: viewMode === 'GRID' ? 'var(--border-mid)' : 'transparent' }}
                         >
-                            <CalendarIcon size={16} /> <span className="hidden sm:inline">Grid</span>
+                            <CalendarIcon size={14} /> <span className="hidden sm:inline">Grid</span>
                         </button>
                         <button
                             onClick={() => setViewMode('LIST')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'LIST' ? 'bg-white text-blue-900 shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${viewMode === 'LIST' ? 'shadow-xs border' : ''}`}
+                            style={{ background: viewMode === 'LIST' ? 'var(--bg-secondary)' : 'transparent', color: viewMode === 'LIST' ? 'var(--text-heading)' : 'var(--text-muted)', borderColor: viewMode === 'LIST' ? 'var(--border-mid)' : 'transparent' }}
                         >
-                            <List size={16} /> <span className="hidden sm:inline">List</span>
+                            <List size={14} /> <span className="hidden sm:inline">List</span>
                         </button>
                     </div>
 
                     {/* Month Navigation */}
-                    <div className="flex items-center bg-black/20 p-1.5 rounded-xl border border-white/10 backdrop-blur-md">
-                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronLeft size={20} /></button>
-                        <div className="flex flex-col items-center px-4 min-w-[140px]">
-                            <span className="text-lg font-bold text-white leading-none">{monthNames[month]} {year}</span>
-                            <span className="text-[10px] text-brand-300 font-bold uppercase tracking-wider mt-1">
+                    <div className="flex items-center p-1 rounded-lg border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                        <button onClick={() => changeMonth(-1)} className="p-1.5 rounded-md transition-colors" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => e.currentTarget.style.color='var(--text-heading)'} onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}><ChevronLeft size={16} /></button>
+                        <div className="flex flex-col items-center px-3 min-w-[130px]">
+                            <span className="text-sm font-bold leading-none" style={{ color: 'var(--text-heading)' }}>{monthNames[month]} {year}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5" style={{ color: 'var(--text-muted)' }}>
                                 {(() => {
                                     const bs = toBS(new Date(year, month, 1)).split('-');
                                     return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[0]}`;
                                 })()}
                             </span>
                         </div>
-                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"><ChevronRight size={20} /></button>
+                        <button onClick={() => changeMonth(1)} className="p-1.5 rounded-md transition-colors" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => e.currentTarget.style.color='var(--text-heading)'} onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}><ChevronRight size={16} /></button>
                     </div>
                 </div>
             </div>
@@ -824,32 +830,29 @@ const CalendarPage: React.FC = () => {
                 viewMode === 'GRID' ? (
                     <div className="flex flex-col lg:flex-row gap-6">
                         {/* Main Calendar Grid */}
-                        <div className="flex-1 glass-panel rounded-2xl p-4 lg:p-6 shadow-2xl">
+                        <div className="flex-1 rounded-xl p-4 lg:p-5 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
                             {renderCalendarGrid()}
                         </div>
 
-                        <div className="w-full lg:w-96 glass-panel rounded-2xl flex flex-col shadow-2xl h-[calc(100vh-280px)] sticky top-6 border border-white/10 shrink-0">
+                        <div className="w-full lg:w-80 rounded-xl flex flex-col h-[calc(100vh-280px)] sticky top-6 border shrink-0 overflow-hidden" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
                             {/* Sidebar Header */}
-                            <div className="p-6 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-10">
-                                    <CalendarIcon size={64} />
-                                </div>
-                                <div className="flex items-center justify-between mb-2 relative z-10">
-                                    <h3 className="text-xl font-bold text-white flex items-center tracking-tight">
+                            <div className="p-4 border-b relative" style={{ borderColor: 'var(--border)' }}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <h3 className="text-sm font-bold flex items-center" style={{ color: 'var(--text-heading)' }}>
                                         {selectedDate ? `${monthNames[month]} ${selectedDate}` : 'Select a date'}
                                     </h3>
                                     <button
                                         onClick={() => handleOpenEventModal(selectedDate || undefined)}
-                                        className="p-2.5 bg-gradient-to-r from-brand-600 to-brand-500 rounded-xl text-white hover:from-brand-500 hover:to-brand-400 transition-all shadow-lg shadow-brand-500/30 transform hover:scale-105 active:scale-95"
+                                        className="p-1.5 rounded-lg text-white transition-all active:scale-95" style={{ background: 'var(--accent)' }}
                                         title="Create event"
                                     >
-                                        <Plus size={18} strokeWidth={3} />
+                                        <Plus size={14} />
                                     </button>
                                 </div>
                                 {selectedDate && (
                                     <div className="flex items-center gap-2 relative z-10">
                                         <div className="h-1.5 w-1.5 rounded-full bg-brand-400"></div>
-                                        <span className="text-xs text-brand-200 font-bold uppercase tracking-widest">
+                                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
                                             {(() => {
                                                 const bs = toBS(new Date(year, month, selectedDate)).split('-');
                                                 return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[2]}, ${bs[0]}`;

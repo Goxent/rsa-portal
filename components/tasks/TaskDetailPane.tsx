@@ -844,7 +844,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 await onSave(updates);
                 if (user) {
                     await AuditService.logAction(
-                        'REVIEW_CHANGES_REQUESTED',
+                        'task.status_change' as any,
                         { uid: user.uid, displayName: user.displayName || 'Reviewer' },
                         { id: task.id!, name: task.title },
                         { role, round: nextRound, reason: reason.trim(), at: now }
@@ -962,7 +962,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 await onSave(updates);
                 if (user) {
                     await AuditService.logAction(
-                        'TASK_SIGN_OFF',
+                        'task.status_change' as any,
                         { uid: user.uid, displayName: user.displayName || 'Staff' },
                         { id: task.id!, name: task.title },
                         { role, timestamp: now }

@@ -1,7 +1,12 @@
+import { UserRole } from '../../types';
+
+// D9: Only the two real widget types are exposed in the registry.
+// Legacy 'my-tasks' and 'all-tasks' entries have been removed from the picker;
+// their type strings are kept in WidgetType only for backward-compat migration in WidgetContainer.
 export type WidgetType =
     | 'tasks-overview'
-    | 'my-tasks'
-    | 'all-tasks'
+    | 'my-tasks'    // legacy — migrated to tasks-overview on load; not shown in picker
+    | 'all-tasks'   // legacy — migrated to tasks-overview on load; not shown in picker
     | 'pending-actions'
     | 'calendar'
     | 'greetings'
@@ -39,50 +44,31 @@ export interface WidgetMeta {
 
 export const WIDGET_CATEGORY_COLORS: Record<string, { border: string; label: string; glow: string }> = {
     tasks:      { border: 'border-l-brand-500',   label: 'text-brand-400',   glow: 'rgba(99,102,241,0.08)' },
-    attendance: { border: 'border-l-brand-', label: 'text-brand-400', glow: 'rgba(16,185,129,0.08)' },
+    attendance: { border: 'border-l-brand-',      label: 'text-brand-400',   glow: 'rgba(16,185,129,0.08)' },
     team:       { border: 'border-l-purple-500',  label: 'text-purple-400',  glow: 'rgba(168,85,247,0.08)'  },
     schedule:   { border: 'border-l-sky-500',     label: 'text-sky-400',     glow: 'rgba(14,165,233,0.08)'  },
     focus:      { border: 'border-l-amber-500',   label: 'text-amber-400',   glow: 'rgba(245,158,11,0.08)'  },
 };
 
+// D9: Only real, non-legacy widgets appear in the picker.
 export const WIDGET_REGISTRY: WidgetMeta[] = [
     {
         type: 'tasks-overview',
         title: 'Tasks Overview',
-        description: 'Unified view for firm-wide and personal tasks with toggleable modes',
+        description: 'Firm-wide or personal task list with filters, search and deep-links',
         icon: 'LayoutGrid',
         defaultSize: 'full',
         category: 'tasks',
     },
     {
-        type: 'my-tasks',
-        title: 'Legacy: My Tasks',
-        description: 'Individual task list (Replaced by Tasks Overview)',
-        icon: 'CheckSquare',
-        defaultSize: 'md',
-        category: 'tasks',
-    },
-
-    {
-        type: 'all-tasks',
-        title: 'Legacy: All Tasks',
-        description: 'Firm-wide task list (Replaced by Tasks Overview)',
-        icon: 'CheckSquare',
-        defaultSize: 'full',
-        adminOnly: true,
-        category: 'tasks',
-    },
-    {
         type: 'calendar',
         title: 'Upcoming Schedule',
-        description: 'Events and deadlines calendar view',
+        description: 'Events and task deadlines for the next 30 days',
         icon: 'Calendar',
         defaultSize: 'md',
         category: 'schedule',
     },
 ];
-
-import { UserRole } from '../../types';
 
 // Default widget layout for new users
 export const getDefaultWidgetConfig = (role: UserRole): WidgetConfig[] => {

@@ -389,14 +389,9 @@ const AttendanceWidget: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full rounded-2xl glass-panel hover-lift z-[20] border border-brand-100 dark:border-transparent bg-white/50 dark:bg-transparent">
-            {/* Subtle top glow line for premium feel */}
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-brand-200 dark:via-white/10 to-transparent"></div>
-            
-            {/* Subtle Accent Glow */}
-            <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none -z-10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-[80px] pointer-events-none translate-x-1/2 -translate-y-1/2"></div>
-            </div>
+        <div className="relative w-full rounded-xl z-[20] border transition-all duration-200" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+            {/* Subtle left accent stripe */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{ background: 'var(--accent)', opacity: 0.8 }}></div>
             {/* Header / Top Bar */}
             <div className="p-6 pb-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
                 <div>

@@ -1,4 +1,4 @@
-﻿
+
 export enum UserRole {
   MASTER_ADMIN = 'MASTER_ADMIN',
   ADMIN = 'ADMIN',
@@ -236,6 +236,7 @@ export interface Task {
   comments?: TaskComment[];
   templateId?: string; // NEW: The ID of the template from which this task was created
   nextTemplateId?: string; // NEW: The ID of the template to trigger upon completion
+  nextTaskId?: string; // ID of the follow-on task created by automation (prevents duplicate generation)
 
   // Advanced Workflow Features (TaxDome-style)
   tags?: string[]; // Custom status/category tags

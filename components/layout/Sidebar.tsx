@@ -27,6 +27,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
+import RSALogo from '../common/RSALogo';
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -48,7 +49,7 @@ const ALL_NAV_ITEMS = [
     { id: 'staff', to: '/staff', icon: Users, label: 'Staff Directory', adminOnly: true },
     { id: 'workload', to: '/workload', icon: BarChart3, label: 'Resource Planning', adminOnly: true, managerAllowed: true },
     { id: 'templates', to: '/templates', icon: Library, label: 'Resources' },
-    { id: 'policy', to: '/policy', icon: BookOpen, label: 'Office Policy' },
+    { id: 'policy', to: '/policy', icon: BookOpen, label: 'Office Policy', adminOnly: true },
     { id: 'archived-tasks', to: '/archived-tasks', icon: Archive, label: 'Archived Tasks', adminOnly: true },
     { id: 'audit-log', to: '/audit-log', icon: Activity, label: 'Audit Log', masterAdminOnly: true },
     { id: 'audit-docs', to: '/audit-docs', icon: FolderArchive, label: 'Audit Documentation' },
@@ -217,27 +218,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         borderBottom: '1px solid var(--border)'
                     }}
                 >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <div 
-                            className="shrink-0 flex items-center justify-center text-white shadow-lg transition-transform duration-300"
+                    <div className="flex items-center gap-3 overflow-hidden select-none">
+                        <RSALogo 
+                            size="sm" 
+                            className="shrink-0 rounded-lg shadow-sm transition-transform duration-300" 
                             style={{ 
-                                width: '32px',
-                                height: '24px',
-                                background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
-                                borderRadius: 'var(--radius-sm)',
-                                transform: !isExpanded ? 'scale(1.1)' : 'scale(1)'
-                            }}
-                        >
-                            <span style={{ fontWeight: 800, fontSize: '0.7rem', letterSpacing: '0.02em' }}>RSA</span>
+                                width: '32px', 
+                                height: '32px', 
+                                transform: !isExpanded ? 'scale(1.05)' : 'scale(1)' 
+                            }} 
+                        />
+                        <div className={`truncate transition-all duration-300 origin-left flex flex-col justify-center ${isExpanded ? 'opacity-100 scale-100 w-auto' : 'opacity-0 scale-95 w-0 pointer-events-none'}`}>
+                            <h1 style={{ 
+                                fontSize: '0.9375rem', 
+                                fontWeight: 700, 
+                                color: 'var(--text-heading)',
+                                letterSpacing: '-0.02em',
+                                lineHeight: 1.15
+                            }}>
+                                RSA Portal
+                            </h1>
+                            <span style={{ 
+                                fontSize: '0.625rem', 
+                                color: 'var(--text-muted)', 
+                                fontWeight: 600, 
+                                letterSpacing: '0.02em',
+                                textTransform: 'uppercase'
+                            }}>
+                                Chartered Accountants
+                            </span>
                         </div>
-                        <h1 className={`truncate transition-all duration-300 origin-left ${isExpanded ? 'opacity-100 scale-100 w-auto' : 'opacity-0 scale-95 w-0 pointer-events-none'}`} style={{ 
-                            fontSize: '0.9375rem', 
-                            fontWeight: 700, 
-                            color: 'var(--text-heading)',
-                            letterSpacing: '-0.02em'
-                        }}>
-                            RSA Portal
-                        </h1>
                     </div>
 
                     <button

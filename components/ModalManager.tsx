@@ -32,6 +32,7 @@ export const ModalManager: React.FC = () => {
                 return (
                     <ConfirmationModal
                         isOpen={true}
+                        isEmbedded={true}
                         onClose={closeModal}
                         onConfirm={modalProps.onConfirm}
                         title={modalProps.title}

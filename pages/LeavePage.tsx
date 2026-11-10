@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { leaveSchema, LeaveFormValues } from '../utils/validationSchemas';
 import LeaveCalendar from '../components/leave/LeaveCalendar';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import NepaliDate from 'nepali-date-converter';
 
 import { ARTICLESHIP_LEAVE_LIMIT } from '../constants/leaveConfig';
@@ -97,6 +98,14 @@ const LeavePage: React.FC = () => {
     const [rejectionTarget, setRejectionTarget] = useState<LeaveRequest | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [adjustmentData, setAdjustmentData] = useState({ uid: '', name: '', amount: 0 });
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        variant?: 'danger' | 'warning' | 'info';
+        onConfirm?: () => void;
+    }>({ open: false, title: '', message: '' });
 
     const { register, handleSubmit, reset, watch: watchForm, formState: { errors } } = useForm<LeaveFormValues>({
         resolver: zodResolver(leaveSchema),
@@ -231,11 +240,18 @@ const LeavePage: React.FC = () => {
             return;
         }
 
-        if (window.confirm(`Are you sure you want to ${status} this request?`)) {
-            await AuthService.updateLeaveStatus(id, status);
-            loadLeaves();
-            toast.success(`Leave request ${status.toLowerCase()}ed`);
-        }
+        setConfirmModal({
+            open: true,
+            title: status === 'APPROVED' ? 'Approve Leave Request' : 'Reject Leave Request',
+            message: `Are you sure you want to ${status.toLowerCase()} this leave request?`,
+            confirmLabel: status === 'APPROVED' ? 'Approve' : 'Reject',
+            variant: status === 'APPROVED' ? 'info' : 'danger',
+            onConfirm: async () => {
+                await AuthService.updateLeaveStatus(id, status);
+                loadLeaves();
+                toast.success(`Leave request ${status.toLowerCase()}ed`);
+            }
+        });
     };
 
     const confirmRejection = async () => {
@@ -753,6 +769,19 @@ const LeavePage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationModal
+                isOpen={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmLabel={confirmModal.confirmLabel}
+                variant={confirmModal.variant}
+                onConfirm={() => {
+                    confirmModal.onConfirm?.();
+                    setConfirmModal(prev => ({ ...prev, open: false }));
+                }}
+                onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+            />
         </div>
     );
 };

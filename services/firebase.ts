@@ -1436,7 +1436,8 @@ export const AuthService = {
                 console.error("Error checking for new assignees:", error);
             }
         }
-    },
+        return { ...task, id: taskId };
+        },
 
     // Helper to handle assignee changes and notifications
     handleAssigneeNotifications: async (taskId: string, currentTask: Partial<Task>, isNew: boolean) => {
@@ -2809,7 +2810,7 @@ export const AuthService = {
             if (taskFY !== fiscalYear) return false;
 
             // If task has an auditPhase, only archive if it is in REVIEW_AND_CONCLUSION
-            if (t.auditPhase && t.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION && t.auditPhase !== 'REVIEW_AND_CONCLUSION') {
+            if (t.auditPhase && t.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION) {
                 return false;
             }
 

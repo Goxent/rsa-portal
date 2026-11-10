@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../../services/firebase';
 import toast from 'react-hot-toast';
 import { Trophy, Target, Check, X, Plus } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
@@ -44,28 +42,13 @@ const FocusWidget: React.FC = () => {
 
     useEffect(() => { injectStyle(); }, []);
 
-    // Real-time listener for Focus Goals
+    // L7: Auth context already has an onSnapshot listener on the user doc.
+    // Read currentFocusGoals directly from the user object instead of opening a duplicate listener.
     useEffect(() => {
-        if (!user?.uid) return;
-
-        const userRef = doc(db, 'users', user.uid);
-        const unsubscribe = onSnapshot(userRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                if (data.currentFocusGoals) {
-                    setGoals(data.currentFocusGoals);
-                } else {
-                    setGoals([]);
-                }
-            }
-            setHasLoaded(true);
-        }, (error) => {
-            console.error("Focus Goals Listener Error:", error);
-            setHasLoaded(true); // Don't block UI if listener fails
-        });
-
-        return () => unsubscribe();
-    }, [user?.uid]);
+        if (!user) return;
+        setGoals(user.currentFocusGoals ?? []);
+        setHasLoaded(true);
+    }, [user?.currentFocusGoals]);
 
     const syncToFirestore = useCallback(async (nextGoals: FocusGoal[]) => {
         if (!user) return;
@@ -127,7 +110,7 @@ const FocusWidget: React.FC = () => {
     const atLimit        = false; // Limit removed
 
     return (
-        <div className="relative glass-panel hover-lift rounded-2xl border border-brand-100 dark:border-white/[0.07] p-5 flex flex-col gap-3 h-full min-h-[140px]">
+        <div className="relative rounded-xl border p-5 flex flex-col gap-3 h-full min-h-[140px] transition-all duration-200" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
 
             {/* ── Header ────────────────────────────────────────────── */}
             <div className="flex items-center gap-2.5">
@@ -245,9 +228,7 @@ const FocusWidget: React.FC = () => {
                             </button>
                         )}
                         <button
-                            onClick={() => {
-                                if (window.confirm('Reset your focus list?')) persist([]);
-                            }}
+                            onClick={() => persist([])}
                             className="text-[9px] font-bold text-slate-400 hover:text-rose-500 transition-colors"
                         >
                             Reset All

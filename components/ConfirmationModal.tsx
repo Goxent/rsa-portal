@@ -1,8 +1,9 @@
 import React from 'react';
-import { AlertTriangle, Info, CheckCircle, X, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Info, CheckCircle, ShieldCheck } from 'lucide-react';
 
 interface ConfirmationModalProps {
     isOpen?: boolean;
+    isEmbedded?: boolean;
     onClose: () => void;
     onConfirm?: () => void;
     onSecondaryConfirm?: () => void;
@@ -16,6 +17,8 @@ interface ConfirmationModalProps {
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+    isOpen,
+    isEmbedded = false,
     onClose,
     onConfirm,
     onSecondaryConfirm,
@@ -27,52 +30,77 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     variant = 'danger',
     showConfirm = true
 }) => {
+    // If isOpen is explicitly passed and false, do not render anything
+    if (isOpen === false) {
+        return null;
+    }
+
     const getIcon = () => {
         switch (variant) {
-            case 'danger': return <AlertTriangle className="text-red-500" size={24} />;
-            case 'warning': return <AlertTriangle className="text-amber-500" size={24} />;
-            case 'success': return <CheckCircle className="text-green-500" size={24} />;
-            case 'indigo': return <ShieldCheck className="text-brand-400" size={24} />;
-            default: return <Info className="text-amber-500" size={24} />;
+            case 'danger': return <AlertTriangle className="text-red-500" size={22} />;
+            case 'warning': return <AlertTriangle className="text-amber-500" size={22} />;
+            case 'success': return <CheckCircle className="text-emerald-500" size={22} />;
+            case 'indigo': return <ShieldCheck className="text-indigo-400" size={22} />;
+            default: return <Info className="text-amber-500" size={22} />;
         }
     };
 
     const getPrimaryButtonColor = () => {
         switch (variant) {
-            case 'danger': return 'bg-red-600 hover:bg-red-700 focus:ring-red-500';
-            case 'warning': return 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500';
-            case 'success': return 'bg-green-600 hover:bg-green-700 focus:ring-green-500';
-            case 'indigo': return 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 shadow-indigo-500/20';
-            default: return 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500';
+            case 'danger': return 'bg-red-600 hover:bg-red-700 text-white';
+            case 'warning': return 'bg-amber-600 hover:bg-amber-700 text-white';
+            case 'success': return 'bg-emerald-600 hover:bg-emerald-700 text-white';
+            case 'indigo': return 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20';
+            default: return 'bg-amber-600 hover:bg-amber-700 text-white';
         }
     };
 
-    return (
+    const innerContent = (
         <div className="p-6 text-center">
             <div className="mb-4 flex justify-center">
-                <div className={`p-3 rounded-full bg-white/5 border border-white/10 ${variant === 'danger' ? 'bg-red-500/10' : variant === 'indigo' ? 'bg-brand-500/10' : ''}`}>
+                <div className={`p-3 rounded-full border ${
+                    variant === 'danger' ? 'bg-red-500/10 border-red-500/20' : 
+                    variant === 'warning' ? 'bg-amber-500/10 border-amber-500/20' :
+                    variant === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' :
+                    'bg-sky-500/10 border-sky-500/20'
+                }`}>
                     {getIcon()}
                 </div>
             </div>
 
-            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-            <div className="text-gray-400 mb-6 text-sm leading-relaxed text-left">{message}</div>
+            {title && (
+                <h3 className="text-base font-bold mb-2" style={{ color: 'var(--text-heading)' }}>
+                    {title}
+                </h3>
+            )}
+            
+            {message && (
+                <div className="mb-6 text-xs leading-relaxed text-center" style={{ color: 'var(--text-muted)' }}>
+                    {message}
+                </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
+                    type="button"
                     onClick={onClose}
-                    className="px-5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl transition-all border border-white/10 text-xs font-bold uppercase tracking-widest"
+                    className="px-4 py-2 rounded-lg transition-all border text-xs font-bold uppercase tracking-wider"
+                    style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--text-heading)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                     {cancelLabel}
                 </button>
                 
                 {secondaryLabel && onSecondaryConfirm && (
                     <button
+                        type="button"
                         onClick={() => {
                             onSecondaryConfirm();
                             onClose();
                         }}
-                        className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl transition-all border border-white/5 text-xs font-bold uppercase tracking-widest shadow-xl"
+                        className="px-4 py-2 rounded-lg transition-all border text-xs font-bold uppercase tracking-wider shadow-sm"
+                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-mid)', color: 'var(--text-heading)' }}
                     >
                         {secondaryLabel}
                     </button>
@@ -80,15 +108,37 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
                 {showConfirm && onConfirm && (
                     <button
+                        type="button"
                         onClick={() => {
                             onConfirm();
                             onClose();
                         }}
-                        className={`px-5 py-2 text-white rounded-xl transition-all shadow-lg text-xs font-bold uppercase tracking-widest ${getPrimaryButtonColor()}`}
+                        className={`px-4 py-2 rounded-lg transition-all shadow-sm text-xs font-bold uppercase tracking-wider ${getPrimaryButtonColor()}`}
                     >
                         {confirmLabel}
                     </button>
                 )}
+            </div>
+        </div>
+    );
+
+    // If embedded inside ModalManager or TasksPage modal, return the inner content
+    if (isEmbedded || isOpen === undefined) {
+        return innerContent;
+    }
+
+    // Direct standalone usage with isOpen prop -> render full modal overlay with backdrop
+    return (
+        <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            onClick={onClose}
+        >
+            <div 
+                className="w-full max-w-sm rounded-xl border shadow-2xl relative animate-in zoom-in-95 duration-200"
+                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-mid)' }}
+                onClick={e => e.stopPropagation()}
+            >
+                {innerContent}
             </div>
         </div>
     );

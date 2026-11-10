@@ -156,11 +156,11 @@ const LoginPage: React.FC = () => {
         className="w-full max-w-[420px] relative z-10 glass-card p-10 border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,1)]"
       >
         {/* Brand Header */}
-        <div className="flex flex-col items-center mb-10 text-center">
-            <RSALogo size="md" className="mb-6 scale-110" />
+        <div className="flex flex-col items-center mb-8 text-center">
+            <RSALogo size="xl" themeOverride="dark" className="mb-4 rounded-2xl shadow-2xl" />
             
-            <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Welcome Back</h2>
-            <p className="text-gray-500 text-[12px] font-medium leading-relaxed">Sign in to your RSA account</p>
+            <h2 className="text-2xl font-black text-white tracking-tight mb-1">Welcome Back</h2>
+            <p className="text-gray-400 text-xs font-medium leading-relaxed">Sign in to your RSA account</p>
         </div>
 
         {rateLimitError && (

@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { Clock, CalendarDays, Quote } from 'lucide-react';
-import { toBS } from '../../../utils/dates';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Quote } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface GreetingsWidgetProps {
     pendingCount?: number;
@@ -47,12 +46,12 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
     completedToday,
 }) => {
     const { user } = useAuth();
-    const [currentTime, setCurrentTime] = useState(new Date());
+    // D13: No live clock here — hour is computed once on mount (accurate enough for greeting text)
+    const hour = new Date().getHours();
     const [randomQuote, setRandomQuote] = useState(MOTIVATIONAL_QUOTES[0]);
 
     useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        
+        // D13: Greeting widget no longer ticks — only quote is computed on mount
         // Consistent Quote of the Day: Unique per user, stable for the day
         const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const userHashStr = user?.uid || user?.email || 'guest';
@@ -66,10 +65,8 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
         const quoteIndex = seed % MOTIVATIONAL_QUOTES.length;
         setRandomQuote(MOTIVATIONAL_QUOTES[quoteIndex]);
         
-        return () => clearInterval(timer);
     }, [user?.uid, user?.email]);
 
-    const hour = currentTime.getHours();
 
     const greeting = useMemo(() => {
         if (hour < 12) return 'Good Morning';
@@ -104,14 +101,9 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
     const firstName = user?.displayName?.split(' ')[0] ?? 'Explorer';
 
     return (
-        <div className="relative glass-card dotted-grid overflow-hidden min-h-[160px] flex items-center group transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5">
-            {/* Themed radial glow behind content */}
-            <div
-                className="absolute inset-0 pointer-events-none opacity-40 transition-opacity duration-1000 group-hover:opacity-60"
-                style={{
-                    backgroundImage: `radial-gradient(circle at 85% 50%, ${hour < 12 ? 'rgba(101,154,43,0.15)' : 'rgba(59,130,246,0.15)'} 0%, transparent 70%)`,
-                }}
-            />
+        <div className="relative overflow-hidden min-h-[160px] flex items-center rounded-xl border transition-all duration-300" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+            {/* Subtle left accent stripe */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{ background: 'var(--accent)', opacity: 0.8 }} />
 
             {/* Content */}
             <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
@@ -123,8 +115,8 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
                         className="flex items-center gap-3.5"
                     >
                         <span className="text-3xl drop-shadow-md select-none">{greetingEmoji}</span>
-                        <h1 className="text-2xl md:text-3xl font-black text-heading tracking-tight leading-none bg-clip-text">
-                            {greeting}, <span className="text-accent drop-shadow-[0_0_15px_var(--accent-glow)]">{firstName}</span>
+                        <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none" style={{ color: 'var(--text-heading)' }}>
+                            {greeting}, <span style={{ color: 'var(--accent)' }}>{firstName}</span>
                         </h1>
                     </motion.div>
 
@@ -143,7 +135,7 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
-                    className="relative max-w-xs bg-white/5 backdrop-blur-sm border border-white/10 p-4 rounded-2xl hidden sm:block group/quote hover:bg-white/10 transition-colors"
+                    className="relative max-w-xs p-4 rounded-xl hidden sm:block transition-colors" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                 >
                     <Quote size={16} className="text-accent mb-2 opacity-50" />
                     <p className="text-xs italic text-heading font-medium leading-relaxed">

@@ -45,6 +45,10 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.MANAGER;
     const now = new Date();
 
+    // D6: Build deep-links that the Tasks page actually reads
+    const myTasksLink = user?.uid ? `/tasks?staff=${user.uid}` : '/tasks';
+    const allTasksLink = '/tasks';
+
     const baseTasksForView = useMemo(() => {
         let base = recentTasks.filter(t => t.status !== TaskStatus.ARCHIVED);
         if (viewMode === 'MY' && user) {
@@ -58,7 +62,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
         let base = baseTasksForView.filter(t => {
             if (filterStatus === 'active') return t.status !== TaskStatus.COMPLETED;
             if (filterStatus === 'overdue') return t.dueDate && new Date(t.dueDate + 'T00:00:00') < now && t.status !== TaskStatus.COMPLETED;
-            if (filterStatus === 'review') return t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED;
+            if (filterStatus === 'review') return t.status === TaskStatus.UNDER_REVIEW;
             return true; // 'all' (excluding archived)
         });
 
@@ -71,10 +75,11 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
             );
         }
 
-        // Sort
+        // Sort: overdue non-completed first, then by priority
         return base.sort((a, b) => {
-            const aOverdue = a.dueDate && new Date(a.dueDate + 'T00:00:00') < now ? 1 : 0;
-            const bOverdue = b.dueDate && new Date(b.dueDate + 'T00:00:00') < now ? 1 : 0;
+            // L5: Only count non-completed tasks as overdue for sort
+            const aOverdue = a.dueDate && new Date(a.dueDate + 'T00:00:00') < now && a.status !== TaskStatus.COMPLETED ? 1 : 0;
+            const bOverdue = b.dueDate && new Date(b.dueDate + 'T00:00:00') < now && b.status !== TaskStatus.COMPLETED ? 1 : 0;
             if (bOverdue !== aOverdue) return bOverdue - aOverdue;
             return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
         });
@@ -83,7 +88,8 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
     // Counts for pills
     const activeCount = baseTasksForView.filter(t => t.status !== TaskStatus.COMPLETED).length;
     const overdueCount = baseTasksForView.filter(t => t.dueDate && new Date(t.dueDate + 'T00:00:00') < now && t.status !== TaskStatus.COMPLETED).length;
-    const reviewCount = baseTasksForView.filter(t => t.auditPhase === 'REVIEW_AND_CONCLUSION' && t.status !== TaskStatus.COMPLETED).length;
+    // D7: "Review" should mean status = UNDER_REVIEW (consistent with Tasks page), not audit phase
+    const reviewCount = baseTasksForView.filter(t => t.status === TaskStatus.UNDER_REVIEW).length;
     const allCount = baseTasksForView.length;
 
     if (isLoading) {
@@ -260,7 +266,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
 
             {/* ── View All Link ── */}
             <button
-                onClick={() => navigate(viewMode === 'MY' ? '/tasks?boardMode=MY' : '/tasks')}
+                onClick={() => navigate(viewMode === 'MY' ? myTasksLink : allTasksLink)}
                 className="w-full py-3 bg-slate-50 dark:bg-white/5 hover:bg-brand-500 hover:text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 border border-slate-200 dark:border-white/10 group flex items-center justify-center gap-2"
             >
                 Manage all {viewMode === 'MY' ? 'personal' : 'firm'} tasks

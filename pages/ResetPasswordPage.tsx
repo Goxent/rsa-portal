@@ -1,3 +1,4 @@
+import RSALogo from '../components/common/RSALogo';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Zap } from 'lucide-react';
@@ -126,9 +127,7 @@ const ResetPasswordPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="relative z-10 flex flex-col items-center text-center space-y-4"
                 >
-                    <div className="w-20 h-20 bg-brand-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-brand-500/40 mb-6">
-                        <ShieldCheck size={44} className="text-white" />
-                    </div>
+                    <RSALogo size="xl" themeOverride="dark" className="mb-6 rounded-2xl shadow-2xl" />
                     <h1 className="text-4xl font-black text-white tracking-tighter uppercase font-heading">
                         R. SAPKOTA & ASSOCIATES
                     </h1>

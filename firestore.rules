@@ -362,5 +362,15 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
+
+    // ========================================================
+    // SYSTEM SETTINGS & HANDBOOK POLICIES
+    // All authenticated employees can read firm handbook and operational policies
+    // Only Master Admin can create, update, or delete system settings
+    // ========================================================
+    match /systemSettings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isMasterAdmin();
+    }
   }
 }

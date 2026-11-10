@@ -1,3 +1,4 @@
+import RSALogo from '../components/common/RSALogo';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, Loader2, ShieldCheck, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
@@ -66,9 +67,7 @@ const ForgotPasswordPage: React.FC = () => {
                     transition={{ duration: 0.8 }}
                     className="relative z-10 flex flex-col items-center text-center space-y-4 mb-16"
                 >
-                    <div className="w-20 h-20 bg-brand-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-brand-500/40 mb-6 font-heading">
-                        <ShieldCheck size={44} className="text-white" />
-                    </div>
+                    <RSALogo size="xl" themeOverride="dark" className="mb-6 rounded-2xl shadow-2xl" />
                     <h1 className="text-4xl font-black text-white tracking-tighter font-heading uppercase">
                         R. SAPKOTA & ASSOCIATES
                     </h1>

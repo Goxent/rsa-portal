@@ -3,6 +3,7 @@ import { Bell, Sun, Moon, Search } from 'lucide-react';
 import Breadcrumbs from './Breadcrumbs';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import RSALogo from '../common/RSALogo';
 
 interface HeaderProps {
     toggleMobileMenu: () => void;
@@ -44,17 +45,11 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2">
                 {/* Mobile Logo */}
                 <div className="md:hidden flex items-center">
-                    <div 
-                        className="shrink-0 flex items-center justify-center text-white shadow-accent-glow"
-                        style={{ 
-                            width: '32px',
-                            height: '24px',
-                            background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
-                            borderRadius: 'var(--radius-sm)'
-                        }}
-                    >
-                        <span style={{ fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.02em' }}>RSA</span>
-                    </div>
+                    <RSALogo 
+                        size="xs" 
+                        className="shrink-0 rounded-md shadow-sm" 
+                        style={{ width: '26px', height: '26px' }} 
+                    />
                     <span className="mx-2 text-[var(--text-muted)] text-sm font-light">/</span>
                 </div>
 

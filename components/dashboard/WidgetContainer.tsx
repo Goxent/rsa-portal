@@ -95,24 +95,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
                         return;
                     }
 
-                    // Auto-Add Logic for Essential Widgets (Calendar)
-                    const hasCalendar = validConfig.some((w: WidgetConfig) => w.type === 'calendar');
-                    if (!hasCalendar) {
-                        const newWidgets = [...validConfig];
-                        newWidgets.unshift({
-                            id: `w_cal_${Date.now()}`,
-                            type: 'calendar',
-                            title: 'Upcoming Schedule',
-                            position: 0,
-                            size: 'md',
-                            visible: true
-                        });
-                        const finalWidgets = newWidgets.map((w, i) => ({ ...w, position: i }));
-                        setWidgets(finalWidgets);
-                        AuthService.saveWidgetConfig(userId, finalWidgets);
-                    } else {
-                        setWidgets(validConfig);
-                    }
+                    // D10: Respect user deliberate removal � do not force calendar back.
+                    setWidgets(validConfig);
                 }
             } else {
                 const fresh = getDefaultWidgetConfig(userRole);

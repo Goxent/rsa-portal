@@ -1,3 +1,4 @@
+import RSALogo from '../components/common/RSALogo';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
@@ -75,11 +76,9 @@ const SignupPage: React.FC = () => {
         className="w-full max-w-[440px] relative z-10 glass-card p-10 border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,1)]"
       >
         {/* Brand Header */}
-        <div className="flex flex-col items-center mb-10 text-center">
-            <div className="h-10 px-4 flex items-center justify-center mb-4 bg-brand-500 rounded-xl shadow-lg shadow-brand-500/20">
-                <span className="text-white font-[900] text-[1.1rem] tracking-tight">RSA</span>
-            </div>
-            <h1 className="text-[13px] font-black uppercase tracking-[0.3em] text-gray-500 mb-10">
+        <div className="flex flex-col items-center mb-8 text-center">
+            <RSALogo size="lg" themeOverride="dark" className="mb-3 rounded-2xl shadow-xl" />
+            <h1 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-400 mb-6">
                 Institutional Portal
             </h1>
             

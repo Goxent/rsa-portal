@@ -426,10 +426,10 @@ const ClientsPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-wrap md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="min-w-full md:min-w-0">
-                    <h1 className="text-2xl font-bold text-white flex items-center">
-                        <Building2 className="mr-3 text-amber-400" /> Client Directory
+                    <h1 className="text-xl font-bold flex items-center gap-2.5" style={{ color: 'var(--text-heading)' }}>
+                        <Building2 size={20} style={{ color: 'var(--accent)' }} /> Client Directory
                     </h1>
-                    <p className="text-gray-400 text-sm mt-1">Manage audit clients, tax filings, and contact details</p>
+                    <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Manage audit clients, tax filings, and contact details</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
                     {!isStaff && (
@@ -458,7 +458,7 @@ const ClientsPage: React.FC = () => {
                                 setActiveModalTab('BASIC');
                                 setIsModalOpen(true);
                             }}
-                            className="bg-amber-600 hover:bg-amber-500 text-white px-5 md:px-4 py-3 md:py-2.5 rounded-xl font-bold flex items-center shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95 flex-1 md:flex-none justify-center"
+                            className="text-white px-5 md:px-4 py-2.5 rounded-xl font-bold flex items-center transition-all active:scale-95 flex-1 md:flex-none justify-center" style={{ background: 'var(--accent)', boxShadow: 'var(--shadow-accent)' }} onMouseEnter={e => e.currentTarget.style.background='var(--accent-hover)'} onMouseLeave={e => e.currentTarget.style.background='var(--accent)'}
                         >
                             <Plus size={18} className="mr-2" /> <span className="text-[13px] md:text-sm">Add Client</span>
                         </button>
@@ -467,20 +467,20 @@ const ClientsPage: React.FC = () => {
             </div>
 
             {/* Toolbar */}
-            <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-xl">
+            <div className="rounded-xl p-3 flex flex-col md:flex-row gap-3 justify-between items-center border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
                 <div className="relative w-full md:w-80 order-2 md:order-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
                         type="text"
                         placeholder="Search clients by name, code, or PAN..."
-                        className="w-full pl-10 pr-4 py-3 md:py-2 bg-black/20 border border-white/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg text-sm outline-none transition-all border focus:ring-2" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 custom-scrollbar order-1 md:order-2">
                     <select
-                        className="bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:py-2 text-[12px] md:text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 shrink-0"
+                        className="rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 shrink-0 border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
                     >
@@ -491,7 +491,7 @@ const ClientsPage: React.FC = () => {
                     </select>
 
                     <select
-                        className="bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:py-2 text-[12px] md:text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 shrink-0"
+                        className="rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 shrink-0 border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                         value={filterService}
                         onChange={(e) => setFilterService(e.target.value)}
                     >
@@ -505,7 +505,7 @@ const ClientsPage: React.FC = () => {
                     </select>
 
                     <select
-                        className="bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:py-2 text-[12px] md:text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 shrink-0"
+                        className="rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 shrink-0 border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                         value={filterAuditorFirm}
                         onChange={(e) => setFilterAuditorFirm(e.target.value)}
                     >
@@ -543,48 +543,43 @@ const ClientsPage: React.FC = () => {
                     return (
                         <div
                             key={client.id}
-                            className={`glass-panel p-0 rounded-2xl overflow-hidden group border border-white/5 hover:border-white/20 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-500/10 hover:-translate-y-1`}
-                            style={{ animationDelay: `${index * 50}ms` }}
+                            className="rounded-xl overflow-hidden group border transition-all duration-200 hover:-translate-y-0.5" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', animationDelay: `${index * 50}ms` }} onMouseEnter={e => e.currentTarget.style.borderColor='var(--border-mid)'} onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}
                         >
-                            {/* Card Header with Fluid Gradient */}
-                            <div className={`p-6 bg-gradient-to-br ${bgGradient} relative overflow-hidden`}>
-                                {/* Abstract Shapes */}
-                                <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
-                                <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-black/10 rounded-full blur-xl"></div>
+                            {/* Card Header */}
+                            <div className="p-4 relative overflow-hidden border-b" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+                                {/* Status stripe */}
+                                <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', opacity: 0.8 }}></div>
 
                                 <div className="relative z-10 flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg backdrop-blur-md ${clientVisuals.bg} ${clientVisuals.text} border ${clientVisuals.border} group-hover:scale-110 transition-transform duration-500`}>
+                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black border" style={{ background: 'var(--bg-secondary)', color: 'var(--accent)', borderColor: 'var(--border-mid)' }}>
                                             {getInitials(client.name)}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-white text-lg leading-tight tracking-tight group-hover:text-blue-200 transition-colors">
+                                            <h3 className="font-bold text-sm leading-tight tracking-tight truncate max-w-[180px]" style={{ color: 'var(--text-heading)' }}>
                                                 {client.name}
                                             </h3>
                                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-white/70 font-mono border border-white/10 backdrop-blur-sm">
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                                                     {client.code}
                                                 </span>
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border backdrop-blur-sm font-bold uppercase tracking-wider ${client.status === 'Active'
-                                                    ? 'bg-brand-500/20 text-brand-300 border-brand-500/30'
-                                                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                                                    }`}>
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border" style={{ background: client.status === 'Active' ? 'var(--accent-dim)' : 'rgba(196,68,90,0.12)', color: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', borderColor: client.status === 'Active' ? 'var(--border-accent)' : 'rgba(196,68,90,0.25)' }}>
                                                     {client.status}
                                                 </span>
                                                 {client.category && (
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white font-bold border border-white/10 backdrop-blur-sm">
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                                                         CAT {client.category}
                                                     </span>
                                                 )}
                                             </div>
                                             {/* Quick Stats Badges */}
                                             <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                <span className={`text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1 border backdrop-blur-sm ${overdueCount > 0 ? 'bg-red-500/20 text-red-300 border-red-500/30' : 'bg-white/10 text-gray-300 border-white/10'}`}>
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border" style={{ background: overdueCount > 0 ? 'rgba(196,68,90,0.1)' : 'var(--bg-secondary)', color: overdueCount > 0 ? 'var(--color-danger)' : 'var(--text-muted)', borderColor: overdueCount > 0 ? 'rgba(196,68,90,0.25)' : 'var(--border)' }}>
                                                     <CheckCircle2 size={10} />
                                                     {clientTaskCount} tasks {overdueCount > 0 && `· ${overdueCount} overdue`}
                                                 </span>
                                                 {riskBadgeClass && (
-                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1 border backdrop-blur-sm font-bold uppercase ${riskBadgeClass}`}>
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border font-bold uppercase" style={{ background: hasCritical ? 'rgba(196,68,90,0.1)' : 'rgba(201,138,42,0.1)', color: hasCritical ? 'var(--color-danger)' : 'var(--color-warning)', borderColor: hasCritical ? 'rgba(196,68,90,0.25)' : 'rgba(201,138,42,0.25)' }}>
                                                         <AlertTriangle size={10} />
                                                         {hasCritical ? 'High Risk' : 'Elevated'}
                                                     </span>
@@ -628,12 +623,12 @@ const ClientsPage: React.FC = () => {
 
                             {/* Card Body */}
                             <div
-                                className="p-6 flex flex-col gap-4 bg-navy-900/40 backdrop-blur-sm cursor-pointer hover:bg-navy-800/50 transition-colors"
+                                className="p-4 flex flex-col gap-3 cursor-pointer transition-colors" style={{ background: 'var(--bg-surface)' }} onMouseEnter={e => e.currentTarget.style.background='var(--bg-elevated)'} onMouseLeave={e => e.currentTarget.style.background='var(--bg-surface)'}
                                 onClick={() => navigate(`/clients/${client.id}`)}
                             >
-                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border)' }}>
                                     <div className="flex items-start gap-3 group/item">
-                                        <div className="mt-0.5 p-1.5 rounded-full bg-white/5 text-gray-400">
+                                        <div className="mt-0.5 p-1.5 rounded-md" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
                                             <User size={12} />
                                         </div>
                                         <div>
@@ -647,11 +642,11 @@ const ClientsPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                     <div className="flex items-center text-sm font-medium text-gray-400">
+                                     <div className="flex items-center text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
                                          <Briefcase size={14} className="mr-2" />
                                          <span className="truncate max-w-[150px]">{client.serviceType}</span>
                                      </div>
-                                     <span className="text-xs text-brand-400 font-bold hover:underline">View Details →</span>
+                                     <span className="text-xs font-bold" style={{ color: 'var(--accent)' }}>View →</span>
                                 </div>
                             </div>
                         </div>
@@ -676,11 +671,11 @@ const ClientsPage: React.FC = () => {
 
             {!loading && filteredClients.length === 0 && (
                 <div className="text-center py-20">
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                        <Building2 size={32} className="text-gray-600" />
+                    <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                        <Building2 size={28} style={{ color: 'var(--text-muted)' }} />
                     </div>
-                    <p className="text-xl font-bold text-white">No clients found</p>
-                    <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">
+                    <p className="text-base font-bold" style={{ color: 'var(--text-heading)' }}>No clients found</p>
+                    <p className="text-sm mt-1 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
                         Try adjusting your filters or add a new client to the directory.
                     </p>
                 </div>
@@ -688,26 +683,26 @@ const ClientsPage: React.FC = () => {
 
             {/* Add/Edit Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar border border-white/10 shadow-2xl flex flex-col">
-                        <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-white/5 sticky top-0 backdrop-blur-md z-10">
-                            <h2 className="text-xl font-bold text-white flex items-center">
-                                {editingId ? <Edit className="mr-2 text-amber-400" /> : <Plus className="mr-2 text-amber-400" />}
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar border shadow-2xl flex flex-col" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-mid)' }}>
+                        <div className="px-6 py-4 border-b flex justify-between items-center sticky top-0 backdrop-blur-md z-10" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+                            <h2 className="text-base font-bold flex items-center" style={{ color: 'var(--text-heading)' }}>
+                                {editingId ? <Edit className="mr-2" size={16} style={{ color: 'var(--accent)' }} /> : <Plus className="mr-2" size={16} style={{ color: 'var(--accent)' }} />}
                                 {editingId ? 'Edit Client' : 'New Client Profile'}
                             </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
+                            <button onClick={() => setIsModalOpen(false)} className="transition-colors p-1 rounded-lg" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => e.currentTarget.style.background='var(--bg-elevated)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>
                                 <X size={24} />
                             </button>
                         </div>
 
                         {/* Tab Strip */}
-                        <div className="flex px-6 pt-4 gap-6 border-b border-white/10 shrink-0 overflow-x-auto">
+                        <div className="flex px-6 pt-4 gap-6 border-b shrink-0 overflow-x-auto" style={{ borderColor: 'var(--border)' }}>
                             {(['BASIC', 'CONTACT', 'ASSIGNMENT', ...(editingId ? ['PERMISSIONS'] : [])] as const).map(tab => (
                                 <button
                                     key={tab}
                                     type="button"
                                     onClick={() => setActiveModalTab(tab as any)}
-                                    className={`pb-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 whitespace-nowrap ${activeModalTab === tab ? 'text-amber-400 border-amber-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
+                                    className={`pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 whitespace-nowrap ${activeModalTab === tab ? '' : 'border-transparent'}`} style={{ color: activeModalTab === tab ? 'var(--accent)' : 'var(--text-muted)', borderColor: activeModalTab === tab ? 'var(--accent)' : 'transparent' }}
                                 >
                                     {tab === 'BASIC' ? 'Basic Info' : tab === 'CONTACT' ? 'Contact & Tax' : tab === 'PERMISSIONS' ? '🔐 Audit Docs Access' : 'Assignment'}
                                 </button>
@@ -717,24 +712,24 @@ const ClientsPage: React.FC = () => {
                         <form onSubmit={handleSave} className="p-6 space-y-6 flex-1 overflow-y-auto">
                             {activeModalTab === 'BASIC' && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Basic Information</h3>
+                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Basic Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                                             Client Name <span className="text-red-400">*</span>
                                         </label>
                                         <input required type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Acme Corp Pvt Ltd" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                                             Client Code <span className="text-[10px] text-gray-500">(Auto-generated if empty)</span>
                                         </label>
                                         <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm font-mono"
                                             value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="e.g. ACME-01 (Optional)" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Assignment Type</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Assignment Type</label>
                                         <div className="relative">
                                             <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm appearance-none"
                                                 value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}>
@@ -752,7 +747,7 @@ const ClientsPage: React.FC = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Client Type</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Client Type</label>
                                         <div className="relative">
                                             <select className="w-full glass-input rounded-lg px-4 py-2.5 text-sm appearance-none"
                                                 value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value as any })}>
@@ -777,7 +772,7 @@ const ClientsPage: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Auditor (Signing Authority)</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Auditor (Signing Authority)</label>
                                         <div className="grid grid-cols-1 gap-2">
                                             <select
                                                 className="w-full glass-input rounded-lg px-4 py-2.5 text-sm appearance-none"
@@ -814,30 +809,30 @@ const ClientsPage: React.FC = () => {
 
                             {activeModalTab === 'CONTACT' && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Contact & Tax Details</h3>
+                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Contact & Tax Details</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">PAN Number</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>PAN Number</label>
                                         <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.pan} onChange={e => setFormData({ ...formData, pan: e.target.value })} placeholder="9-digit PAN" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Contact Person</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Contact Person</label>
                                         <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Phone Number</label>
                                         <input type="tel" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Email Address</label>
                                         <input type="email" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Office Address</label>
+                                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Office Address</label>
                                         <input type="text" className="w-full glass-input rounded-lg px-4 py-2.5 text-sm"
                                             value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                                     </div>
@@ -848,9 +843,9 @@ const ClientsPage: React.FC = () => {
                             {activeModalTab === 'ASSIGNMENT' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Internal Focal Person</h3>
+                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Internal Focal Person</h3>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Assigned Internal Focal Person</label>
+                                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Assigned Internal Focal Person</label>
                                     <StaffSelect
                                         users={staffList}
                                         value={formData.auditorId}
@@ -859,25 +854,25 @@ const ClientsPage: React.FC = () => {
                                     />
                                 </div>
                                 <div className="mt-4">
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+                                    <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Status</label>
                                     <div className="flex gap-4">
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input type="radio" name="status" checked={formData.status === 'Active'} onChange={() => setFormData({ ...formData, status: 'Active' })} className="accent-blue-500" />
-                                            <span className="text-sm text-gray-300">Active</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-heading)' }}>Active</span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input type="radio" name="status" checked={formData.status === 'Inactive'} onChange={() => setFormData({ ...formData, status: 'Inactive' })} className="accent-red-500" />
-                                            <span className="text-sm text-gray-300">Inactive</span>
+                                            <span className="text-sm" style={{ color: 'var(--text-heading)' }}>Inactive</span>
                                         </label>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Compliance Settings */}
-                            <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2">Compliance Services</h3>
+                            <div className="space-y-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Compliance Services</h3>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                    <label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }} onMouseEnter={e => e.currentTarget.style.background='var(--bg-secondary)'} onMouseLeave={e => e.currentTarget.style.background='var(--bg-elevated)'}>
                                         <input
                                             type="checkbox"
                                             checked={formData.vatReturn || false}
@@ -890,7 +885,7 @@ const ClientsPage: React.FC = () => {
                                         </div>
                                     </label>
 
-                                    <label className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                    <label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }} onMouseEnter={e => e.currentTarget.style.background='var(--bg-secondary)'} onMouseLeave={e => e.currentTarget.style.background='var(--bg-elevated)'}>
                                         <input
                                             type="checkbox"
                                             checked={formData.itrReturn || false}
@@ -940,14 +935,10 @@ const ClientsPage: React.FC = () => {
                                                         setPermissionSaving(false);
                                                     }
                                                 }}
-                                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
-                                                    isPermitted
-                                                        ? 'bg-amber-500/10 border-amber-500/30'
-                                                        : 'bg-white/5 border-white/10 hover:border-white/20'
-                                                }`}
+                                                className={`w-full flex items-center justify-between p-3 rounded-lg transition-all border`} style={{ background: isPermitted ? 'var(--accent-dim)' : 'var(--bg-elevated)', borderColor: isPermitted ? 'var(--border-accent)' : 'var(--border)' }}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-gray-300">
+                                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold border" style={{ background: 'var(--bg-secondary)', color: 'var(--accent)', borderColor: 'var(--border)' }}>
                                                         {staff.displayName?.[0] || '?'}
                                                     </div>
                                                     <div className="text-left">
@@ -955,7 +946,7 @@ const ClientsPage: React.FC = () => {
                                                         <p className="text-[10px] text-gray-500">{staff.department || 'Staff'}</p>
                                                     </div>
                                                 </div>
-                                                {isPermitted && <Check size={16} className="text-amber-400" />}
+                                                {isPermitted && <Check size={16} style={{ color: 'var(--accent)' }} />}
                                             </button>
                                         );
                                     })}
@@ -967,9 +958,9 @@ const ClientsPage: React.FC = () => {
                             )}
 
 
-                            <div className="flex justify-end pt-4 gap-3 sticky bottom-0 bg-[#080b14]/90 p-4 border-t border-white/10 -mx-6 -mb-6 backdrop-blur">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 transition-colors text-sm font-medium">Cancel</button>
-                                <button type="submit" disabled={isSaving} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg flex items-center">
+                            <div className="flex justify-end pt-4 gap-3 sticky bottom-0 p-4 border-t -mx-6 -mb-6 backdrop-blur-md" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg transition-colors text-sm font-medium border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }} onMouseEnter={e => e.currentTarget.style.background='var(--bg-elevated)'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>Cancel</button>
+                                <button type="submit" disabled={isSaving} className="text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center transition-all" style={{ background: 'var(--accent)', boxShadow: 'var(--shadow-accent)' }} onMouseEnter={e => { if (!isSaving) e.currentTarget.style.background='var(--accent-hover)'; }} onMouseLeave={e => e.currentTarget.style.background='var(--accent)'}>
                                     {isSaving ? <span className="animate-spin mr-2">⏳</span> : <Save size={18} className="mr-2" />}
                                     {editingId ? 'Update Client' : 'Create Client'}
                                 </button>

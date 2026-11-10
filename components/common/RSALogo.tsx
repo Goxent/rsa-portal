@@ -1,54 +1,66 @@
 import React from 'react';
 
-interface RSALogoProps {
+export interface RSALogoProps {
     className?: string;
-    size?: 'sm' | 'md' | 'lg' | 'xl';
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+    themeOverride?: 'light' | 'dark';
+    alt?: string;
+    style?: React.CSSProperties;
     animated?: boolean;
 }
 
 const RSALogo: React.FC<RSALogoProps> = ({ 
     className = '', 
     size = 'md',
+    themeOverride,
+    alt = 'R. Sapkota & Associates',
+    style,
     animated = false
 }) => {
     const sizeMap = {
-        sm: 'w-8 h-8 text-[12px]',
-        md: 'w-12 h-10 text-[14px]',
-        lg: 'w-24 h-20 text-[24px]',
-        xl: 'w-32 h-28 text-[32px]'
+        xs: 'w-6 h-6 rounded-md',
+        sm: 'w-8 h-8 rounded-lg',
+        md: 'w-12 h-12 rounded-xl',
+        lg: 'w-20 h-20 rounded-2xl',
+        xl: 'w-28 h-28 rounded-2xl',
+        '2xl': 'w-36 h-36 rounded-3xl'
     };
 
-    const containerClasses = `
-        relative flex items-center justify-center 
-        bg-gradient-to-br from-brand-600 to-brand-400 
-        dark:from-brand-500 dark:to-brand-700
-        rounded-[12px] shadow-lg overflow-hidden
-        border border-white/20
-        ${sizeMap[size]}
-        ${animated ? 'animate-logo-reveal' : ''}
-        ${className}
-    `;
-
     return (
-        <div className={containerClasses}>
-            {/* Glossy Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
-            
-            {/* Brand Text */}
-            <span className="relative z-10 font-black tracking-widest text-white drop-shadow-md">
-                RSA
-            </span>
-
-            {/* Subtle Animated Shimmer */}
-            <div 
-                className="absolute inset-x-[-100%] top-0 h-full w-[200%] bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-30 transform -skew-x-[30deg]"
-                style={{ 
-                    animation: animated ? 'logo-shimmer 3s infinite linear' : 'none'
-                }}
-            />
-            
-            {/* Inner Glow */}
-            <div className="absolute inset-[2px] rounded-[10px] border border-white/5 pointer-events-none" />
+        <div 
+            className={`relative inline-flex items-center justify-center shrink-0 overflow-hidden select-none ${sizeMap[size] || sizeMap.md} ${animated ? 'transition-transform duration-300 hover:scale-105' : ''} ${className}`}
+            style={style}
+        >
+            {themeOverride === 'dark' ? (
+                <img 
+                    src="/rsa-logo-dark.png" 
+                    alt={alt} 
+                    className="w-full h-full object-contain pointer-events-none" 
+                    loading="eager"
+                />
+            ) : themeOverride === 'light' ? (
+                <img 
+                    src="/rsa-logo-light.png" 
+                    alt={alt} 
+                    className="w-full h-full object-contain pointer-events-none" 
+                    loading="eager"
+                />
+            ) : (
+                <>
+                    <img 
+                        src="/rsa-logo-light.png" 
+                        alt={alt} 
+                        className="block dark:hidden w-full h-full object-contain pointer-events-none" 
+                        loading="eager"
+                    />
+                    <img 
+                        src="/rsa-logo-dark.png" 
+                        alt={alt} 
+                        className="hidden dark:block w-full h-full object-contain pointer-events-none" 
+                        loading="eager"
+                    />
+                </>
+            )}
         </div>
     );
 };

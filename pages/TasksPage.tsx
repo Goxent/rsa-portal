@@ -1,9 +1,9 @@
-﻿import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
     LayoutGrid, List as ListIcon, UserCircle2, UserCheck, ChevronDown, Check, Sparkles, Plus, Filter, Search,
-    Trash2, X, FileSpreadsheet, FileText, Activity, ArrowRight, GanttChartSquare, Layers
+    Trash2, X, FileSpreadsheet, FileText, Activity, ArrowRight, GanttChartSquare, Layers, AlertTriangle
 } from 'lucide-react';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Task, TaskStatus, TaskPriority, UserRole, UserProfile, Client, SubTask, TaskTemplate, TaskComment, AuditPhase, TaskType } from '../types';
@@ -135,6 +135,8 @@ const TasksPage: React.FC = () => {
     const filterStaff = getParam('staff', 'ALL');
     const filterAuditor = getParam('auditor', 'ALL');
     const filterTaskType = getParam('type', 'ALL') as TaskType | 'ALL';
+    const quickParam = getParam('quick', '');
+    const boardMode = getParam('boardMode', '');
     const viewMode = getParam('view', isMobile ? 'LIST' : 'KANBAN');
     const groupBy = getParam('group', 'NONE') as 'NONE' | 'AUDITOR' | 'ASSIGNEE' | 'PHASE';
 
@@ -177,6 +179,7 @@ const TasksPage: React.FC = () => {
     const setFilterStaff = (val: string) => updateFilters({ staff: val });
     const setFilterAuditor = (val: string) => updateFilters({ auditor: val });
     const setFilterTaskType = (val: string) => updateFilters({ type: val });
+    const setQuickParam = (val: string) => updateFilters({ quick: val });
     const setViewMode = (val: string) => updateFilters({ view: val });
     const setGroupBy = (val: string) => updateFilters({ group: val });
 
@@ -1396,6 +1399,20 @@ const TasksPage: React.FC = () => {
                                 <span>My Work</span>
                             </button>
 
+                            {/* Quick Filter: Overdue (D6) */}
+                            <button
+                                onClick={() => updateFilters({ quick: quickParam === 'OVERDUE' ? null : 'OVERDUE' })}
+                                title="Filter overdue assignments"
+                                className={`h-[30px] px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all border ${
+                                    quickParam === 'OVERDUE'
+                                        ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 font-semibold shadow-xs'
+                                        : 'bg-secondary/70 border-border text-muted hover:text-heading hover:bg-secondary'
+                                }`}
+                            >
+                                <AlertTriangle size={13} className={quickParam === 'OVERDUE' ? 'text-rose-400' : 'text-muted'} />
+                                <span>Overdue</span>
+                            </button>
+
                             {/* Quick Filter: In Review */}
                             <button
                                 onClick={() => setFilterStatus(filterStatus === TaskStatus.UNDER_REVIEW ? 'ALL' : TaskStatus.UNDER_REVIEW)}
@@ -1510,7 +1527,7 @@ const TasksPage: React.FC = () => {
                                                             {usersList.map((st, idx) => (
                                                                 <button
                                                                     key={st.uid || `staff-${idx}`}
-                                                                    onClick={() => { handleBulkReassign(st.uid, bulkAssignMode); setShowBulkAssignMenu(false); }}
+                                                                    onClick={() => { handleBulkReassign(st.uid); setShowBulkAssignMenu(false); }}
                                                                     className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-muted hover:bg-surface hover:text-heading transition-colors rounded-lg flex items-center gap-2"
                                                                 >
                                                                     <div className="w-5 h-5 rounded bg-accent/10 flex items-center justify-center text-[9px] font-bold text-accent">

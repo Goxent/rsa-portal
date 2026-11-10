@@ -196,26 +196,23 @@ const ClientDetailPage: React.FC = () => {
             </button>
 
             {/* Client Header */}
-            <div className="glass-panel p-8 rounded-2xl relative overflow-hidden bg-gradient-to-br from-navy-900/60 to-black/40">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="p-6 rounded-xl relative overflow-hidden border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', opacity: 0.8 }}></div>
 
                 <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
                     {/* Avatar / Code Card */}
-                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-amber-500/30 flex items-center justify-center text-3xl font-black text-amber-400 shadow-xl shadow-blue-900/20 shrink-0">
+                    <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black shrink-0 border" style={{ background: 'var(--bg-elevated)', color: 'var(--accent)', borderColor: 'var(--border-mid)' }}>
                         {client.code?.substring(0, 2).toUpperCase() || 'CL'}
                     </div>
 
                     <div className="flex-1 space-y-4">
                         <div>
                             <div className="flex items-center gap-3 flex-wrap">
-                                <h1 className="text-3xl font-black text-white">{client.name}</h1>
-                                <span className="px-2.5 py-1 rounded bg-black/40 border border-white/10 text-xs font-mono text-gray-400">
+                                <h1 className="text-2xl font-black" style={{ color: 'var(--text-heading)' }}>{client.name}</h1>
+                                <span className="px-2 py-0.5 rounded text-xs font-mono border" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                                     {client.code}
                                 </span>
-                                <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider border ${client.status === 'Active'
-                                    ? 'bg-brand-500/10 text-brand-400 border-brand-500/20'
-                                    : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                    }`}>
+                                <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border" style={{ background: client.status === 'Active' ? 'var(--accent-dim)' : 'rgba(196,68,90,0.12)', color: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', borderColor: client.status === 'Active' ? 'var(--border-accent)' : 'rgba(196,68,90,0.25)' }}>
                                     {client.status}
                                 </span>
                             </div>
@@ -330,16 +327,12 @@ const ClientDetailPage: React.FC = () => {
 
             {/* Tabs & Content */}
             <div className="space-y-6">
-                <div className="flex gap-1 overflow-x-auto pb-2 border-b border-white/10 hide-scrollbar">
+                <div className="flex gap-1 overflow-x-auto pb-1 border-b hide-scrollbar" style={{ borderColor: 'var(--border)' }}>
                     {(['OVERVIEW', 'TASKS', 'DOCUMENTS', 'WORK_LOGS'] as Tab[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-5 py-3 rounded-t-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
-                                activeTab === tab
-                                    ? 'bg-white/10 text-white border-b-2 border-brand-500'
-                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                            }`}
+                            className={`px-4 py-2.5 rounded-t-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap border-b-2 ${activeTab === tab ? '' : 'border-transparent'}`} style={{ color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', borderColor: activeTab === tab ? 'var(--accent)' : 'transparent', background: activeTab === tab ? 'var(--bg-elevated)' : 'transparent' }}
                         >
                             {tab === 'OVERVIEW' && <Building2 size={15} />}
                             {tab === 'TASKS' && <CheckCircle2 size={15} />}
@@ -360,8 +353,8 @@ const ClientDetailPage: React.FC = () => {
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Engagement Info */}
-                                <div className="glass-panel p-6 rounded-2xl border border-white/5">
-                                    <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Briefcase size={14} className="text-amber-400" /> Engagement Info</h4>
+                                <div className="p-5 rounded-xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                    <h4 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Briefcase size={14} /> Engagement Info</h4>
                                     <div className="space-y-3 text-sm">
                                         <div><span className="text-gray-500 text-xs">Audit Period:</span><p className="text-white font-medium">{client.auditPeriod || 'Not Set'}</p></div>
                                         <div><span className="text-gray-500 text-xs">Start / End:</span><p className="text-white font-medium">{client.auditStartDate ? new Date(client.auditStartDate).toLocaleDateString() : '—'} → {client.auditEndDate ? new Date(client.auditEndDate).toLocaleDateString() : '—'}</p></div>
@@ -373,8 +366,8 @@ const ClientDetailPage: React.FC = () => {
                                     </div>
                                 </div>
                                 {/* Work Status */}
-                                <div className="glass-panel p-6 rounded-2xl border border-white/5">
-                                    <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2"><CheckCircle2 size={14} className="text-brand-400" /> Work Status</h4>
+                                <div className="p-5 rounded-xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                    <h4 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}><CheckCircle2 size={14} /> Work Status</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-white/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-white">{clientTasks.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Tasks</p></div>
                                         <div className="bg-brand-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-brand-400">{clientTasks.filter(t => t.status === 'COMPLETED').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Completed</p></div>

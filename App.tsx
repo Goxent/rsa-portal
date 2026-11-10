@@ -238,8 +238,8 @@ const App: React.FC = () => {
                     <Route path="resources" element={<Navigate to="/templates" replace />} />
 
                     <Route path="knowledge-base" element={<Navigate to="/templates" replace />} />
-                    <Route path="policy" element={<LazyPage><PolicyPage /></LazyPage>} />
-                    <Route path="handbook" element={<Navigate to="/policy" replace />} />
+                    <Route path="policy" element={<AdminRoute><LazyPage><PolicyPage /></LazyPage></AdminRoute>} />
+                    <Route path="handbook" element={<AdminRoute><Navigate to="/policy" replace /></AdminRoute>} />
                     <Route path="leaves" element={<LazyPage><LeavePage /></LazyPage>} />
                     <Route path="staff" element={
                       <AdminRoute>
