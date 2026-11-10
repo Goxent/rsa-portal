@@ -1,9 +1,10 @@
+import { getCurrentDateUTC } from '../../utils/dates';
 import React, { useState, useEffect } from 'react';
 import { AttendanceRecord, Client, UserProfile, WorkLog } from '../../types';
 import ClientSelect from '../ClientSelect';
 import StaffSelect from '../StaffSelect';
 import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
-import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users, Calendar, MapPin, Building2, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, Briefcase, User, FileText, Clock, Save, X, CheckCircle2, Users, Calendar, MapPin, Building2, ChevronDown, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import NepaliDatePicker from '../NepaliDatePicker';
 import ActionDetailEditor from '../common/ActionDetailEditor';
@@ -81,6 +82,20 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
         if (!activeUser) {
             return;
         }
+
+        const todayStr = getCurrentDateUTC();
+        // A7: Block future dates
+        if (localDate > todayStr) {
+            toast.error("Future date attendance logging is not permitted.");
+            return;
+        }
+
+        // A7: For past dates, non-admins must provide an explanation
+        if (localDate < todayStr && !isAdmin && !formData.notes?.trim()) {
+            toast.error("Please provide an explanation in Notes for why this attendance is being submitted after the date.");
+            return;
+        }
+
         setIsSaving(true);
         try {
             const baseRecord = {
@@ -231,6 +246,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             <input
                                 type="date"
                                 required
+                                max={getCurrentDateUTC()}
                                 className="w-full border px-4 py-2.5 text-sm outline-none transition-all tabular-nums"
                                 style={{ 
                                     background: 'var(--bg-main)', 
@@ -241,6 +257,17 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                 value={localDate}
                                 onChange={(e) => setLocalDate(e.target.value)}
                             />
+                        )}
+                        {localDate < getCurrentDateUTC() && (
+                            <div className="mt-2.5 p-3 rounded-lg border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs flex items-start gap-2">
+                                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="font-bold">Past-Date Correction (Handbook Rule)</p>
+                                    <p className="text-[11px] mt-0.5 opacity-90">
+                                        Per handbook policy, attendance should be logged on the day. For retroactive corrections, an explanatory note is required below.
+                                    </p>
+                                </div>
+                            </div>
                         )}
                     </div>
 

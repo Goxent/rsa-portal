@@ -20,5 +20,21 @@
       "type": "image/png",
       "purpose": "any"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Check In",
+      "short_name": "Check In",
+      "description": "Log arrival and start workday",
+      "url": "/attendance?action=checkin",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Request Leave",
+      "short_name": "Leave",
+      "description": "Apply for annual, sick or exam leave",
+      "url": "/leaves?action=new",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

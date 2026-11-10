@@ -5,32 +5,26 @@ import {
     Cloud, CheckCircle2, AlertTriangle, 
     ListFilter, Activity, Timer, Minimize2, 
     Maximize2, Briefcase, Building2, Loader2, 
-    ChevronUp
+    ChevronUp, Home, CheckSquare, Send, X, WifiOff
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useClockIn, useClockOut, useAttendanceHistory, attendanceKeys } from '../../hooks/useAttendance';
+import { useClockIn, useClockOut, useAttendanceHistory, useTodayAttendance, useCurrentBSMonthLateCount, attendanceKeys } from '../../hooks/useAttendance';
 import { useClients } from '../../hooks/useClients';
 import { useQueryClient } from '@tanstack/react-query';
 import { Client, WorkLog, AttendanceRecord } from '../../types';
 import { AuthService } from '../../services/firebase';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import NepaliDate from 'nepali-date-converter';
-import { toBS } from '../../utils/dates';
 import SearchableClientSelect from './SearchableClientSelect';
 import SearchableSelect from '../common/SearchableSelect';
 import ActionDetailEditor from '../common/ActionDetailEditor';
 import { NATURE_OF_ASSIGNMENTS } from '../../constants/firmData';
-
-
-
 
 // Timer Component to prevent full AttendanceWidget re-renders
 const SessionTimer = React.memo(({ initialSeconds, isRunning, className }: { initialSeconds: number, isRunning: boolean, className?: string }) => {
     const [seconds, setSeconds] = useState(initialSeconds);
     const lastInitialSeconds = useRef(initialSeconds);
 
-    // Sync if initialSeconds changes significantly (e.g. on mount/sync)
     useEffect(() => {
         if (Math.abs(initialSeconds - seconds) > 2) {
             setSeconds(initialSeconds);
@@ -75,6 +69,32 @@ const AttendanceWidget: React.FC = () => {
     const [clockOutTime, setClockOutTime] = useState<string | null>(null);
     const [totalWorkHours, setTotalWorkHours] = useState<number | null>(null);
 
+    // A3: Check-in type
+    const [checkInType, setCheckInType] = useState<'OFFICE' | 'CLIENT_SITE' | 'REMOTE'>('OFFICE');
+    const [selectedSiteClientId, setSelectedSiteClientId] = useState<string>('');
+
+    // A4: Daily Report modal on checkout
+    const [showDailyReportModal, setShowDailyReportModal] = useState(false);
+    const [dailyReport, setDailyReport] = useState({
+        done: '',
+        pending: '',
+        blockers: '',
+        tomorrow: ''
+    });
+
+    // Offline status (M3)
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
     const formatToAMPM = (timeStr: string | null) => {
         if (!timeStr) return '--:-- --';
         try {
@@ -89,14 +109,15 @@ const AttendanceWidget: React.FC = () => {
         }
     };
 
-    // React Query Hooks
+    // React Query Hooks (D4 Fix: useTodayAttendance for immediate, live sync across devices)
     const { data: clientsList = [] } = useClients();
-    const { data: attendanceHistory = [], isLoading: historyLoading } = useAttendanceHistory(user?.uid);
+    const { data: todayRecord, isLoading: todayLoading } = useTodayAttendance(user?.uid);
+    const { data: lateStats } = useCurrentBSMonthLateCount(user?.uid);
     const clockInMutation = useClockIn();
     const clockOutMutation = useClockOut();
     const queryClient = useQueryClient();
 
-    const loading = historyLoading || clockInMutation.isPending || clockOutMutation.isPending;
+    const loading = todayLoading || clockInMutation.isPending || clockOutMutation.isPending;
 
     // Derived State for Clients
     const clients = React.useMemo(() => {
@@ -112,43 +133,61 @@ const AttendanceWidget: React.FC = () => {
         return [internalClient, ...clientsList.filter(c => c.status === 'Active')];
     }, [clientsList]);
 
-    // Modernized Work Logs
+    // Work Logs
     const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
     const [isSyncingLogs, setIsSyncingLogs] = useState(false);
     const hasInitializedLogs = useRef(false);
 
-    // Initial log setup from pending OR default
+    // Initial log setup (D1 Fix: Use localStorage to prevent database write storm)
     useEffect(() => {
-        if (hasInitializedLogs.current) return;
+        if (hasInitializedLogs.current || !user?.uid) return;
+
+        const storageKey = `rsa_draft_worklogs_${user.uid}`;
+        const savedDraft = localStorage.getItem(storageKey);
         
-        if (user?.pendingWorkLogs && user.pendingWorkLogs.length > 0) {
-            setWorkLogs(user.pendingWorkLogs);
-            hasInitializedLogs.current = true;
-        } else if (user) {
-            setWorkLogs([
-                { id: Math.random().toString(36).substr(2, 9), clientId: 'INTERNAL', clientName: 'Internal Work / Office', natureOfAssignment: NATURE_OF_ASSIGNMENTS[0], description: '', duration: 0, billable: true, locationTag: 'Office' }
-            ]);
-
-            hasInitializedLogs.current = true;
+        if (savedDraft) {
+            try {
+                const parsed = JSON.parse(savedDraft);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setWorkLogs(parsed);
+                    hasInitializedLogs.current = true;
+                    return;
+                }
+            } catch (e) {
+                console.warn("Could not parse draft worklogs", e);
+            }
         }
-    }, [user]);
 
-    // Effect: Sync state with fetched history
+        // Default initial log
+        setWorkLogs([
+            {
+                id: Math.random().toString(36).substr(2, 9),
+                clientId: 'INTERNAL',
+                clientName: 'Internal Work / Office',
+                natureOfAssignment: NATURE_OF_ASSIGNMENTS[0],
+                description: '',
+                duration: 0,
+                billable: true,
+                locationTag: 'Office'
+            }
+        ]);
+        hasInitializedLogs.current = true;
+    }, [user?.uid]);
+
+    // Sync state with today's live record (D4 Fix)
     useEffect(() => {
-        if (!attendanceHistory) return;
-
-        const todayStr = new Date().toLocaleDateString('en-CA');
-        const todayRecord = attendanceHistory.find(r => r.date === todayStr);
+        if (todayLoading) return;
 
         if (todayRecord) {
-            // A3 Fix: Handle approved leave records where clockIn is null
             if (todayRecord.status === 'ON LEAVE' || !todayRecord.clockIn) {
                 setStatus('COMPLETED');
                 setCurrentRecordId(todayRecord.id);
                 setClockInTime(null);
                 setClockOutTime(null);
                 setTotalWorkHours(0);
-                if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
+                if (todayRecord.workLogs && todayRecord.workLogs.length > 0) {
+                    setWorkLogs(todayRecord.workLogs);
+                }
                 return;
             }
 
@@ -159,29 +198,41 @@ const AttendanceWidget: React.FC = () => {
                 setClockOutTime(null);
                 setTotalWorkHours(null);
 
-                // Recover session time
-                const [h, m, s] = todayRecord.clockIn.split(':').map(Number);
-                const start = new Date();
-                start.setHours(h, m, s || 0, 0);
-                setSessionSeconds(Math.max(0, Math.floor((new Date().getTime() - start.getTime()) / 1000)));
+                // Recover session timer
+                if (todayRecord.clockInISO) {
+                    const startMs = new Date(todayRecord.clockInISO).getTime();
+                    setSessionSeconds(Math.max(0, Math.floor((Date.now() - startMs) / 1000)));
+                } else if (todayRecord.clockIn) {
+                    const [h, m, s] = todayRecord.clockIn.split(':').map(Number);
+                    const start = new Date();
+                    start.setHours(h, m, s || 0, 0);
+                    setSessionSeconds(Math.max(0, Math.floor((Date.now() - start.getTime()) / 1000)));
+                }
 
-                if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
+                if (todayRecord.workLogs && todayRecord.workLogs.length > 0) {
+                    setWorkLogs(todayRecord.workLogs);
+                }
+                if (todayRecord.checkInType) {
+                    setCheckInType(todayRecord.checkInType);
+                }
             } else {
                 setStatus('COMPLETED');
                 setCurrentRecordId(todayRecord.id);
                 setClockInTime(todayRecord.clockIn);
                 setClockOutTime(todayRecord.clockOut);
                 setTotalWorkHours(todayRecord.workHours);
-                if (todayRecord.workLogs) setWorkLogs(todayRecord.workLogs);
+                if (todayRecord.workLogs && todayRecord.workLogs.length > 0) {
+                    setWorkLogs(todayRecord.workLogs);
+                }
             }
         } else {
             setStatus('CLOCKED_OUT');
             setCurrentRecordId(null);
             setSessionSeconds(0);
         }
-    }, [attendanceHistory]);
+    }, [todayRecord, todayLoading]);
 
-    // Snapshot refs for unmount-save
+    // Snapshot refs for unmount save
     const workLogsRef = useRef(workLogs);
     const statusRef = useRef(status);
     const currentRecordIdRef = useRef(currentRecordId);
@@ -192,65 +243,58 @@ const AttendanceWidget: React.FC = () => {
         currentRecordIdRef.current = currentRecordId;
     }, [workLogs, status, currentRecordId]);
 
-    // Save on Unmount to prevent data loss if navigating away before debounce fires
+    // Save on Unmount if clocked in
     useEffect(() => {
         return () => {
             if (statusRef.current === 'CLOCKED_IN' && currentRecordIdRef.current) {
                 AuthService.updateAttendance(currentRecordIdRef.current, { workLogs: workLogsRef.current }).catch(console.error);
-                // Invalidate so next time it mounts, it fetches fresh from DB just in case
-                queryClient.invalidateQueries({ queryKey: attendanceKeys.history(user?.uid || '') });
             }
         };
-    }, [queryClient, user?.uid]);
+    }, []);
 
-    // Timer & Late Check
+    // Timer & Late Check (10:15 AM Nepal time)
     useEffect(() => {
         const timer = setInterval(() => {
-            setCurrentTime(new Date());
-
-            // Late check (after 10:15 AM)
             const now = new Date();
-            const limit = new Date();
-            limit.setHours(10, 15, 0, 0);
-            setIsLate(now > limit);
+            setCurrentTime(now);
 
+            // A1 / Nepal timezone calculation: 10:15 AM
+            const nepalOffsetMs = (5 * 60 + 45) * 60 * 1000;
+            const nepalTime = new Date(now.getTime() + nepalOffsetMs);
+            const nepalHour = nepalTime.getUTCHours();
+            const nepalMinute = nepalTime.getUTCMinutes();
+            const isAfterLateCutoff = nepalHour > 10 || (nepalHour === 10 && nepalMinute > 15);
+            setIsLate(isAfterLateCutoff);
         }, 1000);
         return () => clearInterval(timer);
     }, []);
 
-    // Auto-save Work Logs (Persistent cross-device)
+    // Auto-save Work Logs (D1 & S6 Fix: Store drafts in localStorage; debounce only to active record without audit log)
     useEffect(() => {
-        if (!user) return;
+        if (!user?.uid) return;
 
         const timeoutId = setTimeout(async () => {
             if (status === 'CLOCKED_IN' && currentRecordId) {
-                // Case 1: Active session -> Save to daily record
-                try {
-                    await AuthService.updateAttendance(currentRecordId, { workLogs });
-                    queryClient.setQueryData(attendanceKeys.history(user.uid), (oldData: AttendanceRecord[] | undefined) => {
-                        if (!oldData) return oldData;
-                        return oldData.map(record => record.id === currentRecordId ? { ...record, workLogs } : record);
-                    });
-                } catch (err) {
-                    console.error("Auto-save to record failed", err);
-                }
-            } else if (status === 'CLOCKED_OUT') {
-                // Case 2: Not clocked in yet -> Save to User Profile
                 setIsSyncingLogs(true);
                 try {
-                    await AuthService.updateUserProfile(user.uid, {
-                        pendingWorkLogs: workLogs
-                    });
+                    await AuthService.updateAttendance(currentRecordId, { workLogs });
                 } catch (err) {
-                    console.error("Auto-save to profile failed", err);
+                    console.error("Auto-save to record failed", err);
                 } finally {
                     setIsSyncingLogs(false);
                 }
+            } else if (status === 'CLOCKED_OUT') {
+                // Save locally to browser only - NO Firestore user profile writes or audit storm!
+                try {
+                    localStorage.setItem(`rsa_draft_worklogs_${user.uid}`, JSON.stringify(workLogs));
+                } catch (e) {
+                    console.warn("Could not save worklogs draft locally", e);
+                }
             }
-        }, 1500); // 1.5s debounce
+        }, 2000);
 
         return () => clearTimeout(timeoutId);
-    }, [workLogs, status, currentRecordId, queryClient, user]);
+    }, [workLogs, status, currentRecordId, user?.uid]);
 
     const handleClockIn = async () => {
         if (!user || loading) return;
@@ -259,10 +303,13 @@ const AttendanceWidget: React.FC = () => {
             return;
         }
 
+        if (checkInType === 'CLIENT_SITE' && !selectedSiteClientId) {
+            toast.error("Please select the client for your site visit");
+            return;
+        }
+
         // Guard: block clock-in if today's record is ON LEAVE
-        const todayStr = new Date().toLocaleDateString('en-CA');
-        const todayRecord = attendanceHistory.find(r => r.date === todayStr);
-        if (todayRecord && (todayRecord as any).status === 'ON LEAVE') {
+        if (todayRecord && todayRecord.status === 'ON LEAVE') {
             toast.error("You have approved leave for today. Contact admin to override.");
             return;
         }
@@ -271,29 +318,51 @@ const AttendanceWidget: React.FC = () => {
             await clockInMutation.mutateAsync({
                 userId: user.uid,
                 method: 'WEB',
-                notes: isLate ? `Late: ${lateReason}` : '',
-                workLogs: workLogs // Migrate current work logs to the record
+                notes: isLate ? `Late: ${lateReason.trim()}` : '',
+                workLogs,
+                checkInType,
+                clientAtCheckIn: checkInType === 'CLIENT_SITE' ? selectedSiteClientId : undefined,
+                clientIds: checkInType === 'CLIENT_SITE' && selectedSiteClientId ? [selectedSiteClientId] : []
             });
-            // Clear pending logs in profile
-            await AuthService.updateUserProfile(user.uid, {
-                pendingWorkLogs: []
-            });
-            // State update handled by useEffect syncing with invalidated query
+
+            // Clear draft from localStorage
+            try {
+                localStorage.removeItem(`rsa_draft_worklogs_${user.uid}`);
+            } catch (e) {
+                // ignore
+            }
         } catch (error) {
             console.error("Clock in failed", error);
         }
     };
 
-    const handleClockOut = async () => {
+    const handleOpenClockOutModal = () => {
+        setShowDailyReportModal(true);
+    };
+
+    const handleConfirmClockOut = async () => {
         if (!user || !currentRecordId || loading) return;
+
+        // A4: Validate timesheet / work logs
+        const hasWorkLogs = workLogs.some(l => l.description.trim().length > 0 || l.duration > 0);
+        if (!hasWorkLogs && !dailyReport.done.trim()) {
+            toast.error("Please provide either your work log details or Daily Report summary before clocking out.");
+            return;
+        }
 
         try {
             await clockOutMutation.mutateAsync({
                 userId: user.uid,
                 recordId: currentRecordId,
-                workLogs
+                workLogs,
+                dailyReport: {
+                    done: dailyReport.done.trim() || 'Completed daily assigned tasks.',
+                    pending: dailyReport.pending.trim() || 'None',
+                    blockers: dailyReport.blockers.trim() || 'None',
+                    tomorrow: dailyReport.tomorrow.trim() || 'Continue active assignments.'
+                }
             });
-            // State update handled by useEffect
+            setShowDailyReportModal(false);
             setSessionSeconds(0);
         } catch (error) {
             console.error("Clock out failed", error);
@@ -309,9 +378,8 @@ const AttendanceWidget: React.FC = () => {
             description: '',
             duration: 0,
             billable: true,
-            locationTag: 'Office'
+            locationTag: checkInType === 'CLIENT_SITE' ? 'Client Premises' : 'Office'
         }]);
-
     };
 
     const removeLog = (id: string) => {
@@ -328,7 +396,6 @@ const AttendanceWidget: React.FC = () => {
                     const client = clients.find(c => c.id === value);
                     if (client) {
                         updated.clientName = client.name;
-                        // Auto-set location based on internal vs client
                         updated.locationTag = client.id === 'INTERNAL' ? 'Office' : 'Client Premises';
                     }
                 }
@@ -342,8 +409,7 @@ const AttendanceWidget: React.FC = () => {
     if (isFloating) {
         return (
             <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-300">
-                <div className="bg-white/90 dark:bg-navy-800/90 backdrop-blur-md border border-brand-100 dark:border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
-                    {/* Drag Handle / Status Icon */}
+                <div className="bg-white/95 dark:bg-navy-800/95 backdrop-blur-md border border-brand-100 dark:border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
                     <div className={`p-2 rounded-xl ${status === 'CLOCKED_IN' ? 'bg-green-500/20 text-green-600 dark:text-green-400 animate-pulse' :
                         status === 'COMPLETED' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-red-500/20 text-red-600 dark:text-red-400'
                         }`}>
@@ -367,16 +433,12 @@ const AttendanceWidget: React.FC = () => {
                                     <p>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 )}
                             </div>
-                            {status === 'CLOCKED_IN' && (
-                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">Recorded</span>
-                            )}
                         </div>
                     </div>
 
-                    {/* Quick Action */}
                     {status === 'CLOCKED_IN' && (
                         <button
-                            onClick={() => setIsFloating(false)} // Expand to clock out effectively or add quick clock out here
+                            onClick={() => setIsFloating(false)}
                             className="p-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-600 dark:text-gray-300 transition-colors"
                             title="Expand to manage"
                         >
@@ -389,43 +451,69 @@ const AttendanceWidget: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full rounded-xl z-[20] border transition-all duration-200" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-            {/* Subtle left accent stripe */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{ background: 'var(--accent)', opacity: 0.8 }}></div>
-            {/* Header / Top Bar */}
-            <div className="p-6 pb-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+        <div className="relative w-full rounded-2xl z-[20] border transition-all duration-200 shadow-sm" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+            {/* Left accent stripe */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl" style={{ background: 'var(--accent)', opacity: 0.9 }}></div>
+            
+            {/* Top Bar */}
+            <div className="p-6 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 border-b border-[var(--border)]">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
                         <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                             <Clock className="text-brand-500 dark:text-brand-400" size={20} />
                             Attendance Center
                         </h2>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${status === 'CLOCKED_IN' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' :
+                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider ${
+                            status === 'CLOCKED_IN' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' :
                             status === 'COMPLETED' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' :
-                                'bg-slate-100 border-slate-200 text-slate-600 dark:bg-gray-500/10 dark:border-gray-500/20 dark:text-gray-400'
-                            }`}>
-                             {isSyncingLogs && <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse mr-2" title="Saving logs..." />}
+                            'bg-slate-100 border-slate-200 text-slate-600 dark:bg-gray-500/10 dark:border-gray-500/20 dark:text-gray-400'
+                        }`}>
+                            {isSyncingLogs && <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse mr-1.5" />}
                             {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}
                         </span>
+
+                        {!isOnline && (
+                            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold">
+                                <WifiOff size={11} /> Offline — Saved Locally
+                            </span>
+                        )}
                     </div>
+
+                    {/* A1: Late marks indicator for current Bikram Sambat month */}
+                    {lateStats && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                Late marks this BS month:
+                            </span>
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                lateStats.count >= 6 ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30' :
+                                lateStats.count >= 4 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
+                                'bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300'
+                            }`}>
+                                {lateStats.count} of 6 {lateStats.justifiedCount > 0 && `(${lateStats.justifiedCount} justified)`}
+                            </span>
+                            {lateStats.count >= 6 && (
+                                <span className="text-[10px] text-rose-500 font-bold">
+                                    • 1 leave deduction threshold reached
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Side: Timer & Controls */}
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    {/* Minimize Button */}
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
                     <button
                         onClick={() => setIsFloating(true)}
-                        className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-gray-400 hover:text-brand-700 dark:hover:text-white transition-all order-last md:order-first border border-slate-200 dark:border-transparent"
+                        className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-gray-400 hover:text-brand-700 dark:hover:text-white transition-all border border-slate-200 dark:border-transparent cursor-pointer"
                         title="Minimize to floating widget"
                     >
-                        <Minimize2 size={18} />
+                        <Minimize2 size={16} />
                     </button>
 
-
-
                     {status === 'CLOCKED_IN' && (
-                        <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-xl p-3 min-w-[140px] text-center animate-pulse-slow shadow-sm dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                            <p className="text-[10px] text-brand-600 dark:text-brand-400/80 uppercase tracking-widest font-bold mb-1">Session Timer</p>
+                        <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-xl px-4 py-2 text-center min-w-[130px]">
+                            <p className="text-[9px] text-brand-600 dark:text-brand-400 uppercase tracking-widest font-black">Session Timer</p>
                             <SessionTimer initialSeconds={sessionSeconds} isRunning={true} />
                         </div>
                     )}
@@ -433,50 +521,50 @@ const AttendanceWidget: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="p-6 pt-0 relative z-10">
-                {/* Time Stats Bar - Premium Overhaul */}
+            <div className="p-6">
+                {/* Time Stats Bar */}
                 {(status === 'CLOCKED_IN' || status === 'COMPLETED') && (
-                    <div className="mb-8 flex flex-col md:flex-row gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Clocked In Card */}
-                        <div className="flex-1 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-2xl p-4 flex items-center gap-4 group/stat hover:border-brand-500/30 transition-all shadow-sm">
-                            <div className="w-11 h-11 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500 group-hover/stat:bg-brand-500 group-hover/stat:text-white transition-all duration-300">
-                                <Timer size={20} />
+                        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
+                            <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                                <Timer size={18} />
                             </div>
                             <div>
-                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest mb-0.5">Clocked In</p>
-                                <p className="text-lg font-black text-slate-900 dark:text-white tracking-tighter">
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest">Clocked In</p>
+                                <p className="text-base font-black text-slate-900 dark:text-white">
                                     {formatToAMPM(clockInTime)}
                                 </p>
                             </div>
                         </div>
 
                         {/* Clocked Out / Status Card */}
-                        <div className={`flex-1 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-2xl p-4 flex items-center gap-4 transition-all shadow-sm ${status === 'CLOCKED_IN' ? 'border-l-4 border-l-brand-500/40' : 'border-l-4 border-l-rose-500/40'}`}>
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${status === 'CLOCKED_IN' ? 'bg-brand-500/10 text-brand-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                                {status === 'CLOCKED_IN' ? <Activity size={20} className="animate-pulse" /> : <Square size={18} className="fill-current" />}
+                        <div className={`bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-xl p-4 flex items-center gap-3.5 shadow-sm ${status === 'CLOCKED_IN' ? 'border-l-4 border-l-brand-500/60' : 'border-l-4 border-l-rose-500/60'}`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === 'CLOCKED_IN' ? 'bg-brand-500/10 text-brand-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                {status === 'CLOCKED_IN' ? <Activity size={18} className="animate-pulse" /> : <Square size={16} className="fill-current" />}
                             </div>
                             <div>
-                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest mb-0.5">
-                                    {status === 'CLOCKED_IN' ? 'Current Status' : 'Clocked Out'}
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest">
+                                    {status === 'CLOCKED_IN' ? 'Status' : 'Clocked Out'}
                                 </p>
-                                <p className="text-lg font-black text-slate-900 dark:text-white tracking-tighter">
+                                <p className="text-base font-black text-slate-900 dark:text-white">
                                     {status === 'CLOCKED_IN' ? <span className="text-brand-600 dark:text-brand-400">On Duty</span> : formatToAMPM(clockOutTime)}
                                 </p>
                             </div>
                         </div>
 
                         {/* Duration Card */}
-                        <div className="flex-1 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-2xl p-4 flex items-center gap-4 group/stat hover:border-indigo-500/30 transition-all shadow-sm">
-                            <div className="w-11 h-11 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover/stat:bg-indigo-500 group-hover/stat:text-white transition-all duration-300">
-                                <Clock size={20} />
+                        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                                <Clock size={18} />
                             </div>
                             <div>
-                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest mb-0.5">
-                                    {status === 'CLOCKED_IN' ? 'Live Progress' : 'Shift Total'}
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest">
+                                    {status === 'CLOCKED_IN' ? 'Live Progress' : 'Total Duration'}
                                 </p>
-                                <div className="text-lg font-black text-slate-900 dark:text-white font-mono leading-none tracking-tighter">
+                                <div className="text-base font-black text-slate-900 dark:text-white font-mono">
                                     {status === 'CLOCKED_IN' ? (
-                                        <SessionTimer initialSeconds={sessionSeconds} isRunning={true} className="text-lg font-black font-mono text-indigo-600 dark:text-indigo-400" />
+                                        <SessionTimer initialSeconds={sessionSeconds} isRunning={true} className="text-base font-black font-mono text-indigo-600 dark:text-indigo-400" />
                                     ) : (
                                         <span className="text-indigo-600 dark:text-indigo-400">{totalWorkHours ? `${Math.floor(totalWorkHours)}h ${Math.round((totalWorkHours % 1) * 60)}m` : '--'}</span>
                                     )}
@@ -485,55 +573,107 @@ const AttendanceWidget: React.FC = () => {
                         </div>
                     </div>
                 )}
-                {/* Late Arrival Input */}
+
+                {/* Pre-Clock-In Controls: Check-In Type & Site Client Selection (A3) */}
+                {status === 'CLOCKED_OUT' && (
+                    <div className="mb-6 space-y-4 bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
+                        <div>
+                            <label className="block text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2.5">
+                                Select Today's Work Location
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setCheckInType('OFFICE')}
+                                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                                        checkInType === 'OFFICE'
+                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--accent-dim)]'
+                                            : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[var(--accent)]'
+                                    }`}
+                                >
+                                    <Building2 size={16} /> Office Base
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCheckInType('CLIENT_SITE')}
+                                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                                        checkInType === 'CLIENT_SITE'
+                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--accent-dim)]'
+                                            : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[var(--accent)]'
+                                    }`}
+                                >
+                                    <Briefcase size={16} /> Client Site Visit
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCheckInType('REMOTE')}
+                                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                                        checkInType === 'REMOTE'
+                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--accent-dim)]'
+                                            : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[var(--accent)]'
+                                    }`}
+                                >
+                                    <Home size={16} /> Remote / Home
+                                </button>
+                            </div>
+                        </div>
+
+                        {checkInType === 'CLIENT_SITE' && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-1.5 pt-2">
+                                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    Which Client Are You Visiting Today? *
+                                </label>
+                                <SearchableClientSelect
+                                    clients={clients.filter(c => c.id !== 'INTERNAL')}
+                                    value={selectedSiteClientId}
+                                    onChange={(val) => setSelectedSiteClientId(val)}
+                                    disabled={false}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Late Arrival Alert Card */}
                 {isLate && status === 'CLOCKED_OUT' && (
-                    <div className="mb-6 bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-transparent border border-amber-200 dark:border-amber-500/30 rounded-2xl p-5 shadow-sm overflow-hidden relative group">
-                        {/* Decorative glow */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-amber-500/10 transition-colors" />
-                        
-                        <div className="flex items-start gap-4 relative z-10">
+                    <div className="mb-6 bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-transparent border border-amber-200 dark:border-amber-500/30 rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-start gap-4">
                             <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center flex-shrink-0">
                                 <AlertTriangle className="text-amber-600 dark:text-amber-400" size={20} />
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-[14px] font-bold text-slate-900 dark:text-white mb-1">
-                                    Late Arrival Detected
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+                                    Late Arrival Notice (After 10:15 AM)
                                 </h3>
-                                <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-                                    You are checking in after 10:15 AM. Please provide a reason to proceed.
+                                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">
+                                    As per the RSA Employee Handbook, arrivals after 10:15 AM require a justification note. 6 unjustified late marks in a Bikram Sambat month result in 1 day leave deduction.
                                 </p>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Type your reason for late arrival..."
-                                        value={lateReason}
-                                        onChange={(e) => setLateReason(e.target.value)}
-                                        className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all shadow-inner"
-                                    />
-                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Type your late arrival reason..."
+                                    value={lateReason}
+                                    onChange={(e) => setLateReason(e.target.value)}
+                                    className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50"
+                                />
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Clock In / Out Actions */}
+                {/* Clock In Action */}
                 {status === 'CLOCKED_OUT' ? (
                     <button
                         onClick={handleClockIn}
-                        disabled={loading || (isLate && !lateReason)}
-                        className="w-full py-6 md:py-4 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-2xl font-black shadow-xl shadow-[var(--accent-dim)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 group relative overflow-hidden"
+                        disabled={loading || (isLate && !lateReason.trim()) || (checkInType === 'CLIENT_SITE' && !selectedSiteClientId)}
+                        className="w-full py-4 bg-[var(--accent)] hover:opacity-95 text-white rounded-2xl font-bold shadow-lg shadow-[var(--accent-dim)] transition-all transform active:scale-[0.99] disabled:opacity-30 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 min-h-[56px] cursor-pointer"
                     >
-                        {/* Shimmer effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                        
-                        <div className="flex items-center gap-3 relative z-10 uppercase tracking-[0.2em] text-[15px] md:text-[13px]">
-                            {loading ? <Loader2 className="animate-spin" size={24} /> : <Play size={24} className="fill-current group-hover:scale-110 transition-transform md:w-5 md:h-5" />}
+                        <div className="flex items-center gap-2.5 uppercase tracking-widest text-sm font-black">
+                            {loading ? <Loader2 className="animate-spin" size={20} /> : <Play size={20} className="fill-current" />}
                             Start Work Day
                         </div>
-                        <span className="text-[10px] md:text-[9px] opacity-60 font-medium lowercase tracking-normal relative z-10 group-disabled:hidden">
-                            Click to log your arrival time
+                        <span className="text-[10px] opacity-75 font-medium lowercase">
+                            {checkInType === 'CLIENT_SITE' ? 'Checking in at client premises' : checkInType === 'REMOTE' ? 'Checking in remotely' : 'Checking in at Kathmandu office'}
                         </span>
                     </button>
                 ) : (
@@ -543,23 +683,24 @@ const AttendanceWidget: React.FC = () => {
                             <div className="flex items-center justify-between">
                                 <h3 className="text-slate-800 dark:text-white text-sm font-bold flex items-center gap-2">
                                     <Briefcase size={16} className="text-brand-600 dark:text-brand-400" />
-                                    Work Logs
+                                    Today's Work Breakdown
                                 </h3>
                                 {status !== 'COMPLETED' && (
-                                    <button onClick={addLog} className="text-xs text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex items-center gap-1 font-medium bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded-lg border border-brand-200 dark:border-brand-500/20">
-                                        <Plus size={12} /> Add Task
+                                    <button 
+                                        onClick={addLog} 
+                                        className="text-xs text-brand-700 dark:text-brand-400 hover:text-brand-800 flex items-center gap-1 font-bold bg-brand-50 dark:bg-brand-500/10 px-3 py-1.5 rounded-lg border border-brand-200 dark:border-brand-500/20 cursor-pointer"
+                                    >
+                                        <Plus size={13} /> Add Assignment
                                     </button>
                                 )}
                             </div>
 
                             <div className="space-y-4">
                                 {workLogs.map((log, index) => (
-                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl p-4 md:p-3 flex flex-col gap-5 md:gap-4 group hover:border-brand-300 dark:hover:border-white/10 transition-colors shadow-sm md:shadow-none">
-                                        
-                                        {/* Top Row: Client & Assignment */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3">
-                                            <div className="space-y-1.5 md:space-y-1">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client / Project</label>
+                                    <div key={log.id} style={{ zIndex: 50 - index }} className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4 shadow-sm">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client / Engagement</label>
                                                 <SearchableClientSelect
                                                     clients={clients}
                                                     value={log.clientId}
@@ -567,7 +708,7 @@ const AttendanceWidget: React.FC = () => {
                                                     disabled={status === 'COMPLETED'}
                                                 />
                                             </div>
-                                            <div className="space-y-1.5 md:space-y-1">
+                                            <div className="space-y-1">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Nature of Engagement</label>
                                                 <SearchableSelect
                                                     items={NATURE_OF_ASSIGNMENTS.map(n => ({ id: n, name: n, icon: <Briefcase size={12}/> }))}
@@ -579,9 +720,8 @@ const AttendanceWidget: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Bottom Row: Location & Description */}
-                                        <div className="flex flex-col md:flex-row gap-4 md:gap-3">
-                                            <div className="w-full md:w-1/4 space-y-1.5 md:space-y-1">
+                                        <div className="flex flex-col md:flex-row gap-3">
+                                            <div className="w-full md:w-1/4 space-y-1">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Location</label>
                                                 <SearchableSelect
                                                     items={[
@@ -594,69 +734,164 @@ const AttendanceWidget: React.FC = () => {
                                                     placeholder="Select Location"
                                                 />
                                             </div>
-                                            <div className="flex-1 space-y-1.5 md:space-y-1">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center justify-between">
-                                                    Work Description
+                                            <div className="flex-1 space-y-1">
+                                                <div className="flex items-center justify-between pl-1">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                        Work Description & Deliverables
+                                                    </label>
                                                     {status !== 'COMPLETED' && workLogs.length > 1 && (
                                                         <button
                                                             onClick={() => removeLog(log.id)}
-                                                            className="text-rose-500 hover:text-rose-600 font-bold transition-all flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 pr-1"
-                                                            title="Remove Task"
+                                                            className="text-rose-500 hover:text-rose-600 font-bold transition-all flex items-center gap-1 text-[10px] cursor-pointer"
+                                                            title="Remove Row"
                                                         >
-                                                            <Trash2 size={12} className="md:w-3 md:h-3" /> <span className="text-[10px] md:text-[8px]">Delete Row</span>
+                                                            <Trash2 size={12} /> Delete
                                                         </button>
                                                     )}
-                                                </label>
+                                                </div>
                                                 <ActionDetailEditor
                                                     value={log.description}
                                                     onChange={(val) => updateLog(log.id, 'description', val)}
                                                     disabled={status === 'COMPLETED'}
-                                                    placeholder="Describe your work. Use **bold** or bullet points (•)..."
+                                                    placeholder="Describe tasks completed, audit areas tested, or client matters addressed..."
                                                 />
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-
                         </div>
 
-                         {/* Clock Out Button */}
+                        {/* Clock Out Trigger */}
                         {status === 'CLOCKED_IN' && (
-                            <div className="pt-6 md:pt-4 border-t border-slate-200/50 dark:border-white/[0.05]">
+                            <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                                 <button
-                                    onClick={handleClockOut}
+                                    onClick={handleOpenClockOutModal}
                                     disabled={loading}
-                                    className="w-full py-5 md:py-3.5 glass-panel hover-lift border border-rose-500/30 hover:bg-rose-500/10 hover:border-rose-500/50 text-rose-600 dark:text-rose-400 rounded-2xl md:rounded-xl font-bold transition-all flex items-center justify-center gap-2 group shadow-sm text-base md:text-sm"
+                                    className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[50px]"
                                 >
-                                    {loading ? <Loader2 className="animate-spin" /> : <Square className="fill-current w-5 h-5 md:w-4.5 md:h-4.5" size={20} />}
-                                    Clock Out & Save Logs
+                                    {loading ? <Loader2 className="animate-spin" size={18} /> : <Square className="fill-current" size={16} />}
+                                    Clock Out & Submit Daily Report
                                 </button>
                             </div>
                         )}
 
                         {status === 'COMPLETED' && (
-                            <div className="mt-4 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-green-500/10 transition-all duration-700" />
-                                <div className="w-12 h-12 rounded-xl bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] flex items-center justify-center text-white mb-4 animate-bounce-slow">
+                            <div className="mt-4 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                                <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center text-white mb-3 shadow-md">
                                     <CheckCircle2 size={24} />
                                 </div>
-                                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-1 uppercase tracking-tight">Shift Completed</h3>
+                                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Shift Completed</h3>
                                 <p className="text-slate-500 dark:text-gray-400 text-xs font-medium">
-                                    Logs synced. Recharge for tomorrow.
+                                    Your work logs and arrival/departure times have been saved.
                                 </p>
-                                <div className="mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 text-green-600 dark:text-green-400 text-[9px] font-black uppercase tracking-widest">
-                                    Status: All Synced
-                                </div>
                             </div>
                         )}
                     </div>
                 )}
             </div>
 
+            {/* A4: Mandatory Handbook Daily Report Modal on Clock Out */}
+            {showDailyReportModal && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Modal Header */}
+                        <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-white/[0.02]">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <Send size={16} className="text-[var(--accent)]" />
+                                    Daily Checkout & EOD Report
+                                </h3>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    RSA Employee Handbook requirement before clocking out
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowDailyReportModal(false)}
+                                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg cursor-pointer"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Form Body */}
+                        <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar">
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    1. Work Done Today *
+                                </label>
+                                <textarea
+                                    value={dailyReport.done}
+                                    onChange={e => setDailyReport({ ...dailyReport, done: e.target.value })}
+                                    placeholder="Summary of completed tasks, vouchers checked, reports drafted..."
+                                    className="w-full h-20 p-3 text-xs bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl outline-none focus:border-[var(--accent)] transition-all resize-none"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    2. Pending / In Progress
+                                </label>
+                                <textarea
+                                    value={dailyReport.pending}
+                                    onChange={e => setDailyReport({ ...dailyReport, pending: e.target.value })}
+                                    placeholder="Tasks currently open or pending client feedback..."
+                                    className="w-full h-16 p-3 text-xs bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl outline-none focus:border-[var(--accent)] transition-all resize-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        3. Blockers / Issues
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={dailyReport.blockers}
+                                        onChange={e => setDailyReport({ ...dailyReport, blockers: e.target.value })}
+                                        placeholder="Any client or technical delays..."
+                                        className="w-full p-2.5 text-xs bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl outline-none focus:border-[var(--accent)]"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        4. Tomorrow's Plan
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={dailyReport.tomorrow}
+                                        onChange={e => setDailyReport({ ...dailyReport, tomorrow: e.target.value })}
+                                        placeholder="Main priorities for tomorrow..."
+                                        className="w-full p-2.5 text-xs bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl outline-none focus:border-[var(--accent)]"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-3 bg-slate-50 dark:bg-white/[0.02]">
+                            <button
+                                type="button"
+                                onClick={() => setShowDailyReportModal(false)}
+                                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 cursor-pointer"
+                            >
+                                Back to Editing
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmClockOut}
+                                disabled={loading}
+                                className="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-rose-500/20 transition-all cursor-pointer flex items-center gap-2"
+                            >
+                                {loading ? <Loader2 className="animate-spin" size={14} /> : <Square size={14} className="fill-current" />}
+                                Confirm Clock Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default AttendanceWidget;
-

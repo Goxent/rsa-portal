@@ -32,6 +32,7 @@ export interface UserProfile {
   status?: 'Active' | 'Inactive' | 'Pending Approval';
   gender?: 'Male' | 'Female' | 'Other';
   leaveAdjustment?: number; // Manual correction for leave balance
+  mustClockIn?: boolean; // A2: defaults to true; false for exempt roles/partners
   taskCreationAuthorized?: boolean; // Granted by Master Admin: allows creating new tasks
   complianceCreationAuthorized?: boolean; // Granted by Master Admin: allows creating compliance events
   
@@ -85,6 +86,24 @@ export interface AttendanceRecord {
   location?: { lat: number; lng: number };
   status: 'PRESENT' | 'COMPLETED' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'CORRECTED' | 'ON LEAVE';
   workHours: number; // in hours
+  // Extended Attendance Fields (Claude Review Overhaul)
+  checkInType?: 'OFFICE' | 'CLIENT_SITE' | 'REMOTE'; // A3
+  clientAtCheckIn?: string; // Client ID or Name for CLIENT_SITE
+  clockInISO?: string; // Full ISO timestamp (D5)
+  clockOutISO?: string; // Full ISO timestamp (D5)
+  lateJustified?: boolean; // A1
+  lateJustifiedReason?: string;
+  lateJustifiedBy?: string; // Admin UID
+  lateJustifiedByName?: string; // Admin Name
+  lateJustifiedAt?: string; // ISO string
+  deviceType?: 'DESKTOP' | 'MOBILE' | 'TABLET' | 'WEB'; // D7
+  dailyReport?: {
+    done: string;
+    pending: string;
+    blockers?: string;
+    tomorrow: string;
+  }; // A4
+  missedClockOut?: boolean; // A6
   // New Reporting Fields
   clientId?: string;
   clientName?: string;
@@ -98,17 +117,22 @@ export interface AttendanceLogRequest extends Omit<AttendanceRecord, 'id'> {
   requestStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   adminNotes?: string;
   requestedAt: string;
+  reviewedBy?: string; // Admin UID (S4)
+  reviewedByName?: string; // Admin display name
+  reviewedAt?: string; // ISO timestamp
 }
 
 export interface WorkLog {
   id: string;
   clientId: string;
   clientName: string;
-  natureOfAssignment?: string; // New: Internal Audit, Statutory Audit, etc.
+  natureOfAssignment?: string; // Internal Audit, Statutory Audit, etc.
   description: string;
   duration: number;   // in hours
   billable: boolean;
   locationTag?: 'Office' | 'Client Premises';
+  taskId?: string; // A5: linked task id
+  taskPhase?: string; // A5: audit phase or task phase
 }
 
 export enum TaskStatus {

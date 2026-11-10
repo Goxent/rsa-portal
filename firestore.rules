@@ -30,6 +30,10 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'MASTER_ADMIN';
     }
 
+    function isManager() {
+      return isAuthenticated() && getUserRole() == 'MANAGER';
+    }
+
     // S1 Fix: Approved / Active user check
     // Restricts sensitive org reads (tasks, clients, attendance, docs) to verified Active users
     function isApproved() {
@@ -158,25 +162,57 @@ service cloud.firestore {
     }
 
     // ========================================================
-    // ATTENDANCE COLLECTION (A1-A5 & S5 Fixes)
-    // Update checks EXISTING resource.data.userId to prevent tampering
+    // ATTENDANCE COLLECTION (A1-A5, S1, S2, S3 Fixes)
+    // S2: Staff read only own records; Admins & Managers read all
+    // S1: Staff create own records with required keys; Admins create for any user
+    // S3: Staff can only update safe fields; Admins can update any fields
     // ========================================================
     match /attendance/{attendanceId} {
-      allow read: if isApproved();
-      allow create: if isAuthenticated() && 
-                    (request.auth.uid == request.resource.data.userId || isAdmin()) &&
-                    checkKeys(['userId', 'date', 'status']) &&
-                    isSafeString(request.resource.data.userId, 128);
-      allow update: if isAuthenticated() && 
-                    (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin() ||
+        isManager()
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (
+          request.auth.uid == request.resource.data.userId &&
+          checkKeys(['userId', 'date', 'status']) &&
+          isSafeString(request.resource.data.userId, 128)
+        )
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (
+          request.auth.uid == resource.data.userId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'workLogs', 'notes', 'dailyReport', 'location',
+            'clientIds', 'clientId', 'clientName', 'workDescription'
+          ])
+        )
+      );
       allow delete: if isAdmin();
     }
 
-    // ATTENDANCE REQUESTS
+    // ========================================================
+    // ATTENDANCE REQUESTS (S4 Fix)
+    // Requester, Admins, and Managers can read
+    // Staff create own requests with PENDING status
+    // Strict anti-self-approval: Only Admins/Managers other than requester can update
+    // ========================================================
     match /attendanceRequests/{requestId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if isAdmin();
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin() ||
+        isManager()
+      );
+      allow create: if isAuthenticated() &&
+                    request.auth.uid == request.resource.data.userId &&
+                    request.resource.data.requestStatus == 'PENDING';
+      allow update: if (isAdmin() || isManager()) &&
+                    resource.data.requestStatus == 'PENDING' &&
+                    request.auth.uid != resource.data.userId;
+      allow delete: if isAdmin();
     }
     
     // ========================================================

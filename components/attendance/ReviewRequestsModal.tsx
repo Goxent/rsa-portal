@@ -223,33 +223,43 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                         </button>
                                                     </div>
                                                 </div>
+                                            ) : req.userId === adminId ? (
+                                                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center space-y-1">
+                                                    <div className="text-[11px] font-bold text-amber-500 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                                                        <AlertCircle size={14} />
+                                                        Self-Approval Prohibited
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-400 dark:text-gray-400">
+                                                        Per handbook security rules, another administrator must review and approve your request.
+                                                    </p>
+                                                </div>
                                             ) : (
                                                 <div className="flex flex-col gap-2">
-                                                    <button 
-                                                        onClick={() => handleApprove(req.id)}
-                                                        disabled={processingId === req.id}
-                                                        className="w-full py-3 text-white text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 group"
-                                                        style={{ background: 'var(--accent)', borderRadius: 'var(--radius-xl)' }}
-                                                    >
-                                                        {processingId === req.id ? (
-                                                            <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                                        ) : (
-                                                            <Check size={16} className="group-hover:scale-110 transition-transform" />
-                                                        )}
-                                                        Approve Record
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => setRejectingId(req.id)}
-                                                        className="w-full py-2 border transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                                                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', color: 'var(--text-muted)' }}
-                                                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-danger)'; e.currentTarget.style.color = 'var(--color-danger)'; }}
-                                                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-                                                    >
-                                                        <AlertCircle size={14} />
-                                                        Reject Request
-                                                    </button>
-                                                </div>
-                                            )}
+                                                        <button 
+                                                            onClick={() => handleApprove(req.id)}
+                                                            disabled={processingId === req.id}
+                                                            className="w-full py-3 text-white text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 group cursor-pointer"
+                                                            style={{ background: 'var(--accent)', borderRadius: 'var(--radius-xl)' }}
+                                                        >
+                                                            {processingId === req.id ? (
+                                                                <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                            ) : (
+                                                                <Check size={16} className="group-hover:scale-110 transition-transform" />
+                                                            )}
+                                                            Approve Record
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setRejectingId(req.id)}
+                                                            className="w-full py-2 border transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest cursor-pointer"
+                                                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', color: 'var(--text-muted)' }}
+                                                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-danger)'; e.currentTarget.style.color = 'var(--color-danger)'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                                                        >
+                                                            <AlertCircle size={14} />
+                                                            Reject Request
+                                                        </button>
+                                                    </div>
+                                                )}
                                         </div>
                                     </div>
                                     
