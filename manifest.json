@@ -4,7 +4,7 @@
   "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#0a0b0d",
-  "theme_color": "#659a2b",
+  "theme_color": "#4fb286",
   "description": "Premium Attendance & Workflow Management System",
   "orientation": "portrait",
   "icons": [
@@ -19,6 +19,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Check In",
+      "short_name": "Check In",
+      "description": "Log arrival and start workday",
+      "url": "/attendance?action=checkin",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Request Leave",
+      "short_name": "Leave",
+      "description": "Apply for annual, sick or exam leave",
+      "url": "/leaves?action=new",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
