@@ -1256,7 +1256,7 @@ export const AuthService = {
             clockIn: timeStr,
             clockInISO,
             checkInType,
-            clientAtCheckIn: clientAtCheckIn || (clientIds && clientIds.length > 0 ? clientIds[0] : undefined),
+            clientAtCheckIn: clientAtCheckIn || (clientIds && clientIds.length > 0 ? clientIds[0] : null),
             status: clockInStatus,
             notes: notes || '',
             workHours: 0,
