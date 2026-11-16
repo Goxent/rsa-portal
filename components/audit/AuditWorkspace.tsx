@@ -104,14 +104,11 @@ export const WifiGate: React.FC<{ retry: () => void; publicIp?: string | null }>
             <motion.div
                 animate={{ scale: [1, 1.08, 1] }}
                 transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-                className="w-28 h-28 rounded-[2rem] flex items-center justify-center shadow-2xl relative overflow-hidden"
-                style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.05))', border: '1px solid rgba(239,68,68,0.35)' }}>
-                <div className="absolute inset-0 bg-white/3 backdrop-blur-sm" />
+                className="w-28 h-28 rounded-[2rem] flex items-center justify-center relative overflow-hidden"
+                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)' }}>
                 <Wifi size={44} style={{ color: '#f87171' }} className="relative z-10" />
             </motion.div>
-            {/* Outer glow rings */}
-            <div className="absolute inset-0 rounded-[2rem] animate-ping opacity-10"
-                style={{ background: 'rgba(239,68,68,0.3)', animationDuration: '2s' }} />
+            {/* Outer glow rings removed */}
         </div>
 
         <h2 className="text-2xl font-black mb-3 tracking-tight" style={{ color: 'var(--text-heading)' }}>
@@ -146,8 +143,8 @@ export const WifiGate: React.FC<{ retry: () => void; publicIp?: string | null }>
         )}
 
         <button onClick={retry}
-            className="flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-lg"
-            style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.9),rgba(220,38,38,0.9))', color: '#fff' }}>
+            className="flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-colors"
+            style={{ background: 'rgba(239,68,68,0.9)', color: '#fff' }}>
             <RefreshCw size={16} /> Retry Connection
         </button>
     </motion.div>
@@ -161,9 +158,8 @@ export const SecurityLockScreen: React.FC<{ clientName: string }> = ({ clientNam
         style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <motion.div 
             initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.1 }}
-            className="w-28 h-28 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.05))', border: '1px solid rgba(245,158,11,0.3)' }}>
-            <div className="absolute inset-0 bg-white/5 backdrop-blur-xl"></div>
+            className="w-28 h-28 rounded-[2rem] flex items-center justify-center mb-8 relative overflow-hidden"
+            style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
             <Shield size={48} style={{ color: '#f59e0b' }} className="relative z-10 drop-shadow-lg" />
         </motion.div>
         <h2 className="text-3xl font-black mb-4 tracking-tight" style={{ color: 'var(--text-heading)' }}>Access Denied</h2>
@@ -187,17 +183,17 @@ const StatusPanel: React.FC<{ items: UploadQueueItem[]; onClear: () => void }> =
     const isFinished = (completedCount + errorCount) === totalCount;
 
     return (
-        <div className="fixed bottom-6 right-6 z-[60] w-80 rounded-2xl shadow-2xl overflow-hidden border animate-in slide-in-from-bottom-5"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-mid)', backdropFilter: 'blur(12px)' }}>
+        <div className="fixed bottom-6 right-6 z-[60] w-80 rounded-2xl overflow-hidden border animate-in slide-in-from-bottom-5"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-mid)' }}>
             <div className="px-4 py-3 flex items-center justify-between border-b" style={{ borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-2">
-                    {isFinished ? <CheckCircle size={16} className="text-emerald-500" /> : <Loader2 size={16} className="animate-spin text-brand-500" />}
-                    <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-heading)' }}>
+                    {isFinished ? <CheckCircle size={16} className="text-emerald-500" /> : <Loader2 size={16} className="animate-spin" style={{ color: 'var(--accent)' }} />}
+                    <h4 className="text-xs font-semibold" style={{ color: 'var(--text-heading)' }}>
                         {isFinished ? 'Uploads Complete' : 'Uploading...'}
                     </h4>
                 </div>
                 {isFinished && (
-                    <button onClick={onClear} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                    <button onClick={onClear} className="p-1 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors">
                         <X size={14} style={{ color: 'var(--text-muted)' }} />
                     </button>
                 )}
@@ -259,7 +255,6 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                whileHover={{ y: -4, scale: 1.02 }}
                 className={`group relative rounded-xl p-4 flex flex-col gap-3 transition-colors duration-150 cursor-pointer select-none`}
                 style={{
                     background: isSelected ? 'rgba(var(--accent-rgb, 101,154,43), 0.12)' : 'var(--bg-elevated)',
@@ -288,29 +283,29 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
                     <button
                         onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/15 transition-colors backdrop-blur-md"
-                        style={{ color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)' }}>
-                        <MoreVertical size={14} className="text-white" />
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-elevated)] transition-colors"
+                        style={{ color: 'var(--text-muted)', background: 'var(--bg-secondary)' }}>
+                        <MoreVertical size={14} />
                     </button>
                     <AnimatePresence>
                     {menuOpen && (
                         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                            className="absolute right-0 top-8 w-44 rounded-xl shadow-2xl overflow-hidden z-50 border"
-                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)', backdropFilter: 'blur(16px)' }}>
+                            className="absolute right-0 top-8 w-44 rounded-xl overflow-hidden z-50 border"
+                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)' }}>
                             {canPreview && (
                                 <a href={viewUrl} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-white/8 transition-colors"
+                                    className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-[var(--bg-secondary)] transition-colors"
                                     style={{ color: 'var(--text-body)' }}>
                                     <Eye size={13} /> Preview
                                 </a>
                             )}
                             <a href={downloadUrl} download={file.fileName}
-                                className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-white/8 transition-colors"
+                                className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-[var(--bg-secondary)] transition-colors"
                                 style={{ color: 'var(--text-body)' }}>
                                 <Download size={13} /> Download
                             </a>
                             <button onClick={() => { setMenuOpen(false); onEditNotes(); }}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-white/8 transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-[var(--bg-secondary)] transition-colors text-left"
                                 style={{ color: 'var(--text-body)' }}>
                                 <Edit2 size={13} /> Add Notes
                             </button>
@@ -381,31 +376,31 @@ const FileRow: React.FC<FileRowProps> = ({ file, isGrid, isSelected, onSelect, o
                 {canPreview && (
                     <a href={viewUrl} target="_blank" rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors"
                         style={{ color: 'var(--text-muted)' }} title="Preview">
                         <Eye size={13} />
                     </a>
                 )}
                 <a href={downloadUrl} download={file.fileName}
                     onClick={e => e.stopPropagation()}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors"
                     style={{ color: 'var(--text-muted)' }} title="Download">
                     <Download size={13} />
                 </a>
                 <div className="relative">
                     <button
                         onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors"
                         style={{ color: 'var(--text-muted)' }} title="More options">
                         <MoreVertical size={13} />
                     </button>
                     <AnimatePresence>
                     {menuOpen && (
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute right-0 top-8 w-44 rounded-xl shadow-2xl overflow-hidden z-50 border"
-                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)', backdropFilter: 'blur(16px)' }}>
+                            className="absolute right-0 top-8 w-44 rounded-xl overflow-hidden z-50 border"
+                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)' }}>
                             <button onClick={() => { setMenuOpen(false); onEditNotes(); }}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-white/8 transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-[var(--bg-secondary)] transition-colors text-left"
                                 style={{ color: 'var(--text-body)' }}>
                                 <Edit2 size={13} /> Add Notes
                             </button>
@@ -451,7 +446,6 @@ const SubFolderRow: React.FC<SubFolderRowProps> = ({ folder, isGrid, onClick, on
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                whileHover={{ y: -4, scale: 1.02 }}
                 className="group relative rounded-xl p-4 flex flex-col gap-3 transition-colors duration-150 cursor-pointer"
                 style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                 onClick={onClick}
@@ -467,15 +461,15 @@ const SubFolderRow: React.FC<SubFolderRowProps> = ({ folder, isGrid, onClick, on
                 </div>
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
                     <button onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/15 transition-colors backdrop-blur-md"
-                        style={{ color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)' }}>
-                        <MoreVertical size={14} className="text-white" />
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-elevated)] transition-colors"
+                        style={{ color: 'var(--text-muted)', background: 'var(--bg-secondary)' }}>
+                        <MoreVertical size={14} />
                     </button>
                     <AnimatePresence>
                     {menuOpen && (
                         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                            className="absolute right-0 top-8 w-40 rounded-xl shadow-2xl overflow-hidden z-50 border"
-                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)', backdropFilter: 'blur(16px)' }}>
+                            className="absolute right-0 top-8 w-40 rounded-xl overflow-hidden z-50 border"
+                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)' }}>
                             <button onClick={() => { setMenuOpen(false); onDelete(); }}
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-red-500/10 transition-colors text-left text-red-500">
                                 <Trash2 size={13} /> Delete Folder
@@ -490,7 +484,7 @@ const SubFolderRow: React.FC<SubFolderRowProps> = ({ folder, isGrid, onClick, on
 
     return (
         <div
-            className="group flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-100 cursor-pointer hover:bg-white/5"
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-100 cursor-pointer hover:bg-[var(--bg-secondary)]"
             onClick={onClick}
             onDoubleClick={onClick}
         >
@@ -512,12 +506,12 @@ const SubFolderRow: React.FC<SubFolderRowProps> = ({ folder, isGrid, onClick, on
             </div>
             <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1" ref={menuRef}>
                 <button onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors"
                     style={{ color: 'var(--text-muted)' }}>
                     <MoreVertical size={13} />
                 </button>
                 {menuOpen && (
-                    <div className="absolute right-12 w-40 rounded-xl shadow-2xl overflow-hidden z-50 border"
+                    <div className="absolute right-12 w-40 rounded-xl overflow-hidden z-50 border"
                         style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-mid)' }}>
                         <button onClick={() => { setMenuOpen(false); onDelete(); }}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium hover:bg-red-500/10 transition-colors text-left text-red-500">
@@ -732,7 +726,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
                 <motion.div 
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl pointer-events-none"
-                    style={{ background: 'rgba(var(--bg-elevated-rgb, 15,23,42), 0.7)', backdropFilter: 'blur(8px)', border: '2px dashed var(--accent)' }}>
+                    style={{ background: 'rgba(var(--bg-elevated-rgb, 15,23,42), 0.7)', border: '2px dashed var(--accent)' }}>
                     <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: 'spring' }} className="flex flex-col items-center justify-center p-8 rounded-3xl" style={{ background: 'var(--bg-surface)', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
                         <UploadCloud size={64} style={{ color: 'var(--accent)' }} className="mb-4 animate-bounce" />
                         <p className="text-xl font-black" style={{ color: 'var(--text-heading)' }}>Drop files to upload</p>
@@ -751,7 +745,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
                             onClick={() => fileInputRef.current?.click()}
                             disabled={uploading}
                             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 shadow-sm"
-                            style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-secondary))', color: '#fff' }}>
+                            style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
                             {uploading
                                 ? <><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Uploading…</>
                                 : <><UploadCloud size={15} /> Upload Files</>}
@@ -762,7 +756,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
                         {!customFolderId && (
                             <button
                                 onClick={() => { setShowNewFolder(true); setNewFolderName(''); }}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-white/8 active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-[var(--bg-secondary)] active:scale-95"
                                 style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-mid)', color: 'var(--text-body)' }}>
                                 <FolderPlus size={15} /> New Folder
                             </button>
@@ -773,7 +767,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
                 <button
                     onClick={handleDownloadZip}
                     disabled={zipping || filteredFiles.length === 0}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-white/5 active:scale-95 disabled:opacity-60 shadow-sm border"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-[var(--bg-secondary)] active:scale-95 disabled:opacity-60 shadow-sm border"
                     style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}>
                     {zipping
                         ? <><Loader2 size={15} className="animate-spin" /> Zipping…</>
@@ -804,12 +798,12 @@ const FolderContent: React.FC<FolderContentProps> = ({
                         autoFocus
                     />
                     <button onClick={() => handleCreateFolder(newFolderName)} disabled={savingFolder || !newFolderName.trim()}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105 disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
                         style={{ background: 'var(--accent)', color: '#fff' }}>
                         {savingFolder ? '…' : 'Create'}
                     </button>
                     <button onClick={() => setShowNewFolder(false)}
-                        className="p-1.5 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-muted)' }}>
+                        className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors" style={{ color: 'var(--text-muted)' }}>
                         <X size={14} />
                     </button>
                 </div>
@@ -817,7 +811,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
 
             {/* Column headers (list view only) */}
             {!isGrid && !isEmpty && !loading && (
-                <div className="shrink-0 flex items-center gap-3 px-3 py-2 border-b text-[10px] font-bold uppercase tracking-wider"
+                <div className="shrink-0 flex items-center gap-3 px-3 py-2 border-b text-xs font-semibold"
                     style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                     <div className="w-8 shrink-0" />
                     <div className="flex-1">Name</div>
@@ -898,13 +892,13 @@ const FolderContent: React.FC<FolderContentProps> = ({
 
             {/* Notes modal */}
             {editNotes && (
-                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/60">
+                    <div className="w-full max-w-sm rounded-2xl overflow-hidden"
                         style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-mid)' }}>
                         <div className="flex items-center justify-between px-5 py-4"
                             style={{ borderBottom: '1px solid var(--border)' }}>
                             <h3 className="text-sm font-bold" style={{ color: 'var(--text-heading)' }}>File Notes</h3>
-                            <button onClick={() => setEditNotes(null)} className="p-1 rounded-lg hover:bg-white/10" style={{ color: 'var(--text-muted)' }}>
+                            <button onClick={() => setEditNotes(null)} className="p-1 rounded-lg hover:bg-[var(--bg-secondary)]" style={{ color: 'var(--text-muted)' }}>
                                 <X size={18} />
                             </button>
                         </div>
@@ -925,7 +919,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
                                 </button>
                                 <button onClick={handleSaveNotes}
                                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold"
-                                    style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-secondary))', color: '#fff' }}>
+                                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
                                     <Save size={12} /> Save
                                 </button>
                             </div>
@@ -1021,10 +1015,10 @@ const FolderEGovernance: React.FC<{ task: Task | null }> = ({ task }) => {
                             <table className="w-full text-[11px]">
                                 <thead style={{ background: 'var(--bg-surface)' }}>
                                     <tr className="text-left">
-                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)', width: '50%' }}>Checklist Item</th>
-                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Priority</th>
-                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Status</th>
-                                        <th className="px-3 py-2 font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Verified By</th>
+                                        <th className="px-3 py-2 font-semibold text-xs" style={{ color: 'var(--text-muted)', width: '50%' }}>Checklist item</th>
+                                        <th className="px-3 py-2 font-semibold text-xs" style={{ color: 'var(--text-muted)' }}>Priority</th>
+                                        <th className="px-3 py-2 font-semibold text-xs" style={{ color: 'var(--text-muted)' }}>Status</th>
+                                        <th className="px-3 py-2 font-semibold text-xs" style={{ color: 'var(--text-muted)' }}>Verified by</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1078,7 +1072,7 @@ const Sidebar: React.FC<SidebarProps> = ({ navStack, fileCounts, folderCounts, o
             {/* My Drive header */}
             <button
                 onClick={onNavigateRoot}
-                className={`flex items-center gap-2.5 px-4 py-3 text-sm font-semibold transition-colors hover:bg-white/5 ${navStack.length === 1 ? 'text-white' : ''}`}
+                className={`flex items-center gap-2.5 px-4 py-3 text-sm font-semibold transition-colors hover:bg-[var(--bg-elevated)] ${navStack.length === 1 ? 'text-white' : ''}`}
                 style={{ color: navStack.length === 1 ? 'var(--accent)' : 'var(--text-muted)' }}>
                 <HardDrive size={16} style={{ color: navStack.length === 1 ? 'var(--accent)' : 'var(--text-muted)' }} />
                 Documents
@@ -1158,7 +1152,7 @@ const BFolderView: React.FC<BLineItemsProps> = ({
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Line items section */}
             <div className="shrink-0 px-4 pt-4 pb-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>
                     Standard Audit Sections (B.1 – B.15)
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
@@ -1169,7 +1163,7 @@ const BFolderView: React.FC<BLineItemsProps> = ({
                             <button
                                 key={lineCode}
                                 onClick={() => onEnter(lineCode, li)}
-                                className="group text-left rounded-xl p-3 flex flex-col gap-2 transition-all duration-150 hover:scale-[1.02] hover:shadow-lg"
+                                className="group text-left rounded-xl p-3 flex flex-col gap-2 transition-colors duration-150"
                                 style={{ background: 'var(--bg-elevated)', border: `1px solid ${count > 0 ? meta.border : 'var(--border)'}` }}>
                                 <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                                     style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
@@ -1191,7 +1185,7 @@ const BFolderView: React.FC<BLineItemsProps> = ({
 
             {/* Root docs */}
             <div className="shrink-0 px-4 mb-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>General Documents</p>
+                <p className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>General Documents</p>
             </div>
             <div className="flex-1 min-h-0">
                 <FolderContent
@@ -1381,14 +1375,14 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                     style={{ borderColor: 'var(--border)' }}>
                     <button
                         onClick={() => setIsGrid(false)}
-                        className={`p-2 transition-colors ${!isGrid ? 'text-white' : 'hover:bg-white/5'}`}
+                        className={`p-2 transition-colors ${!isGrid ? 'text-white' : 'hover:bg-[var(--bg-secondary)]'}`}
                         style={{ background: !isGrid ? 'var(--accent)' : 'transparent', color: !isGrid ? '#fff' : 'var(--text-muted)' }}
                         title="List view">
                         <List size={14} />
                     </button>
                     <button
                         onClick={() => setIsGrid(true)}
-                        className={`p-2 transition-colors ${isGrid ? 'text-white' : 'hover:bg-white/5'}`}
+                        className={`p-2 transition-colors ${isGrid ? 'text-white' : 'hover:bg-[var(--bg-secondary)]'}`}
                         style={{ background: isGrid ? 'var(--accent)' : 'transparent', color: isGrid ? '#fff' : 'var(--text-muted)' }}
                         title="Grid view">
                         <LayoutGrid size={14} />
@@ -1408,7 +1402,7 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                         {navStack.length > 1 && (
                             <button
                                 onClick={() => setNavStack(prev => prev.slice(0, -1))}
-                                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors mr-0.5"
+                                className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors mr-0.5"
                                 style={{ color: 'var(--text-muted)' }}>
                                 <ArrowLeft size={14} />
                             </button>
@@ -1419,7 +1413,7 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                                 <button
                                     onClick={() => navigate(i)}
                                     disabled={i === navStack.length - 1}
-                                    className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors truncate max-w-[180px] ${i === navStack.length - 1 ? 'cursor-default' : 'hover:bg-white/8'}`}
+                                    className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors truncate max-w-[180px] ${i === navStack.length - 1 ? 'cursor-default' : 'hover:bg-[var(--bg-secondary)]'}`}
                                     style={{ color: i === navStack.length - 1 ? 'var(--text-heading)' : 'var(--text-muted)' }}>
                                     {i === 0 ? (
                                         <span className="flex items-center gap-1"><Home size={11} />{getNavLabel(level)}</span>
@@ -1452,12 +1446,10 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                                         const fc = fileCounts[key] || 0;
                                         const foc = folderCounts[key] || 0;
                                         return (
-                                            <motion.button
+                                            <button
                                                 key={key}
-                                                whileHover={{ x: 2, borderColor: meta.color }}
-                                                whileTap={{ scale: 0.99 }}
                                                 onClick={() => enterMainFolder(key)}
-                                                className="group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all duration-150"
+                                                className="group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-colors duration-150"
                                                 style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                                             >
                                                 <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
@@ -1485,9 +1477,9 @@ export const AuditWorkspace: React.FC<AuditWorkspaceProps> = ({ clientId, client
                                                             {foc} folder{foc !== 1 ? 's' : ''}
                                                         </span>
                                                     )}
-                                                    <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" style={{ color: 'var(--text-muted)' }} />
+                                                    <ChevronRight size={15} style={{ color: 'var(--text-muted)' }} />
                                                 </div>
-                                            </motion.button>
+                                            </button>
                                         );
                                     })}
                                 </div>

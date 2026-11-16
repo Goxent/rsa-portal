@@ -162,7 +162,7 @@ const Dashboard: React.FC = () => {
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
-        <div className="flex flex-col gap-6 min-h-full overflow-x-hidden p-6 pb-24 custom-scrollbar bg-transparent">
+        <div className="flex flex-col gap-6 min-h-full overflow-x-hidden p-4 md:p-8 pb-24 custom-scrollbar max-w-[1400px]">
 
             {/* ── COMMAND STRIP ── sticky at top (D1, D6) */}
             <CommandStrip
@@ -173,16 +173,16 @@ const Dashboard: React.FC = () => {
                 currentUserUid={user?.uid}
             />
 
-            <div className="space-y-6 relative z-10 animate-in fade-in duration-700">
+            <div className="space-y-6 relative z-10 animate-in fade-in duration-300">
                 {isLoading ? (
                     <div className="space-y-6">
-                        <div className="h-40 bg-white/[0.03] rounded-3xl border border-white/5 animate-pulse" />
+                        <div className="h-36 rounded-[var(--radius-lg)] border animate-pulse" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }} />
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            <SkeletonCard height={200} lines={4} hasAvatar />
-                            <SkeletonCard height={200} lines={4} />
+                            <SkeletonCard height={180} lines={3} hasAvatar />
+                            <SkeletonCard height={180} lines={3} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {[1, 2, 3].map(i => <SkeletonCard key={i} height={300} lines={6} />)}
+                            {[1, 2, 3].map(i => <SkeletonCard key={i} height={260} lines={5} />)}
                         </div>
                     </div>
                 ) : (

@@ -45,14 +45,14 @@ const TaskSubtasksTab: React.FC<TaskSubtasksTabProps> = ({
 }) => {
     return (
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <div className="max-w-[1600px] w-full mx-auto p-3 md:p-4 space-y-4 pb-32">
+            <div className="max-w-[1600px] w-full mx-auto p-4 md:p-6 space-y-6 pb-24">
                 
-                {/* Engagement Stepper Redesigned */}
-                <div className="bg-white dark:bg-white/5 rounded-[24px] p-2 flex items-center justify-between shadow-sm border border-black/5 dark:border-white/10 w-fit mx-auto">
+                {/* Engagement Stepper */}
+                <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-lg)] p-1.5 flex items-center justify-between w-fit mx-auto">
                     {[
-                        { id: AuditPhase.ONBOARDING, label: 'Onboarding', icon: <Map size={16} /> },
-                        { id: AuditPhase.PLANNING_AND_EXECUTION, label: 'Planning and Execution', icon: <Activity size={16} /> },
-                        { id: AuditPhase.REVIEW_AND_CONCLUSION, label: 'Review and Conclusion', icon: <CheckCircle2 size={16} /> }
+                        { id: AuditPhase.ONBOARDING, label: 'Onboarding', icon: <Map size={14} /> },
+                        { id: AuditPhase.PLANNING_AND_EXECUTION, label: 'Planning & execution', icon: <Activity size={14} /> },
+                        { id: AuditPhase.REVIEW_AND_CONCLUSION, label: 'Review & conclusion', icon: <CheckCircle2 size={14} /> }
                     ].map((p, i, arr) => {
                         const isActive = watchedPhase === p.id;
                         const isPast = PHASE_ORDER[watchedPhase] > PHASE_ORDER[p.id];
@@ -61,26 +61,26 @@ const TaskSubtasksTab: React.FC<TaskSubtasksTabProps> = ({
                             <React.Fragment key={p.id}>
                                 <button
                                     onClick={() => handlePhaseSwitch(p.id)}
-                                    className={`flex items-center gap-3 px-6 py-2.5 rounded-full transition-all duration-300 ${
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius-md)] text-xs font-medium transition-colors ${
                                         isActive 
-                                            ? 'bg-emerald-50 dark:bg-brand-500/20 text-emerald-700 dark:text-brand-400' 
+                                            ? 'bg-[var(--accent)] text-[var(--on-accent)]' 
                                             : isPast 
-                                                ? 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5' 
-                                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 opacity-60'
+                                                ? 'text-[var(--text-heading)] hover:bg-[var(--bg-secondary)]' 
+                                                : 'text-[var(--text-muted)] hover:text-[var(--text-heading)] hover:bg-[var(--bg-secondary)]'
                                     }`}
                                 >
-                                    <div className={`p-1 rounded-full ${isActive ? 'bg-emerald-100 dark:bg-brand-500/30' : ''}`}>
-                                        {isPast ? <CheckCircle2 size={16} /> : p.icon}
+                                    <div className="flex items-center justify-center">
+                                        {isPast ? <CheckCircle2 size={14} className="text-[var(--color-success)]" /> : p.icon}
                                     </div>
-                                    <span className="text-[12px] font-bold tracking-tight">{p.label}</span>
+                                    <span>{p.label}</span>
                                 </button>
-                                {i < arr.length - 1 && <div className="w-px h-6 bg-black/5 dark:bg-white/5 mx-2" />}
+                                {i < arr.length - 1 && <div className="w-px h-4 bg-[var(--border)] mx-1" />}
                             </React.Fragment>
                         );
                     })}
                 </div>
 
-                <div className="grid grid-cols-1 w-full gap-y-8">
+                <div className="grid grid-cols-1 w-full gap-y-6">
                     {[AuditPhase.ONBOARDING, AuditPhase.PLANNING_AND_EXECUTION, AuditPhase.REVIEW_AND_CONCLUSION].map(phase => {
                         const phaseSubtasks = (task.subtasks || []).filter(st => st.phase === phase);
                         const isCurrent = currentPhase === phase;
@@ -89,38 +89,38 @@ const TaskSubtasksTab: React.FC<TaskSubtasksTabProps> = ({
                         if (!isCurrent && !isPast) return null;
 
                         return (
-                            <div key={phase} className={`space-y-4 bg-white dark:bg-white/[0.02] border border-black/5 dark:border-white/10 rounded-[28px] p-6 shadow-sm ${!isCurrent ? 'opacity-80' : ''}`}>
+                            <div key={phase} className={`space-y-4 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 ${!isCurrent ? 'opacity-90' : ''}`}>
                                 {/* Phase Header */}
-                                <div className="flex items-center justify-between mb-4 px-2">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${
-                                            isCurrent 
-                                                ? 'bg-brand-500/10 text-brand-400 border-brand-500/20' 
-                                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                        }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-[var(--radius-md)] flex items-center justify-center border border-[var(--border-accent)] bg-[var(--accent-dim)] text-[var(--accent)]">
                                             {PHASE_ICONS[phase]}
                                         </div>
                                         <div>
-                                            <h5 className="text-[13px] font-black uppercase tracking-widest text-white">
-                                                {PHASE_LABELS_FULL[phase]} {isCurrent && <span className="inline-flex items-center gap-1.5 ml-3 px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 text-[9px] border border-brand-500/20">● Active</span>}
+                                            <h5 className="text-xs font-semibold text-[var(--text-heading)] flex items-center">
+                                                {PHASE_LABELS_FULL[phase]}
+                                                {isCurrent && (
+                                                    <span className="inline-flex items-center gap-1 ml-2.5 px-2 py-0.5 rounded-[var(--radius-sm)] text-[10px] font-medium border" style={{ background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)', color: 'var(--color-success)' }}>
+                                                        Active
+                                                    </span>
+                                                )}
                                             </h5>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                                                {isPast ? 'Verification Log' : 'Execution Queue'}
+                                            <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                                                {isPast ? 'Verification log' : 'Execution queue'}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="h-px flex-1 bg-black/5 dark:bg-white/5 mx-8" />
                                     <div className="text-right">
-                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                            {phaseSubtasks.filter(s => s.isCompleted).length}/{phaseSubtasks.length} Done
+                                        <p className="text-xs font-medium text-[var(--text-muted)] tabular-nums">
+                                            {phaseSubtasks.filter(s => s.isCompleted).length}/{phaseSubtasks.length} done
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {phaseSubtasks.length === 0 ? (
-                                        <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-[24px] bg-white/[0.01]">
-                                            <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest font-bold">No sub-tasks defined for this phase</p>
+                                        <div className="py-6 text-center border border-dashed border-[var(--border)] rounded-[var(--radius-md)] bg-[var(--bg-surface)]">
+                                            <p className="text-xs text-[var(--text-muted)]">No procedures defined for this phase</p>
                                         </div>
                                     ) : (
                                         phaseSubtasks.map((st, i) => renderSubtask(st, i))
@@ -128,14 +128,14 @@ const TaskSubtasksTab: React.FC<TaskSubtasksTabProps> = ({
                                 </div>
 
                                 {isCurrent && canAddSubtasks && (
-                                    <div className="flex gap-3 items-center px-4 py-2 rounded-[20px] border border-white/5 bg-white/[0.02] mt-4 focus-within:border-brand-500/30 transition-all shadow-inner group">
-                                        <Plus size={14} className="text-gray-600 group-focus-within:text-brand-400 transition-colors" />
+                                    <div className="flex gap-2.5 items-center px-3.5 py-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-surface)] mt-3 focus-within:border-[var(--accent)] transition-colors group">
+                                        <Plus size={14} className="text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors" />
                                         <input
                                             type="text"
                                             value={localSubtaskTitles[phase] || ''}
                                             onChange={(e) => setLocalSubtaskTitles(prev => ({ ...prev, [phase]: e.target.value }))}
-                                            placeholder={`Add sub-task to ${PHASE_LABELS_FULL[phase]}...`}
-                                            className="flex-1 bg-transparent text-[12px] text-white outline-none font-bold placeholder:text-gray-700"
+                                            placeholder={`Add procedure to ${PHASE_LABELS_FULL[phase]}...`}
+                                            className="flex-1 bg-transparent text-xs text-[var(--text-heading)] outline-none placeholder:text-[var(--text-muted)]"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();

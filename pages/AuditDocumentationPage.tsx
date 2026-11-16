@@ -259,16 +259,16 @@ const AuditDocumentationPage: React.FC = () => {
     if (!loadingClients && clients.length === 0 && user?.role === UserRole.STAFF) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
-                <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-8 shadow-2xl"
-                    style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05))', border: '1px solid rgba(245,158,11,0.25)' }}>
-                    <Lock size={40} style={{ color: '#f59e0b' }} />
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                    <Lock size={36} style={{ color: 'var(--color-warning)' }} />
                 </div>
-                <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--text-heading)' }}>No Client Access Assigned</h2>
+                <h2 className="text-xl font-bold mb-2 font-display" style={{ color: 'var(--text-heading)' }}>No client access assigned</h2>
                 <p className="text-sm max-w-md leading-relaxed mb-2" style={{ color: 'var(--text-muted)' }}>
                     You don't have permission to view any client's audit documentation yet.
                 </p>
                 <p className="text-xs max-w-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                    Ask your <span className="font-bold" style={{ color: 'var(--text-heading)' }}>Admin</span> to grant you access.
+                    Ask your <span className="font-semibold" style={{ color: 'var(--text-heading)' }}>Admin</span> to grant you access.
                 </p>
             </div>
         );
@@ -304,16 +304,16 @@ const AuditDocumentationPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => { setSelectedClientId(''); setNavStack([{ kind: 'root' }]); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all hover:bg-white/5"
-                            style={{ border: '1px solid var(--border)' }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
+                            style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
                         >
                             <ArrowLeft size={14} style={{ color: 'var(--text-muted)' }} />
-                            <span className="text-xs font-semibold" style={{ color: 'var(--text-heading)' }}>Change Client</span>
+                            <span className="text-xs font-medium" style={{ color: 'var(--text-heading)' }}>Change client</span>
                         </button>
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-accent)' }}>
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                            style={{ background: 'var(--accent-dim)', border: '1px solid var(--border-accent)' }}>
                             <Building2 size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                            <span className="text-sm font-bold" style={{ color: 'var(--accent)' }}>{selectedClient?.name}</span>
+                            <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>{selectedClient?.name}</span>
                         </div>
                     </div>
                 ) : null}
@@ -330,15 +330,15 @@ const AuditDocumentationPage: React.FC = () => {
                                 } catch { /* silent */ }
                             }
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all hover:scale-105 group"
-                        title="Manage Staff Access"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors group"
+                        title="Manage staff access"
                         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
                     >
-                        <Users size={13} className="group-hover:text-amber-400 transition-colors" />
-                        <span className="text-[11px] font-semibold hidden md:inline group-hover:text-amber-400 transition-colors">Access</span>
+                        <Users size={13} style={{ color: 'var(--accent)' }} />
+                        <span className="text-xs font-medium hidden md:inline" style={{ color: 'var(--text-heading)' }}>Access</span>
                         {selectedClient?.permittedStaff && selectedClient.permittedStaff.length > 0 && (
-                            <span className="w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center"
-                                style={{ boxShadow: '0 0 0 2px var(--bg-elevated)' }}>
+                            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-medium tabular-nums"
+                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' }}>
                                 {selectedClient.permittedStaff.length}
                             </span>
                         )}
@@ -347,9 +347,9 @@ const AuditDocumentationPage: React.FC = () => {
 
                 {/* Read-only badge for Staff */}
                 {user.role === UserRole.STAFF && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold"
-                        style={{ background: 'rgba(59,130,246,0.10)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.25)' }}>
-                        <Eye size={11} /> View Only
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+                        style={{ background: 'rgba(106,163,217,0.10)', color: 'var(--color-info)', border: '1px solid rgba(106,163,217,0.25)' }}>
+                        <Eye size={12} /> View only
                     </div>
                 )}
 
@@ -377,16 +377,16 @@ const AuditDocumentationPage: React.FC = () => {
                                     } catch { /* silent */ }
                                 }
                             }}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all hover:bg-amber-500/10 border"
-                            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors border"
+                            style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)', color: 'var(--accent)' }}
                         >
-                            <Users size={14} className="text-amber-500" />
-                            <span className="text-xs font-bold text-amber-500">Manage Access</span>
+                            <Users size={14} style={{ color: 'var(--accent)' }} />
+                            <span className="text-xs font-medium">Manage access</span>
                         </button>
                     )}
                     
-                    <div className="flex items-center rounded-xl overflow-hidden"
-                        style={{ border: '1px solid var(--border)' }}>
+                    <div className="flex items-center rounded-lg overflow-hidden border"
+                        style={{ borderColor: 'var(--border)' }}>
                         <button onClick={() => setIsGrid(false)}
                             className="p-2 transition-colors"
                             style={{ background: !isGrid ? 'var(--accent-dim)' : 'transparent', color: !isGrid ? 'var(--accent)' : 'var(--text-muted)' }}>
@@ -409,8 +409,8 @@ const AuditDocumentationPage: React.FC = () => {
                         {/* Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-heading)' }}>Audit Workspaces</h1>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                <h1 className="text-2xl font-bold font-display" style={{ color: 'var(--text-heading)' }}>Audit workspaces</h1>
+                                <p className="text-xs mt-0.5 tabular-nums" style={{ color: 'var(--text-muted)' }}>
                                     {filteredWorkspaces.length} workspace{filteredWorkspaces.length !== 1 ? 's' : ''} across {clients.length} client{clients.length !== 1 ? 's' : ''}
                                 </p>
                             </div>
@@ -422,17 +422,17 @@ const AuditDocumentationPage: React.FC = () => {
                                         placeholder="Search client or year…"
                                         value={filterText}
                                         onChange={(e) => setFilterText(e.target.value)}
-                                        className="pl-9 pr-4 py-2 rounded-xl text-sm transition-all focus:outline-none w-56"
+                                        className="pl-9 pr-4 py-2 rounded-lg text-sm transition-colors focus:outline-none w-56"
                                         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
                                     />
                                 </div>
                                 {isAdmin && (
                                     <button
                                         onClick={() => { setInitClientId(''); setClientSearchText(''); setIsClientDropdownOpen(false); setIsInitModalOpen(true); }}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
-                                        style={{ background: 'var(--accent)', color: '#fff' }}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-opacity"
+                                        style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                                     >
-                                        <FolderPlus size={15} /> New Workspace
+                                        <FolderPlus size={14} /> New workspace
                                     </button>
                                 )}
                             </div>
@@ -445,17 +445,17 @@ const AuditDocumentationPage: React.FC = () => {
                             </div>
                         ) : filteredWorkspaces.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                                    style={{ background: 'var(--bg-surface)', border: '2px dashed var(--border)' }}>
-                                    <FolderOpen size={24} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+                                <div className="w-12 h-12 rounded-xl flex items-center justify-center border border-dashed"
+                                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                    <FolderOpen size={22} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-heading)' }}>
-                                        {filterText ? 'No matches' : 'No Workspaces Yet'}
+                                        {filterText ? 'No matches' : 'No workspaces yet'}
                                     </p>
                                     <p className="text-xs max-w-xs" style={{ color: 'var(--text-muted)' }}>
                                         {filterText ? 'Try a different search term.' : isAdmin
-                                            ? 'Use "New Workspace" to create one.'
+                                            ? 'Use "New workspace" to create one.'
                                             : 'No workspaces have been set up for you yet.'}
                                     </p>
                                 </div>
@@ -464,37 +464,33 @@ const AuditDocumentationPage: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                                 <AnimatePresence>
                                 {filteredWorkspaces.map(({ client, fy }, i) => (
-                                    <motion.button
+                                    <button
                                         key={`${client.id}-${fy}`}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.96 }}
-                                        transition={{ duration: 0.16, delay: i * 0.03 }}
                                         onClick={() => handleClientSelect(client.id, fy)}
-                                        className="group text-left p-5 rounded-xl flex flex-col h-44 relative overflow-hidden"
-                                        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                                        whileHover={{ y: -2, borderColor: 'var(--accent)' }}
-                                        whileTap={{ scale: 0.98 }}
+                                        className="group text-left p-4 rounded-xl flex flex-col h-40 relative overflow-hidden border transition-colors"
+                                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-mid)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                                     >
                                         <div className="flex items-start justify-between mb-auto">
-                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                                                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                                                <Building2 size={17} style={{ color: 'var(--text-muted)' }} />
+                                            <div className="w-9 h-9 rounded-lg flex items-center justify-center border"
+                                                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+                                                <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
                                             </div>
-                                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' }}>
+                                            <span className="text-xs font-mono font-medium px-2 py-0.5 rounded border tabular-nums"
+                                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', borderColor: 'var(--border-accent)' }}>
                                                 {fy.replace('-', '/')}
                                             </span>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold leading-snug mb-1 line-clamp-2" style={{ color: 'var(--text-heading)' }}>
+                                            <p className="text-sm font-semibold leading-snug mb-1 line-clamp-2" style={{ color: 'var(--text-heading)' }}>
                                                 {client.name}
                                             </p>
                                             <p className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                                                Open workspace <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                                                Open workspace <ChevronRight size={12} />
                                             </p>
                                         </div>
-                                    </motion.button>
+                                    </button>
                                 ))}
                                 </AnimatePresence>
                             </div>
@@ -502,41 +498,37 @@ const AuditDocumentationPage: React.FC = () => {
                             <div className="space-y-1.5">
                                 <AnimatePresence>
                                 {filteredWorkspaces.map(({ client, fy }, i) => (
-                                    <motion.button
+                                    <button
                                         key={`${client.id}-${fy}`}
-                                        initial={{ opacity: 0, y: 6 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.13, delay: i * 0.02 }}
                                         onClick={() => handleClientSelect(client.id, fy)}
-                                        className="group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-150"
-                                        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                                        whileHover={{ x: 2, borderColor: 'var(--accent)' }}
-                                        whileTap={{ scale: 0.99 }}
+                                        className="group w-full text-left flex items-center gap-4 px-4 py-3 rounded-xl border transition-colors"
+                                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-mid)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                                     >
-                                        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
-                                            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                                            <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
+                                        <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border"
+                                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+                                            <Building2 size={15} style={{ color: 'var(--text-muted)' }} />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-heading)' }}>
                                                 {client.name}
                                             </p>
-                                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Audit Documentation Vault</p>
+                                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Audit documentation vault</p>
                                         </div>
                                         <div className="flex items-center gap-3 shrink-0">
-                                            <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' }}>
+                                            <span className="text-xs font-mono font-medium px-2 py-0.5 rounded border tabular-nums"
+                                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', borderColor: 'var(--border-accent)' }}>
                                                 {fy.replace('-', '/')}
                                             </span>
                                             {!isReadOnly && (client.permittedStaff?.length ?? 0) > 0 && (
-                                                <span className="text-xs hidden md:block" style={{ color: 'var(--text-muted)' }}>
+                                                <span className="text-xs hidden md:block tabular-nums" style={{ color: 'var(--text-muted)' }}>
                                                     {client.permittedStaff!.length} staff
                                                 </span>
                                             )}
-                                            <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" style={{ color: 'var(--text-muted)' }} />
+                                            <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
                                         </div>
-                                    </motion.button>
+                                    </button>
                                 ))}
                                 </AnimatePresence>
                             </div>
@@ -552,47 +544,41 @@ const AuditDocumentationPage: React.FC = () => {
             {/* ── Initialize Workspace Modal ── */}
             <AnimatePresence>
             {isInitModalOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-                >
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsInitModalOpen(false)} />
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60" onClick={() => setIsInitModalOpen(false)} />
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.93, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.93, y: 20 }}
-                        transition={{ type: 'spring', damping: 25 }}
-                        className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
-                        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-xl"
+                        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
                     >
                         {/* Header */}
-                        <div className="p-6 border-b flex items-center gap-4" style={{ borderColor: 'var(--border)' }}>
-                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                                style={{ background: 'var(--accent-dim)', border: '1px solid rgba(var(--accent-rgb,101,154,43),0.3)' }}>
-                                <FolderPlus size={22} style={{ color: 'var(--accent)' }} />
+                        <div className="p-5 border-b flex items-center gap-3.5" style={{ borderColor: 'var(--border)' }}>
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center border"
+                                style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)' }}>
+                                <FolderPlus size={18} style={{ color: 'var(--accent)' }} />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold" style={{ color: 'var(--text-heading)' }}>Initialize Workspace</h2>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Create a new audit documentation workspace for a client and fiscal year.</p>
+                                <h2 className="text-base font-bold" style={{ color: 'var(--text-heading)' }}>Initialize workspace</h2>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Create an audit documentation workspace for a client and fiscal year.</p>
                             </div>
-                            <button onClick={() => setIsInitModalOpen(false)} className="ml-auto p-2 rounded-full hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                            <button onClick={() => setIsInitModalOpen(false)} className="ml-auto p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors" style={{ color: 'var(--text-muted)' }} aria-label="Close">
                                 <X size={18} />
                             </button>
                         </div>
 
                         {/* Body */}
-                        <div className="p-6 space-y-5">
+                        <div className="p-5 space-y-4">
                             <div>
-                                <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Client</label>
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Client</label>
                                 <select
                                     value={initClientId}
                                     onChange={e => setInitClientId(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl text-sm font-semibold outline-none transition-colors"
-                                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
+                                    className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none transition-colors"
+                                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
                                 >
-                                    <option value="">— Select a Client —</option>
+                                    <option value="">— Select a client —</option>
                                     {clients
                                         .slice()
                                         .sort((a, b) => a.name.localeCompare(b.name))
@@ -603,12 +589,12 @@ const AuditDocumentationPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Fiscal Year</label>
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Fiscal year</label>
                                 <select
                                     value={initFY}
                                     onChange={e => setInitFY(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl text-sm font-semibold outline-none transition-colors"
-                                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
+                                    className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none transition-colors font-mono"
+                                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-heading)' }}
                                 >
                                     {NEPALI_FISCAL_YEARS.map(fy => (
                                         <option key={fy} value={fy}>{fy.replace('-', '/')}</option>
@@ -620,8 +606,8 @@ const AuditDocumentationPage: React.FC = () => {
                                 const c = clients.find(x => x.id === initClientId);
                                 const already = c?.activeAuditYears?.includes(initFY);
                                 return already ? (
-                                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold"
-                                        style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>
+                                    <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-medium"
+                                        style={{ background: 'rgba(217,164,65,0.1)', border: '1px solid rgba(217,164,65,0.25)', color: 'var(--color-warning)' }}>
                                         <AlertTriangle size={14} /> This workspace already exists.
                                     </div>
                                 ) : null;
@@ -629,25 +615,25 @@ const AuditDocumentationPage: React.FC = () => {
                         </div>
 
                         {/* Footer */}
-                        <div className="px-6 pb-6 flex items-center justify-end gap-3">
+                        <div className="px-5 pb-5 flex items-center justify-end gap-2.5">
                             <button
                                 onClick={() => setIsInitModalOpen(false)}
-                                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors hover:bg-white/5"
-                                style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                                className="px-4 py-2 rounded-lg text-xs font-medium transition-colors border"
+                                style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleInitWorkspace}
                                 disabled={!initClientId || savingInit}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
-                                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary, var(--accent)))', color: '#fff' }}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-opacity disabled:opacity-50"
+                                style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                             >
-                                {savingInit ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><CheckCircle2 size={14} /> Create Workspace</>}
+                                {savingInit ? <><Loader2 size={13} className="animate-spin" /> Creating…</> : <><CheckCircle2 size={13} /> Create workspace</>}
                             </button>
                         </div>
                     </motion.div>
-                </motion.div>
+                </div>
             )}
             </AnimatePresence>
             
@@ -655,11 +641,11 @@ const AuditDocumentationPage: React.FC = () => {
             {isPermissionModalOpen && selectedClient && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div 
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/60"
                         onClick={() => setIsPermissionModalOpen(false)}
                     />
                     <div 
-                        className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+                        className="relative w-full max-w-md rounded-xl overflow-hidden flex flex-col"
                         style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', maxHeight: '85vh' }}
                     >
                         <div className="shrink-0 p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
@@ -679,7 +665,7 @@ const AuditDocumentationPage: React.FC = () => {
                             </div>
                             <button 
                                 onClick={() => setIsPermissionModalOpen(false)}
-                                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-elevated)]"
                                 style={{ color: 'var(--text-muted)' }}
                             >
                                 <FolderX size={16} />
@@ -748,24 +734,25 @@ const AuditDocumentationPage: React.FC = () => {
 
             {/* ── Global Staff-wise Access Modal ── */}
             {isGlobalAccessModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="w-full max-w-5xl h-full max-h-[85vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl border"
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/60 animate-in fade-in duration-300">
+                    <div className="w-full max-w-5xl h-full max-h-[85vh] rounded-2xl overflow-hidden flex flex-col border"
                         style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
                         
                         {/* Header */}
                         <div className="px-6 py-5 flex items-center justify-between border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
-                                    <ShieldCheck size={20} className="text-amber-500" />
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center border"
+                                    style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)' }}>
+                                    <ShieldCheck size={20} style={{ color: 'var(--accent)' }} />
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold" style={{ color: 'var(--text-heading)' }}>Global Staff Access Manager</h2>
-                                    <p className="text-[11px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-muted)' }}>Manage client permissions staff-wise</p>
+                                    <p className="text-[11px] font-semibold mt-0.5" style={{ color: 'var(--text-muted)' }}>Manage client permissions staff-wise</p>
                                 </div>
                             </div>
                             <button 
                                 onClick={() => { setIsGlobalAccessModalOpen(false); setGlobalSelectedStaffId(null); }}
-                                className="p-2 rounded-xl transition-colors hover:bg-white/10"
+                                className="p-2 rounded-xl transition-colors hover:bg-[var(--bg-elevated)]"
                                 style={{ color: 'var(--text-muted)' }}
                             >
                                 <X size={20} />
@@ -797,18 +784,20 @@ const AuditDocumentationPage: React.FC = () => {
                                         <button
                                             key={s.uid}
                                             onClick={() => setGlobalSelectedStaffId(s.uid)}
-                                            className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 group ${
-                                                globalSelectedStaffId === s.uid 
-                                                    ? 'bg-amber-500 text-white shadow-lg' 
-                                                    : 'hover:bg-white/5'
-                                            }`}
+                                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group`}
                                             style={{
-                                                color: globalSelectedStaffId === s.uid ? '#fff' : 'var(--text-heading)'
+                                                background: globalSelectedStaffId === s.uid ? 'var(--accent-dim)' : 'transparent',
+                                                color: globalSelectedStaffId === s.uid ? 'var(--accent)' : 'var(--text-heading)'
                                             }}
+                                            onMouseEnter={e => { if (globalSelectedStaffId !== s.uid) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-secondary)'; }}
+                                            onMouseLeave={e => { if (globalSelectedStaffId !== s.uid) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                                         >
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black border transition-colors ${
-                                                globalSelectedStaffId === s.uid ? 'bg-white/20 border-white/30 text-white' : 'bg-white/10 border-white/10'
-                                            }`}>
+                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black border transition-colors"
+                                                style={{
+                                                    background: globalSelectedStaffId === s.uid ? 'var(--accent)' : 'var(--bg-elevated)',
+                                                    borderColor: globalSelectedStaffId === s.uid ? 'var(--border-accent)' : 'var(--border)',
+                                                    color: globalSelectedStaffId === s.uid ? 'var(--on-accent)' : 'var(--text-muted)'
+                                                }}>
                                                 {(s.displayName || 'U').charAt(0)}
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
@@ -831,7 +820,7 @@ const AuditDocumentationPage: React.FC = () => {
                                         <div className="px-8 py-5 flex items-center justify-between border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="text-sm font-bold" style={{ color: 'var(--text-heading)' }}>
-                                                    Permissions for <span className="text-amber-500">{allStaff.find(s => s.uid === globalSelectedStaffId)?.displayName}</span>
+                                                    Permissions for <span style={{ color: 'var(--accent)' }}>{allStaff.find(s => s.uid === globalSelectedStaffId)?.displayName}</span>
                                                 </h3>
                                                 <div className="flex items-center gap-4 mt-1.5">
                                                     <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>
@@ -909,9 +898,9 @@ const AuditDocumentationPage: React.FC = () => {
                                                                     <p className="text-xs font-bold truncate" style={{ color: 'var(--text-heading)' }}>
                                                                         {client.name}
                                                                     </p>
-                                                                    <p className="text-[9px] font-black tracking-wider uppercase mt-0.5"
+                                                                    <p className="text-[9px] font-semibold mt-0.5"
                                                                         style={{ color: isPermitted ? '#10b981' : 'var(--text-muted)' }}>
-                                                                        {isPermitted ? 'GRANTED' : 'NO ACCESS'}
+                                                                        {isPermitted ? 'Granted' : 'No access'}
                                                                     </p>
                                                                 </div>
                                                                 {/* Toggle Switch */}

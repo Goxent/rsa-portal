@@ -57,71 +57,67 @@ interface ReviewCard {
 const ReviewTaskCard: React.FC<{ card: ReviewCard; onView: (t: Task) => void; idx: number }> = ({ card, onView, idx }) => {
     const { task, myLabel, isReady, blockerName, daysWaiting } = card;
 
-    const statusColor = isReady ? 'text-brand-600 dark:text-brand-400 border-brand-500/30 bg-brand-500/10'
-        : 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10';
+    const statusStyle = isReady 
+        ? { color: 'var(--accent)', borderColor: 'var(--border-accent)', background: 'var(--accent-dim)' }
+        : { color: 'var(--color-warning)', borderColor: 'rgba(217,164,65,0.3)', background: 'rgba(217,164,65,0.08)' };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: idx * 0.08 }}
+        <div
             onClick={() => onView(task)}
-            className="group relative p-4 rounded-lg border transition-all cursor-pointer overflow-hidden shadow-sm hover:shadow-card"
+            className="group relative p-3.5 rounded-[var(--radius-md)] border transition-colors duration-150 cursor-pointer overflow-hidden hover:border-[var(--border-mid)]"
             style={{
-                background: 'var(--bg-surface)',
+                background: 'var(--bg-secondary)',
                 borderColor: 'var(--border)',
             }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
         >
             {/* Role badge */}
-            <div className="flex justify-between items-start mb-3">
-                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border ${statusColor}`}>
+            <div className="flex justify-between items-start mb-2.5">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-[var(--radius-sm)] border" style={statusStyle}>
                     {myLabel}
                 </span>
                 {daysWaiting > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] text-muted font-bold">
-                        <Clock size={10} />
+                    <span className="flex items-center gap-1 text-[11px] font-normal tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                        <Clock size={11} strokeWidth={1.75} />
                         {daysWaiting}d waiting
                     </span>
                 )}
             </div>
 
             {/* Task info */}
-            <h4 className="text-[13px] font-bold leading-snug truncate uppercase tracking-tight mb-1" style={{ color: 'var(--text-heading)' }}>
+            <h4 className="text-xs font-semibold leading-snug truncate mb-1" style={{ color: 'var(--text-heading)' }}>
                 {task.title}
             </h4>
-            <p className="text-[10px] font-bold uppercase tracking-widest truncate" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-[11px] font-normal truncate" style={{ color: 'var(--text-muted)' }}>
                 {task.clientName || 'Direct Engagement'}
             </p>
 
             {/* Waiting-on notice (D3) */}
             {!isReady && blockerName && (
-                <div className="mt-2 flex items-center gap-1.5 text-amber-500 text-[10px] font-bold">
-                    <AlertCircle size={11} />
+                <div className="mt-2 flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-warning)' }}>
+                    <AlertCircle size={12} strokeWidth={1.75} />
                     Waiting on {blockerName}
                 </div>
             )}
 
             {/* Footer */}
-            <div className="mt-3 pt-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
+            <div className="mt-3 pt-2.5 border-t flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
                 <div className="flex -space-x-1.5">
                     {(task.assignedTo || []).slice(0, 3).map((uid) => (
-                        <div key={uid} className="w-5 h-5 rounded-md border flex items-center justify-center text-[9px] font-black"
-                            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                        <div key={uid} className="w-5 h-5 rounded-full border flex items-center justify-center text-[9px] font-semibold"
+                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                             {uid.substring(0, 1).toUpperCase()}
                         </div>
                     ))}
                 </div>
-                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     style={{ color: 'var(--accent)' }}>
-                    <span className="text-[9px] font-black uppercase tracking-widest">
-                        {isReady ? 'Sign-off' : 'View'}
+                    <span className="text-xs font-semibold">
+                        {isReady ? 'Sign off' : 'View'}
                     </span>
-                    <ArrowRight size={12} />
+                    <ArrowRight size={12} strokeWidth={1.75} />
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 };
 
@@ -223,17 +219,17 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
             style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
 
             {/* Header */}
-            <div className="px-6 py-4 border-b flex items-center justify-between"
+            <div className="px-5 py-3.5 border-b flex items-center justify-between"
                 style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
-                <div className="flex items-center gap-4">
-                    <div className="p-2.5 rounded-lg shadow-sm" style={{ background: 'var(--accent)' }}>
-                        <ShieldAlert size={18} className="text-white" />
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-[var(--radius-sm)]" style={{ background: 'var(--accent)' }}>
+                        <ShieldAlert size={16} strokeWidth={1.75} style={{ color: 'var(--on-accent)' }} />
                     </div>
                     <div>
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.1em]" style={{ color: 'var(--text-heading)' }}>
-                            Reviewer's Action Center
+                        <h3 className="text-xs font-semibold" style={{ color: 'var(--text-heading)' }}>
+                            Reviewer action center
                         </h3>
-                        <p className="text-[10px] font-bold uppercase tracking-tight" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-[11px] font-normal" style={{ color: 'var(--text-muted)' }}>
                             {readyCards.length > 0 && `${readyCards.length} ready for you`}
                             {readyCards.length > 0 && waitingCards.length > 0 && ' · '}
                             {waitingCards.length > 0 && `${waitingCards.length} waiting on others`}
@@ -241,10 +237,10 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-heading)' }}>
-                        {totalActions} ACTION{totalActions !== 1 ? 'S' : ''}
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-warning)' }} />
+                    <span className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--text-heading)' }}>
+                        {totalActions} action{totalActions !== 1 ? 's' : ''}
                     </span>
                 </div>
             </div>
@@ -253,8 +249,8 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
                 {/* D3: "Ready for you" section */}
                 {readyCards.length > 0 && (
                     <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest mb-3 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
-                            <ShieldCheck size={11} /> Ready for your sign-off
+                        <p className="text-xs font-semibold mb-2.5 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
+                            <ShieldCheck size={13} strokeWidth={1.75} /> Ready for your sign-off
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {readyCards.map((card, idx) => (
@@ -267,8 +263,8 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
                 {/* D3: "Waiting on someone earlier" section */}
                 {waitingCards.length > 0 && (
                     <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest mb-3 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-                            <Clock size={11} /> Waiting on earlier reviewer
+                        <p className="text-xs font-semibold mb-2.5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                            <Clock size={13} strokeWidth={1.75} /> Waiting on earlier reviewer
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {waitingCards.map((card, idx) => (
@@ -281,8 +277,8 @@ const ReviewerActionCenter: React.FC<ReviewerActionCenterProps> = ({ tasks, curr
                 {/* D4: Open queries awaiting staff reply */}
                 {queryCards.length > 0 && (
                     <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest mb-3 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-                            <MessageSquare size={11} /> Your open queries — awaiting reply
+                        <p className="text-xs font-semibold mb-2.5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                            <MessageSquare size={13} strokeWidth={1.75} /> Open queries awaiting reply
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {queryCards.map((card, idx) => (

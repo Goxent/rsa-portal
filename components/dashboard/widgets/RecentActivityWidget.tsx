@@ -21,10 +21,10 @@ interface ActivityItem {
 
 const getActivityStyle = (type: ActivityItem['type']) => {
     switch (type) {
-        case 'COMPLETED': return { dot: 'bg-brand-500', icon: <CheckCircle2 size={12} className="text-brand-500" />, label: 'Completed', color: 'text-brand-600 dark:text-brand-400' };
-        case 'OVERDUE': return { dot: 'bg-red-500 animate-pulse', icon: <Clock size={12} className="text-red-500" />, label: 'Overdue', color: 'text-red-600 dark:text-red-400' };
-        case 'IN_PROGRESS': return { dot: 'bg-amber-500', icon: <Briefcase size={12} className="text-amber-500" />, label: 'In Progress', color: 'text-amber-600 dark:text-amber-400' };
-        case 'REVIEW': return { dot: 'bg-amber-500', icon: <Briefcase size={12} className="text-amber-500" />, label: 'Under Review', color: 'text-indigo-600 dark:text-amber-400' };
+        case 'COMPLETED': return { dotBg: 'var(--accent)', label: 'Completed', color: 'var(--accent)' };
+        case 'OVERDUE': return { dotBg: 'var(--color-danger)', label: 'Overdue', color: 'var(--color-danger)' };
+        case 'IN_PROGRESS': return { dotBg: 'var(--color-warning)', label: 'In progress', color: 'var(--color-warning)' };
+        case 'REVIEW': return { dotBg: 'var(--color-info)', label: 'Under review', color: 'var(--color-info)' };
     }
 };
 
@@ -124,9 +124,12 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
 
     if (activities.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-                <CheckCircle2 size={28} className="mb-2 opacity-30" />
-                <p className="text-sm">No recent activity</p>
+            <div className="flex flex-col items-center justify-center h-40 text-center p-4">
+                <CheckCircle2 size={24} strokeWidth={1.75} className="mb-2 opacity-40" style={{ color: 'var(--text-muted)' }} />
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>No recent activity</p>
+                <p className="text-xs mt-1 max-w-[240px]" style={{ color: 'var(--text-muted)' }}>
+                    As tasks are updated, reviewed, and completed, activity updates will appear here.
+                </p>
             </div>
         );
     }
@@ -136,28 +139,33 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
             {/* Timeline */}
             <div className="relative">
                 {/* Vertical line */}
-                <div className="absolute left-[5px] top-2 bottom-2 w-[1px] bg-slate-200 dark:bg-white/[0.04]" />
+                <div className="absolute left-[5px] top-2 bottom-2 w-[1px]" style={{ background: 'var(--border)' }} />
 
                 <div className="space-y-0">
-                    {activities.map((item, idx) => {
+                    {activities.map((item) => {
                         const style = getActivityStyle(item.type);
                         return (
-                            <div key={item.id} className="relative flex gap-3 pb-4 last:pb-0 group">
+                            <div key={item.id} className="relative flex gap-3 pb-3.5 last:pb-0 group">
                                 {/* Dot */}
-                                <div className={`relative z-10 w-3.5 h-3.5 rounded-full mt-1 flex-shrink-0 border-2 border-[#0a0f1e] ${style.dot}`} />
+                                <div
+                                    className="relative z-10 w-3 h-3 rounded-full mt-1 flex-shrink-0 border-2"
+                                    style={{ background: style.dotBg, borderColor: 'var(--bg-secondary)' }}
+                                />
 
                                 {/* Content */}
-                                <div className="flex-1 min-w-0 hover:bg-slate-50 dark:hover:bg-white/[0.03] rounded-xl px-2.5 py-2 transition-colors border border-transparent">
+                                <div className="flex-1 min-w-0 rounded-[var(--radius-sm)] px-2 py-1 transition-colors hover:bg-[var(--bg-surface)]">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] font-bold text-slate-900 dark:text-gray-200 truncate leading-tight transition-colors">{item.title}</p>
+                                            <p className="text-xs font-semibold truncate leading-tight" style={{ color: 'var(--text-heading)' }}>
+                                                {item.title}
+                                            </p>
                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                <span className={`text-[10px] font-bold uppercase tracking-tight ${style.color}`}>{style.label}</span>
-                                                <span className="text-slate-300 dark:text-gray-800 text-[10px]">·</span>
-                                                <span className="text-[10px] font-bold text-slate-500 dark:text-gray-600 truncate uppercase tracking-tight">{item.client}</span>
+                                                <span className="text-[11px] font-medium" style={{ color: style.color }}>{style.label}</span>
+                                                <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>·</span>
+                                                <span className="text-[11px] font-normal truncate" style={{ color: 'var(--text-muted)' }}>{item.client}</span>
                                             </div>
                                         </div>
-                                        <span className="text-[9px] font-bold text-slate-500 dark:text-gray-500 whitespace-nowrap flex-shrink-0 mt-1 uppercase tracking-wider">
+                                        <span className="text-[11px] font-normal whitespace-nowrap flex-shrink-0 tabular-nums mt-0.5" style={{ color: 'var(--text-muted)' }}>
                                             {formatDistanceToNow(item.timestamp, { addSuffix: true })}
                                         </span>
                                     </div>
@@ -170,9 +178,10 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
 
             <button
                 onClick={() => navigate('/tasks')}
-                className="flex items-center justify-center gap-1.5 w-full pt-3 text-[11px] text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 transition-colors font-bold"
+                className="flex items-center justify-center gap-1.5 w-full pt-3 text-xs font-medium hover:underline transition-colors border-t mt-2"
+                style={{ color: 'var(--accent)', borderColor: 'var(--border)' }}
             >
-                View all tasks <ArrowRight size={11} />
+                View all tasks <ArrowRight size={12} strokeWidth={1.75} />
             </button>
         </div>
     );

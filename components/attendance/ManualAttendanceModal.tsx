@@ -189,12 +189,11 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
         <div 
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
             style={{ 
-                background: 'var(--modal-backdrop, rgba(0,0,0,0.6))',
-                backdropFilter: 'blur(4px)'
+                background: 'var(--modal-backdrop, rgba(0,0,0,0.6))'
             }}
         >
             <div 
-                className="w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[90vh] border animate-in slide-in-from-bottom-3 duration-300"
+                className="w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh] border animate-in slide-in-from-bottom-3 duration-300"
                 style={{ 
                     background: 'var(--bg-secondary)', 
                     borderColor: 'var(--border-mid)', 
@@ -209,11 +208,11 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                             <CheckCircle2 style={{ color: 'var(--accent)' }} size={18} />
                             {isAdmin ? 'Log Attendance' : 'Request Attendance Log'}
                         </h2>
-                        <p className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-xs font-medium mt-0.5" style={{ color: 'var(--text-muted)' }}>
                             {activeUser ? activeUser.displayName : 'Select Staff Member'}
                         </p>
                     </div>
-                    <button onClick={onClose} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-all">
+                    <button onClick={onClose} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -221,13 +220,13 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                 <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                            <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
                                 <Calendar size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Log Date
                             </label>
                             <button
                                 type="button"
                                 onClick={() => setUseNepali(!useNepali)}
-                                className="text-[9px] font-black px-2 py-0.5 rounded transition-all uppercase tracking-widest"
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded transition-colors"
                                 style={{ 
                                     background: useNepali ? 'var(--accent)' : 'var(--accent-dim)',
                                     color: useNepali ? 'white' : 'var(--accent)'
@@ -273,8 +272,8 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
 
                     {!selectedUser && isAdmin && users.length > 0 && (
                         <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
-                                <Users size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Select Staff Member
+                            <label className="flex items-center gap-2 text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>
+                                <Users size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Select staff member
                             </label>
                             <StaffSelect
                                 value={localUser?.uid || ''}
@@ -292,12 +291,12 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     )}
 
                     <div>
-                        <label className="block text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
-                            Attendance Status
+                        <label className="block text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>
+                            Attendance status
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {['PRESENT', 'LATE', 'HALF_DAY', 'ABSENT', 'ON LEAVE'].map(status => (
-                                <label key={status} className="cursor-pointer px-4 py-2 rounded-lg text-[11px] font-bold border transition-all uppercase tracking-wider relative"
+                                <label key={status} className="cursor-pointer px-4 py-2 rounded-lg text-xs font-semibold border transition-colors relative"
                                     style={{ 
                                         background: formData.status === status ? 'var(--accent)' : 'var(--bg-main)',
                                         borderColor: formData.status === status ? 'var(--accent)' : 'var(--border)',
@@ -321,8 +320,8 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     {formData.status !== 'ABSENT' && formData.status !== 'ON LEAVE' && (
                         <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                                    <Clock size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Clock In
+                                <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                                    <Clock size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Clock in
                                 </label>
                                 <input
                                     type="time"
@@ -340,8 +339,8 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                                    <Clock size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Clock Out
+                                <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                                    <Clock size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Clock out
                                 </label>
                                 <input
                                     type="time"
@@ -363,13 +362,13 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     {formData.status !== 'ABSENT' && formData.status !== 'ON LEAVE' && (
                         <div className="animate-in fade-in slide-in-from-top-3 space-y-3">
                             <div className="flex items-center justify-between">
-                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                                    <Briefcase size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Work Logs
+                                <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                                    <Briefcase size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Work logs
                                 </label>
                                 <button 
                                     type="button"
                                     onClick={addWorkLog} 
-                                    className="text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-all border shadow-sm"
+                                    className="text-xs font-semibold px-2.5 py-1 transition-colors border"
                                     style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--accent)' }}
                                 >
                                     + Add Item
@@ -384,7 +383,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                         <div className="space-y-3">
                                             <div className="space-y-2">
                                                 <div className="space-y-1">
-                                                    <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Client / Assignment</span>
+                                                    <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Client / assignment</span>
                                                     <ClientSelect
                                                         clients={clients}
                                                         value={log.clientId}
@@ -400,7 +399,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                                         value={log.locationTag || 'Office'}
                                                         onChange={(e) => updateWorkLog(log.id, 'locationTag', e.target.value as any)}
                                                         className={`
-                                                            w-full border px-9 py-1.5 text-[10px] font-bold outline-none transition-all h-8
+                                                            w-full border px-9 py-1.5 text-xs font-medium outline-none transition-all h-8
                                                             ${(log.locationTag || 'Office') === 'Office' ? 'text-[var(--accent)]' : 'text-amber-500'}
                                                         `}
                                                         style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
@@ -418,7 +417,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                                             </div>
 
                                             <div className="space-y-1 flex-1">
-                                                <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Nature of Assignment</span>
+                                                <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Nature of assignment</span>
                                                 <div className="relative">
                                                     <select
                                                         value={log.natureOfAssignment || NATURE_OF_ASSIGNMENTS[0]}
@@ -460,8 +459,8 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                     )}
 
                     <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                            <FileText size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Notes / Reason
+                        <label className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                            <FileText size={12} style={{ color: 'var(--accent)', opacity: 0.7 }} /> Notes / reason
                         </label>
                         <textarea
                             className="w-full border px-4 py-3 outline-none text-[13px] min-h-[100px] resize-none transition-all"
@@ -476,7 +475,7 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all"
+                            className="px-5 py-2.5 text-xs font-semibold transition-colors"
                             style={{ color: 'var(--text-muted)' }}
                         >
                             Cancel
@@ -484,8 +483,8 @@ const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
                         <button
                             type="submit"
                             disabled={isSaving || !activeUser}
-                            className="px-6 py-2.5 text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 shadow-lg"
-                            style={{ background: 'var(--accent)', color: 'white', borderRadius: 'var(--radius-md)' }}
+                            className="px-6 py-2.5 text-xs font-semibold flex items-center gap-2 transition-opacity disabled:opacity-50"
+                            style={{ background: 'var(--accent)', color: 'var(--on-accent)', borderRadius: 'var(--radius-md)' }}
                         >
                             {isSaving ? <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Save size={14} />}
                             {isAdmin ? 'Confirm Log' : 'Submit Request'}

@@ -61,24 +61,24 @@ const FirmDeadlinesStrip: React.FC<FirmDeadlinesStripProps> = ({ complianceEvent
 
     return (
         <div
-            className="rounded-xl border p-3 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 shadow-xs transition-all"
+            className="rounded-[var(--radius-lg)] border p-3 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 transition-colors duration-150"
             style={{
                 background: 'var(--bg-secondary)',
-                borderColor: 'var(--border-mid)',
+                borderColor: 'var(--border)',
             }}
             role="region"
             aria-label="Firm compliance deadlines"
         >
             {/* Header label */}
             <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="p-1.5 rounded-lg text-amber-500 bg-amber-500/10 border border-amber-500/20">
-                    <AlertCircle size={15} />
+                <div className="p-1.5 rounded-[var(--radius-sm)]" style={{ background: 'rgba(217,164,65,0.1)', color: 'var(--color-warning)' }}>
+                    <AlertCircle size={15} strokeWidth={1.75} />
                 </div>
                 <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider" style={{ color: 'var(--text-heading)' }}>
-                        Firm & Statutory Deadlines
+                    <h4 className="text-xs font-semibold" style={{ color: 'var(--text-heading)' }}>
+                        Firm & statutory deadlines
                     </h4>
-                    <p className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
+                    <p className="text-[11px] font-normal" style={{ color: 'var(--text-muted)' }}>
                         Compliance calendar
                     </p>
                 </div>
@@ -91,32 +91,65 @@ const FirmDeadlinesStrip: React.FC<FirmDeadlinesStripProps> = ({ complianceEvent
                     const isDueToday = item.daysRemaining === 0;
                     const isUrgent = item.daysRemaining > 0 && item.daysRemaining <= 5;
 
-                    let badgeColor = 'text-muted bg-white/[0.03] border-border';
-                    if (isOverdue) badgeColor = 'text-rose-500 bg-rose-500/10 border-rose-500/30';
-                    else if (isDueToday) badgeColor = 'text-accent bg-accent/15 border-accent/40 animate-pulse';
-                    else if (isUrgent) badgeColor = 'text-amber-500 bg-amber-500/10 border-amber-500/30';
+                    let pillStyle = {
+                        background: 'var(--bg-surface)',
+                        borderColor: 'var(--border)',
+                        color: 'var(--text-body)'
+                    };
+                    let badgeStyle = {
+                        background: 'var(--bg-elevated)',
+                        color: 'var(--text-muted)'
+                    };
+
+                    if (isOverdue) {
+                        pillStyle = {
+                            background: 'rgba(224,112,122,0.08)',
+                            borderColor: 'rgba(224,112,122,0.25)',
+                            color: 'var(--color-danger)'
+                        };
+                        badgeStyle = {
+                            background: 'var(--color-danger)',
+                            color: '#ffffff'
+                        };
+                    } else if (isDueToday) {
+                        pillStyle = {
+                            background: 'var(--accent-dim)',
+                            borderColor: 'var(--border-accent)',
+                            color: 'var(--accent)'
+                        };
+                        badgeStyle = {
+                            background: 'var(--accent)',
+                            color: 'var(--on-accent)'
+                        };
+                    } else if (isUrgent) {
+                        pillStyle = {
+                            background: 'rgba(217,164,65,0.08)',
+                            borderColor: 'rgba(217,164,65,0.25)',
+                            color: 'var(--color-warning)'
+                        };
+                        badgeStyle = {
+                            background: 'rgba(217,164,65,0.2)',
+                            color: 'var(--color-warning)'
+                        };
+                    }
 
                     return (
                         <div
                             key={item.id}
                             onClick={() => navigate('/compliance')}
-                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer hover:scale-[1.02] transition-all flex-shrink-0 ${badgeColor}`}
+                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-[var(--radius-md)] border cursor-pointer transition-colors duration-150 flex-shrink-0 hover:border-[var(--border-mid)]"
+                            style={pillStyle}
                             title={`${item.title} — Due ${item.dueDate} (${item.bsDate ? item.bsDate + ' BS' : ''})`}
                         >
-                            <span className="text-xs font-bold leading-tight max-w-[140px] truncate" style={{ color: 'var(--text-heading)' }}>
+                            <span className="text-xs font-medium leading-tight max-w-[140px] truncate" style={{ color: 'var(--text-heading)' }}>
                                 {item.title}
                             </span>
                             {item.bsDate && (
-                                <span className="text-[10px] font-semibold text-muted hidden sm:inline">
+                                <span className="text-[11px] tabular-nums hidden sm:inline" style={{ color: 'var(--text-muted)' }}>
                                     {item.bsDate} BS
                                 </span>
                             )}
-                            <span className={`text-[10px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded ${
-                                isOverdue ? 'bg-rose-500 text-white' :
-                                isDueToday ? 'bg-accent text-white' :
-                                isUrgent ? 'bg-amber-500/20 text-amber-400' :
-                                'bg-white/10 text-muted'
-                            }`}>
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[var(--radius-sm)] tabular-nums" style={badgeStyle}>
                                 {isOverdue ? `${Math.abs(item.daysRemaining)}d late` :
                                  isDueToday ? 'Today' :
                                  `in ${item.daysRemaining}d`}
@@ -127,11 +160,11 @@ const FirmDeadlinesStrip: React.FC<FirmDeadlinesStripProps> = ({ complianceEvent
 
                 <button
                     onClick={() => navigate('/compliance')}
-                    className="flex items-center gap-1 text-[11px] font-bold px-2 py-1.5 rounded-lg hover:underline transition-colors flex-shrink-0"
+                    className="flex items-center gap-1 text-xs font-semibold px-2 py-1.5 rounded-[var(--radius-md)] hover:underline transition-colors flex-shrink-0"
                     style={{ color: 'var(--accent)' }}
                     aria-label="View all compliance events"
                 >
-                    All <ArrowRight size={11} />
+                    All <ArrowRight size={12} strokeWidth={1.75} />
                 </button>
             </div>
         </div>

@@ -436,17 +436,17 @@ const ClientsPage: React.FC = () => {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => handleExport('pdf')}
-                                className="p-3 md:p-2.5 rounded-xl text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-rose-900/10"
+                                className="p-2 rounded-[var(--radius-md)] text-[var(--text-muted)] bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] hover:text-[var(--text-heading)] border border-[var(--border)] transition-colors"
                                 title="Export PDF" aria-label="Export PDF"
                             >
-                                <FileText size={20} />
+                                <FileText size={18} />
                             </button>
                             <button
                                 onClick={() => handleExport('excel')}
-                                className="p-3 md:p-2.5 rounded-xl text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-/10"
+                                className="p-2 rounded-[var(--radius-md)] text-[var(--text-muted)] bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] hover:text-[var(--text-heading)] border border-[var(--border)] transition-colors"
                                 title="Export Excel" aria-label="Export to Excel"
                             >
-                                <FileSpreadsheet size={20} />
+                                <FileSpreadsheet size={18} />
                             </button>
                         </div>
                     )}
@@ -458,9 +458,9 @@ const ClientsPage: React.FC = () => {
                                 setActiveModalTab('BASIC');
                                 setIsModalOpen(true);
                             }}
-                            className="text-white px-5 md:px-4 py-2.5 rounded-xl font-bold flex items-center transition-all active:scale-95 flex-1 md:flex-none justify-center" style={{ background: 'var(--accent)', boxShadow: 'var(--shadow-accent)' }} onMouseEnter={e => e.currentTarget.style.background='var(--accent-hover)'} onMouseLeave={e => e.currentTarget.style.background='var(--accent)'}
+                            className="text-[var(--on-accent)] px-4 py-2 rounded-[var(--radius-md)] text-xs font-semibold flex items-center transition-colors flex-1 md:flex-none justify-center bg-[var(--accent)] hover:opacity-90 shadow-none"
                         >
-                            <Plus size={18} className="mr-2" /> <span className="text-[13px] md:text-sm">Add Client</span>
+                            <Plus size={16} className="mr-1.5" /> <span>Add client</span>
                         </button>
                     )}
                 </div>
@@ -563,38 +563,38 @@ const ClientsPage: React.FC = () => {
                                                 <span className="text-[10px] px-1.5 py-0.5 rounded font-mono border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                                                     {client.code}
                                                 </span>
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border" style={{ background: client.status === 'Active' ? 'var(--accent-dim)' : 'rgba(196,68,90,0.12)', color: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', borderColor: client.status === 'Active' ? 'var(--border-accent)' : 'rgba(196,68,90,0.25)' }}>
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium border" style={{ background: client.status === 'Active' ? 'var(--accent-dim)' : 'rgba(196,68,90,0.12)', color: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', borderColor: client.status === 'Active' ? 'var(--border-accent)' : 'rgba(196,68,90,0.25)' }}>
                                                     {client.status}
                                                 </span>
                                                 {client.category && (
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
-                                                        CAT {client.category}
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-medium border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                                                        Cat {client.category}
                                                     </span>
                                                 )}
                                             </div>
                                             {/* Quick Stats Badges */}
                                             <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border" style={{ background: overdueCount > 0 ? 'rgba(196,68,90,0.1)' : 'var(--bg-secondary)', color: overdueCount > 0 ? 'var(--color-danger)' : 'var(--text-muted)', borderColor: overdueCount > 0 ? 'rgba(196,68,90,0.25)' : 'var(--border)' }}>
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border tabular-nums" style={{ background: overdueCount > 0 ? 'rgba(196,68,90,0.1)' : 'var(--bg-secondary)', color: overdueCount > 0 ? 'var(--color-danger)' : 'var(--text-muted)', borderColor: overdueCount > 0 ? 'rgba(196,68,90,0.25)' : 'var(--border)' }}>
                                                     <CheckCircle2 size={10} />
                                                     {clientTaskCount} tasks {overdueCount > 0 && `· ${overdueCount} overdue`}
                                                 </span>
                                                 {riskBadgeClass && (
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border font-bold uppercase" style={{ background: hasCritical ? 'rgba(196,68,90,0.1)' : 'rgba(201,138,42,0.1)', color: hasCritical ? 'var(--color-danger)' : 'var(--color-warning)', borderColor: hasCritical ? 'rgba(196,68,90,0.25)' : 'rgba(201,138,42,0.25)' }}>
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border font-medium" style={{ background: hasCritical ? 'rgba(196,68,90,0.1)' : 'rgba(201,138,42,0.1)', color: hasCritical ? 'var(--color-danger)' : 'var(--color-warning)', borderColor: hasCritical ? 'rgba(196,68,90,0.25)' : 'rgba(201,138,42,0.25)' }}>
                                                         <AlertTriangle size={10} />
-                                                        {hasCritical ? 'High Risk' : 'Elevated'}
+                                                        {hasCritical ? 'High risk' : 'Elevated'}
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
                                     {(canEditClient(client) || isAdmin) && (
-                                        <div className="opacity-70 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-1">
+                                        <div className="opacity-70 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
                                             {canEditClient(client) && (
                                                 <button
                                                     onClick={() => handleEdit(client)}
-                                                    className="p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-colors backdrop-blur-md"
+                                                    className="p-1.5 hover:bg-[var(--bg-surface)] rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors border border-[var(--border)]"
                                                 >
-                                                    <Edit size={14} />
+                                                    <Edit size={13} />
                                                 </button>
                                             )}
                                             {isAdmin && (
@@ -602,17 +602,17 @@ const ClientsPage: React.FC = () => {
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleReactivate(client.id); }}
                                                         title="Reactivate Client"
-                                                        className="p-2 hover:bg-emerald-500/20 rounded-lg text-white/70 hover:text-emerald-400 transition-colors backdrop-blur-md"
+                                                        className="p-1.5 hover:bg-[var(--bg-surface)] rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--color-success)] transition-colors border border-[var(--border)]"
                                                     >
-                                                        <RotateCcw size={14} />
+                                                        <RotateCcw size={13} />
                                                     </button>
                                                 ) : (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleDeactivate(client.id); }}
                                                         title="Deactivate Client"
-                                                        className="p-2 hover:bg-amber-500/20 rounded-lg text-white/70 hover:text-amber-400 transition-colors backdrop-blur-md"
+                                                        className="p-1.5 hover:bg-[var(--bg-surface)] rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--color-warning)] transition-colors border border-[var(--border)]"
                                                     >
-                                                        <Trash2 size={14} />
+                                                        <Trash2 size={13} />
                                                     </button>
                                                 )
                                             )}
@@ -632,12 +632,12 @@ const ClientsPage: React.FC = () => {
                                             <User size={12} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Focal Person</p>
-                                            <p className="text-sm text-gray-200 font-medium">{getAuditorName(client.auditorId)}</p>
+                                            <p className="text-xs text-[var(--text-muted)]">Focal person</p>
+                                            <p className="text-xs text-[var(--text-heading)] font-medium mt-0.5">{getAuditorName(client.auditorId)}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] text-gray-500 uppercase font-bold">Last Activity</p>
+                                        <p className="text-xs text-[var(--text-muted)]">Last activity</p>
                                         <p className="text-sm text-gray-300 font-mono tracking-tight">{client.updatedAt ? new Date(client.updatedAt).toLocaleDateString() : 'New'}</p>
                                     </div>
                                 </div>
@@ -702,9 +702,9 @@ const ClientsPage: React.FC = () => {
                                     key={tab}
                                     type="button"
                                     onClick={() => setActiveModalTab(tab as any)}
-                                    className={`pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 whitespace-nowrap ${activeModalTab === tab ? '' : 'border-transparent'}`} style={{ color: activeModalTab === tab ? 'var(--accent)' : 'var(--text-muted)', borderColor: activeModalTab === tab ? 'var(--accent)' : 'transparent' }}
+                                    className={`pb-2.5 text-xs font-medium transition-colors border-b-2 whitespace-nowrap ${activeModalTab === tab ? '' : 'border-transparent'}`} style={{ color: activeModalTab === tab ? 'var(--accent)' : 'var(--text-muted)', borderColor: activeModalTab === tab ? 'var(--accent)' : 'transparent' }}
                                 >
-                                    {tab === 'BASIC' ? 'Basic Info' : tab === 'CONTACT' ? 'Contact & Tax' : tab === 'PERMISSIONS' ? '🔐 Audit Docs Access' : 'Assignment'}
+                                    {tab === 'BASIC' ? 'Basic Info' : tab === 'CONTACT' ? 'Contact & Tax' : tab === 'PERMISSIONS' ? 'Audit Docs Access' : 'Assignment'}
                                 </button>
                             ))}
                         </div>
@@ -712,7 +712,7 @@ const ClientsPage: React.FC = () => {
                         <form onSubmit={handleSave} className="p-6 space-y-6 flex-1 overflow-y-auto">
                             {activeModalTab === 'BASIC' && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Basic Information</h3>
+                                <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>Basic information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="col-span-2 md:col-span-1">
                                         <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
@@ -809,7 +809,7 @@ const ClientsPage: React.FC = () => {
 
                             {activeModalTab === 'CONTACT' && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Contact & Tax Details</h3>
+                                <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>Contact & tax details</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>PAN Number</label>
@@ -843,7 +843,7 @@ const ClientsPage: React.FC = () => {
                             {activeModalTab === 'ASSIGNMENT' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Internal Focal Person</h3>
+                                <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>Internal focal person</h3>
                                 <div>
                                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Assigned Internal Focal Person</label>
                                     <StaffSelect
@@ -870,7 +870,7 @@ const ClientsPage: React.FC = () => {
 
                             {/* Compliance Settings */}
                             <div className="space-y-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-                                <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Compliance Services</h3>
+                                <h3 className="text-xs font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>Compliance services</h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }} onMouseEnter={e => e.currentTarget.style.background='var(--bg-secondary)'} onMouseLeave={e => e.currentTarget.style.background='var(--bg-elevated)'}>
                                         <input
@@ -904,8 +904,8 @@ const ClientsPage: React.FC = () => {
 
                             {activeModalTab === 'PERMISSIONS' && editingId && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                    <ShieldCheck size={16} /> Audit Documentation Access
+                                <h3 className="text-xs font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
+                                    <ShieldCheck size={16} className="text-[var(--accent)]" /> Audit documentation access
                                 </h3>
                                 <p className="text-xs text-gray-400 leading-relaxed">
                                     Select which staff members can <span className="text-white font-semibold">view audit documentation</span> for this client. Staff will see this client in their Audit Docs page in read-only mode.

@@ -13,31 +13,31 @@ import { formatDateDual } from '../../utils/nepaliDate';
 // ── Clean Priority Definitions ────────────────────────────────
 const PRIORITY_CONFIG: Record<TaskPriority, {
     border: string;
-    badge: string;
+    badgeStyle: React.CSSProperties;
     label: string;
     icon: React.ReactNode;
 }> = {
     [TaskPriority.URGENT]: {
-        border: 'border-l-rose-500',
-        badge: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
+        border: 'border-l-[var(--color-danger)]',
+        badgeStyle: { color: 'var(--color-danger)', background: 'rgba(224,112,122,0.1)', borderColor: 'rgba(224,112,122,0.25)' },
         label: 'Urgent',
-        icon: <Flame size={10} className="text-rose-500 flex-shrink-0" />,
+        icon: <Flame size={10} className="flex-shrink-0" />,
     },
     [TaskPriority.HIGH]: {
-        border: 'border-l-amber-500',
-        badge: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
+        border: 'border-l-[var(--color-warning)]',
+        badgeStyle: { color: 'var(--color-warning)', background: 'rgba(217,164,65,0.1)', borderColor: 'rgba(217,164,65,0.25)' },
         label: 'High',
-        icon: <Zap size={10} className="text-amber-500 flex-shrink-0" />,
+        icon: <Zap size={10} className="flex-shrink-0" />,
     },
     [TaskPriority.MEDIUM]: {
-        border: 'border-l-indigo-500',
-        badge: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+        border: 'border-l-[var(--color-info)]',
+        badgeStyle: { color: 'var(--color-info)', background: 'rgba(106,163,217,0.1)', borderColor: 'rgba(106,163,217,0.25)' },
         label: 'Medium',
-        icon: <Clock size={10} className="text-indigo-500 flex-shrink-0" />,
+        icon: <Clock size={10} className="flex-shrink-0" />,
     },
     [TaskPriority.LOW]: {
-        border: 'border-l-slate-400 dark:border-l-slate-600',
-        badge: 'text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/20',
+        border: 'border-l-[var(--color-neutral)]',
+        badgeStyle: { color: 'var(--text-muted)', background: 'var(--bg-surface)', borderColor: 'var(--border)' },
         label: 'Low',
         icon: null,
     },
@@ -126,32 +126,34 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
                                 onClick(task);
                             }}
                             className={[
-                                'relative group/card rounded-2xl cursor-pointer select-none overflow-hidden',
-                                'border border-l-4 transition-all duration-200',
-                                'bg-white dark:bg-[#13151f]',
-                                'border-slate-200 dark:border-white/[0.08]',
+                                'relative group/card rounded-[var(--radius-lg)] cursor-pointer select-none overflow-hidden',
+                                'border border-l-2 transition-colors duration-150',
                                 pc.border,
                                 snap.isDragging
-                                    ? 'shadow-2xl scale-[1.02] z-[9999] ring-2 ring-indigo-500/40 bg-white dark:bg-[#1a1d2c] rotate-1'
-                                    : 'shadow-sm hover:border-slate-300 dark:hover:border-white/[0.18] hover:-translate-y-0.5 hover:shadow-md',
-                                isSelected ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500/40' : '',
-                                isCompleted ? 'opacity-65' : '',
+                                    ? 'shadow-2xl z-[9999] ring-1 ring-[var(--accent)]'
+                                    : 'shadow-none hover:border-[var(--border-mid)]',
+                                isSelected ? 'ring-1 ring-[var(--accent)] border-[var(--border-accent)]' : '',
+                                isCompleted ? 'opacity-70' : '',
                             ].filter(Boolean).join(' ')}
+                            style={{
+                                background: isSelected ? 'var(--accent-dim)' : 'var(--bg-secondary)',
+                                borderColor: isSelected ? 'var(--border-accent)' : undefined
+                            }}
                         >
-                            <div className="p-3.5 space-y-2.5">
+                            <div className="p-3 space-y-2">
                                 {/* Header: Client Name, Selection Checkbox, Priority */}
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex items-center gap-2 min-w-0 flex-1">
                                         {/* Selection Checkbox */}
                                         {(isAdmin || isTL || isReviewer || isPartner || isAssigned) && (
                                             <div
-                                                className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-opacity ${
-                                                    isSelected ? 'opacity-100 bg-emerald-500 border-emerald-500' : 'opacity-0 group-hover/card:opacity-60 border-slate-300 dark:border-slate-600 hover:border-slate-400'
+                                                className={`w-3.5 h-3.5 rounded-[var(--radius-sm)] border flex items-center justify-center flex-shrink-0 transition-opacity ${
+                                                    isSelected ? 'opacity-100 bg-[var(--accent)] border-[var(--accent)]' : 'opacity-0 group-hover/card:opacity-60 border-[var(--border-mid)]'
                                                 }`}
                                                 onClick={e => { e.stopPropagation(); if (!snap.isDragging) onToggleSelection(task.id); }}
                                                 title="Select assignment"
                                             >
-                                                {isSelected && <Check size={10} className="text-white" strokeWidth={3.5} />}
+                                                {isSelected && <Check size={10} style={{ color: 'var(--on-accent)' }} strokeWidth={3} />}
                                             </div>
                                         )}
 
@@ -167,25 +169,25 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
                                                 }}
                                                 className="flex items-center gap-1.5 text-left truncate group/client hover:underline"
                                             >
-                                                <Building2 size={13} className="text-slate-400 dark:text-slate-500 flex-shrink-0 group-hover/client:text-indigo-500" />
-                                                <span className="text-[12px] font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate group-hover/client:text-indigo-600 dark:group-hover/client:text-indigo-400">
+                                                <Building2 size={12} strokeWidth={1.75} className="flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+                                                <span className="text-xs font-semibold tracking-tight truncate transition-colors group-hover/client:text-[var(--accent)]" style={{ color: 'var(--text-heading)' }}>
                                                     {task.clientName}
                                                 </span>
                                             </button>
                                         ) : (
-                                            <span className="text-[11px] font-semibold text-slate-400">Internal Engagement</span>
+                                            <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>Internal engagement</span>
                                         )}
                                     </div>
 
                                     {/* Priority Badge & Drag Handle */}
                                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${pc.badge}`}>
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-[var(--radius-sm)] border" style={pc.badgeStyle}>
                                             {pc.icon}
                                             {pc.label}
                                         </span>
 
                                         {!isDragDisabled && (
-                                            <div className="text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors opacity-0 group-hover/card:opacity-100 cursor-grab">
+                                            <div className="transition-opacity opacity-0 group-hover/card:opacity-100 cursor-grab" style={{ color: 'var(--text-muted)' }}>
                                                 <GripVertical size={13} />
                                             </div>
                                         )}
@@ -194,11 +196,14 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
 
                                 {/* Row 2: Assignment Title */}
                                 <div>
-                                    <h4 className={`text-[13px] font-semibold leading-snug line-clamp-2 transition-colors ${
+                                    <h4 className={`text-xs font-semibold leading-snug line-clamp-2 transition-colors ${
                                         (isCompleted && task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION)
-                                            ? 'line-through text-slate-400 dark:text-slate-500'
-                                            : 'text-slate-900 dark:text-slate-100 group-hover/card:text-indigo-600 dark:group-hover/card:text-indigo-300'
-                                    }`}>
+                                            ? 'line-through'
+                                            : 'group-hover/card:text-[var(--accent)]'
+                                    }`}
+                                    style={{
+                                        color: (isCompleted && task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION) ? 'var(--text-muted)' : 'var(--text-heading)'
+                                    }}>
                                         {task.title}
                                     </h4>
                                 </div>
@@ -206,28 +211,28 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
                                 {/* Row 3: Meta Tags (Type, Fiscal Year, Open Queries) */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     {task.taskType && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                                            {IconComp && <IconComp size={10} className="text-indigo-500 flex-shrink-0" />}
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-[var(--border)] text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
+                                            {IconComp && <IconComp size={10} className="flex-shrink-0" style={{ color: 'var(--accent)' }} />}
                                             <span className="truncate max-w-[120px]">{TASK_TYPE_LABELS[task.taskType]}</span>
                                         </span>
                                     )}
 
                                     {task.fiscalYear && (
-                                        <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-[10px] font-bold text-slate-500">
+                                        <span className="px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-[var(--border)] text-[10px] font-medium tabular-nums" style={{ color: 'var(--text-muted)' }}>
                                             FY {task.fiscalYear}
                                         </span>
                                     )}
 
                                     {openQueriesCount > 0 && (
-                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[10px] font-medium border tabular-nums" style={{ color: 'var(--color-warning)', background: 'rgba(217,164,65,0.1)', borderColor: 'rgba(217,164,65,0.25)' }}>
                                             <HelpCircle size={10} />
-                                            {openQueriesCount} {openQueriesCount === 1 ? 'Query' : 'Queries'}
+                                            {openQueriesCount} {openQueriesCount === 1 ? 'query' : 'queries'}
                                         </span>
                                     )}
 
                                     {task.reviewStatus === 'CHANGES_REQUESTED' && (
-                                        <span className="px-1.5 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-500">
-                                            Rev. Needed
+                                        <span className="px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[10px] font-medium border" style={{ color: 'var(--color-danger)', background: 'rgba(224,112,122,0.1)', borderColor: 'rgba(224,112,122,0.2)' }}>
+                                            Rev. needed
                                         </span>
                                     )}
                                 </div>
@@ -235,37 +240,36 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
                                 {/* Row 4: Progress Bar */}
                                 {pct >= 0 && (
                                     <div className="space-y-1">
-                                        <div className="flex justify-between items-center text-[11px]">
-                                            <span className="font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                                <CheckCircle2 size={11} className={pct === 100 ? 'text-emerald-500' : 'text-slate-400'} />
+                                        <div className="flex justify-between items-center text-[11px] tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                                            <span className="font-medium flex items-center gap-1">
+                                                <CheckCircle2 size={11} style={{ color: pct === 100 ? 'var(--color-success)' : 'var(--text-muted)' }} />
                                                 <span>{done}/{total} procedures</span>
                                             </span>
-                                            <span className={`font-bold ${pct === 100 ? 'text-emerald-500' : 'text-slate-600 dark:text-slate-400'}`}>
+                                            <span className="font-medium" style={{ color: pct === 100 ? 'var(--color-success)' : 'var(--text-secondary)' }}>
                                                 {pct}%
                                             </span>
                                         </div>
-                                        <div className="h-1.5 w-full bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
+                                        <div className="h-1.5 w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-full overflow-hidden">
                                             <div
-                                                className={`h-full rounded-full transition-all duration-500 ${
-                                                    pct === 100 ? 'bg-emerald-500' :
-                                                    pct >= 60 ? 'bg-indigo-500' :
-                                                    pct >= 30 ? 'bg-amber-500' : 'bg-slate-400'
-                                                }`}
-                                                style={{ width: `${pct}%` }}
+                                                className="h-full rounded-full transition-all duration-300"
+                                                style={{
+                                                    width: `${pct}%`,
+                                                    backgroundColor: pct === 100 ? 'var(--color-success)' : 'var(--accent)'
+                                                }}
                                             />
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Row 5: Footer — Due Date, Sign-off Chain Pips, Assignee Avatars */}
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/[0.06] gap-2">
+                                <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] gap-2">
                                     {/* Left: Dual Date */}
-                                    <div className={`flex items-center gap-1.5 text-[11px] font-medium truncate ${
-                                        isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-slate-400'
-                                    }`}>
+                                    <div className="flex items-center gap-1.5 text-[11px] font-medium truncate" style={{
+                                        color: isOverdue ? 'var(--color-danger)' : 'var(--text-muted)'
+                                    }}>
                                         {isOverdue ? (
                                             <>
-                                                <AlertTriangle size={12} className="animate-pulse flex-shrink-0" />
+                                                <AlertTriangle size={12} className="flex-shrink-0" />
                                                 <span className="truncate">{formatDualDate(task.dueDate)}</span>
                                             </>
                                         ) : task.dueDate ? (
@@ -274,7 +278,7 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
                                                 <span className="truncate">{formatDualDate(task.dueDate)}</span>
                                             </>
                                         ) : (
-                                            <span className="text-slate-400">No deadline</span>
+                                            <span>No deadline</span>
                                         )}
                                     </div>
 
@@ -284,23 +288,29 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
                                         {(task.teamLeaderId || task.engagementReviewerId || task.signingPartnerId) && (
                                             <div className="flex items-center gap-1" title="Sign-off chain: TL = Team Leader, ER = QC Reviewer, SP = Signing Partner">
                                                 {task.teamLeaderId && (
-                                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold border ${
-                                                        task.teamLeadApprovedAt ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 border-slate-200 dark:border-white/[0.08]'
-                                                    }`}>
+                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[9px] font-medium border" style={
+                                                        task.teamLeadApprovedAt
+                                                            ? { color: 'var(--color-success)', background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)' }
+                                                            : { color: 'var(--text-muted)', background: 'var(--bg-surface)', borderColor: 'var(--border)' }
+                                                    }>
                                                         TL {task.teamLeadApprovedAt ? '✓' : '○'}
                                                     </span>
                                                 )}
                                                 {task.engagementReviewerId && (
-                                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold border ${
-                                                        task.engagementReviewerApprovedAt ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 border-slate-200 dark:border-white/[0.08]'
-                                                    }`}>
+                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[9px] font-medium border" style={
+                                                        task.engagementReviewerApprovedAt
+                                                            ? { color: 'var(--color-success)', background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)' }
+                                                            : { color: 'var(--text-muted)', background: 'var(--bg-surface)', borderColor: 'var(--border)' }
+                                                    }>
                                                         ER {task.engagementReviewerApprovedAt ? '✓' : '○'}
                                                     </span>
                                                 )}
                                                 {task.signingPartnerId && (
-                                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold border ${
-                                                        task.signingPartnerApprovedAt ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 border-slate-200 dark:border-white/[0.08]'
-                                                    }`}>
+                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[9px] font-medium border" style={
+                                                        task.signingPartnerApprovedAt
+                                                            ? { color: 'var(--color-success)', background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)' }
+                                                            : { color: 'var(--text-muted)', background: 'var(--bg-surface)', borderColor: 'var(--border)' }
+                                                    }>
                                                         SP {task.signingPartnerApprovedAt ? '✓' : '○'}
                                                     </span>
                                                 )}
@@ -321,20 +331,20 @@ const TaskCard: React.FC<TaskCardProps> = React.memo(({
                                                             key={uid || i}
                                                             title={u.displayName}
                                                             style={{ backgroundColor: getAvatarBg(i) }}
-                                                            className="w-[22px] h-[22px] rounded-full ring-2 ring-white dark:ring-[#13151f] flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0 shadow-sm"
+                                                            className="w-[22px] h-[22px] rounded-full ring-2 ring-[var(--bg-secondary)] flex items-center justify-center text-[9px] font-semibold text-white flex-shrink-0"
                                                         >
                                                             {initials}
                                                         </div>
                                                     );
                                                 })}
                                                 {validAssignees.length > 3 && (
-                                                    <div className="w-[22px] h-[22px] rounded-full bg-slate-200 dark:bg-slate-700 ring-2 ring-white dark:ring-[#13151f] flex items-center justify-center text-[9px] font-bold text-slate-700 dark:text-slate-300">
+                                                    <div className="w-[22px] h-[22px] rounded-full bg-[var(--bg-surface)] border border-[var(--border)] ring-2 ring-[var(--bg-secondary)] flex items-center justify-center text-[9px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
                                                         +{validAssignees.length - 3}
                                                     </div>
                                                 )}
                                             </div>
                                         ) : (
-                                            <span className="text-[10px] text-slate-400 border border-dashed border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5">
+                                            <span className="text-[10px] border border-dashed border-[var(--border-mid)] rounded-[var(--radius-sm)] px-1.5 py-0.5" style={{ color: 'var(--text-muted)' }}>
                                                 Unassigned
                                             </span>
                                         )}

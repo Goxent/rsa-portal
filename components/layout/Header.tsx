@@ -38,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({
                 borderColor: 'var(--border)',
                 left: isSidebarCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'
             }}
-            className="fixed top-0 right-0 z-40 backdrop-blur-[12px] border-b flex items-center justify-between px-5 md:pl-4 transition-all duration-[250ms] cubic-bezier(0.4, 0, 0.2, 1)"
+            className="fixed top-0 right-0 z-40 border-b flex items-center justify-between px-5 md:pl-4 transition-[left] duration-200"
         >
 
             {/* Left side: Breadcrumbs & Mobile Logo */}
@@ -76,9 +76,9 @@ const Header: React.FC<HeaderProps> = ({
                     onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
                 >
                     {theme === 'dark' ? (
-                        <Sun size={18} style={{ color: '#d4903a' }} />
+                        <Sun size={18} strokeWidth={1.75} />
                     ) : (
-                        <Moon size={18} style={{ color: 'var(--accent)' }} />
+                        <Moon size={18} strokeWidth={1.75} />
                     )}
                 </button>
 
@@ -95,7 +95,7 @@ const Header: React.FC<HeaderProps> = ({
                     onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-heading)'; }}
                     onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
                 >
-                    <Bell size={18} className="group-hover:animate-swing" />
+                    <Bell size={18} strokeWidth={1.75} />
                     {unreadCount > 0 && (
                         <span 
                             className="absolute"
@@ -115,12 +115,12 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Desktop User Avatar */}
                 <div className="hidden md:flex ml-2">
                     <div 
-                        className="flex items-center justify-center text-white cursor-pointer transition-all duration-200 shadow-md ring-0 hover:ring-2 hover:ring-[var(--accent)]"
+                        className="flex items-center justify-center text-white cursor-pointer transition-shadow duration-150 hover:ring-2 hover:ring-[var(--border-mid)]"
                         style={{ 
-                            height: '30px',
-                            width: '30px',
+                            height: '32px',
+                            width: '32px',
                             borderRadius: '99px',
-                            background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+                            background: 'var(--accent)',
                             fontSize: '0.6875rem',
                             fontWeight: 700
                         }}

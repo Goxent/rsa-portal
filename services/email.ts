@@ -61,7 +61,7 @@ export const EmailService = {
         buttonStyle?: 'green' | 'danger' | 'info'
     ): string => {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
-        const btnStart = buttonStyle === 'danger' ? '#c4445a' : buttonStyle === 'info' ? '#3d82c9' : '#659a2b';
+        const btnStart = buttonStyle === 'danger' ? '#c4445a' : buttonStyle === 'info' ? '#3d82c9' : '#4fb286';
         const btnEnd = buttonStyle === 'danger' ? '#8a2e3e' : buttonStyle === 'info' ? '#1e60a8' : '#3f6018';
 
         const actionButton = (actionLabel && actionLink) ? `
@@ -82,13 +82,13 @@ export const EmailService = {
                 <div style="background: linear-gradient(to bottom right, #1c2216, #111a0b); padding: 36px 32px 30px; text-align: center;">
                     <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 14px; border-collapse: collapse;">
                         <tr>
-                            <td align="center" valign="middle" style="width:64px; height:44px; background:linear-gradient(135deg,#659a2b,#3f6018); border-radius:10px; color:#ffffff; font-size:18px; font-weight:800; font-family:${fontStack}; letter-spacing: 0.05em;">
+                            <td align="center" valign="middle" style="width:64px; height:44px; background:linear-gradient(135deg,#4fb286,#3f6018); border-radius:10px; color:#ffffff; font-size:18px; font-weight:800; font-family:${fontStack}; letter-spacing: 0.05em;">
                                 RSA
                             </td>
                         </tr>
                     </table>
                     <p style="color:#ffffff; font-size:19px; font-weight:700; letter-spacing:-0.3px; margin:0 0 10px; font-family:${fontStack};">R. Sapkota &amp; Associates</p>
-                    <span style="display:inline-block; background:rgba(101,154,43,0.22); color:#b8d98a; border:1px solid rgba(101,154,43,0.38); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">${typePill}</span>
+                    <span style="display:inline-block; background:rgba(79,178,134,0.22); color:#b8d98a; border:1px solid rgba(79,178,134,0.38); border-radius:99px; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 14px; font-family:${fontStack};">${typePill}</span>
                 </div>
 
                 <!-- Content Block -->
@@ -119,7 +119,7 @@ export const EmailService = {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `New Task Assigned: ${taskTitle} — ${clientName}`;
 
-        let priorityPillStyle = 'background:rgba(101,154,43,0.10); color:#527a22; border:1px solid rgba(101,154,43,0.22);';
+        let priorityPillStyle = 'background:rgba(79,178,134,0.10); color:#2a6a4b; border:1px solid rgba(79,178,134,0.22);';
         if (priority === 'HIGH' || priority === 'URGENT') {
             priorityPillStyle = 'background:rgba(196,68,90,0.10); color:#ad3049; border:1px solid rgba(196,68,90,0.22);';
         } else if (priority === 'MEDIUM') {
@@ -141,7 +141,7 @@ export const EmailService = {
                 <!-- Card header -->
                 <div style="padding:16px 20px 12px; border-bottom:1px solid #dce9cc;">
                     <p style="font-size:17px; font-weight:700; color:#1e293b; margin:0 0 6px; font-family:${fontStack};">${taskTitle}</p>
-                    <span style="display:inline-block; background:rgba(101,154,43,0.15); color:#527a22; border:1px solid rgba(101,154,43,0.25); border-radius:99px; font-size:10px; font-weight:700; padding:2px 10px; font-family:${fontStack};">${clientName}</span>
+                    <span style="display:inline-block; background:rgba(79,178,134,0.15); color:#2a6a4b; border:1px solid rgba(79,178,134,0.25); border-radius:99px; font-size:10px; font-weight:700; padding:2px 10px; font-family:${fontStack};">${clientName}</span>
                 </div>
 
                 <!-- Card rows -->
@@ -216,7 +216,7 @@ export const EmailService = {
                             <tr>
                                 <td style="width:76px; vertical-align:top; padding-right:20px;">
                                     <div style="background:#ffffff; border:1px solid #e8f0de; border-radius:8px; padding:12px 16px; text-align:center; min-width:76px;">
-                                        <p style="margin:0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#659a2b; font-family:${fontStack};">${month}</p>
+                                        <p style="margin:0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#4fb286; font-family:${fontStack};">${month}</p>
                                         <p style="margin:2px 0; font-size:28px; font-weight:800; color:#1e293b; line-height:1.1; font-family:${fontStack};">${day}</p>
                                         <p style="margin:0; font-size:11px; color:#94a3b8; font-family:${fontStack};">${year}</p>
                                     </div>
@@ -312,8 +312,8 @@ export const EmailService = {
             </p>
 
             <!-- Quote block with green left accent -->
-            <div style="position:relative; background:#f5f9ee; border:1px solid #e8f0de; border-left:3px solid #659a2b; border-radius:0 10px 10px 0; padding:18px 20px 18px 22px; margin-bottom:28px;">
-                <p style="font-size:12px; font-weight:700; color:#659a2b; margin:0 0 8px; font-family:${fontStack};">${authorName}</p>
+            <div style="position:relative; background:#f5f9ee; border:1px solid #e8f0de; border-left:3px solid #4fb286; border-radius:0 10px 10px 0; padding:18px 20px 18px 22px; margin-bottom:28px;">
+                <p style="font-size:12px; font-weight:700; color:#4fb286; margin:0 0 8px; font-family:${fontStack};">${authorName}</p>
                 <p style="font-size:14px; color:#475569; line-height:1.65; font-style:italic; margin:0 0 12px; font-family:${fontStack};">"${commentText}"</p>
                 <p style="font-size:12px; color:#94a3b8; margin:0; font-family:${fontStack};">${taskTitle} &middot; ${clientName}</p>
             </div>
@@ -352,8 +352,8 @@ export const EmailService = {
                                 </td>
                                 <!-- New status -->
                                 <td style="padding:0 8px; text-align:center; vertical-align:top;">
-                                    <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#659a2b; margin:0 0 8px; font-family:${fontStack};">Current</p>
-                                    <span style="display:inline-block; background:rgba(101,154,43,0.15); color:#527a22; border:1px solid rgba(101,154,43,0.30); border-radius:99px; font-size:12px; font-weight:700; padding:6px 16px; font-family:${fontStack};">${newStatus.replace(/_/g, ' ')}</span>
+                                    <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#4fb286; margin:0 0 8px; font-family:${fontStack};">Current</p>
+                                    <span style="display:inline-block; background:rgba(79,178,134,0.15); color:#2a6a4b; border:1px solid rgba(79,178,134,0.30); border-radius:99px; font-size:12px; font-weight:700; padding:6px 16px; font-family:${fontStack};">${newStatus.replace(/_/g, ' ')}</span>
                                 </td>
                             </tr>
                         </table>
@@ -376,8 +376,8 @@ export const EmailService = {
         const statusColor = isApproved ? '#3f6018' : '#8a2e3e';
         const statusLabel = isApproved ? 'Leave Approved' : 'Leave Rejected';
         const icon        = isApproved ? '✓' : '✕';
-        const iconColor   = isApproved ? '#527a22' : '#c4445a';
-        const noteBorder  = isApproved ? 'rgba(101,154,43,0.20)' : 'rgba(196,68,90,0.20)';
+        const iconColor   = isApproved ? '#2a6a4b' : '#c4445a';
+        const noteBorder  = isApproved ? 'rgba(79,178,134,0.20)' : 'rgba(196,68,90,0.20)';
         const btnStyle    = isApproved ? 'green' : 'danger';
 
         const content = `
@@ -418,8 +418,8 @@ export const EmailService = {
         const statusColor = isApproved ? '#3f6018' : '#8a2e3e';
         const statusLabel = isApproved ? 'Log Approved' : 'Log Rejected';
         const icon        = isApproved ? '✓' : '✕';
-        const iconColor   = isApproved ? '#527a22' : '#c4445a';
-        const noteBorder  = isApproved ? 'rgba(101,154,43,0.20)' : 'rgba(196,68,90,0.20)';
+        const iconColor   = isApproved ? '#2a6a4b' : '#c4445a';
+        const noteBorder  = isApproved ? 'rgba(79,178,134,0.20)' : 'rgba(196,68,90,0.20)';
         const btnStyle    = isApproved ? 'green' : 'danger';
 
         const content = `
@@ -465,9 +465,9 @@ export const EmailService = {
                 <p style="font-size:12px; font-weight:700; color:#3f6018; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.07em; font-family:${fontStack};">Your Digital Workspace Features</p>
 
                 <table style="width:100%; border-collapse:collapse; font-family:${fontStack};">
-                    <tr><td style="padding:6px 0; vertical-align:top; width:16px;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Daily Operations:</strong> Real-time attendance, leave requests, and performance tracking.</td></tr>
-                    <tr><td style="padding:6px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Audit Workflow:</strong> Centralized task management, client documentation, and status monitoring.</td></tr>
-                    <tr><td style="padding:6px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#659a2b; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Collaboration:</strong> Secure document sharing, internal messaging, and compliance resources.</td></tr>
+                    <tr><td style="padding:6px 0; vertical-align:top; width:16px;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#4fb286; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Daily Operations:</strong> Real-time attendance, leave requests, and performance tracking.</td></tr>
+                    <tr><td style="padding:6px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#4fb286; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Audit Workflow:</strong> Centralized task management, client documentation, and status monitoring.</td></tr>
+                    <tr><td style="padding:6px 0; vertical-align:top;"><span style="display:block; width:6px; height:6px; border-radius:50%; background:#4fb286; margin-top:5px;"></span></td><td style="padding:6px 0; font-size:13px; color:#475569; padding-left:10px; line-height:1.5;"><strong>Collaboration:</strong> Secure document sharing, internal messaging, and compliance resources.</td></tr>
                 </table>
             </div>
 
@@ -484,8 +484,8 @@ export const EmailService = {
         const fontStack = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
         const subject = `Official Firm Notice: ${title}`;
         
-        let priorityColor = '#659a2b';
-        let priorityBg = 'rgba(101,154,43,0.1)';
+        let priorityColor = '#4fb286';
+        let priorityBg = 'rgba(79,178,134,0.1)';
         let btnStyle: 'green' | 'danger' | 'info' = 'green';
         
         if (priority === 'HIGH') {

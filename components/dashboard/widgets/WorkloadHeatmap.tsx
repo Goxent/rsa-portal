@@ -31,11 +31,11 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="glass-panel p-3 rounded-xl shadow-2xl backdrop-blur-md bg-gray-900/80 border-white/10">
-                    <p className="font-bold text-white mb-1">{label}</p>
-                    <p className="text-xs text-gray-400 mb-2">{payload[0].payload.role}</p>
-                    <p className="text-sm text-brand-400">
-                        {payload[0].value} Active Tasks
+                <div className="p-2.5 rounded-[var(--radius-md)] border text-xs shadow-md" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+                    <p className="font-semibold mb-0.5" style={{ color: 'var(--text-heading)' }}>{label}</p>
+                    <p className="text-[11px] mb-1" style={{ color: 'var(--text-muted)' }}>{payload[0].payload.role}</p>
+                    <p className="font-medium" style={{ color: 'var(--accent)' }}>
+                        {payload[0].value} active tasks
                     </p>
                 </div>
             );
@@ -44,22 +44,22 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
     };
 
     return (
-        <div className="glass-panel hover-lift p-6 rounded-2xl border border-white/5 h-full flex flex-col">
-            <div className="flex justify-between items-start mb-6">
+        <div className="rounded-[var(--radius-lg)] border p-5 h-full flex flex-col transition-colors duration-150" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+            <div className="flex justify-between items-start mb-5">
                 <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Users size={20} className="text-brand-400" />
-                        Team Workload
+                    <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
+                        <Users size={16} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+                        Team workload
                     </h3>
-                    <p className="text-sm text-gray-400 mt-1">
-                        {staffStats.busy.length} staff active • {staffStats.free.length} available
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        {staffStats.busy.length} active · {staffStats.free.length} available
                     </p>
                 </div>
                 {staffStats.free.length > 0 && (
-                    <div className="px-3 py-1 bg-brand-500/10 border border-brand-500/20 rounded-full flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-                        <span className="text-xs font-medium text-brand-400">
-                            {staffStats.free.length} Free
+                    <div className="px-2.5 py-0.5 border rounded-full flex items-center gap-1.5" style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)' }}>
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
+                        <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>
+                            {staffStats.free.length} free
                         </span>
                     </div>
                 )}
@@ -73,20 +73,20 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
                             <YAxis
                                 type="category"
                                 dataKey="name"
-                                tick={{ fill: '#9ca3af', fontSize: 12 }}
+                                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
                                 width={70}
                                 axisLine={false}
                                 tickLine={false}
                             />
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                            <Bar dataKey="tasks" radius={[0, 4, 4, 0]} barSize={24}>
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-surface)' }} />
+                            <Bar dataKey="tasks" radius={[0, 4, 4, 0]} barSize={20}>
                                 {data.map((entry, index) => (
                                     <Cell
                                         key={`cell-${index}`}
                                         fill={
-                                            entry.tasks > 8 ? '#ef4444' : // High load
-                                                entry.tasks > 4 ? '#f59e0b' : // Medium load
-                                                    '#3b82f6'                     // Low load
+                                            entry.tasks > 8 ? 'var(--color-danger)' :
+                                            entry.tasks > 4 ? 'var(--color-warning)' :
+                                            'var(--accent)'
                                         }
                                     />
                                 ))}
@@ -95,24 +95,24 @@ const WorkloadHeatmap: React.FC<WorkloadHeatmapProps> = ({ staffStats, totalTask
                     </ResponsiveContainer>
                 </div>
             ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-gray-500 border border-dashed border-white/10 rounded-xl bg-white/5">
-                    <Users size={24} className="mb-2 opacity-50" />
-                    <p className="text-sm">No active workload data</p>
+                <div className="flex-1 flex flex-col items-center justify-center p-6 border rounded-[var(--radius-md)] text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                    <Users size={22} strokeWidth={1.75} className="mb-2 opacity-40" style={{ color: 'var(--text-muted)' }} />
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No active workload data</p>
                 </div>
             )}
 
             {/* Availability Footer */}
             {staffStats.free.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                    <p className="text-xs text-gray-500 mb-2 uppercase font-bold tracking-wider">Available Staff</p>
-                    <div className="flex flex-wrap gap-2">
+                <div className="mt-4 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                    <p className="text-xs mb-2 font-medium" style={{ color: 'var(--text-muted)' }}>Available staff</p>
+                    <div className="flex flex-wrap gap-1.5">
                         {staffStats.free.slice(0, 4).map(staff => (
-                            <span key={staff.uid} className="text-xs px-2 py-1 bg-white/5 border border-white/10 rounded-md text-gray-300 hover:bg-white/10 transition-colors cursor-default">
+                            <span key={staff.uid} className="text-xs px-2 py-0.5 border rounded-[var(--radius-sm)]" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-body)' }}>
                                 {staff.displayName.split(' ')[0]}
                             </span>
                         ))}
                         {staffStats.free.length > 4 && (
-                            <span className="text-xs px-2 py-1 bg-white/5 border border-white/10 rounded-md text-gray-500">
+                            <span className="text-xs px-2 py-0.5 border rounded-[var(--radius-sm)]" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                                 +{staffStats.free.length - 4} more
                             </span>
                         )}

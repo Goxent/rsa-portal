@@ -37,21 +37,20 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
     const getIcon = () => {
         switch (variant) {
-            case 'danger': return <AlertTriangle className="text-red-500" size={22} />;
-            case 'warning': return <AlertTriangle className="text-amber-500" size={22} />;
-            case 'success': return <CheckCircle className="text-emerald-500" size={22} />;
-            case 'indigo': return <ShieldCheck className="text-indigo-400" size={22} />;
-            default: return <Info className="text-amber-500" size={22} />;
+            case 'danger': return <AlertTriangle style={{ color: 'var(--color-danger)' }} size={22} />;
+            case 'warning': return <AlertTriangle style={{ color: 'var(--color-warning)' }} size={22} />;
+            case 'success': return <CheckCircle style={{ color: 'var(--color-success)' }} size={22} />;
+            case 'indigo': return <ShieldCheck style={{ color: 'var(--accent)' }} size={22} />;
+            default: return <Info style={{ color: 'var(--color-info)' }} size={22} />;
         }
     };
 
     const getPrimaryButtonColor = () => {
         switch (variant) {
-            case 'danger': return 'bg-red-600 hover:bg-red-700 text-white';
-            case 'warning': return 'bg-amber-600 hover:bg-amber-700 text-white';
-            case 'success': return 'bg-emerald-600 hover:bg-emerald-700 text-white';
-            case 'indigo': return 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20';
-            default: return 'bg-amber-600 hover:bg-amber-700 text-white';
+            case 'danger': return 'bg-[var(--color-danger)] text-white hover:opacity-90';
+            case 'warning': return 'bg-[var(--color-warning)] text-white hover:opacity-90';
+            case 'success': return 'bg-[var(--color-success)] text-white hover:opacity-90';
+            default: return 'bg-[var(--accent)] text-[var(--on-accent)] hover:opacity-90';
         }
     };
 
@@ -59,10 +58,10 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className="p-6 text-center">
             <div className="mb-4 flex justify-center">
                 <div className={`p-3 rounded-full border ${
-                    variant === 'danger' ? 'bg-red-500/10 border-red-500/20' : 
-                    variant === 'warning' ? 'bg-amber-500/10 border-amber-500/20' :
-                    variant === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' :
-                    'bg-sky-500/10 border-sky-500/20'
+                    variant === 'danger' ? 'bg-[rgba(224,112,122,0.1)] border-[rgba(224,112,122,0.25)]' : 
+                    variant === 'warning' ? 'bg-[rgba(217,164,65,0.1)] border-[rgba(217,164,65,0.25)]' :
+                    variant === 'success' ? 'bg-[rgba(79,178,134,0.1)] border-[rgba(79,178,134,0.25)]' :
+                    'bg-[var(--accent-dim)] border-[var(--border-accent)]'
                 }`}>
                     {getIcon()}
                 </div>
@@ -84,7 +83,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 rounded-lg transition-all border text-xs font-bold uppercase tracking-wider"
+                    className="px-4 py-2 rounded-lg transition-colors border text-xs font-semibold"
                     style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--text-heading)'}
                     onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
@@ -99,8 +98,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             onSecondaryConfirm();
                             onClose();
                         }}
-                        className="px-4 py-2 rounded-lg transition-all border text-xs font-bold uppercase tracking-wider shadow-sm"
-                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-mid)', color: 'var(--text-heading)' }}
+                        className="px-4 py-2 rounded-lg transition-colors border text-xs font-semibold"
+                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                     >
                         {secondaryLabel}
                     </button>
@@ -113,7 +112,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             onConfirm();
                             onClose();
                         }}
-                        className={`px-4 py-2 rounded-lg transition-all shadow-sm text-xs font-bold uppercase tracking-wider ${getPrimaryButtonColor()}`}
+                        className={`px-4 py-2 rounded-lg transition-colors text-xs font-semibold ${getPrimaryButtonColor()}`}
                     >
                         {confirmLabel}
                     </button>
@@ -130,12 +129,12 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     // Direct standalone usage with isOpen prop -> render full modal overlay with backdrop
     return (
         <div 
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200"
             onClick={onClose}
         >
             <div 
-                className="w-full max-w-sm rounded-xl border shadow-2xl relative animate-in zoom-in-95 duration-200"
-                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-mid)' }}
+                className="w-full max-w-sm rounded-xl border shadow-xl relative animate-in zoom-in-95 duration-200"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                 onClick={e => e.stopPropagation()}
             >
                 {innerContent}

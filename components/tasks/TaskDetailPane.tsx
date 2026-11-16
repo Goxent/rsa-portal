@@ -97,7 +97,7 @@ const isPhaseVisible = (subtaskPhase: AuditPhase | undefined, currentPhase: Audi
     return PHASE_ORDER[subtaskPhase] <= PHASE_ORDER[currentPhase];
 };
 
-// â”€â”€ Icon Mapping for Engagement Framework â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Icon Mapping for Engagement Framework Ã¢â€â‚¬Ã¢â€â‚¬
 const ICON_MAP: Record<string, any> = {
     ShieldCheck: <ShieldCheck size={20} />,
     Scale: <Scale size={20} />,
@@ -109,7 +109,7 @@ const ICON_MAP: Record<string, any> = {
     Activity: <Activity size={20} />
 };
 
-// â”€â”€ Reusable boxed field wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Reusable boxed field wrapper Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const Field: React.FC<{
     label: string;
     icon: React.ReactNode;
@@ -122,8 +122,8 @@ const Field: React.FC<{
     <div className={`group flex flex-col items-start gap-2 py-1.5 ${span2 ? 'md:col-span-2' : ''} ${className || ''}`}>
 
         <div className="flex items-center justify-between w-full">
-            <label className={`text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 ${error ? 'text-rose-400' : 'text-gray-500'}`}>
-                {icon} {label} {error && <span className="text-rose-500 ml-1 animate-pulse">*</span>}
+            <label className={`text-xs font-medium flex items-center gap-1.5 ${error ? 'text-[var(--color-danger)]' : 'text-[var(--text-muted)]'}`}>
+                {icon} {label} {error && <span className="text-[var(--color-danger)] ml-1">*</span>}
             </label>
             {extra && <div>{extra}</div>}
         </div>
@@ -209,7 +209,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
     const descRef = useRef<HTMLTextAreaElement | null>(null);
     
-    // â”€â”€ AUTOSAVE LOGIC â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ AUTOSAVE LOGIC Ã¢â€â‚¬Ã¢â€â‚¬
     const [isDirty, setIsDirty] = useState(false);
     const [lastSavedTask, setLastSavedTask] = useState<Partial<Task>>(task);
 
@@ -292,7 +292,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         }
     });
 
-    // â”€â”€ Sync form when task prop changes (e.g. after save or task switch) â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Sync form when task prop changes (e.g. after save or task switch) Ã¢â€â‚¬Ã¢â€â‚¬
     useEffect(() => {
         if (isOpen) {
             if (!task.id) {
@@ -409,7 +409,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             if (defaults.engagementReviewerId) setValue('engagementReviewerId', defaults.engagementReviewerId);
             if (defaults.signingPartnerId)    setValue('signingPartnerId', defaults.signingPartnerId);
             if (defaults.assignedTo?.length)  setValue('assignedTo', defaults.assignedTo);
-            toast.success('Team pre-filled from last engagement', { icon: 'âœ¨', duration: 3000 });
+            toast.success('Team pre-filled from last engagement', { icon: 'Ã¢Å“Â¨', duration: 3000 });
         }).catch(() => {/* silent fail */});
 
         return () => { cancelled = true; };
@@ -604,7 +604,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         // Enforce Review Logic on completion attempt
         if (data.status === TaskStatus.COMPLETED) {
             if (data.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION) {
-                toast.error("Engagement must be in the Review & Conclusion phase before it can be completed.", { icon: 'ðŸ”’' });
+                toast.error("Engagement must be in the Review & Conclusion phase before it can be completed.", { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
             // Only require sign-off for roles that are actually assigned
@@ -620,7 +620,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     !erOk && 'QC Reviewer',
                     !spOk && 'Signing Partner'
                 ].filter(Boolean).join(', ');
-                toast.error(`Missing sign-off from: ${missing}. Please complete the Reviewer Checklist before marking as completed.`, { icon: 'ðŸ”’' });
+                toast.error(`Missing sign-off from: ${missing}. Please complete the Reviewer Checklist before marking as completed.`, { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
         }
@@ -639,7 +639,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             engagementReviewerId: data.engagementReviewerId,
             signingPartnerId: data.signingPartnerId,
             // Sign-off timestamps are write-once, set only by the sign-off action.
-            // Always preserve the task prop values â€” never override from form data,
+            // Always preserve the task prop values Ã¢â‚¬â€ never override from form data,
             // which could be undefined if the field isn't registered in react-hook-form.
             teamLeadApprovedAt: task.teamLeadApprovedAt,
             engagementReviewerApprovedAt: task.engagementReviewerApprovedAt,
@@ -665,7 +665,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         if (isTaskCompleted) return;
         // A4: Stale sign-off lock - procedures cannot be altered once review sign-off has commenced
         if (task.teamLeadApprovedAt || task.engagementReviewerApprovedAt || task.signingPartnerApprovedAt) {
-            toast.error("Procedures are locked because review sign-off has commenced. Reopen review before modifying.", { icon: '🔒' });
+            toast.error("Procedures are locked because review sign-off has commenced. Reopen review before modifying.", { icon: 'ðŸ”’' });
             return;
         }
         const updated = [...(task.subtasks || [])];
@@ -678,12 +678,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             const isTaskTeamLeader = user?.uid === task.teamLeaderId;
             
             if (!isAssigned && !isTaskTeamLeader) {
-                toast.error("Only assigned staff members or the Task Team Leader can mark this procedure as complete.", { icon: 'ðŸ”’' });
+                toast.error("Only assigned staff members or the Task Team Leader can mark this procedure as complete.", { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
 
             if (!st.isCompleted && st.isEvidenceMandatory && !st.evidenceProvided && !evidenceText) {
-                toast.error("Evidence is mandatory to mark this procedure as complete. Please provide it below.", { icon: 'ðŸ›‘' });
+                toast.error("Evidence is mandatory to mark this procedure as complete. Please provide it below.", { icon: 'Ã°Å¸â€ºâ€˜' });
                 return;
             }
             updated[idx] = {
@@ -714,7 +714,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 (item.reviewerRole === 'SP' && isSigningPartner);
                 
             if (!isAuthorized) {
-                toast.error(`Only the assigned ${item.reviewerRole} can update this item.`, { icon: 'ðŸ”’' });
+                toast.error(`Only the assigned ${item.reviewerRole} can update this item.`, { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
 
@@ -749,7 +749,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 (item.reviewerRole === 'SP' && isSigningPartner);
                 
             if (!isAuthorized) {
-                toast.error(`Only the assigned ${item.reviewerRole} can modify this item.`, { icon: 'ðŸ”’' });
+                toast.error(`Only the assigned ${item.reviewerRole} can modify this item.`, { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
 
@@ -795,7 +795,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             (item.reviewerRole === 'SP' && isSigningPartner);
 
         if (!isAuthorized) {
-            toast.error(`Action Restricted: Only the assigned ${item.reviewerRole} can delete this protocol item.`, { icon: 'ðŸ”’' });
+            toast.error(`Action Restricted: Only the assigned ${item.reviewerRole} can delete this protocol item.`, { icon: 'Ã°Å¸â€â€™' });
             return;
         }
 
@@ -888,16 +888,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                              (role === 'SP' && isSigningPartner);
 
         if (!isAuthorized) {
-            toast.error(`Strict Security: Only the assigned ${role} can perform this sign-off.`, { icon: 'ðŸ›¡ï¸' });
+            toast.error(`Strict Security: Only the assigned ${role} can perform this sign-off.`, { icon: 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â' });
             return;
         }
 
-        // Sequential Hierarchy Check â€” skip unassigned layers
+        // Sequential Hierarchy Check Ã¢â‚¬â€ skip unassigned layers
         // ER can sign only if TL has signed OR no TL is assigned
         if (role === 'ER') {
             const tlAssigned = !!task.teamLeaderId;
             if (tlAssigned && !task.teamLeadApprovedAt) {
-                toast.error("Team Leader sign-off must be completed first.", { icon: 'ðŸ”’' });
+                toast.error("Team Leader sign-off must be completed first.", { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
         }
@@ -906,11 +906,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             const tlAssigned = !!task.teamLeaderId;
             const erAssigned = !!task.engagementReviewerId;
             if (tlAssigned && !task.teamLeadApprovedAt) {
-                toast.error("Team Leader sign-off must be completed first.", { icon: 'ðŸ”’' });
+                toast.error("Team Leader sign-off must be completed first.", { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
             if (erAssigned && !task.engagementReviewerApprovedAt) {
-                toast.error("QC Reviewer sign-off must be completed first.", { icon: 'ðŸ”’' });
+                toast.error("QC Reviewer sign-off must be completed first.", { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
         }
@@ -974,7 +974,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 success: `${role} Sign-off Secured and Persisted!`,
                 error: `Failed to persist ${role} sign-off. Please try again.`,
             },
-            { icon: 'ðŸ”’' }
+            { icon: 'Ã°Å¸â€â€™' }
         );
     };
 
@@ -1068,11 +1068,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             // RBAC: Only creator can edit. Engagement team cannot edit others'. Admin view only.
             const isCreator = user?.uid === obs.createdBy;
             if (!isCreator && !isAdminOrMaster) {
-                toast.error("Access Restricted: Only the creator can modify this observation.", { icon: 'ðŸ”’' });
+                toast.error("Access Restricted: Only the creator can modify this observation.", { icon: 'Ã°Å¸â€â€™' });
                 return;
             }
             if (isAdminOrMaster && !isCreator) {
-                toast.error("Admins have view-only access to audit observations.", { icon: 'ðŸ‘ï¸' });
+                toast.error("Admins have view-only access to audit observations.", { icon: 'Ã°Å¸â€˜ÂÃ¯Â¸Â' });
                 return;
             }
 
@@ -1089,11 +1089,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
         const isCreator = user?.uid === obs.createdBy;
         if (!isCreator && !isAdminOrMaster) {
-            toast.error("Access Restricted: Only the creator can delete this observation.", { icon: 'ðŸ”’' });
+            toast.error("Access Restricted: Only the creator can delete this observation.", { icon: 'Ã°Å¸â€â€™' });
             return;
         }
         if (isAdminOrMaster && !isCreator) {
-            toast.error("Admins cannot delete audit observations.", { icon: 'ðŸ”’' });
+            toast.error("Admins cannot delete audit observations.", { icon: 'Ã°Å¸â€â€™' });
             return;
         }
 
@@ -1104,7 +1104,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
     };
 
     const handlePhaseSwitch = (newPhase: AuditPhase) => {
-        // Free navigation â€” users can jump to any phase at any time
+        // Free navigation Ã¢â‚¬â€ users can jump to any phase at any time
         // to view, add, or manage subtasks regardless of completion status
         if (newPhase === currentPhase) return;
         setValue('auditPhase', newPhase);
@@ -1224,50 +1224,53 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         const subtaskDocs = auditFiles.filter(f => f.subtaskId === st.id);
 
         return (
-            <div key={uniqueKey} className={`flex flex-col gap-0.5 px-4 py-2 rounded-[16px] transition-all duration-300 group/st bg-[#f1f3ee] dark:bg-[#0f1218] border border-[#d0dac8] dark:border-white/5 hover:bg-[#e8ece2] dark:hover:bg-white/[0.04] shadow-sm ${st.isNew ? 'ring-1 ring-brand-500/20' : ''}`}>
+            <div key={uniqueKey} className={`flex flex-col gap-0.5 px-4 py-2.5 rounded-[var(--radius-md)] transition-colors duration-150 group/st bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--border-mid)] shadow-none ${st.isNew ? 'ring-1 ring-[var(--accent)]' : ''}`}>
                 <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-0.5">
                         <button
                             onClick={() => toggleSubtask(st.id)}
                             disabled={isArchived || (!canManageTeam && !(st.assignedTo || []).includes(user?.uid || ''))}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            className={`w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${
                                 st.isCompleted 
-                                    ? 'bg-brand-500 border-brand-500 text-white shadow-md' 
-                                    : 'border-gray-400 dark:border-slate-600 hover:border-gray-500 dark:hover:border-slate-500 bg-white dark:bg-transparent'
-                            } ${(isArchived || (!canManageTeam && !(st.assignedTo || []).includes(user?.uid || ''))) ? 'opacity-40 grayscale-[0.5] cursor-not-allowed' : 'cursor-pointer'}`}
+                                    ? 'bg-[var(--accent)] border-[var(--accent)] text-white' 
+                                    : 'border-[var(--border-mid)] bg-[var(--bg-surface)] hover:border-[var(--text-muted)]'
+                            } ${(isArchived || (!canManageTeam && !(st.assignedTo || []).includes(user?.uid || ''))) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
-                            {st.isCompleted && <Check size={12} strokeWidth={4} />}
+                            {st.isCompleted && <Check size={10} style={{ color: 'var(--on-accent)' }} strokeWidth={3} />}
                         </button>
                     </div>
                     
                     <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             {st.reference && (
-                                <span className="px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-400 text-[9px] font-black uppercase tracking-widest whitespace-nowrap border border-brand-500/10">
+                                <span className="px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--accent-dim)] text-[var(--accent)] text-[10px] font-medium whitespace-nowrap border border-[var(--border-accent)]">
                                     {st.reference}
                                 </span>
                             )}
-                            <span className={`text-[13px] font-bold leading-snug ${st.isCompleted ? 'line-through text-gray-500' : 'text-gray-900 dark:text-gray-200'}`}>
+                            <span
+                                className={`text-xs font-semibold leading-snug transition-colors ${st.isCompleted ? 'line-through' : ''}`}
+                                style={{ color: st.isCompleted ? 'var(--text-muted)' : 'var(--text-heading)' }}
+                            >
                                 {st.title}
                             </span>
                             {st.isEvidenceMandatory && (
-                                <span title="Evidence Mandatory" className="flex items-center gap-1 text-rose-400 text-[9px] font-black uppercase tracking-tight whitespace-nowrap">
-                                    <ShieldAlert size={10} /> REQ
+                                <span title="Evidence Mandatory" className="flex items-center gap-1 text-[var(--color-danger)] text-[10px] font-medium whitespace-nowrap">
+                                    <ShieldAlert size={10} /> Req
                                 </span>
                             )}
                         </div>
 
                         {st.minimumRequirement && !st.isCompleted && (
-                            <p className="text-[10px] text-gray-600 font-medium italic opacity-60 mt-0.5">"{st.minimumRequirement}"</p>
+                            <p className="text-[11px] font-normal italic mt-0.5" style={{ color: 'var(--text-muted)' }}>"{st.minimumRequirement}"</p>
                         )}
 
                         {st.addedByName && !st.isAutoGenerated && (
-                            <p className="text-[9px] text-emerald-500 font-bold tracking-widest mt-1 opacity-70">ADDED BY: {st.addedByName}</p>
+                            <p className="text-[10px] font-medium mt-1" style={{ color: 'var(--color-success)' }}>Added by: {st.addedByName}</p>
                         )}
                         {/* A1: Working paper tick mark showing preparer identity and timestamp */}
                         {st.isCompleted && st.completedByName && (
-                            <div className="flex items-center gap-1.5 mt-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                                <CheckCircle2 size={10} className="text-emerald-500" />
+                            <div className="flex items-center gap-1.5 mt-1 text-[10px] font-medium" style={{ color: 'var(--color-success)' }}>
+                                <CheckCircle2 size={10} />
                                 <span>Checked by {st.completedByName}{st.completedAt ? ` on ${new Date(st.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
                             </div>
                         )}
@@ -1281,7 +1284,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         href={StorageService.getViewUrl(doc.appwriteFileId)}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-brand-500/10 border border-brand-500/20 rounded-md text-brand-400 text-[9px] font-black uppercase tracking-tight hover:bg-brand-500/20 transition-all"
+                                        className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[var(--accent-dim)] border border-[var(--border-accent)] rounded-[var(--radius-sm)] text-[var(--accent)] text-[10px] font-medium transition-colors"
                                     >
                                         <FileText size={10} /> {doc.fileName.length > 15 ? doc.fileName.substring(0, 12) + '...' : doc.fileName}
                                     </a>
@@ -1295,10 +1298,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         <div className="relative">
                             <button 
                                 onClick={() => setSelectingFolderSubtaskId(active => active === st.id ? null : st.id)}
-                                className={`p-1 px-1.5 rounded transition-all flex items-center justify-center ${selectingFolderSubtaskId === st.id ? 'bg-brand-500 text-white' : 'text-gray-500 hover:text-brand-400'}`}
+                                className={`p-1 px-1.5 rounded-[var(--radius-sm)] transition-colors flex items-center justify-center ${selectingFolderSubtaskId === st.id ? 'bg-[var(--accent)] text-white' : 'hover:text-[var(--accent)]'}`}
+                                style={{ color: selectingFolderSubtaskId === st.id ? 'var(--on-accent)' : 'var(--text-muted)' }}
                                 title="Sync Documentation to Repository"
                             >
-                                {uploadingSubtaskId === st.id ? <Loader2 size={13} className="animate-spin" /> : <CloudUpload size={14} className="hover:scale-110 transition-transform" />}
+                                {uploadingSubtaskId === st.id ? <Loader2 size={13} className="animate-spin" /> : <CloudUpload size={14} />}
                             </button>
 
                             <AnimatePresence>
@@ -1311,11 +1315,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="absolute bottom-full right-0 mb-3 w-72 p-2 bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl z-[101] backdrop-blur-3xl overflow-hidden"
+                                            className="absolute bottom-full right-0 mb-3 w-72 p-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-lg)] shadow-xl z-[101] overflow-hidden"
                                         >
-                                            <div className="px-3 py-2 border-b border-white/5 mb-2 flex items-center justify-between">
-                                                <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest">Select Repository Path</span>
-                                                <X size={12} className="text-gray-600 cursor-pointer hover:text-white" onClick={() => setSelectingFolderSubtaskId(null)} />
+                                            <div className="px-3 py-2 border-b border-[var(--border)] mb-2 flex items-center justify-between">
+                                                <span className="text-[10px] font-medium text-[var(--accent)]">Select repository path</span>
+                                                <X size={12} className="cursor-pointer hover:opacity-100 opacity-60" style={{ color: 'var(--text-muted)' }} onClick={() => setSelectingFolderSubtaskId(null)} />
                                             </div>
                                             <div className="max-h-[350px] overflow-y-auto custom-scrollbar space-y-1 pr-1">
                                                 {Object.entries(AUDIT_FOLDER_STRUCTURE).map(([key, def]) => {
@@ -1340,24 +1344,24 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                             document.getElementById(`file-${st.id}-${key}`)?.click();
                                                                         }
                                                                     }}
-                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent transition-all text-left ${hasLineItems ? 'cursor-default' : 'cursor-pointer hover:bg-white/5 hover:border-white/10'}`}
+                                                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] border border-transparent transition-colors text-left ${hasLineItems ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--bg-surface)] hover:border-[var(--border)]'}`}
                                                                 >
-                                                                    <div className="w-7 h-7 rounded-lg bg-brand-500/10 flex items-center justify-center text-[10px] font-black text-brand-400">
+                                                                    <div className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-[10px] font-medium text-[var(--accent)]">
                                                                         {key}
                                                                     </div>
                                                                     <div className="flex-1 min-w-0">
-                                                                        <div className="text-[11px] font-bold text-gray-200 group-hover:text-white transition-colors">{def.label}</div>
-                                                                        <div className="text-[9px] text-gray-500 truncate">{def.description.substring(0, 40)}...</div>
+                                                                        <div className="text-xs font-medium truncate" style={{ color: 'var(--text-heading)' }}>{def.label}</div>
+                                                                        <div className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>{def.description.substring(0, 40)}...</div>
                                                                     </div>
                                                                 </button>
                                                             </div>
 
                                                             {hasLineItems && (
-                                                                <div className="ml-4 pl-4 border-l border-white/5 space-y-1 py-1">
+                                                                <div className="ml-4 pl-4 border-l border-[var(--border)] space-y-1 py-1">
                                                                     {def.lineItems?.map(item => (
                                                                         <label 
                                                                             key={item}
-                                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.03] transition-all cursor-pointer group/item"
+                                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--bg-surface)] transition-colors cursor-pointer group/item"
                                                                         >
                                                                             <input 
                                                                                 type="file" 
@@ -1367,8 +1371,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                                     setSelectingFolderSubtaskId(null);
                                                                                 }}
                                                                             />
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-700 group-hover/item:bg-brand-500 transition-colors" />
-                                                                            <span className="text-[10px] font-medium text-gray-500 group-hover/item:text-gray-300 truncate">{item}</span>
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] group-hover/item:bg-[var(--accent)] transition-colors" />
+                                                                            <span className="text-[11px] font-medium truncate" style={{ color: 'var(--text-secondary)' }}>{item}</span>
                                                                         </label>
                                                                     ))}
                                                                 </div>
@@ -1388,7 +1392,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 onClick={() => {
                                     setQueryText(''); setQueryModal({ subtaskId: st.id, mode: 'RAISE' });
                                 }}
-                                className="p-1 px-1.5 text-amber-500 hover:bg-amber-500/10 rounded transition-all"
+                                className="p-1 px-1.5 rounded transition-colors"
+                                style={{ color: 'var(--color-warning)' }}
                                 title="Query"
                             >
                                 <AlertTriangle size={13} />
@@ -1399,7 +1404,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 onClick={() => {
                                     setQueryText(''); setQueryModal({ subtaskId: st.id, mode: 'REPLY' });
                                 }}
-                                className="p-1 px-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded transition-all"
+                                className="p-1 px-1.5 rounded transition-colors"
+                                style={{ color: 'var(--color-success)' }}
                                 title="Reply to Query"
                             >
                                 <ClipboardCheck size={13} />
@@ -1408,14 +1414,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         {isResolved && (isAdminOrMaster || user?.uid === st.queryRaisedBy || user?.uid === task.teamLeaderId || user?.uid === task.engagementReviewerId || user?.uid === task.signingPartnerId) && (
                             <button
                                 onClick={() => handleSubtaskAction(st.id, 'CLEAR')}
-                                className="p-1 px-1.5 text-brand-500 hover:bg-brand-500/10 rounded transition-all"
+                                className="p-1 px-1.5 rounded transition-colors text-[var(--accent)] hover:bg-[var(--accent-dim)]"
                                 title="Clear Query"
                             >
                                 <Award size={13} />
                             </button>
                         )}
                         {(isAdminOrMaster || isTeamLeader || st.addedBy === user?.uid) && (
-                            <button onClick={() => onRemoveSubtaskLocal(st.id)} className="text-gray-700 hover:text-rose-400 p-1 px-1.5 transition-all">
+                            <button onClick={() => onRemoveSubtaskLocal(st.id)} className="p-1 px-1.5 transition-colors hover:text-[var(--color-danger)]" style={{ color: 'var(--text-muted)' }}>
                                 <Trash2 size={13} />
                             </button>
                         )}
@@ -1423,12 +1429,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                 </div>
 
                 {/* Multi-Assignee Section */}
-                <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-[#d0dac8]/50 dark:border-white/[0.04]">
+                <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--border)]">
                     <div className="flex items-center justify-between px-1">
-                        <span className="text-[9px] font-black text-gray-600 dark:text-gray-500 uppercase tracking-[0.2em]">Requirement Assignees</span>
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Requirement assignees</span>
                         {Array.isArray(st.assignedTo) && st.assignedTo.length > 0 && (
-                            <span className="text-[8px] font-bold text-brand-700 bg-brand-500/10 px-2 py-0.5 rounded uppercase tracking-widest">
-                                {st.assignedTo.length} Assigned
+                            <span className="text-[10px] font-medium text-[var(--accent)] bg-[var(--accent-dim)] border border-[var(--border-accent)] px-2 py-0.5 rounded-[var(--radius-sm)] tabular-nums">
+                                {st.assignedTo.length} assigned
                             </span>
                         )}
                     </div>
@@ -1447,17 +1453,17 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                 {/* Evidence Requirement Box */}
                 {!st.isCompleted && st.isEvidenceMandatory && !st.evidenceProvided && (
-                    <div className="mt-1.5 p-2 rounded-xl border bg-rose-500/5 border-rose-500/20 space-y-2">
+                    <div className="mt-1.5 p-2 rounded-[var(--radius-md)] border space-y-2" style={{ background: 'rgba(224,112,122,0.05)', borderColor: 'rgba(224,112,122,0.2)' }}>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest whitespace-nowrap flex items-center gap-1 border border-rose-500/20 px-2 py-0.5 rounded bg-rose-500/10">
-                                <ShieldAlert size={10} /> Evidence
+                            <span className="text-xs font-semibold whitespace-nowrap flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-sm)] border" style={{ color: 'var(--color-danger)', background: 'rgba(224,112,122,0.1)', borderColor: 'rgba(224,112,122,0.2)' }}>
+                                <ShieldAlert size={11} /> Evidence
                             </span>
                             <div className="flex-1 flex gap-2">
                                 <input
                                     type="text"
                                     id={`evidence-${st.id}`}
                                     placeholder="Enter Voucher #, Doc Ref..."
-                                    className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-1 text-[11px] text-white focus:outline-none focus:border-rose-500/50 shadow-inner"
+                                    className="flex-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--color-danger)]"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             const val = e.currentTarget.value;
@@ -1472,11 +1478,11 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                 {/* Display Evidence if Provided */}
                 {st.evidenceProvided && st.evidenceText && (
-                    <div className="mt-1.5 p-2 rounded-xl border bg-emerald-500/5 border-emerald-500/20 flex items-center gap-2">
-                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest whitespace-nowrap bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
-                            <CheckCircle2 size={10} /> Evidenced
+                    <div className="mt-1.5 p-2 rounded-[var(--radius-md)] border flex items-center gap-2" style={{ background: 'rgba(79,178,134,0.05)', borderColor: 'rgba(79,178,134,0.2)' }}>
+                        <span className="text-xs font-semibold whitespace-nowrap px-2 py-0.5 rounded-[var(--radius-sm)] border flex items-center gap-1" style={{ color: 'var(--color-success)', background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)' }}>
+                            <CheckCircle2 size={11} /> Evidenced
                         </span>
-                        <div className="text-[10px] text-emerald-100 font-mono bg-black/40 px-2.5 py-0.5 rounded border border-white/5 flex-1 break-all truncate" title={st.evidenceText}>
+                        <div className="text-xs font-mono bg-[var(--bg-surface)] px-2.5 py-0.5 rounded border border-[var(--border)] flex-1 break-all truncate" style={{ color: 'var(--color-success)' }} title={st.evidenceText}>
                             {st.evidenceText}
                         </div>
                         <button onClick={() => {
@@ -1488,23 +1494,23 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     onChange({ subtasks: updated });
                                 }
                             }
-                        }} className="text-gray-600 hover:text-rose-400 p-1 transition-all">
-                            <Trash2 size={10} />
+                        }} className="text-[var(--text-muted)] hover:text-[var(--color-danger)] p-1 transition-colors">
+                            <Trash2 size={11} />
                         </button>
                     </div>
                 )}
 
                 {/* Query Conversation Box */}
                 {(hasQuery || isResolved || isCleared) && (
-                    <div className={`mt-1.5 p-2 rounded-xl border ${hasQuery ? 'bg-amber-500/5 border-amber-500/20' : 'bg-white/5 border-white/5'} space-y-1`}>
+                    <div className="mt-1.5 p-2 rounded-[var(--radius-md)] border space-y-1 bg-[var(--bg-surface)] border-[var(--border)]">
                         <div className="flex items-start gap-2">
-                            <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest mt-0.5 whitespace-nowrap">Reviewer:</span>
-                            <p className="text-[10px] text-gray-400 italic">"{st.queryComment}"</p>
+                            <span className="text-xs font-medium mt-0.5 whitespace-nowrap" style={{ color: 'var(--color-warning)' }}>Reviewer:</span>
+                            <p className="text-xs text-[var(--text-secondary)] italic">"{st.queryComment}"</p>
                         </div>
                         {st.queryReply && (
-                            <div className="flex items-start gap-2 pt-1.5 border-t border-white/5">
-                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5 whitespace-nowrap">Staff:</span>
-                                <p className="text-[10px] text-gray-300">"{st.queryReply}"</p>
+                            <div className="flex items-start gap-2 pt-1.5 border-t border-[var(--border)]">
+                                <span className="text-xs font-medium mt-0.5 whitespace-nowrap" style={{ color: 'var(--color-success)' }}>Staff:</span>
+                                <p className="text-xs text-[var(--text-secondary)]">"{st.queryReply}"</p>
                             </div>
                         )}
                     </div>
@@ -1525,19 +1531,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
         return (
             <div className="space-y-6">
                 {/* Protocol Tabs */}
-                <div className="flex gap-1 p-1 bg-white/5 border border-white/5 rounded-2xl w-fit mx-auto shadow-2xl backdrop-blur-xl">
+                <div className="flex gap-1 p-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] w-fit mx-auto">
                     {[
-                        { id: 'TL' as const, label: 'Team Leader', color: 'brand' },
-                        { id: 'ER' as const, label: 'Engagement Reviewer', color: 'purple' },
-                        { id: 'SP' as const, label: 'Signing Partner', color: 'rose' }
+                        { id: 'TL' as const, label: 'Team Leader' },
+                        { id: 'ER' as const, label: 'Engagement Reviewer' },
+                        { id: 'SP' as const, label: 'Signing Partner' }
                     ].map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveReviewTab(tab.id)}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center gap-2.5 ${
+                            className={`px-5 py-2 rounded-[var(--radius-sm)] text-xs font-medium transition-colors flex items-center gap-2 ${
                                 activeReviewTab === tab.id 
-                                    ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/20 active:scale-95` 
-                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                                    ? 'bg-[var(--accent)] text-[var(--on-accent)]' 
+                                    : 'text-[var(--text-muted)] hover:text-[var(--text-heading)] hover:bg-[var(--bg-secondary)]'
                             }`}
                         >
                             <ShieldCheck size={14} />
@@ -1573,7 +1579,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         'SP': task.signingPartnerSignOff
                     }[layer];
 
-                    // Sequential hierarchy â€” skip unassigned layers
+                    // Sequential hierarchy Ã¢â‚¬â€ skip unassigned layers
                     const tlAssigned = !!task.teamLeaderId;
                     const erAssigned = !!task.engagementReviewerId;
                     // TL layer is always first or skipped if unassigned
@@ -1599,23 +1605,23 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                     );
 
                     return (
-                        <div key={layer} className={`glass-pane border-white/5 bg-[#080a0e] rounded-[32px] overflow-hidden shadow-2xl relative transition-all duration-500 ${isSignedOff ? 'ring-1 ring-emerald-500/20' : ''}`}>
-                            <div className={`absolute top-0 left-0 w-1.5 h-full bg-${meta.color}-500 opacity-40`} />
+                        <div key={layer} className={`border border-[var(--border)] bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] overflow-hidden relative shadow-none ${isSignedOff ? 'ring-1 ring-[var(--color-success)]' : ''}`}>
+                            <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent)]" />
 
-                            <div className="px-6 py-5 border-b border-white/[0.04] flex items-center justify-between bg-black/20">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-[18px] bg-${meta.color}-500/10 flex items-center justify-center border border-${meta.color}-500/20 text-${meta.color}-400 shadow-xl shadow-${meta.color}-500/5`}>
-                                        <ShieldCheck size={20} />
+                            <div className="px-5 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-surface)]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--accent-dim)] flex items-center justify-center border border-[var(--border-accent)] text-[var(--accent)]">
+                                        <ShieldCheck size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">{meta.title}</h3>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Protocol Execution Layer</span>
+                                        <h3 className="text-xs font-semibold" style={{ color: 'var(--text-heading)' }}>{meta.title}</h3>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Protocol execution layer</span>
                                             {isSignedOff && (
-                                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                                                    <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">
-                                                        Verified & Locked {signOffDate ? `(${new Date(signOffDate).toLocaleDateString()})` : ''}
+                                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-sm)] border" style={{ background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)', color: 'var(--color-success)' }}>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
+                                                    <span className="text-[10px] font-medium">
+                                                        Verified & locked {signOffDate ? `(${new Date(signOffDate).toLocaleDateString()})` : ''}
                                                     </span>
                                                 </div>
                                             )}
@@ -1623,7 +1629,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                     </div>
                                     {(user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN || user?.uid === task.teamLeaderId) && !isSignedOff && !isTaskCompleted && (
                                         <div className="flex items-center gap-2">
-                                            <div className="flex items-center bg-[#0d1017] border border-white/10 rounded-xl p-0.5 shadow-inner mr-2">
+                                            <div className="flex items-center bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-sm)] p-0.5 mr-2">
                                                 <select 
                                                     id={`templateSelect-${layer}`}
                                                     defaultValue=""
@@ -1642,19 +1648,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 reviewerRole: layer
                                                             }));
                                                             onChange({ reviewChecklist: [...(task.reviewChecklist || []), ...mappedChecklist] });
-                                                            toast.success(`Checklist integrated from ${matchingTemplate.name}`, { icon: 'âœ¨' });
+                                                            toast.success(`Checklist integrated from ${matchingTemplate.name}`, { icon: 'Ã¢Å“Â¨' });
                                                             e.target.value = ""; // Reset selector
                                                         }
                                                     }}
-                                                    className="bg-transparent outline-none border-none text-[9px] font-black uppercase tracking-widest text-brand-300/80 px-2 max-w-[180px] truncate cursor-pointer"
+                                                    className="bg-transparent outline-none border-none text-xs font-medium text-[var(--accent)] px-2 max-w-[180px] truncate cursor-pointer"
                                                 >
                                                     <option value="">Quick Import Template...</option>
                                                     {templates.filter(t => (t.category === 'REVIEWER_CHECKLIST' || t.category === 'TASK') && t.reviewChecklist && t.reviewChecklist.length > 0).map(t => (
                                                         <option key={t.id} value={t.id}>{t.name}</option>
                                                     ))}
                                                 </select>
-                                                <div className="px-2 text-gray-700">
-                                                    <Download size={11} strokeWidth={3} />
+                                                <div className="px-2 text-[var(--text-muted)]">
+                                                    <Download size={11} strokeWidth={2} />
                                                 </div>
                                             </div>
 
@@ -1671,15 +1677,15 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     };
                                                     onChange({ reviewChecklist: [...(task.reviewChecklist || []), newSection] });
                                                 }}
-                                                className="h-9 px-4 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-2 transition-all active:scale-95"
+                                                className="h-8 px-3 bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] border border-[var(--border)] rounded-[var(--radius-sm)] text-xs font-medium text-[var(--text-heading)] flex items-center gap-1.5 transition-colors"
                                             >
-                                                <Plus size={14} strokeWidth={3} /> Add Section
+                                                <Plus size={13} /> Add section
                                             </button>
                                             <button 
                                                 onClick={() => addReviewRow(layer)}
-                                                className="h-9 px-4 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 transition-all active:scale-95"
+                                                className="h-8 px-3 bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] border border-[var(--border)] rounded-[var(--radius-sm)] text-xs font-medium text-[var(--text-heading)] flex items-center gap-1.5 transition-colors"
                                             >
-                                                <Plus size={14} strokeWidth={3} /> Add Procedure
+                                                <Plus size={13} /> Add procedure
                                             </button>
                                         </div>
                                     )}
@@ -1689,26 +1695,26 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             <div className="overflow-x-auto custom-scrollbar">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-black/60 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">
-                                            <th className="px-4 py-3 border-b border-white/5 w-16 text-center">REF</th>
-                                            <th className="px-4 py-3 border-b border-white/5">PROTOCOL PROCEDURE / REQUIREMENT</th>
-                                            <th className="px-4 py-3 border-b border-white/5 w-32 text-center">STATUS</th>
-                                            <th className="px-4 py-3 border-b border-white/5 w-28 text-center">PRIORITY</th>
-                                            <th className="px-4 py-3 border-b border-white/5 min-w-[250px]">NOTES / WP REF</th>
-                                            {!isSignedOff && <th className="px-4 py-3 border-b border-white/5 w-16 text-center"></th>}
+                                        <tr className="bg-[var(--bg-surface)] text-xs font-medium text-[var(--text-muted)] border-b border-[var(--border)]">
+                                            <th className="px-4 py-2.5 w-16 text-center">Ref</th>
+                                            <th className="px-4 py-2.5">Protocol procedure / requirement</th>
+                                            <th className="px-4 py-2.5 w-32 text-center">Status</th>
+                                            <th className="px-4 py-2.5 w-28 text-center">Priority</th>
+                                            <th className="px-4 py-2.5 min-w-[250px]">Notes / WP ref</th>
+                                            {!isSignedOff && <th className="px-4 py-2.5 w-16 text-center"></th>}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/[0.03]">
+                                    <tbody className="divide-y divide-[var(--border)]">
                                         {items.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-20 text-center">
-                                                    <div className="flex flex-col items-center gap-6">
-                                                        <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center border border-white/5 opacity-40">
-                                                            <ClipboardCheck size={32} />
+                                                <td colSpan={6} className="px-6 py-12 text-center">
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)]">
+                                                            <ClipboardCheck size={24} />
                                                         </div>
-                                                        <div className="space-y-1">
-                                                            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white">No Protocol Loaded</p>
-                                                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Required for engagement sign-off</p>
+                                                        <div className="space-y-0.5">
+                                                            <p className="text-xs font-semibold text-[var(--text-heading)]">No protocol loaded</p>
+                                                            <p className="text-xs text-[var(--text-muted)]">Required for engagement sign-off</p>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -1718,42 +1724,42 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 const isLocked = isTaskCompleted || (isSignedOff && user?.role !== UserRole.MASTER_ADMIN);
                                                 
                                                 return item.isSectionHeader ? (
-                                                    <tr key={item.id} className="bg-indigo-500/5 group">
-                                                        <td className="px-4 py-3 text-[11px] font-black text-indigo-500/50 text-center uppercase tracking-widest">
+                                                    <tr key={item.id} className="bg-[var(--accent-dim)] group border-b border-[var(--border)]">
+                                                        <td className="px-4 py-2 text-xs font-semibold text-[var(--accent)] text-center">
                                                             {String.fromCharCode(65 + items.filter((it, i) => it.isSectionHeader && i <= items.indexOf(item)).length - 1)}
                                                         </td>
-                                                        <td colSpan={4} className="px-4 py-3">
+                                                        <td colSpan={4} className="px-4 py-2">
                                                             <input 
                                                                 type="text" 
                                                                 value={item.title}
                                                                 onChange={(e) => updateReviewItemField(item.id, 'title', e.target.value, isLocked)}
                                                                 readOnly={isLocked}
-                                                                className="w-full bg-transparent border-none text-[10px] font-black text-indigo-400 placeholder:text-indigo-900/30 focus:outline-none focus:ring-0 p-0 uppercase tracking-widest"
-                                                                placeholder="SECTION NAME (e.g. A | GENERAL PROCEDURES)"
+                                                                className="w-full bg-transparent border-none text-xs font-semibold text-[var(--accent)] placeholder:text-[var(--text-muted)] focus:outline-none p-0"
+                                                                placeholder="Section name (e.g. A | General Procedures)"
                                                             />
                                                         </td>
                                                         {!isLocked && (
-                                                            <td className="px-4 py-3 text-center">
-                                                                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                            <td className="px-4 py-2 text-center">
+                                                                <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                     <button 
                                                                         onClick={() => addReviewRow(layer, item.id)}
-                                                                        className="p-1 px-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg flex items-center gap-1.5 text-[9px] font-black tracking-widest"
+                                                                        className="p-1 px-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] text-[var(--text-heading)] border border-[var(--border)] rounded-[var(--radius-sm)] flex items-center gap-1 text-[11px] font-medium"
                                                                     >
-                                                                        <Plus size={12} /> ADD ITEM
+                                                                        <Plus size={11} /> Item
                                                                     </button>
                                                                     <button 
                                                                         onClick={() => removeReviewRow(item.id, isLocked)}
-                                                                        className="p-1 text-indigo-900/50 hover:text-rose-500"
+                                                                        className="p-1 text-[var(--text-muted)] hover:text-[var(--color-danger)] transition-colors"
                                                                     >
-                                                                        <Trash2 size={13} />
+                                                                        <Trash2 size={12} />
                                                                     </button>
                                                                 </div>
                                                             </td>
                                                         )}
                                                     </tr>
                                                 ) : (
-                                                    <tr key={item.id} className={`group transition-all ${isLocked ? 'opacity-80 bg-black/5' : 'hover:bg-white/[0.02]'}`}>
-                                                        <td className="px-4 py-3 text-[11px] font-black text-gray-700 text-center">
+                                                    <tr key={item.id} className={`group transition-colors ${isLocked ? 'opacity-80 bg-[var(--bg-surface)]' : 'hover:bg-[var(--bg-surface)]'}`}>
+                                                        <td className="px-4 py-2.5 text-xs font-medium text-[var(--text-muted)] text-center tabular-nums">
                                                             {(() => {
                                                                 const sectionsBefore = items.slice(0, items.indexOf(item)).filter(it => it.isSectionHeader);
                                                                 const currentSectionIdx = sectionsBefore.length;
@@ -1764,56 +1770,59 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                 return `${sectionChar}${idxInSection}`;
                                                             })()}
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-4 py-2.5">
                                                             <input 
                                                                 type="text" 
                                                                 value={item.title}
                                                                 onChange={(e) => updateReviewItemField(item.id, 'title', e.target.value, isLocked)}
                                                                 readOnly={isLocked}
-                                                                className="w-full bg-transparent border-none text-[12px] font-bold text-white placeholder:text-gray-800 focus:outline-none focus:ring-0 p-0"
+                                                                className="w-full bg-transparent border-none text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none p-0"
                                                                 placeholder="Checking procedure..."
                                                             />
                                                             {item.minimumRequirement && (
-                                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mt-0.5 opacity-50">{item.minimumRequirement}</p>
+                                                                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{item.minimumRequirement}</p>
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-4 py-2.5">
                                                             <button 
                                                                 onClick={() => toggleReviewItemStatus(item.id, isLocked)}
                                                                 disabled={isLocked}
-                                                                className={`mx-auto h-8 px-4 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all border shadow-sm ${
-                                                                    item.status === 'OK' ? 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20' : 
-                                                                    item.status === 'ISSUE' ? 'bg-rose-500 text-white border-rose-600 shadow-rose-500/20' : 
-                                                                    'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
-                                                                }`}
+                                                                style={
+                                                                    item.status === 'OK' ? { color: 'var(--color-success)', background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)' } :
+                                                                    item.status === 'ISSUE' ? { color: 'var(--color-danger)', background: 'rgba(224,112,122,0.1)', borderColor: 'rgba(224,112,122,0.2)' } :
+                                                                    { color: 'var(--text-muted)', background: 'var(--bg-surface)', borderColor: 'var(--border)' }
+                                                                }
+                                                                className="mx-auto h-7 px-3 rounded-[var(--radius-sm)] flex items-center justify-center gap-1.5 text-xs font-medium transition-colors border"
                                                             >
-                                                                {item.status === 'OK' && <CheckCircle2 size={12} strokeWidth={3} />}
-                                                                {item.status === 'ISSUE' && <AlertTriangle size={12} strokeWidth={3} />}
+                                                                {item.status === 'OK' && <CheckCircle2 size={12} />}
+                                                                {item.status === 'ISSUE' && <AlertTriangle size={12} />}
                                                                 {item.status || 'PENDING'}
                                                             </button>
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-4 py-2.5">
                                                             <div className="relative group/sel mx-auto w-fit">
                                                                 <select
                                                                     value={item.priority || 'MEDIUM'}
                                                                     onChange={(e) => updateReviewItemField(item.id, 'priority', e.target.value, isLocked)}
                                                                     disabled={isLocked}
-                                                                    className={`appearance-none bg-white border border-slate-200 rounded-xl px-4 py-1 pr-8 text-[10px] font-black uppercase tracking-widest text-center focus:ring-2 focus:ring-brand-500/20 transition-all cursor-pointer disabled:cursor-not-allowed ${
-                                                                        item.priority === 'CRITICAL' ? 'text-rose-500 border-rose-200' : 
-                                                                        item.priority === 'HIGH' ? 'text-amber-500 border-amber-200' : 'text-brand-500 border-indigo-100'
-                                                                    }`}
+                                                                    style={
+                                                                        item.priority === 'CRITICAL' ? { color: 'var(--color-danger)' } :
+                                                                        item.priority === 'HIGH' ? { color: 'var(--color-warning)' } :
+                                                                        { color: 'var(--text-secondary)' }
+                                                                    }
+                                                                    className="appearance-none bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-sm)] px-3 py-1 pr-6 text-xs font-medium text-center focus:border-[var(--accent)] transition-colors cursor-pointer disabled:cursor-not-allowed"
                                                                 >
                                                                     <option value="CRITICAL">Critical</option>
                                                                     <option value="HIGH">High</option>
                                                                     <option value="MEDIUM">Medium</option>
                                                                 </select>
-                                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                                    <ChevronDown size={10} strokeWidth={3} />
+                                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                                                                    <ChevronDown size={10} />
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-4 py-3">
-                                                            <div className={`border rounded-xl p-0.5 transition-all ${isLocked ? 'bg-black/5 border-transparent' : 'bg-white/5 border-white/5 focus-within:border-brand-500/30'}`}>
+                                                        <td className="px-4 py-2.5">
+                                                            <div className={`border border-[var(--border)] rounded-[var(--radius-sm)] p-0.5 transition-colors ${isLocked ? 'bg-[var(--bg-surface)] opacity-70' : 'bg-[var(--bg-surface)] focus-within:border-[var(--accent)]'}`}>
                                                                 <textarea 
                                                                     rows={1}
                                                                     value={item.notes || ''}
@@ -1823,7 +1832,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                                         e.target.style.height = e.target.scrollHeight + 'px';
                                                                     }}
                                                                     readOnly={isLocked}
-                                                                    className="w-full bg-transparent border-none text-[11px] font-bold text-gray-400 placeholder:text-gray-800 focus:outline-none focus:ring-0 px-3 py-1.5 resize-none custom-scrollbar"
+                                                                    className="w-full bg-transparent border-none text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none px-2 py-1 resize-none"
                                                                     placeholder="WP reference / review notes..."
                                                                 />
                                                             </div>
@@ -1846,15 +1855,15 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 </table>
                             </div>
 
-                            <div className="px-8 py-6 bg-black/40 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 relative">
-                                <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                                    <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className={`w-1 h-3 bg-${meta.color}-500 rounded-full`} />
-                                        Sign-off Execution Area
+                            <div className="px-6 py-4 bg-[var(--bg-surface)] border-t border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-4 relative">
+                                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                    <h4 className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-2">
+                                        <div className="w-1.5 h-3 bg-[var(--accent)] rounded-full" />
+                                        Sign-off execution area
                                     </h4>
-                                    <div className="text-lg font-black text-white italic truncate max-w-2xl">
+                                    <div className="text-sm font-medium text-[var(--text-heading)] truncate max-w-2xl">
                                         {isSignedOff 
-                                            ? `Digital Protocol Verified & Sealed by ${signOffRecord?.name || meta.role}.` 
+                                            ? `Digital protocol verified & sealed by ${signOffRecord?.name || meta.role}.` 
                                             : !canSignOff && task.auditPhase !== AuditPhase.REVIEW_AND_CONCLUSION 
                                                 ? `Sign-off is only available during the ${AuditPhase.REVIEW_AND_CONCLUSION.replace(/_/g, ' ')} phase.`
                                                 : task.status === TaskStatus.COMPLETED
@@ -1862,8 +1871,8 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                     : `I hereby certify that I have checked the items above in accordance with established Audit Standards.`}
                                     </div>
                                     {isSignedOff && (
-                                        <p className="text-[11px] font-bold text-emerald-400 flex items-center gap-2 mt-1">
-                                            <CheckCircle2 size={14} /> {signOffRecord?.name ? `${signOffRecord.name} \u00B7 ` : ''}Signed on {new Date(signOffDate!).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        <p className="text-xs font-medium text-[var(--color-success)] flex items-center gap-1.5 mt-0.5">
+                                            <CheckCircle2 size={13} /> {signOffRecord?.name ? `${signOffRecord.name} \u00B7 ` : ''}Signed on {new Date(signOffDate!).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                                         </p>
                                     )}
                                 </div>
@@ -1871,20 +1880,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                 <button 
                                     onClick={() => handleReviewSignOff(layer)}
                                     disabled={isSignedOff || !canSignOff}
-                                    className={`h-12 px-8 rounded-[16px] text-[12px] font-black uppercase tracking-[0.2em] flex items-center gap-3 transition-all shadow-xl relative overflow-hidden group/btn ${
+                                    className={`h-9 px-5 rounded-[var(--radius-md)] text-xs font-semibold flex items-center gap-2 transition-colors ${
                                         isSignedOff 
-                                            ? 'bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/20 cursor-default shadow-emerald-500/5' 
+                                            ? 'bg-[var(--bg-secondary)] text-[var(--color-success)] border border-[rgba(79,178,134,0.25)] cursor-default' 
                                             : !canSignOff
-                                                ? 'bg-white/5 text-gray-700 border border-white/5 cursor-not-allowed grayscale'
-                                                : `bg-${meta.color}-500 text-white hover:bg-${meta.color}-600 active:scale-95 shadow-${meta.color}-500/30`
+                                                ? 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] cursor-not-allowed'
+                                                : 'bg-[var(--accent)] text-[var(--on-accent)] hover:opacity-90'
                                     }`}
                                 >
-                                    {isSignedOff ? <CheckCircle2 size={18} strokeWidth={3} /> : <ShieldCheck size={18} strokeWidth={3} />}
-                                    <span>{isSignedOff ? 'SIGNED' : `SIGN AS ${layer}`}</span>
-                                    
-                                    {!isSignedOff && canSignOff && (
-                                        <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 pointer-events-none" />
-                                    )}
+                                    {isSignedOff ? <CheckCircle2 size={14} /> : <ShieldCheck size={14} />}
+                                    <span>{isSignedOff ? 'Signed' : `Sign as ${layer}`}</span>
                                 </button>
                             </div>
                         </div>
@@ -1923,7 +1928,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             }));
 
             if (isComprehensiveMapping) {
-                toast.success(`Comprehensive Protocol Integrated: All phases populated.`, { icon: 'ðŸ”„' });
+                toast.success(`Comprehensive Protocol Integrated: All phases populated.`, { icon: 'Ã°Å¸â€â€ž' });
             }
         }
 
@@ -1969,16 +1974,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
             onChange(updates);
             if (newSubtasks.length > 0 && !toast.loading) {
-                toast.success(`Imported protocol requirements into engagement workspace`, { icon: 'ðŸ“¥' });
+                toast.success(`Imported protocol requirements into engagement workspace`, { icon: 'Ã°Å¸â€œÂ¥' });
             }
         } else {
-            toast.error(`No protocol items found for this template mapping.`, { icon: 'âš ï¸' });
+            toast.error(`No protocol items found for this template mapping.`, { icon: 'Ã¢Å¡Â Ã¯Â¸Â' });
         }
 
         setImportPhase(null);
     };
 
-    const selectClass = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 transition-all text-[13px] text-left text-gray-200 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer";
+    const selectClass = "w-full flex items-center justify-between px-3 py-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-surface)] transition-colors text-xs text-left text-[var(--text-heading)] hover:border-[var(--border-mid)] focus:outline-none focus:border-[var(--accent)] appearance-none cursor-pointer";
 
     // Helper to render read-only approval status in the Settings tab.
     // Sign-off can ONLY be performed via the Reviewer Checklist tab by the assigned reviewer.
@@ -1988,24 +1993,24 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             const signerName = signOff?.name;
             const signerDate = signOff?.at || approvedAt;
             return (
-                <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full" title={signerName ? `Signed by ${signerName} on ${new Date(signerDate).toLocaleString()}` : undefined}>
-                    <CheckCircle2 size={11} className="text-emerald-400" />
-                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                        {signerName ? `${signerName} \u00B7 ` : 'Signed \u00B7 '}{new Date(signerDate).toLocaleDateString()}
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-sm)] border" style={{ background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)', color: 'var(--color-success)' }} title={signerName ? `Signed by ${signerName} on ${new Date(signerDate).toLocaleString()}` : undefined}>
+                    <CheckCircle2 size={11} className="text-[var(--color-success)]" />
+                    <span className="text-[10px] font-medium">
+                        {signerName ? `${signerName} · ` : 'Signed · '}{new Date(signerDate).toLocaleDateString()}
                     </span>
                 </div>
             );
         }
         if (!isInFinalPhase) {
             return (
-                <div className="flex items-center gap-1.5 text-[9px] text-gray-700 uppercase tracking-widest font-black px-1.5">
-                    <Lock size={11} className="text-gray-600" /> Phase Locked
+                <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium px-1.5">
+                    <Lock size={11} /> Phase locked
                 </div>
             );
         }
         return (
-            <div className="flex items-center gap-1.5 text-[9px] text-amber-600 uppercase tracking-widest font-black px-1.5">
-                <History size={11} className="text-amber-700" /> Awaiting Sign-off
+            <div className="flex items-center gap-1.5 text-xs font-medium px-1.5" style={{ color: 'var(--color-warning)' }}>
+                <History size={11} /> Awaiting sign-off
             </div>
         );
     };
@@ -2031,12 +2036,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-                        className="relative w-full max-w-[1440px] h-[95vh] bg-white dark:bg-[#0c0e12] shadow-[0_32px_128px_rgba(0,0,0,0.4)] flex flex-col rounded-3xl overflow-hidden"
+                        className="relative w-full max-w-[1440px] h-[95vh] bg-[var(--bg-main)] border border-[var(--border)] shadow-xl flex flex-col rounded-[var(--radius-xl)] overflow-hidden"
                     >
-                        {/* Header — Executive & Scannable */}
-                        <div className="shrink-0 px-6 py-3 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface/90 backdrop-blur-xl z-[60]">
+                        {/* Header â€” Executive & Scannable */}
+                        <div className="shrink-0 px-6 py-3 border-b border-[var(--border)] flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[var(--bg-secondary)] z-[60]">
                             <div className="flex items-start md:items-center gap-3 min-w-0">
-                                <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center flex-shrink-0 text-accent">
+                                <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center flex-shrink-0 text-[var(--accent)]">
                                     <Shield size={16} />
                                 </div>
                                 <div className="flex flex-col min-w-0">
@@ -2045,7 +2050,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={() => onOpenClientDetail?.(client.id)}
-                                                className="text-xs font-bold text-accent hover:underline flex items-center gap-1 truncate max-w-[220px]"
+                                                className="text-xs font-semibold text-[var(--accent)] hover:underline flex items-center gap-1 truncate max-w-[220px]"
                                                 title={client.name}
                                             >
                                                 <Building2 size={12} className="flex-shrink-0" />
@@ -2053,22 +2058,22 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             </button>
                                         )}
                                         {task.taskType && (
-                                            <span className="px-2 py-0.5 rounded-md bg-secondary text-muted text-[10px] font-semibold border border-border">
+                                            <span className="px-2 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] text-[var(--text-muted)] text-[10px] font-medium border border-[var(--border)]">
                                                 {TASK_TYPE_LABELS[task.taskType] || task.taskType}
                                             </span>
                                         )}
                                         {watchedFiscalYear && (
-                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
+                                            <span className="px-2 py-0.5 rounded-[var(--radius-sm)] bg-[rgba(79,178,134,0.1)] text-[var(--color-success)] text-[10px] font-medium border border-[rgba(79,178,134,0.25)] tabular-nums">
                                                 FY {watchedFiscalYear}
                                             </span>
                                         )}
                                         {task.status && (
-                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-surface border border-border text-muted">
-                                                {task.status.replace(/_/g, ' ')}
+                                            <span className="px-2 py-0.5 rounded-[var(--radius-sm)] text-[10px] font-medium bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-muted)] capitalize">
+                                                {task.status.replace(/_/g, ' ').toLowerCase()}
                                             </span>
                                         )}
                                     </div>
-                                    <h2 className="text-base font-bold text-heading tracking-tight leading-tight mt-1 truncate">
+                                    <h2 className="text-base font-semibold text-heading tracking-tight leading-tight mt-1 truncate">
                                         {watch('title') || task.title || 'Untitled Engagement'}
                                     </h2>
                                 </div>
@@ -2076,45 +2081,45 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                             <div className="flex items-center gap-3 ml-auto flex-shrink-0">
                                 {/* 3-Layer Sign-off Pipeline Status */}
-                                <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-secondary/80 border border-border text-xs">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted mr-1">Sign-Offs</span>
-                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.teamLeadSignOff ? 'bg-emerald-500/15 text-emerald-400 font-semibold' : 'text-muted'}`}>
+                                <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-[var(--radius-md)] bg-[var(--bg-surface)] border border-[var(--border)] text-xs">
+                                    <span className="text-[10px] font-medium text-[var(--text-muted)] mr-1">Sign-offs</span>
+                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-sm)] ${task.teamLeadSignOff ? 'bg-[rgba(79,178,134,0.1)] text-[var(--color-success)] font-medium' : 'text-[var(--text-muted)]'}`}>
                                         <span>TL</span>
-                                        {task.teamLeadSignOff ? <Check size={11} className="text-emerald-400" /> : <span className="opacity-40">○</span>}
+                                        {task.teamLeadSignOff ? <Check size={11} /> : <span className="opacity-40">â—‹</span>}
                                     </div>
-                                    <span className="text-border text-[10px]">→</span>
-                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.engagementReviewerSignOff ? 'bg-emerald-500/15 text-emerald-400 font-semibold' : 'text-muted'}`}>
+                                    <span className="text-[var(--border)] text-[10px]">â†’</span>
+                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-sm)] ${task.engagementReviewerSignOff ? 'bg-[rgba(79,178,134,0.1)] text-[var(--color-success)] font-medium' : 'text-[var(--text-muted)]'}`}>
                                         <span>ER</span>
-                                        {task.engagementReviewerSignOff ? <Check size={11} className="text-emerald-400" /> : <span className="opacity-40">○</span>}
+                                        {task.engagementReviewerSignOff ? <Check size={11} /> : <span className="opacity-40">â—‹</span>}
                                     </div>
-                                    <span className="text-border text-[10px]">→</span>
-                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.signingPartnerSignOff ? 'bg-emerald-500/15 text-emerald-400 font-semibold' : 'text-muted'}`}>
+                                    <span className="text-[var(--border)] text-[10px]">â†’</span>
+                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-sm)] ${task.signingPartnerSignOff ? 'bg-[rgba(79,178,134,0.1)] text-[var(--color-success)] font-medium' : 'text-[var(--text-muted)]'}`}>
                                         <span>SP</span>
-                                        {task.signingPartnerSignOff ? <Check size={11} className="text-emerald-400" /> : <span className="opacity-40">○</span>}
+                                        {task.signingPartnerSignOff ? <Check size={11} /> : <span className="opacity-40">â—‹</span>}
                                     </div>
                                 </div>
 
                                 {/* Due Date Indicator */}
                                 {task.dueDate && (
                                     <div className="hidden sm:flex flex-col items-end text-right">
-                                        <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Due Date</span>
-                                        <span className="text-xs font-semibold text-heading">
-                                            {formatDateDual(task.dueDate).bs} <span className="text-muted font-normal text-[10px]">({formatDateDual(task.dueDate).ad})</span>
+                                        <span className="text-[10px] font-medium text-[var(--text-muted)]">Due date</span>
+                                        <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-heading)' }}>
+                                            {formatDateDual(task.dueDate).bs} <span className="font-normal text-[10px]" style={{ color: 'var(--text-muted)' }}>({formatDateDual(task.dueDate).ad})</span>
                                         </span>
                                     </div>
                                 )}
 
                                 {/* Progress */}
                                 <div className="hidden md:flex flex-col items-end">
-                                    <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Progress</span>
+                                    <span className="text-[10px] font-medium text-[var(--text-muted)]">Progress</span>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <div className="w-20 h-1.5 bg-secondary rounded-full overflow-hidden border border-border">
+                                        <div className="w-20 h-1.5 bg-[var(--bg-surface)] rounded-full overflow-hidden border border-[var(--border)]">
                                             <div 
-                                                className="h-full bg-accent transition-all duration-500"
+                                                className="h-full bg-[var(--accent)] transition-all duration-300 rounded-full"
                                                 style={{ width: `${Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / Math.max(1, (task.subtasks || []).length)) * 100 || 0)}%` }}
                                             />
                                         </div>
-                                        <span className="text-xs font-bold text-accent">
+                                        <span className="text-xs font-medium text-[var(--accent)] tabular-nums">
                                             {Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / Math.max(1, (task.subtasks || []).length)) * 100 || 0)}%
                                         </span>
                                     </div>
@@ -2182,7 +2187,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             </div>
                         </div>
 
-                        {/* Secondary Navigation — Segmented Tabs */}
+                        {/* Secondary Navigation â€” Segmented Tabs */}
                         <div className="shrink-0 sticky top-0 bg-surface/90 backdrop-blur-md border-b border-border px-6 py-2 flex flex-wrap items-center justify-between gap-3 z-[50]">
                             <div className="flex items-center gap-1 bg-secondary/80 p-1 rounded-lg border border-border shadow-xs overflow-x-auto scrollbar-none max-w-full">
                                 {(task.id ? [
@@ -2239,7 +2244,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         </div>
 
                         {/* Content Layout */}
-                        <div className="flex-1 overflow-hidden bg-[#f8f9fa] dark:bg-[#080a0e] flex flex-col">
+                        <div className="flex-1 overflow-hidden bg-[var(--bg-main)] flex flex-col">
                             {activeDetailTab === 'OVERVIEW' && (
                                 <TaskDetailsTab
                                     task={task}
@@ -2316,20 +2321,20 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                             {activeDetailTab === 'SETTINGS' && (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
-                                    <div className="max-w-[1600px] w-full mx-auto space-y-8 pb-32">
+                                    <div className="max-w-[1600px] w-full mx-auto space-y-6 pb-24">
                                         
                                         {/* Main Form Fields Grouped */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 p-6 md:p-8 bg-white/[0.02] border border-white/5 rounded-[32px] shadow-inner">
-                                            <Field label="Assignment Title" icon={<FileText size={14} className="text-brand-400" />} span2 error={!!errors.title}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-6 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-lg)]">
+                                            <Field label="Assignment Title" icon={<FileText size={14} className="text-[var(--accent)]" />} span2 error={!!errors.title}>
                                                 <input
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[14px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
+                                                    className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-[var(--text-heading)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                                                     placeholder="Enter engagement title..."
                                                     {...register('title')}
                                                     readOnly={!canManageTeam}
                                                 />
                                             </Field>
 
-                                            <Field label="Target Client" icon={<Briefcase size={14} className="text-brand-400" />} error={!!errors.clientId}>
+                                            <Field label="Target Client" icon={<Briefcase size={14} className="text-[var(--accent)]" />} error={!!errors.clientId}>
                                                 <Controller name="clientId" control={control} render={({ field }) => (
                                                     <ClientSelect 
                                                         clients={clientsList} 
@@ -2340,42 +2345,42 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 )} />
                                             </Field>
 
-                                            <Field label="Fiscal Year (BS)" icon={<Calendar size={14} className="text-emerald-400" />} error={!!errors.fiscalYear}>
+                                            <Field label="Fiscal Year (BS)" icon={<Calendar size={14} className="text-[var(--color-success)]" />} error={!!errors.fiscalYear}>
                                                 <select 
                                                     className={selectClass} 
                                                     {...register('fiscalYear')}
                                                     disabled={!!task.id}
                                                 >
-                                                    <option value="" className="bg-navy-900">Select...</option>
+                                                    <option value="">Select...</option>
                                                     {fiscalYears.map(fy => (
-                                                        <option key={fy} value={fy} className="bg-navy-900 font-bold">{fy}</option>
+                                                        <option key={fy} value={fy}>{fy}</option>
                                                     ))}
                                                 </select>
                                             </Field>
 
-                                            <Field label="Priority" icon={<Zap size={14} className="text-amber-400" />} error={!!errors.priority}>
+                                            <Field label="Priority" icon={<Zap size={14} className="text-[var(--color-warning)]" />} error={!!errors.priority}>
                                                 <select className={selectClass} {...register('priority')} disabled={!canEditTask || isTaskCompleted}>
                                                     {Object.values(TaskPriority).map(p => (
-                                                        <option key={p} value={p} className="bg-navy-900 font-bold uppercase">{p}</option>
+                                                        <option key={p} value={p}>{p}</option>
                                                     ))}
                                                 </select>
                                             </Field>
 
-                                            <Field label="Status" icon={<Activity size={14} className="text-blue-400" />} error={!!errors.status}>
+                                            <Field label="Status" icon={<Activity size={14} className="text-[var(--color-info)]" />} error={!!errors.status}>
                                                 <select className={selectClass} {...register('status')} disabled={!canEditTask || isTaskCompleted}>
                                                     {[TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED].map(s => (
-                                                        <option key={s} value={s} className="bg-navy-900 font-bold uppercase">{s.replace(/_/g, ' ')}</option>
+                                                        <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                                                     ))}
                                                 </select>
                                             </Field>
 
-                                            <Field label="Staff Team Assigned" icon={<Users size={14} className="text-brand-400" />} span2>
+                                            <Field label="Staff Team Assigned" icon={<Users size={14} className="text-[var(--accent)]" />} span2>
                                                 <Controller name="assignedTo" control={control} render={({ field }) => (
                                                     <StaffSelect users={usersList} value={field.value || []} onChange={field.onChange} multi={true} userTasksCount={userTasksCount} disabled={!canManageTeam} />
                                                 )} />
                                             </Field>
 
-                                            <Field label="Start Date" icon={<Calendar size={14} className="text-emerald-400" />} error={!!errors.startDate}>
+                                            <Field label="Start Date" icon={<Calendar size={14} className="text-[var(--color-success)]" />} error={!!errors.startDate}>
                                                 <Controller
                                                     name="startDate"
                                                     control={control}
@@ -2390,7 +2395,7 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 />
                                             </Field>
 
-                                            <Field label="Due Date" icon={<Clock size={14} className="text-rose-400" />} error={!!errors.dueDate}>
+                                            <Field label="Due Date" icon={<Clock size={14} className="text-[var(--color-danger)]" />} error={!!errors.dueDate}>
                                                 <Controller
                                                     name="dueDate"
                                                     control={control}
@@ -2405,21 +2410,21 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                 />
                                             </Field>
 
-                                            <Field label="Estimated Days" icon={<Calendar size={14} className="text-amber-400" />}>
+                                            <Field label="Estimated Days" icon={<Calendar size={14} className="text-[var(--color-warning)]" />}>
                                                 <input
                                                     type="number"
                                                     min="1"
                                                     max="365"
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-[13px] font-medium text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
+                                                    className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] px-3 py-2 text-xs font-medium text-[var(--text-heading)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                                                     placeholder="e.g. 5"
                                                     {...register('estimatedDays', { valueAsNumber: true })}
                                                     disabled={!canManageTeam || isTaskCompleted}
                                                 />
                                             </Field>
 
-                                            <Field label="Engagement Description" icon={<Book size={14} className="text-gray-500" />} span2>
+                                            <Field label="Engagement Description" icon={<Book size={14} className="text-[var(--text-muted)]" />} span2>
                                                 <textarea
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[13px] font-medium text-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner min-h-[120px]"
+                                                    className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] px-3 py-2 text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors min-h-[100px] resize-y"
                                                     placeholder="Detailed context for the assignment..."
                                                     {...register('description')}
                                                     readOnly={!canEditTask || isTaskCompleted}
@@ -2428,12 +2433,12 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </div>
 
                                          {/* Quality Control Hierarchy Section */}
-                                        <div className="p-6 md:p-8 bg-[#0c1e18]/20 border border-emerald-500/10 rounded-[32px] shadow-inner space-y-8">
-                                            <div className="flex items-center gap-4 border-b border-emerald-500/10 pb-4">
-                                                <ShieldCheck size={20} className="text-emerald-500" />
+                                        <div className="p-6 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-lg)] space-y-6">
+                                            <div className="flex items-center gap-3 border-b border-[var(--border)] pb-3">
+                                                <ShieldCheck size={18} className="text-[var(--accent)]" />
                                                 <div>
-                                                    <h4 className="text-[13px] font-black text-gray-300 uppercase tracking-[0.3em]">Quality Control Hierarchy</h4>
-                                                    <p className="text-[9px] text-amber-600/80 font-bold uppercase tracking-widest mt-0.5">
+                                                    <h4 className="text-xs font-semibold text-[var(--text-heading)]">Quality control hierarchy</h4>
+                                                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                                                         Sign-offs are performed exclusively in the Reviewer Checklist tab
                                                     </p>
                                                 </div>
@@ -2487,16 +2492,16 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         </div>
 
                                         {/* Engagement Framework Switcher */}
-                                        <div className="p-6 md:p-8 bg-white/[0.01] border border-white/5 rounded-[32px] space-y-6">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <Shield size={14} className="text-brand-400" />
-                                                    Framework Deployment
+                                        <div className="p-6 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-lg)] space-y-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-2">
+                                                    <Shield size={14} className="text-[var(--accent)]" />
+                                                    Framework deployment
                                                 </h4>
                                                 {!!task.taskType && !canChangeFramework && (
-                                                    <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-full">
-                                                        <Lock size={10} className="text-gray-500" />
-                                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Locked to {TASK_TYPE_LABELS[task.taskType] || task.taskType}</span>
+                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-sm)]">
+                                                        <Lock size={10} className="text-[var(--text-muted)]" />
+                                                        <span className="text-xs font-medium text-[var(--text-muted)]">Locked to {TASK_TYPE_LABELS[task.taskType] || task.taskType}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -2513,14 +2518,14 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                                             key={tType}
                                                             onClick={(e) => { e.preventDefault(); !isLocked && handleFrameworkSelect(tType); }}
                                                             disabled={!canManageTeam || (isLocked && !isSelected)}
-                                                            className={`p-4 rounded-2xl border transition-all flex items-center text-left gap-4 group ${isSelected ? 'bg-brand-500 border-brand-400 text-white' : 'bg-[#0f1218] border-white/5 hover:border-white/20'} ${(!canManageTeam || (isLocked && !isSelected)) ? 'opacity-40 cursor-not-allowed grayscale-[0.8]' : ''}`}
+                                                            className={`p-3.5 rounded-[var(--radius-md)] border transition-colors flex items-center text-left gap-3 group ${isSelected ? 'bg-[var(--accent-dim)] border-[var(--border-accent)] text-[var(--accent)]' : 'bg-[var(--bg-surface)] border-[var(--border)] hover:border-[var(--border-mid)]'} ${(!canManageTeam || (isLocked && !isSelected)) ? 'opacity-40 cursor-not-allowed' : ''}`}
                                                         >
-                                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${isSelected ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500 group-hover:text-brand-400'}`}>
-                                                                {isSelected && isLocked ? <Lock size={14} className="text-white/40" /> : (ICON_MAP[iconName] ? React.cloneElement(ICON_MAP[iconName], { size: 14 }) : <FolderOpen size={14} />)}
+                                                            <div className={`w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center transition-colors ${isSelected ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-muted)]'}`}>
+                                                                {isSelected && isLocked ? <Lock size={13} /> : (ICON_MAP[iconName] ? React.cloneElement(ICON_MAP[iconName], { size: 13 }) : <FolderOpen size={13} />)}
                                                             </div>
-                                                            <span className={`text-[10px] font-black leading-tight flex-1 uppercase tracking-tight ${isSelected ? 'text-white' : 'text-gray-400'}`}>{label}</span>
+                                                            <span className="text-xs font-semibold leading-tight flex-1" style={{ color: isSelected ? 'var(--accent)' : 'var(--text-secondary)' }}>{label}</span>
                                                             {isSelected && isLocked && (
-                                                                <Check size={14} className="text-white/60" />
+                                                                <Check size={13} className="text-[var(--accent)]" />
                                                             )}
                                                         </button>
                                                     );
@@ -2532,17 +2537,17 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             )}
                         </div>
 
-                        {/* Footer â€” Slim & High Density */}
-                        <div className="shrink-0 px-8 py-2 border-t border-black/5 dark:border-white/[0.04] bg-gray-50/80 dark:bg-[#0c0e12] backdrop-blur-md flex justify-between items-center z-[60] rounded-b-3xl">
+                        {/* Footer â€” Slim & Clean */}
+                        <div className="shrink-0 px-6 py-2.5 border-t border-[var(--border)] bg-[var(--bg-secondary)] flex justify-between items-center z-[60]">
                             <div className="flex items-center gap-6">
                                 {isEditMode && canManageTask && !isTaskCompleted && (
                                     <div className="flex items-center gap-6">
                                         <button
                                             onClick={() => onDelete(task.id!)}
-                                            className="text-gray-500 hover:text-rose-500 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
+                                            className="text-[var(--text-muted)] hover:text-[var(--color-danger)] text-xs font-medium transition-colors flex items-center gap-2"
                                         >
-                                            <Trash2 size={16} strokeWidth={3} />
-                                            Abort Engagement
+                                            <Trash2 size={14} />
+                                            Abort engagement
                                         </button>
                                     </div>
                                 )}
@@ -2552,35 +2557,35 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                   task.auditPhase === AuditPhase.REVIEW_AND_CONCLUSION && 
                                   task.status !== TaskStatus.ARCHIVED && (
                                     <div className="flex items-center gap-6">
-                                        <div className="w-px h-4 bg-black/10 dark:bg-white/10" />
+                                        <div className="w-px h-4 bg-[var(--border)]" />
                                         <button
                                             onClick={() => onArchive && onArchive(task.id!)}
-                                            className="text-gray-500 hover:text-purple-500 text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
+                                            className="text-[var(--text-muted)] hover:text-[var(--accent)] text-xs font-medium transition-colors flex items-center gap-2"
                                         >
-                                            <History size={16} strokeWidth={3} />
-                                            Archive Engagement
+                                            <History size={14} />
+                                            Archive engagement
                                         </button>
                                     </div>
                                 )}
 
                                 {/* Sync Status Indicator */}
                                 <div className="flex items-center gap-2">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-amber-500 animate-pulse' : isDirty ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-                                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500">
-                                        {isSaving ? 'Syncing...' : isDirty ? 'Unsaved Changes' : 'Cloud Synced'}
+                                    <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-[var(--color-warning)] animate-pulse' : isDirty ? 'bg-[var(--color-danger)]' : 'bg-[var(--color-success)]'}`} />
+                                    <span className="text-[11px] font-medium text-[var(--text-muted)]">
+                                        {isSaving ? 'Syncing...' : isDirty ? 'Unsaved changes' : 'Cloud synced'}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
+                            <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => {
                                         if (isDirty) setShowDiscardBanner(true);
                                         else onClose();
                                     }}
-                                    className="px-8 py-2 bg-gray-200/50 hover:bg-gray-200 text-gray-700 dark:bg-transparent dark:text-gray-500 dark:hover:text-white dark:hover:bg-white/5 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all border border-gray-300/50 dark:border-white/5 active:scale-95 shadow-sm"
+                                    className="px-4 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-heading)] text-xs font-medium rounded-[var(--radius-md)] transition-colors border border-[var(--border)] shadow-none"
                                 >
-                                    Exit Workspace
+                                    Exit workspace
                                 </button>
                                  {!isTaskCompleted && canEditTask && (
                                     <button
@@ -2589,10 +2594,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                             if (firstErr) toast.error(firstErr.message as string);
                                         })}
                                         disabled={isSaving}
-                                        className={`px-8 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md active:scale-95 flex items-center gap-3 ${
+                                        className={`px-5 py-2 rounded-[var(--radius-md)] text-xs font-semibold transition-colors shadow-none flex items-center gap-2 ${
                                             (formIsDirty || isDirty || !task.id) 
-                                            ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-brand-500/20' 
-                                            : 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
+                                            ? 'bg-[var(--accent)] text-[var(--on-accent)] hover:opacity-90' 
+                                            : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] cursor-not-allowed'
                                         }`}
                                     >
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
@@ -2608,21 +2613,21 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                         {showDiscardBanner && (
                             <motion.div
                                 key="discard-banner"
-                                initial={{ opacity: 0, y: 40 }}
+                                initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 40 }}
-                                className="fixed inset-x-0 bottom-6 mx-auto w-max px-4 py-2.5 bg-amber-500 rounded-2xl border border-amber-400/80 flex items-center gap-4 shadow-[0_8px_32px_rgba(245,158,11,0.35)] z-[200]"
+                                exit={{ opacity: 0, y: 20 }}
+                                className="fixed inset-x-0 bottom-6 mx-auto w-max px-4 py-2.5 bg-[var(--bg-elevated)] rounded-[var(--radius-lg)] border border-[var(--border)] flex items-center gap-4 shadow-lg z-[200]"
                             >
-                                <div className="flex items-center gap-2.5 text-navy-950">
-                                    <AlertTriangle size={16} strokeWidth={2.5} className="flex-shrink-0" />
+                                <div className="flex items-center gap-2.5">
+                                    <AlertTriangle size={16} className="text-[var(--color-warning)] flex-shrink-0" />
                                     <div className="flex flex-col">
-                                        <span className="text-[11px] font-black uppercase tracking-widest leading-none">Unsaved Changes</span>
-                                        <span className="text-[9px] font-bold opacity-70 uppercase tracking-widest mt-0.5">Exit without saving?</span>
+                                        <span className="text-xs font-semibold text-[var(--text-heading)] leading-none">Unsaved changes</span>
+                                        <span className="text-[11px] text-[var(--text-muted)] mt-0.5">Exit without saving?</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => setShowDiscardBanner(false)} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-navy-950 bg-white/25 hover:bg-white/40 rounded-xl transition-all border border-navy-950/10">Stay</button>
-                                    <button onClick={() => { setShowDiscardBanner(false); onClose(); }} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white bg-navy-950 hover:bg-black rounded-xl transition-all">Discard</button>
+                                    <button onClick={() => setShowDiscardBanner(false)} className="px-3 py-1.5 text-xs font-medium text-[var(--text-heading)] bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] rounded-[var(--radius-sm)] transition-colors border border-[var(--border)]">Stay</button>
+                                    <button onClick={() => { setShowDiscardBanner(false); onClose(); }} className="px-3 py-1.5 text-xs font-semibold text-[var(--on-accent)] bg-[var(--color-danger)] hover:opacity-90 rounded-[var(--radius-sm)] transition-colors">Discard</button>
                                 </div>
                             </motion.div>
                         )}
@@ -2634,38 +2639,38 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             <AnimatePresence>
                 {importPhase && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="glass-modal rounded-[48px] w-full max-w-2xl border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,1)] flex flex-col max-h-[85vh] overflow-hidden">
-                            <div className="px-10 py-8 border-b border-white/10 bg-white/5 flex flex-col gap-6">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-2xl bg-[var(--bg-main)] border border-[var(--border)] rounded-[var(--radius-xl)] flex flex-col max-h-[85vh] overflow-hidden shadow-2xl">
+                            <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg-secondary)] flex flex-col gap-4">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-2xl font-black text-white flex items-center gap-4 uppercase tracking-tighter">
-                                        <Book size={24} className="text-brand-400" />
-                                        Import Engagement Protocol
+                                    <h3 className="text-base font-semibold text-[var(--text-heading)] flex items-center gap-3">
+                                        <Book size={20} className="text-[var(--accent)]" />
+                                        Import engagement protocol
                                     </h3>
-                                    <button onClick={() => { setImportPhase(null); setTemplateSearchQuery(''); setShowAllFrameworks(false); }} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all border border-white/10"><X size={24} /></button>
+                                    <button onClick={() => { setImportPhase(null); setTemplateSearchQuery(''); setShowAllFrameworks(false); }} className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors"><X size={16} /></button>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-3">
                                     <div className="relative flex-1">
-                                        <Sparkles size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                                        <Sparkles size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--accent)]" />
                                         <input
                                             type="text"
                                             placeholder="Search database..."
                                             value={templateSearchQuery}
                                             onChange={e => setTemplateSearchQuery(e.target.value)}
-                                            className="w-full bg-white/[0.03] border border-white/10 rounded-[22px] pl-11 pr-5 py-4 text-sm text-gray-200 placeholder-gray-700 focus:outline-none focus:border-brand-500/50 focus:bg-white/[0.06] transition-all"
+                                            className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] pl-9 pr-3 py-2 text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                                         />
                                     </div>
                                     {watch('taskType') && (
                                         <button
                                             onClick={() => setShowAllFrameworks(prev => !prev)}
-                                            className={`flex items-center gap-3 px-6 py-4 rounded-[22px] text-[10px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${showAllFrameworks ? 'bg-white/5 border-white/10 text-gray-400' : 'bg-brand-500/10 border-brand-500/20 text-brand-400'}`}
+                                            className={`flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-xs font-medium border transition-colors whitespace-nowrap ${showAllFrameworks ? 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)]' : 'bg-[var(--accent-dim)] border-[var(--border-accent)] text-[var(--accent)]'}`}
                                         >
-                                            {showAllFrameworks ? <Eye size={14} /> : <CheckCircle2 size={14} />}
+                                            {showAllFrameworks ? <Eye size={13} /> : <CheckCircle2 size={13} />}
                                             {showAllFrameworks ? 'All' : 'Suggested'}
                                         </button>
                                     )}
                                 </div>
                             </div>
-                            <div className="p-8 overflow-y-auto custom-scrollbar flex-1 bg-[#080a0c]">
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-[var(--bg-main)]">
                                 {(() => {
                                     const q = templateSearchQuery.toLowerCase();
                                     const taskType = watch('taskType');
@@ -2677,10 +2682,10 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
 
                                     if (filtered.length === 0) {
                                         return (
-                                            <div className="text-center py-24 text-gray-700 bg-white/[0.01] rounded-[48px] border border-dashed border-white/5 px-10">
-                                                <Book size={64} className="mx-auto mb-8 opacity-10" />
-                                                <p className="font-black text-xl uppercase tracking-tight">No Protocol Found</p>
-                                                <p className="text-xs mt-3 text-gray-800 font-medium tracking-wide">Refine search or check another framework mapping.</p>
+                                            <div className="text-center py-16 bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] border border-dashed border-[var(--border)] px-6">
+                                                <Book size={48} className="mx-auto mb-4 opacity-20 text-[var(--text-muted)]" />
+                                                <p className="font-semibold text-sm" style={{ color: 'var(--text-heading)' }}>No protocol found</p>
+                                                <p className="text-xs mt-1 font-normal" style={{ color: 'var(--text-muted)' }}>Refine search or check another framework mapping.</p>
                                             </div>
                                         );
                                     }
@@ -2697,44 +2702,44 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                                         <button
                                             key={template.id}
                                             onClick={() => handleImportTemplate(template)}
-                                            className="flex items-center gap-5 w-full text-left p-5 rounded-[28px] border border-white/5 bg-white/[0.03] hover:bg-brand-500/10 hover:border-brand-500/30 transition-all group shadow-sm"
+                                            className="flex items-center gap-3 w-full text-left p-3.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--border-accent)] hover:bg-[var(--accent-dim)] transition-colors group shadow-none"
                                         >
-                                            <div className="w-12 h-12 rounded-2xl bg-black/40 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-500/20 transition-colors">
-                                                <CheckCircle2 size={20} className="text-gray-600 group-hover:text-brand-400" />
+                                            <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center flex-shrink-0 text-[var(--accent)]">
+                                                <CheckCircle2 size={16} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-3">
-                                                    <p className="text-[13px] font-black text-gray-200 group-hover:text-white uppercase tracking-tight truncate">{template.name}</p>
-                                                    {template.taskType && <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 uppercase tracking-widest">{template.taskType}</span>}
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-xs font-semibold text-[var(--text-heading)] truncate">{template.name}</p>
+                                                    {template.taskType && <span className="text-[10px] font-medium px-2 py-0.5 rounded-[var(--radius-sm)] bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)]">{template.taskType}</span>}
                                                 </div>
-                                                {template.description && <p className="text-[11px] text-gray-600 line-clamp-1 mt-1 font-medium">{template.description}</p>}
+                                                {template.description && <p className="text-[11px] line-clamp-1 mt-0.5 font-normal" style={{ color: 'var(--text-muted)' }}>{template.description}</p>}
                                             </div>
-                                            <div className="text-[10px] font-black text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity bg-brand-500/10 px-4 py-2 rounded-xl border border-brand-500/20 uppercase tracking-widest flex-shrink-0">Deploy</div>
+                                            <div className="text-[11px] font-medium text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--accent-dim)] px-2.5 py-1 rounded-[var(--radius-sm)] border border-[var(--border-accent)] flex-shrink-0">Deploy</div>
                                         </button>
                                     );
 
                                     return (
-                                        <div className="space-y-10">
+                                        <div className="space-y-6">
                                             {rootTemplates.length > 0 && (
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center gap-3 px-2">
-                                                        <div className="w-1.5 h-4 bg-brand-500 rounded-full" />
-                                                        <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em]">Audit Library</h4>
-                                                        <span className="text-[10px] text-gray-700 font-bold ml-auto">{rootTemplates.length}</span>
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 px-1">
+                                                        <div className="w-1.5 h-3 bg-[var(--accent)] rounded-full" />
+                                                        <h4 className="text-xs font-semibold text-[var(--text-muted)]">Audit library</h4>
+                                                        <span className="text-xs tabular-nums font-medium text-[var(--text-muted)] ml-auto">{rootTemplates.length}</span>
                                                     </div>
-                                                    <div className="grid grid-cols-1 gap-3">
+                                                    <div className="grid grid-cols-1 gap-2">
                                                         {rootTemplates.map(renderTemplateButton)}
                                                     </div>
                                                 </div>
                                             )}
                                             {folderSections.map(({ folder, templates: fTemplates }) => (
-                                                <div key={folder.id} className="space-y-4">
-                                                    <div className="flex items-center gap-3 px-2">
-                                                        <div className="w-1.5 h-4 rounded-full" style={{ background: folder.color || '#6366f1' }} />
-                                                        <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em]">{folder.name}</h4>
-                                                        <span className="text-[10px] text-gray-700 font-bold ml-auto">{fTemplates.length}</span>
+                                                <div key={folder.id} className="space-y-3">
+                                                    <div className="flex items-center gap-2 px-1">
+                                                        <div className="w-1.5 h-3 rounded-full bg-[var(--accent)]" />
+                                                        <h4 className="text-xs font-semibold text-[var(--text-muted)]">{folder.name}</h4>
+                                                        <span className="text-xs tabular-nums font-medium text-[var(--text-muted)] ml-auto">{fTemplates.length}</span>
                                                     </div>
-                                                    <div className="grid grid-cols-1 gap-3">
+                                                    <div className="grid grid-cols-1 gap-2">
                                                         {fTemplates.map(renderTemplateButton)}
                                                     </div>
                                                 </div>
@@ -2749,19 +2754,19 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
             </AnimatePresence>
         </AnimatePresence>
 
-        {/* A6/U5: Inline Review Query / Reply Modal (replaces browser prompt) — rendered outside AnimatePresence but inside fragment */}
+        {/* A6/U5: Inline Review Query / Reply Modal (replaces browser prompt) â€” rendered outside AnimatePresence but inside fragment */}
         {queryModal && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setQueryModal(null)} />
-                <div className="relative z-10 bg-[#13141a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                    <h3 className="text-[13px] font-black uppercase tracking-widest text-white mb-1">
-                        {queryModal.mode === 'RAISE' ? 'Raise Review Query' : 'Reply to Query'}
+                <div className="fixed inset-0 bg-black/50" onClick={() => setQueryModal(null)} />
+                <div className="relative z-10 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 w-full max-w-md shadow-xl">
+                    <h3 className="text-xs font-semibold text-[var(--text-heading)] mb-1">
+                        {queryModal.mode === 'RAISE' ? 'Raise review query' : 'Reply to query'}
                     </h3>
-                    <p className="text-[10px] text-slate-500 mb-4">
+                    <p className="text-xs text-[var(--text-muted)] mb-3">
                         {queryModal.mode === 'RAISE' ? 'Describe the issue or question for the preparer.' : 'Provide your response to the reviewer query.'}
                     </p>
                     <textarea
-                        className="w-full h-28 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-[12px] text-white placeholder-slate-600 resize-none focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/30"
+                        className="w-full h-28 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] px-3 py-2 text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] resize-none focus:outline-none focus:border-[var(--accent)]"
                         placeholder={queryModal.mode === 'RAISE' ? 'Enter your review note or query...' : 'Enter your response...'}
                         value={queryText}
                         onChange={e => setQueryText(e.target.value)}
@@ -2775,17 +2780,17 @@ const TaskDetailPane: React.FC<TaskDetailPaneProps> = ({
                             }
                         }}
                     />
-                    <div className="flex justify-end gap-3 mt-4">
-                        <button onClick={() => setQueryModal(null)} className="px-4 py-2 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all">Cancel</button>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <button onClick={() => setQueryModal(null)} className="px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors">Cancel</button>
                         <button
                             disabled={!queryText.trim()}
+                            className="px-4 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold bg-[var(--accent)] text-[var(--on-accent)] disabled:opacity-40 transition-colors"
                             onClick={() => {
                                 if (queryText.trim()) {
                                     handleSubtaskAction(queryModal.subtaskId, queryModal.mode === 'RAISE' ? 'RAISE_QUERY' : 'REPLY', queryText.trim());
                                     setQueryModal(null); setQueryText('');
                                 }
                             }}
-                            className="px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest bg-brand-600 hover:bg-brand-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                         >
                             {queryModal.mode === 'RAISE' ? 'Raise Query' : 'Submit Reply'}
                         </button>

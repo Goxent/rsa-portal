@@ -58,25 +58,25 @@ const Modal: React.FC<ModalProps> = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute inset-0 backdrop-blur-[4px]"
+                        className="absolute inset-0"
                         style={{ backgroundColor: 'var(--modal-backdrop, rgba(0,0,0,0.6))' }}
                         onClick={onClose}
                     />
 
                     {/* Modal Container */}
                     <motion.div
-                        initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 12, scale: 0.97 }}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
                         transition={{ 
-                            duration: 0.22, 
-                            ease: [0.34, 1.56, 0.64, 1] 
+                            duration: 0.18, 
+                            ease: 'easeOut' 
                         }}
                         className={`relative w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col overflow-hidden z-10`}
                         style={{ 
-                            backgroundColor: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-mid)',
-                            borderRadius: 'var(--radius-xl)',
+                            backgroundColor: 'var(--bg-surface)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-lg, 12px)',
                             boxShadow: 'var(--shadow-modal)'
                         }}
                         role="dialog"
@@ -86,7 +86,7 @@ const Modal: React.FC<ModalProps> = ({
                         {/* Close Button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center transition-all duration-200 z-20 group"
+                            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center transition-colors z-20"
                             style={{ 
                                 background: 'var(--bg-surface)', 
                                 border: '1px solid var(--border)',
@@ -103,7 +103,7 @@ const Modal: React.FC<ModalProps> = ({
                             }}
                             aria-label="Close modal"
                         >
-                            <X size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+                            <X size={15} />
                         </button>
 
                         {/* Header */}

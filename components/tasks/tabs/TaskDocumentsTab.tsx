@@ -37,12 +37,12 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
     return (
         <div className="flex-1 flex overflow-hidden">
              {/* Left Pane: Folder Navigation */}
-            <div className="w-80 border-r border-white/[0.04] p-8 space-y-8 overflow-y-auto custom-scrollbar">
+            <div className="w-80 border-r border-[var(--border)] p-6 space-y-6 overflow-y-auto custom-scrollbar">
                 <div className="flex items-center justify-between">
-                    <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em]">Audit Repository</h4>
+                    <h4 className="text-xs font-semibold text-[var(--text-muted)]">Audit repository</h4>
                     <button 
                         onClick={onLoadFiles}
-                        className="p-1.5 text-gray-500 hover:text-white transition-all"
+                        className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors"
                         title="Sync Repository"
                     >
                         <History size={14} className={isLoadingDocs ? 'animate-spin' : ''} />
@@ -61,25 +61,25 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
                                         onSelectFolder(key as AuditFolderKey);
                                         onSelectLineItem('');
                                     }}
-                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all border ${
+                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[var(--radius-md)] transition-colors border ${
                                         isSelected 
-                                            ? 'bg-brand-500 border-brand-400 text-white shadow-lg' 
-                                            : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10'
+                                            ? 'bg-[var(--accent-dim)] border-[var(--border-accent)] text-[var(--accent)] font-semibold' 
+                                            : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--border-mid)]'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <FolderOpen size={16} className={isSelected ? 'text-white' : 'text-brand-500/60'} />
-                                        <span className="text-[12px] font-bold truncate tracking-tight">{def.label}</span>
+                                    <div className="flex items-center gap-2.5 overflow-hidden">
+                                        <FolderOpen size={15} style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)' }} />
+                                        <span className="text-xs truncate tracking-tight">{def.label}</span>
                                     </div>
                                     {fileCount > 0 && (
-                                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black ${isSelected ? 'bg-white/20 text-white' : 'bg-brand-500/20 text-brand-400'}`}>
+                                        <span className={`px-1.5 py-0.2 rounded-[var(--radius-sm)] text-[10px] font-medium tabular-nums ${isSelected ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-muted)]'}`}>
                                             {fileCount}
                                         </span>
                                     )}
                                 </button>
 
                                 {isSelected && (
-                                    <div className="ml-4 pl-4 border-l border-white/10 space-y-1 pt-1 pb-2">
+                                    <div className="ml-4 pl-3 border-l border-[var(--border)] space-y-1 pt-1 pb-1">
                                         {/* Native Line Items (for B) */}
                                         {def.lineItems?.map(item => {
                                             const isItemSelected = selectedLineItemForUpload === item;
@@ -89,21 +89,21 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
                                                 <button
                                                     key={item}
                                                     onClick={() => onSelectLineItem(item)}
-                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-medium transition-all ${
-                                                        isItemSelected ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium transition-colors ${
+                                                        isItemSelected ? 'bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)] hover:bg-[var(--bg-surface)]'
                                                     }`}
                                                 >
                                                     <span className="truncate pr-2">{item}</span>
-                                                    {itemFileCount > 0 && <span className="opacity-60">{itemFileCount}</span>}
+                                                    {itemFileCount > 0 && <span className="opacity-60 tabular-nums text-[10px]">{itemFileCount}</span>}
                                                 </button>
                                             );
                                         })}
 
                                         {/* Custom Sub-folders — Read-only display */}
                                         {customFolders.filter(f => f.folderKey === key && (key !== 'B' || f.lineItem === selectedLineItemForUpload)).map(folder => (
-                                            <div key={folder.id} className="flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-medium text-gray-400">
+                                            <div key={folder.id} className="flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium text-[var(--text-muted)]">
                                                 <div className="flex items-center gap-2 truncate">
-                                                    <Folder size={12} className="text-amber-500/50" />
+                                                    <Folder size={12} className="text-[var(--color-warning)]" />
                                                     <span className="truncate">{folder.name}</span>
                                                 </div>
                                             </div>
@@ -118,15 +118,15 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
             </div>
 
             {/* Right Pane: File Listing & Upload */}
-            <div className="flex-1 glass-pane bg-[#080a0e] flex flex-col overflow-hidden">
-                <div className="shrink-0 p-8 border-b border-white/[0.04] flex items-center justify-between bg-black/20">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
-                            <FileText size={18} className="text-brand-400" />
+            <div className="flex-1 bg-[var(--bg-secondary)] border-l border-[var(--border)] flex flex-col overflow-hidden">
+                <div className="shrink-0 p-5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-surface)]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--accent-dim)] flex items-center justify-center border border-[var(--border-accent)] text-[var(--accent)]">
+                            <FileText size={16} />
                         </div>
                         <div>
-                            <h3 className="text-[14px] font-black text-white uppercase tracking-[0.2em]">Documentation Repository</h3>
-                            <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
+                            <h3 className="text-xs font-semibold text-[var(--text-heading)]">Documentation repository</h3>
+                            <p className="text-[11px] text-[var(--text-muted)] mt-0.5 flex items-center gap-1.5">
                                 {selectedFolderForUpload ? `${AUDIT_FOLDER_STRUCTURE[selectedFolderForUpload as AuditFolderKey]?.label} ${selectedLineItemForUpload ? `→ ${selectedLineItemForUpload}` : ''}` : 'Select a folder to manage files'}
                             </p>
                         </div>
@@ -135,19 +135,19 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
                     {selectedFolderForUpload && (
                         <div className="flex items-center gap-3">
                             {isUploadingDoc && (
-                                <div className="flex flex-col items-end gap-1 mr-4">
-                                    <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest animate-pulse">Uploading {uploadProgress}%</span>
-                                    <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div className="flex flex-col items-end gap-1 mr-3">
+                                    <span className="text-[10px] font-medium text-[var(--accent)] tabular-nums animate-pulse">Uploading {uploadProgress}%</span>
+                                    <div className="w-28 h-1 bg-[var(--bg-surface)] rounded-full overflow-hidden border border-[var(--border)]">
                                         <div 
-                                            className="h-full bg-brand-500 transition-all duration-300 shadow-[0_0_8px_rgba(59,130,246,0.5)]" 
+                                            className="h-full bg-[var(--accent)] transition-all duration-300" 
                                             style={{ width: `${uploadProgress}%` }}
                                         />
                                     </div>
                                 </div>
                             )}
-                            <label className="flex items-center gap-2.5 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all shadow-lg shadow-brand-500/20 active:scale-95">
-                                {isUploadingDoc ? <Loader2 size={14} className="animate-spin" /> : <CloudUpload size={14} />} 
-                                {isUploadingDoc ? 'Syncing...' : 'Upload Evidence'}
+                            <label className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-[var(--on-accent)] rounded-[var(--radius-md)] text-xs font-semibold cursor-pointer transition-colors shadow-none">
+                                {isUploadingDoc ? <Loader2 size={13} className="animate-spin" /> : <CloudUpload size={13} />} 
+                                {isUploadingDoc ? 'Syncing...' : 'Upload evidence'}
                                 <input 
                                     type="file" 
                                     className="hidden" 
@@ -160,20 +160,20 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
                     )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                     {isLoadingDocs ? (
-                        <div className="h-full flex flex-col items-center justify-center py-24 gap-4 opacity-50">
-                            <Loader2 size={48} className="text-brand-500 animate-spin" strokeWidth={1.5} />
-                            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-500">Synchronizing Vault...</p>
+                        <div className="h-full flex flex-col items-center justify-center py-20 gap-3 opacity-60">
+                            <Loader2 size={36} className="text-[var(--accent)] animate-spin" strokeWidth={1.5} />
+                            <p className="text-xs font-medium text-[var(--text-muted)]">Synchronizing vault...</p>
                         </div>
                     ) : !selectedFolderForUpload ? (
-                        <div className="h-full flex flex-col items-center justify-center py-24 gap-6 text-center opacity-40">
-                            <div className="w-24 h-24 rounded-[32px] bg-white/5 border border-dashed border-white/20 flex items-center justify-center">
-                                <FolderOpen size={48} className="text-gray-700" />
+                        <div className="h-full flex flex-col items-center justify-center py-20 gap-4 text-center">
+                            <div className="w-16 h-16 rounded-[var(--radius-lg)] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)]">
+                                <FolderOpen size={32} />
                             </div>
                             <div>
-                                <p className="text-[15px] font-black uppercase tracking-[0.3em] text-white">Repository Offline</p>
-                                <p className="text-[10px] font-medium text-gray-600 uppercase tracking-[0.2em] mt-4">Select a target folder from the left pane to access documentation.</p>
+                                <p className="text-sm font-semibold text-[var(--text-heading)]">Repository offline</p>
+                                <p className="text-xs text-[var(--text-muted)] mt-1">Select a target folder from the left pane to access documentation.</p>
                             </div>
                         </div>
                     ) : (() => {
@@ -184,11 +184,11 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
 
                         if (currentFiles.length === 0) {
                             return (
-                                <div className="py-24 text-center border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.01] flex flex-col items-center gap-6">
-                                    <FileSearch size={48} className="text-gray-800 opacity-20" />
+                                <div className="py-16 text-center border border-dashed border-[var(--border)] rounded-[var(--radius-lg)] bg-[var(--bg-surface)] flex flex-col items-center gap-4">
+                                    <FileSearch size={36} className="text-[var(--text-muted)] opacity-30" />
                                     <div>
-                                        <p className="text-[13px] font-black text-white uppercase tracking-[0.2em]">Vault is Empty</p>
-                                        <p className="text-[10px] text-gray-700 font-bold uppercase tracking-widest mt-2 px-10">No documentation has been synchronized to this slot for the selected client and fiscal year.</p>
+                                        <p className="text-xs font-semibold text-[var(--text-heading)]">Vault is empty</p>
+                                        <p className="text-xs text-[var(--text-muted)] mt-1 px-8">No documentation has been synchronized to this slot for the selected client and fiscal year.</p>
                                     </div>
                                 </div>
                             );
@@ -197,43 +197,44 @@ const TaskDocumentsTab: React.FC<TaskDocumentsTabProps> = ({
                         return (
                             <>
                                 {/* Read-Only Notice */}
-                                <div className="mb-5 flex items-start gap-3 px-4 py-3 rounded-2xl border"
-                                    style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>
+                                <div className="mb-4 flex items-start gap-2.5 px-3.5 py-2.5 rounded-[var(--radius-md)] border"
+                                    style={{ background: 'rgba(217,164,65,0.06)', borderColor: 'rgba(217,164,65,0.2)' }}>
                                     <div className="shrink-0 mt-0.5">
-                                        <ShieldCheck size={14} style={{ color: '#f59e0b' }} />
+                                        <ShieldCheck size={14} style={{ color: 'var(--color-warning)' }} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f59e0b' }}>Read-Only View</p>
-                                        <p className="text-[9px] font-medium mt-0.5" style={{ color: 'rgba(245,158,11,0.6)' }}>
-                                            Files displayed here are read-only references. To delete or reorganize files, use the <strong style={{ color: '#f59e0b' }}>Audit Documentation</strong> module with appropriate authorization.
+                                        <p className="text-xs font-semibold" style={{ color: 'var(--color-warning)' }}>Read-only view</p>
+                                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                            Files displayed here are read-only references. To delete or reorganize files, use the <strong style={{ color: 'var(--color-warning)' }}>Audit Documentation</strong> module with appropriate authorization.
                                         </p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 {currentFiles.map(file => (
-                                    <div key={file.id} className="group relative bg-[#0f1218] border border-white/5 rounded-2xl p-4 transition-all hover:bg-white/[0.03] hover:border-brand-500/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${file.mimeType.includes('pdf') ? 'bg-rose-500/10 text-rose-400' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                                                {file.mimeType.includes('image') ? <ExternalLink size={18} /> : <FileText size={18} />}
+                                    <div key={file.id} className="group relative bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-lg)] p-4 transition-colors hover:border-[var(--border-mid)]">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-heading)]">
+                                                {file.mimeType.includes('image') ? <ExternalLink size={16} /> : <FileText size={16} />}
                                             </div>
                                             <button 
                                                 onClick={() => window.open(StorageService.getViewUrl(file.appwriteFileId), '_blank')}
-                                                className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-white hover:bg-brand-500 transition-all opacity-0 group-hover:opacity-100"
+                                                className="p-1.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text-heading)] hover:bg-[var(--bg-main)] transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Open file"
                                             >
-                                                <ExternalLink size={14} />
+                                                <ExternalLink size={13} />
                                             </button>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[12px] font-bold text-gray-100 truncate pr-4" title={file.fileName}>{file.fileName}</p>
-                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
+                                        <div className="space-y-0.5">
+                                            <p className="text-xs font-semibold text-[var(--text-heading)] truncate pr-2" title={file.fileName}>{file.fileName}</p>
+                                            <p className="text-[11px] text-[var(--text-muted)] tabular-nums">
                                                 {Math.round(file.fileSize / 1024)} KB • {new Date(file.uploadedAt).toLocaleDateString()}
                                             </p>
                                         </div>
-                                        <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-[7px] font-black text-brand-400">
+                                        <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-[9px] font-medium text-[var(--accent)]">
                                                 {(file.uploadedByName || '?').substring(0, 2).toUpperCase()}
                                             </div>
-                                            <span className="text-[9px] font-bold text-gray-600 truncate">{file.uploadedByName}</span>
+                                            <span className="text-[11px] text-[var(--text-secondary)] truncate">{file.uploadedByName}</span>
                                         </div>
                                     </div>
                                 ))}

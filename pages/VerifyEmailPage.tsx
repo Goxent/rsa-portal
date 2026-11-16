@@ -1,17 +1,19 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { Mail, RefreshCw, LogOut, CheckCircle } from 'lucide-react';
-import GlassCard from '../components/ui/GlassCard';
 
 const VerifyEmailPage: React.FC = () => {
     const { user, emailVerified, reloadUser, logout } = useAuth();
     const [sending, setSending] = useState(false);
     const [checking, setChecking] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const navigate = useNavigate();
+
+    React.useEffect(() => {
+        document.title = 'Verify Email — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
 
     // Redirect if already verified or not logged in
     if (!user) return <Navigate to="/login" replace />;
@@ -34,7 +36,6 @@ const VerifyEmailPage: React.FC = () => {
         setChecking(true);
         try {
             await reloadUser();
-            // AuthContext will update and trigger redirect if verified
         } catch (error: any) {
             setMessage({ type: 'error', text: 'Failed to refresh status.' });
         } finally {
@@ -43,33 +44,38 @@ const VerifyEmailPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
-            <GlassCard className="max-w-md w-full p-8 text-center space-y-6">
+        <div className="min-h-screen flex items-center justify-center p-4 md:p-6 bg-[var(--bg-main)]">
+            <div className="max-w-[420px] w-full bg-[var(--bg-surface)] p-8 md:p-10 rounded-2xl border border-[var(--border)] shadow-sm text-center space-y-5">
                 <div className="flex justify-center">
-                    <div className="p-4 bg-amber-500/10 rounded-full">
-                        <Mail className="w-12 h-12 text-amber-400" />
+                    <div className="p-3.5 bg-[var(--accent-dim)] border border-[var(--border-accent)] rounded-full text-[var(--accent)]">
+                        <Mail className="w-10 h-10" />
                     </div>
                 </div>
 
-                <h1 className="text-2xl font-bold text-white">Verify your email</h1>
-
-                <p className="text-slate-400">
-                    We've sent a verification email to <span className="text-amber-400 font-medium">{user.email}</span>.
-                    Please click the link in the email to continue.
-                </p>
+                <div className="space-y-1">
+                    <h1 className="text-xl font-bold text-[var(--text-heading)]">Verify your email</h1>
+                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                        We've sent a verification email to <span className="text-[var(--text-heading)] font-semibold">{user.email}</span>.
+                        Please click the link in the email to activate your account.
+                    </p>
+                </div>
 
                 {message && (
-                    <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                        }`}>
+                    <div className={`p-3 rounded-lg text-xs font-medium ${
+                        message.type === 'success'
+                            ? 'bg-[rgba(79,178,134,0.1)] text-[var(--color-success)] border border-[rgba(79,178,134,0.25)]'
+                            : 'bg-[rgba(224,112,122,0.1)] text-[var(--color-danger)] border border-[rgba(224,112,122,0.25)]'
+                    }`}>
                         {message.text}
                     </div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-2.5 pt-2">
                     <button
                         onClick={handleCheckStatus}
                         disabled={checking}
-                        className="w-full btn-primary justify-center gap-2 h-11"
+                        className="w-full h-10 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                        style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                     >
                         {checking ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                         I've verified my email
@@ -78,21 +84,23 @@ const VerifyEmailPage: React.FC = () => {
                     <button
                         onClick={handleResend}
                         disabled={sending}
-                        className="w-full btn-secondary justify-center gap-2 h-11"
+                        className="w-full h-10 rounded-lg text-xs font-semibold transition-colors border border-[var(--border)] bg-[var(--bg-main)] hover:bg-[var(--bg-elevated)] text-[var(--text-heading)] flex items-center justify-center gap-2"
                     >
                         {sending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                         Resend verification email
                     </button>
                 </div>
 
-                <button
-                    onClick={() => logout()}
-                    className="text-slate-500 hover:text-slate-300 text-sm flex items-center gap-2 mx-auto transition-colors"
-                >
-                    <LogOut className="w-4 h-4" />
-                    Sign out
-                </button>
-            </GlassCard>
+                <div className="pt-4 border-t border-[var(--border)]">
+                    <button
+                        onClick={() => logout()}
+                        className="text-[var(--text-muted)] hover:text-[var(--text-heading)] text-xs font-medium flex items-center gap-1.5 mx-auto transition-colors"
+                    >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Sign out
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

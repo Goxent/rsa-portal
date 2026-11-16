@@ -26,23 +26,24 @@ const PendingActionsWidget: React.FC<PendingActionsWidgetProps> = ({
             {items.map((item) => (
                 <div
                     key={item.label}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-surface border border-border group hover:border-accent/40 shadow-sm transition-all"
+                    className="flex items-center gap-3 p-2.5 rounded-[var(--radius-md)] border transition-colors duration-150 hover:border-[var(--border-mid)]"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                 >
-                    <div className={`p-2 rounded-lg ${item.color.split(' ')[1]} transition-colors`}>
-                        <item.icon size={14} className={item.color.split(' ')[0]} />
+                    <div className={`p-2 rounded-[var(--radius-sm)] ${item.color.split(' ')[1]} transition-colors`}>
+                        <item.icon size={14} strokeWidth={1.75} className={item.color.split(' ')[0]} />
                     </div>
                     <div className="flex-1">
-                        <span className="text-[12px] font-semibold text-muted group-hover:text-heading transition-colors">{item.label}</span>
+                        <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>{item.label}</span>
                     </div>
-                    <span className={`text-base font-bold tabular-nums ${item.count > 0 ? 'text-heading' : 'text-muted/40'}`}>
+                    <span className="text-sm font-semibold tabular-nums" style={{ color: item.count > 0 ? 'var(--text-heading)' : 'var(--text-muted)' }}>
                         {item.count}
                     </span>
                 </div>
             ))}
 
-            <div className="pt-3 mt-1 border-t border-border/50 flex justify-between items-center px-1">
-                <span className="text-[10px] font-black text-muted uppercase tracking-widest">Aggregate Action</span>
-                <span className={`text-lg font-black tabular-nums ${total > 0 ? 'text-accent' : 'text-muted/40'}`}>
+            <div className="pt-2.5 mt-1 border-t flex justify-between items-center px-1" style={{ borderColor: 'var(--border)' }}>
+                <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>Total pending</span>
+                <span className="font-display text-lg font-medium tabular-nums" style={{ color: total > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
                     {total}
                 </span>
             </div>

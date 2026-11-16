@@ -86,12 +86,11 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
         <div 
             className="fixed inset-0 z-[110] flex items-center justify-center p-4"
             style={{ 
-                background: 'var(--modal-backdrop, rgba(0,0,0,0.6))',
-                backdropFilter: 'blur(4px)'
+                background: 'var(--modal-backdrop, rgba(0,0,0,0.6))'
             }}
         >
             <div 
-                className="w-full max-w-4xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh] border animate-in slide-in-from-bottom-2 duration-300"
+                className="w-full max-w-4xl flex flex-col overflow-hidden max-h-[85vh] border animate-in slide-in-from-bottom-2 duration-300"
                 style={{ 
                     background: 'var(--bg-secondary)', 
                     borderColor: 'var(--border-mid)', 
@@ -101,16 +100,16 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
             >
                 <div className="px-6 py-5 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)' }}>
                     <div>
-                        <h2 className="text-xl font-bold flex items-center gap-2 tracking-tight" style={{ color: 'var(--text-heading)' }}>
-                            <Clock style={{ color: 'var(--accent)' }} size={22} />
+                        <h2 className="text-base font-bold flex items-center gap-2 tracking-tight" style={{ color: 'var(--text-heading)' }}>
+                            <Clock style={{ color: 'var(--accent)' }} size={18} />
                             Pending Manual Log Requests
                         </h2>
-                        <p className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-xs font-medium mt-0.5" style={{ color: 'var(--text-muted)' }}>
                             Review and approve staff attendance changes
                         </p>
                     </div>
-                    <button onClick={onClose} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-all">
-                        <X size={24} />
+                    <button onClick={onClose} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-colors">
+                        <X size={20} />
                     </button>
                 </div>
 
@@ -118,15 +117,16 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="w-10 h-10 border-4 border-t-[var(--accent)] rounded-full animate-spin" style={{ borderColor: 'var(--accent-dim)' }} />
-                            <span style={{ color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.6875rem' }} className="uppercase">Loading requests...</span>
+                            <span style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem' }}>Loading requests...</span>
                         </div>
                     ) : requests.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
-                            <div className="w-16 h-16 bg-[#161b22] rounded-full flex items-center justify-center border border-[#30363d] mb-4">
-                                <Check className="text-brand-500/50" size={32} />
+                            <div className="w-16 h-16 rounded-full flex items-center justify-center border mb-4"
+                                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                <Check style={{ color: 'var(--accent)' }} size={28} />
                             </div>
-                            <h3 className="text-white font-bold text-lg mb-1">Queue Empty</h3>
-                            <p className="text-gray-500 text-sm italic">All manual log requests have been processed.</p>
+                            <h3 className="font-bold text-base mb-1" style={{ color: 'var(--text-heading)' }}>Queue Empty</h3>
+                            <p className="text-xs italic" style={{ color: 'var(--text-muted)' }}>All manual log requests have been processed.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -146,11 +146,11 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                 </div>
                                                 <div>
                                                     <div style={{ color: 'var(--text-heading)' }} className="text-sm font-bold">{req.userName}</div>
-                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[10px] font-bold uppercase tracking-tighter">Staff Member</div>
+                                                    <div style={{ color: 'var(--text-muted)' }} className="text-xs font-medium">Staff Member</div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2 text-[11px] text-gray-400 font-bold">
-                                                <Calendar size={12} className="text-amber-500/50" />
+                                            <div className="flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+                                                <Calendar size={12} style={{ color: 'var(--accent)' }} />
                                                 {new Date(req.date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </div>
                                         </div>
@@ -159,24 +159,24 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                         <div className="lg:col-span-5 space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="p-2.5 border" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}>
-                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[9px] font-black uppercase mb-1">Status</div>
+                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[10px] font-semibold mb-1">Status</div>
                                                     <span 
-                                                        className="px-2 py-0.5 border uppercase tracking-widest"
+                                                        className="px-2 py-0.5 border"
                                                         style={{ 
-                                                            fontSize: '9px',
+                                                            fontSize: '10px',
                                                             fontWeight: 600,
                                                             borderRadius: 'var(--radius-sm)',
-                                                            background: req.status === 'PRESENT' ? 'rgba(101,154,43,0.1)' : 'rgba(196,68,90,0.1)',
-                                                            color: req.status === 'PRESENT' ? 'var(--accent)' : 'var(--color-danger)',
-                                                            borderColor: req.status === 'PRESENT' ? 'rgba(101,154,43,0.2)' : 'rgba(196,68,90,0.2)'
+                                                            background: req.status === 'PRESENT' ? 'rgba(79,178,134,0.1)' : 'rgba(224,112,122,0.1)',
+                                                            color: req.status === 'PRESENT' ? 'var(--color-success)' : 'var(--color-danger)',
+                                                            borderColor: req.status === 'PRESENT' ? 'rgba(79,178,134,0.25)' : 'rgba(224,112,122,0.2)'
                                                         }}
                                                     >
                                                         {req.status}
                                                     </span>
                                                 </div>
                                                 <div className="p-2.5 border" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}>
-                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[9px] font-black uppercase mb-1">Hours / Timing</div>
-                                                    <div style={{ color: 'var(--text-body)' }} className="text-[11px] font-bold tabular-nums lowercase">
+                                                    <div style={{ color: 'var(--text-muted)' }} className="text-[10px] font-semibold mb-1">Hours / Timing</div>
+                                                    <div style={{ color: 'var(--text-body)' }} className="text-xs font-semibold tabular-nums">
                                                         {req.clockIn} - {req.clockOut} <span style={{ color: 'var(--text-muted)' }} className="text-[10px] ml-1">({req.workHours}h)</span>
                                                     </div>
                                                 </div>
@@ -186,7 +186,7 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                 <div className="p-3 border border-l-4" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', borderLeftColor: 'var(--accent)', borderRadius: 'var(--radius-md)' }}>
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <MessageSquare size={10} style={{ color: 'var(--accent)', opacity: 0.7 }} />
-                                                        <span style={{ color: 'var(--text-muted)' }} className="text-[9px] font-black uppercase">Staff Notes</span>
+                                                        <span style={{ color: 'var(--text-muted)' }} className="text-[10px] font-semibold">Staff Notes</span>
                                                     </div>
                                                     <p style={{ color: 'var(--text-body)' }} className="text-[12px] italic leading-relaxed">"{req.notes}"</p>
                                                 </div>
@@ -209,14 +209,14 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                         <button 
                                                             onClick={() => handleReject(req.id)}
                                                             disabled={processingId === req.id}
-                                                            className="flex-1 py-2 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
+                                                            className="flex-1 py-2 text-white text-xs font-semibold transition-opacity"
                                                             style={{ background: 'var(--color-danger)', borderRadius: 'var(--radius-md)' }}
                                                         >
                                                             {processingId === req.id ? '...' : 'Confirm Reject'}
                                                         </button>
                                                         <button 
                                                             onClick={() => { setRejectingId(null); setRejectReason(''); }}
-                                                            className="px-4 py-2 border text-[10px] font-black uppercase tracking-widest"
+                                                            className="px-4 py-2 border text-xs font-semibold"
                                                             style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}
                                                         >
                                                             Cancel
@@ -225,7 +225,7 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                 </div>
                                             ) : req.userId === adminId ? (
                                                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center space-y-1">
-                                                    <div className="text-[11px] font-bold text-amber-500 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                                                    <div className="text-xs font-semibold text-amber-500 flex items-center justify-center gap-1.5">
                                                         <AlertCircle size={14} />
                                                         Self-Approval Prohibited
                                                     </div>
@@ -238,19 +238,19 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                                         <button 
                                                             onClick={() => handleApprove(req.id)}
                                                             disabled={processingId === req.id}
-                                                            className="w-full py-3 text-white text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 group cursor-pointer"
+                                                            className="w-full py-2.5 text-white text-xs font-semibold transition-opacity flex items-center justify-center gap-2 group cursor-pointer"
                                                             style={{ background: 'var(--accent)', borderRadius: 'var(--radius-xl)' }}
                                                         >
                                                             {processingId === req.id ? (
                                                                 <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                                             ) : (
-                                                                <Check size={16} className="group-hover:scale-110 transition-transform" />
+                                                                <Check size={16} />
                                                             )}
                                                             Approve Record
                                                         </button>
                                                         <button 
                                                             onClick={() => setRejectingId(req.id)}
-                                                            className="w-full py-2 border transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest cursor-pointer"
+                                                            className="w-full py-2 border transition-colors flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
                                                             style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', color: 'var(--text-muted)' }}
                                                             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-danger)'; e.currentTarget.style.color = 'var(--color-danger)'; }}
                                                             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
@@ -263,8 +263,8 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                                         </div>
                                     </div>
                                     
-                                    <div className="absolute top-4 right-4 text-[9px] font-bold text-gray-700 tabular-nums">
-                                        SUBMITTED {new Date(req.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    <div className="absolute top-4 right-4 text-[10px] font-medium text-[var(--text-muted)] tabular-nums">
+                                        Submitted {new Date(req.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </div>
                             ))}
@@ -275,14 +275,14 @@ const ReviewRequestsModal: React.FC<ReviewRequestsModalProps> = ({
                 <div className="px-6 py-4 border-t flex justify-between items-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />
-                        <span style={{ color: 'var(--text-muted)' }} className="text-[10px] font-black uppercase tracking-[0.1em]">Total {requests.length} Pending Actions</span>
+                        <span style={{ color: 'var(--text-muted)' }} className="text-xs font-medium">Total {requests.length} Pending Actions</span>
                     </div>
                     <button 
                         onClick={onClose}
-                        className="px-6 py-2 transition-all border shadow-sm text-xs font-black uppercase tracking-widest"
+                        className="px-6 py-2 transition-colors border text-xs font-semibold"
                         style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-xl)', color: 'var(--text-heading)' }}
                     >
-                        Close Portal
+                        Close
                     </button>
                 </div>
             </div>

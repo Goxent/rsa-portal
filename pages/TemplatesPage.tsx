@@ -531,9 +531,9 @@ const TemplatesPage: React.FC = () => {
     });
 
     const getTemplateIcon = (type: string) => {
-        if (type.includes('spreadsheet') || type.includes('excel')) return <FileSpreadsheet size={20} className="text-brand-400" />;
-        if (type.includes('pdf')) return <FileText size={20} className="text-red-400" />;
-        return <File size={20} className="text-amber-400" />;
+        if (type.includes('spreadsheet') || type.includes('excel')) return <FileSpreadsheet size={20} className="text-[var(--accent)]" />;
+        if (type.includes('pdf')) return <FileText size={20} className="text-[var(--color-danger)]" />;
+        return <File size={20} className="text-[var(--color-warning)]" />;
     };
 
     const getResourceIcon = (type: string) => {
@@ -555,39 +555,36 @@ const TemplatesPage: React.FC = () => {
         onPreview: (t: Template) => void;
     }> = ({ template, index, isAdmin, onDelete, onPreview }) => (
         <div 
-            className="group relative overflow-hidden flex flex-col h-full rounded-2xl bg-[#0d1117]/80 backdrop-blur-md border border-white/[0.05] hover:border-amber-500/30 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-1"
+            className="group relative overflow-hidden flex flex-col h-full rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors"
             style={{ animationDelay: `${index * 50}ms` }}
         >
-            {/* Visual Accent */}
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
             <div className="p-5 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 bg-white/[0.03] rounded-xl border border-white/[0.06] group-hover:bg-amber-500/10 group-hover:border-amber-500/20 transition-all shadow-inner">
-                        {template.category === 'CHECKLIST' ? <ListTodo className="text-amber-400" size={20} /> : 
-                         template.category === 'TASK' ? <Activity className="text-indigo-400" size={20} /> :
-                         <FileText className="text-cyan-400" size={20} />}
+                    <div className="p-2.5 bg-[var(--bg-elevated)] rounded-lg border border-[var(--border)] group-hover:border-[var(--border-accent)] transition-colors">
+                        {template.category === 'CHECKLIST' ? <ListTodo className="text-[var(--color-warning)]" size={18} /> : 
+                         template.category === 'TASK' ? <Activity className="text-[var(--color-info)]" size={18} /> :
+                         <FileText className="text-[var(--accent)]" size={18} />}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                         {template.taskType && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-tighter">
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)]">
                                 {(() => {
                                     const Icon = {
                                         ShieldCheck, Scale, ClipboardCheck, Award, BarChart2, FileSearch, FolderOpen
                                     }[TASK_TYPE_ICONS[template.taskType]] || Activity;
-                                    return <Icon size={10} />;
+                                    return <Icon size={11} />;
                                 })()}
                                 {TASK_TYPE_LABELS[template.taskType]}
                             </div>
                         )}
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-wider ${
-                            template.category === 'TASK' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
-                            template.category === 'CHECKLIST' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                            template.category === 'DOCUMENT' ? 'bg-brand-500/10 text-brand-400 border-brand-500/20' :
-                            template.category === 'REVIEWER_CHECKLIST' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                            'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium border ${
+                            template.category === 'TASK' ? 'bg-[rgba(106,163,217,0.1)] text-[var(--color-info)] border-[rgba(106,163,217,0.25)]' :
+                            template.category === 'CHECKLIST' ? 'bg-[rgba(217,164,65,0.1)] text-[var(--color-warning)] border-[rgba(217,164,65,0.25)]' :
+                            template.category === 'DOCUMENT' ? 'bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)]' :
+                            template.category === 'REVIEWER_CHECKLIST' ? 'bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)]' :
+                            'bg-[rgba(224,112,122,0.1)] text-[var(--color-danger)] border-[rgba(224,112,122,0.25)]'
                         }`}>
-                            {template.category === 'REVIEWER_CHECKLIST' ? 'Reviewer' : template.category}
+                            {template.category === 'REVIEWER_CHECKLIST' ? 'Reviewer' : template.category.toLowerCase()}
                         </span>
                         {template.category === 'REVIEWER_CHECKLIST' && template.reviewerRole && (
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-wider ${
@@ -857,22 +854,23 @@ const TemplatesPage: React.FC = () => {
                     {/* Toolbar */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                         <div className="relative flex-1 w-full md:max-w-xs">
-                            <Search size={15} className="absolute left-3 top-2.5 text-gray-500" />
+                            <Search size={14} className="absolute left-3 top-2.5 text-[var(--text-muted)]" />
                             <input type="text" placeholder="Search documents..."
-                                className="w-full glass-input rounded-xl pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-brand-500"
+                                className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg pl-9 pr-4 py-2 text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]"
                                 value={kbSearch} onChange={e => setKbSearch(e.target.value)} />
                         </div>
                         {isAdmin && (
                             <div className="flex gap-2 flex-shrink-0">
                                 <button onClick={() => setIsCategoryModalOpen(true)}
-                                    className="bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-xl text-sm font-bold flex items-center transition-all">
-                                    <Plus size={14} className="mr-2" /> Folder
+                                    className="bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-heading)] px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-colors">
+                                    <Plus size={14} className="mr-1.5" /> Folder
                                 </button>
                                 <button onClick={() => {
                                     setCurrentResource({ type: 'pdf', category: activeKbCategory === 'ALL' && kbCategories.length > 0 ? kbCategories[0].id : activeKbCategory, link: '', title: '', reviewDate: '' });
                                     setIsUploadMode(false); setIsResourceModalOpen(true);
-                                }} className="bg-brand-600 hover:bg-brand-500 text-white px-3 py-2 rounded-xl text-sm font-bold flex items-center transition-all">
-                                    <Plus size={14} className="mr-2" /> Resource
+                                }} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-colors"
+                                   style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+                                    <Plus size={14} className="mr-1.5" /> Resource
                                 </button>
                             </div>
                         )}
@@ -884,24 +882,24 @@ const TemplatesPage: React.FC = () => {
                     {/* KB Content */}
                     <div className="flex flex-col lg:flex-row gap-5 overflow-hidden">
                         {/* Category sidebar */}
-                        <div className="w-full lg:w-56 flex-shrink-0 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2">
+                        <div className="w-full lg:w-56 flex-shrink-0 flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-2">
                             <button onClick={() => setActiveKbCategory('ALL')}
-                                className={`flex items-center w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeKbCategory === 'ALL' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
-                                <FolderOpen size={16} className="mr-2.5" /> All Resources
-                                <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${activeKbCategory === 'ALL' ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-500'}`}>{resources.length}</span>
+                                className={`flex items-center w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${activeKbCategory === 'ALL' ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-heading)]'}`}>
+                                <FolderOpen size={15} className="mr-2" /> All Resources
+                                <span className={`ml-auto px-1.5 py-0.5 rounded-md text-[10px] font-semibold tabular-nums ${activeKbCategory === 'ALL' ? 'bg-black/20 text-white' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>{resources.length}</span>
                             </button>
                             {kbCategories.map(cat => (
                                 <div key={cat.id} className="relative group flex-shrink-0 lg:flex-shrink w-full">
                                     <button onClick={() => setActiveKbCategory(cat.id)}
-                                        className={`flex items-center w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${activeKbCategory === cat.id ? 'bg-white/10 text-white border border-white/10' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                                        style={{ borderLeft: activeKbCategory === cat.id ? `3px solid ${cat.color || '#3B82F6'}` : 'none' }}>
-                                        <FolderOpen size={16} className="mr-2.5" style={{ color: cat.color || '#6B7280' }} />
+                                        className={`flex items-center w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${activeKbCategory === cat.id ? 'bg-[var(--bg-elevated)] text-[var(--text-heading)] border border-[var(--border)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-heading)]'}`}
+                                        style={{ borderLeft: activeKbCategory === cat.id ? `3px solid ${cat.color || 'var(--accent)'}` : 'none' }}>
+                                        <FolderOpen size={15} className="mr-2" style={{ color: cat.color || 'var(--accent)' }} />
                                         <span className="truncate flex-1 text-left">{cat.label}</span>
-                                        <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${activeKbCategory === cat.id ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-600'}`}>{resourceCounts[cat.id] || 0}</span>
+                                        <span className={`ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-semibold tabular-nums ${activeKbCategory === cat.id ? 'bg-[var(--bg-surface)] text-[var(--text-heading)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>{resourceCounts[cat.id] || 0}</span>
                                     </button>
                                     {isAdmin && (
                                         <button onClick={e => handleDeleteCategory(cat.id, e)}
-                                            className="absolute right-2 top-3 p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            className="absolute right-2 top-2 p-1 rounded text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[rgba(224,112,122,0.1)] opacity-0 group-hover:opacity-100 transition-opacity">
                                             <Trash2 size={13} />
                                         </button>
                                     )}
@@ -909,7 +907,7 @@ const TemplatesPage: React.FC = () => {
                             ))}
                             {kbCategories.length === 0 && !kbLoading && isAdmin && (
                                 <button onClick={async () => { await KnowledgeService.seedDefaultCategories(); loadKbData(); }}
-                                    className="w-full text-xs text-brand-400 hover:text-brand-300 underline py-2 text-center">
+                                    className="w-full text-xs text-[var(--accent)] hover:underline py-2 text-center">
                                     Initialize Default Folders
                                 </button>
                             )}
@@ -918,35 +916,35 @@ const TemplatesPage: React.FC = () => {
                         {/* Resources grid */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             {kbLoading ? (
-                                <div className="flex justify-center py-20"><Loader2 size={36} className="animate-spin text-brand-500" /></div>
+                                <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-[var(--accent)]" /></div>
                             ) : filteredResources.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                                    <FolderOpen size={48} className="mb-3 opacity-20" />
-                                    <p className="font-medium">No resources found</p>
-                                    <p className="text-sm">Try a different folder or {isAdmin ? 'add a new resource' : 'check back later'}</p>
+                                <div className="flex flex-col items-center justify-center py-16 text-[var(--text-muted)]">
+                                    <FolderOpen size={40} className="mb-2 opacity-30" />
+                                    <p className="font-medium text-sm text-[var(--text-heading)]">No resources found</p>
+                                    <p className="text-xs text-[var(--text-muted)] mt-0.5">Try a different folder or {isAdmin ? 'add a new resource' : 'check back later'}</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {filteredResources.map(resource => (
                                         <div key={resource.id} onClick={() => handleOpenResource(resource)}
-                                            className="bg-[#0d1117]/80 backdrop-blur-sm border border-white/[0.06] p-4 rounded-xl hover:border-white/[0.12] transition-all group relative cursor-pointer flex flex-col h-full hover:shadow-lg hover:shadow-black/20 hover:-translate-y-[1px]">
+                                            className="bg-[var(--bg-surface)] border border-[var(--border)] p-4 rounded-xl hover:border-[var(--border-mid)] transition-colors group relative cursor-pointer flex flex-col h-full">
                                             <div className="flex items-start justify-between mb-2.5">
-                                                <div className="p-2 bg-white/[0.04] rounded-lg border border-white/[0.06] group-hover:border-white/[0.12] transition-all">
+                                                <div className="p-2 bg-[var(--bg-elevated)] rounded-lg border border-[var(--border)] group-hover:border-[var(--border-accent)] transition-colors">
                                                     {getResourceIcon(resource.type)}
                                                 </div>
                                                 <div className="flex space-x-2 items-center">
                                                     {isAdmin && (
                                                         <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button onClick={e => handleEditResource(resource, e)} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><FileText size={13} /></button>
-                                                            <button onClick={e => handleDeleteResource(resource.id, e)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
+                                                            <button onClick={e => handleEditResource(resource, e)} className="p-1 hover:bg-[var(--bg-elevated)] rounded-md text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors"><FileText size={13} /></button>
+                                                            <button onClick={e => handleDeleteResource(resource.id, e)} className="p-1 hover:bg-[rgba(224,112,122,0.1)] rounded-md text-[var(--text-muted)] hover:text-[var(--color-danger)] transition-colors"><Trash2 size={13} /></button>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <h3 className="text-white font-semibold mb-1 line-clamp-2 min-h-[2.5rem] text-[13px] group-hover:text-amber-300 transition-colors">{resource.title}</h3>
-                                            <div className="mt-auto pt-2 border-t border-white/[0.04] flex items-center justify-between">
-                                                <span className="text-[9px] text-slate-600 uppercase tracking-wider">{new Date(resource.updatedAt).toLocaleDateString()}</span>
-                                                <ExternalLink size={12} className="text-slate-700 group-hover:text-amber-400 transition-colors" />
+                                            <h3 className="text-[var(--text-heading)] font-semibold mb-1 line-clamp-2 min-h-[2.5rem] text-xs group-hover:text-[var(--accent)] transition-colors">{resource.title}</h3>
+                                            <div className="mt-auto pt-2 border-t border-[var(--border)] flex items-center justify-between text-xs">
+                                                <span className="text-[10px] text-[var(--text-muted)] tabular-nums">{new Date(resource.updatedAt).toLocaleDateString()}</span>
+                                                <ExternalLink size={12} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
                                             </div>
                                         </div>
                                     ))}
@@ -1290,7 +1288,7 @@ const TemplatesPage: React.FC = () => {
                                                                                 <select
                                                                                     value={item.priority || 'MEDIUM'}
                                                                                     onChange={e => updateReviewerItem(item.id!, 'priority', e.target.value)}
-                                                                                    className={`appearance-none bg-white border border-slate-200 rounded-xl px-4 py-1 pr-8 text-[9px] font-black uppercase tracking-widest text-center focus:ring-2 focus:ring-brand-500/20 transition-all cursor-pointer ${
+                                                                                    className={`appearance-none bg-[var(--bg-main)] border border-[var(--border)] rounded-lg px-3 py-1 pr-7 text-xs font-semibold text-center focus:outline-none focus:border-[var(--accent)] transition-colors cursor-pointer ${
                                                                                         item.priority === 'CRITICAL' ? 'text-rose-500 border-rose-200' : 
                                                                                         item.priority === 'HIGH' ? 'text-amber-500 border-amber-200' : 'text-indigo-500 border-indigo-100'
                                                                                     }`}
@@ -1414,7 +1412,7 @@ const TemplatesPage: React.FC = () => {
                                     {previewTemplate.subtaskDetails && previewTemplate.subtaskDetails.length > 0 && (
                                         <div className="space-y-6">
                                             <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                                                <div className="w-1 h-3 bg-brand-500 rounded-full" /> SOP Protocol Details
+                                                <div className="w-1 h-3 bg-[var(--accent)] rounded-full" /> SOP Protocol Details
                                             </h4>
                                             
                                             <div className="space-y-8">
@@ -1433,7 +1431,7 @@ const TemplatesPage: React.FC = () => {
                                                             <div className="grid grid-cols-1 gap-3">
                                                                 {phaseTasks.map((st: any, i: number) => (
                                                                     <div key={i} className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl flex items-start gap-4">
-                                                                        <div className="w-8 h-8 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400 text-xs font-black shadow-inner">
+                                                                        <div className="w-8 h-8 rounded-lg bg-[var(--accent-dim)] flex items-center justify-center text-[var(--accent)] text-xs font-semibold">
                                                                             {i + 1}
                                                                         </div>
                                                                         <div className="flex-1">
@@ -1509,7 +1507,7 @@ const TemplatesPage: React.FC = () => {
                                                 <span className="text-gray-600 font-bold uppercase">Priority</span>
                                                 <span className={`font-black uppercase tracking-widest ${
                                                     previewTemplate.priority === 'HIGH' ? 'text-rose-400' :
-                                                    previewTemplate.priority === 'MEDIUM' ? 'text-amber-400' : 'text-brand-400'
+                                                    previewTemplate.priority === 'MEDIUM' ? 'text-[var(--color-warning)]' : 'text-[var(--accent)]'
                                                 }`}>{previewTemplate.priority}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
@@ -1581,36 +1579,37 @@ const TemplatesPage: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">Content Source</label>
-                                <div className="flex bg-white/5 rounded-lg p-1 border border-white/10 mb-3 w-fit">
+                                <div className="flex bg-[var(--bg-main)] rounded-lg p-1 border border-[var(--border)] mb-3 w-fit">
                                     <button type="button" onClick={() => setIsUploadMode(false)}
-                                        className={`px-3 py-1 text-xs rounded-md transition-all ${!isUploadMode ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                                        className={`px-3 py-1 text-xs rounded-md transition-colors ${!isUploadMode ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}>
                                         External Link
                                     </button>
                                     <button type="button" onClick={() => setIsUploadMode(true)}
-                                        className={`px-3 py-1 text-xs rounded-md transition-all ${isUploadMode ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                                        className={`px-3 py-1 text-xs rounded-md transition-colors ${isUploadMode ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}>
                                         Upload File
                                     </button>
                                 </div>
                                 {isUploadMode ? (
-                                    <div className="border-2 border-dashed border-white/10 rounded-xl p-4 hover:border-brand-500/50 transition-colors">
+                                    <div className="border border-dashed border-[var(--border)] rounded-xl p-4 hover:border-[var(--accent)] transition-colors">
                                         <FileUploader maxSizeMB={20}
                                             onUploadComplete={fileData => setCurrentResource({ ...currentResource, title: currentResource.title || fileData.name, link: fileData.url, type: fileData.type as any, fileId: fileData.id, downloadUrl: StorageService.getDownloadUrl(fileData.id) })}
                                             accept={currentResource.type === 'pdf' ? '.pdf,application/pdf' : currentResource.type === 'image' ? 'image/*' : '.doc,.docx,.xls,.xlsx,.ppt,.pptx'} />
-                                        {currentResource.fileId && <div className="mt-2 text-xs text-green-400 flex items-center"><FileText size={12} className="mr-1" /> File uploaded successfully</div>}
+                                        {currentResource.fileId && <div className="mt-2 text-xs text-[var(--color-success)] flex items-center"><FileText size={12} className="mr-1" /> File uploaded successfully</div>}
                                     </div>
                                 ) : (
                                     <div className="relative">
                                         <input required={!isUploadMode} className="w-full glass-input rounded-lg pl-9 pr-3 py-2 text-sm"
                                             value={currentResource.link || ''} onChange={e => setCurrentResource({ ...currentResource, link: e.target.value })}
                                             placeholder="https://drive.google.com/..." />
-                                        <ExternalLink size={13} className="absolute left-3 top-2.5 text-gray-500" />
+                                        <ExternalLink size={13} className="absolute left-3 top-2.5 text-[var(--text-muted)]" />
                                     </div>
                                 )}
                             </div>
-                            <div className="pt-3 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsResourceModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 text-sm">Cancel</button>
-                                <button type="submit" disabled={isSubmitting} className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center">
-                                    {isSubmitting ? <Loader2 size={14} className="animate-spin mr-2" /> : <Plus size={14} className="mr-2" />}
+                            <div className="pt-3 flex justify-end space-x-2">
+                                <button type="button" onClick={() => setIsResourceModalOpen(false)} className="px-4 py-2 rounded-lg text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-heading)]">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg text-xs font-semibold flex items-center transition-colors"
+                                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+                                    {isSubmitting ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <Plus size={14} className="mr-1.5" />}
                                     {currentResource.id ? 'Update' : 'Add Resource'}
                                 </button>
                             </div>
@@ -1639,17 +1638,18 @@ const TemplatesPage: React.FC = () => {
                                 <div className="flex flex-wrap gap-3">
                                     {DEFAULT_COLORS.map(color => (
                                         <button key={color} type="button" onClick={() => setCurrentCategory({ ...currentCategory, color })}
-                                            className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center ${currentCategory.color === color ? 'border-white ring-2 ring-white/20' : 'border-transparent'}`}
+                                            className={`w-7 h-7 rounded-full border-2 transition-opacity hover:opacity-85 flex items-center justify-center ${currentCategory.color === color ? 'border-[var(--text-heading)] ring-2 ring-[var(--accent)]' : 'border-transparent'}`}
                                             style={{ backgroundColor: color }}>
-                                            {currentCategory.color === color && <Check size={13} className="text-white" />}
+                                            {currentCategory.color === color && <Check size={12} className="text-white" />}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <div className="pt-3 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 text-sm">Cancel</button>
-                                <button type="submit" disabled={isSubmitting} className="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center">
-                                    {isSubmitting ? <Loader2 size={14} className="animate-spin mr-2" /> : <Plus size={14} className="mr-2" />}
+                            <div className="pt-3 flex justify-end space-x-2">
+                                <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-4 py-2 rounded-lg text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-heading)]">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg text-xs font-semibold flex items-center transition-colors"
+                                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+                                    {isSubmitting ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <Plus size={14} className="mr-1.5" />}
                                     Create Folder
                                 </button>
                             </div>
@@ -1678,17 +1678,18 @@ const TemplatesPage: React.FC = () => {
                                 <div className="flex flex-wrap gap-3">
                                     {DEFAULT_COLORS.map(color => (
                                         <button key={color} type="button" onClick={() => setCurrentTemplateFolder({ ...currentTemplateFolder, color })}
-                                            className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center ${currentTemplateFolder.color === color ? 'border-white ring-2 ring-white/20' : 'border-transparent'}`}
+                                            className={`w-7 h-7 rounded-full border-2 transition-opacity hover:opacity-85 flex items-center justify-center ${currentTemplateFolder.color === color ? 'border-[var(--text-heading)] ring-2 ring-[var(--accent)]' : 'border-transparent'}`}
                                             style={{ backgroundColor: color }}>
-                                            {currentTemplateFolder.color === color && <Check size={13} className="text-white" />}
+                                            {currentTemplateFolder.color === color && <Check size={12} className="text-white" />}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <div className="pt-3 flex justify-end space-x-3">
-                                <button type="button" onClick={() => setIsTemplateFolderModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-white/5 text-sm">Cancel</button>
-                                <button type="submit" disabled={isSubmitting} className="bg-amber-600 hover:bg-amber-500 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center shadow-lg transition-all">
-                                    {isSubmitting ? <Loader2 size={14} className="animate-spin mr-2" /> : <Plus size={14} className="mr-2" />}
+                            <div className="pt-3 flex justify-end space-x-2">
+                                <button type="button" onClick={() => setIsTemplateFolderModalOpen(false)} className="px-4 py-2 rounded-lg text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-heading)]">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg text-xs font-semibold flex items-center transition-colors"
+                                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+                                    {isSubmitting ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <Plus size={14} className="mr-1.5" />}
                                     Create Folder
                                 </button>
                             </div>

@@ -39,26 +39,26 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ leaves, isAdmin, currentU
                         <Calendar size={18} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold text-heading uppercase tracking-wider">{format(currentMonth, 'MMMM yyyy')}</h3>
-                        <p className="text-[10px] text-muted font-black uppercase tracking-widest mt-0.5">Availability Overview</p>
+                        <h3 className="text-sm font-semibold text-heading">{format(currentMonth, 'MMMM yyyy')}</h3>
+                        <p className="text-xs text-muted mt-0.5">Availability overview</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={previousMonth}
-                        className="p-1.5 rounded-md hover:bg-secondary text-muted hover:text-heading transition-all border border-transparent hover:border-border"
+                        className="p-1.5 rounded-md hover:bg-secondary text-muted hover:text-heading transition-colors border border-transparent hover:border-border"
                     >
                         <ChevronLeft size={18} />
                     </button>
                     <button 
                         onClick={() => setCurrentMonth(new Date())}
-                        className="px-3 py-1 rounded-md bg-secondary text-[10px] font-bold text-heading hover:bg-border transition-all uppercase tracking-widest border border-border"
+                        className="px-3 py-1 rounded-md bg-secondary text-xs font-semibold text-heading hover:bg-border transition-colors border border-border"
                     >
                         Today
                     </button>
                     <button 
                         onClick={nextMonth}
-                        className="p-1.5 rounded-md hover:bg-secondary text-muted hover:text-heading transition-all border border-transparent hover:border-border"
+                        className="p-1.5 rounded-md hover:bg-secondary text-muted hover:text-heading transition-colors border border-transparent hover:border-border"
                     >
                         <ChevronRight size={18} />
                     </button>
@@ -70,7 +70,7 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ leaves, isAdmin, currentU
                 <div className="grid grid-cols-7 gap-px bg-border border border-border rounded-lg overflow-hidden shadow-sm">
                     {/* Day Names */}
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="bg-secondary/50 py-2.5 text-center text-[10px] font-black text-muted uppercase tracking-widest border-b border-border">
+                        <div key={day} className="bg-secondary/50 py-2.5 text-center text-xs font-semibold text-muted border-b border-border">
                             {day}
                         </div>
                     ))}
@@ -88,14 +88,14 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ leaves, isAdmin, currentU
                         return (
                             <div 
                                 key={day.toString()} 
-                                className={`bg-surface h-28 p-2 transition-all hover:bg-secondary/40 relative group ${isCurrentDay ? 'ring-2 ring-accent/30 ring-inset z-10' : ''}`}
+                                className={`bg-surface h-28 p-2 transition-colors hover:bg-secondary/40 relative group ${isCurrentDay ? 'ring-2 ring-[var(--accent)] ring-inset z-10' : ''}`}
                             >
                                 <div className="flex justify-between items-start">
-                                    <span className={`text-[11px] font-bold ${isCurrentDay ? 'text-accent' : 'text-muted'} group-hover:text-heading transition-colors`}>
+                                    <span className={`text-xs font-semibold tabular-nums ${isCurrentDay ? 'text-accent' : 'text-muted'} group-hover:text-heading transition-colors`}>
                                         {format(day, 'd')}
                                     </span>
                                     {isCurrentDay && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-accent-glow" />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-accent" />
                                     )}
                                 </div>
                                 
@@ -105,7 +105,7 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ leaves, isAdmin, currentU
                                         return (
                                             <div 
                                                 key={l.id + i}
-                                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold truncate flex items-center gap-1.5 shadow-sm border ${
+                                                className={`px-1.5 py-0.5 rounded text-[10px] font-medium truncate flex items-center gap-1.5 border ${
                                                     isMyLeave 
                                                         ? 'bg-accent/10 border-accent/20 text-accent' 
                                                         : 'bg-status-completed-dim border-status-completed-dim text-status-completed'
@@ -128,12 +128,12 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ leaves, isAdmin, currentU
             <div className="px-6 py-3 bg-secondary/30 border-t border-border flex items-center justify-between">
                 <div className="flex gap-4">
                     <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded bg-status-completed shadow-sm" />
-                        <span className="text-[10px] text-muted font-bold uppercase tracking-wider">Approved</span>
+                        <div className="w-2 h-2 rounded bg-status-completed" />
+                        <span className="text-xs text-muted font-medium">Approved</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded ring-1 ring-accent/50 bg-accent/20" />
-                        <span className="text-[10px] text-muted font-bold uppercase tracking-wider">Today</span>
+                        <span className="text-xs text-muted font-medium">Today</span>
                     </div>
                 </div>
                 <p className="text-[10px] text-muted font-medium italic opacity-60">Visibility: Approved protocol requirements only.</p>

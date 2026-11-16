@@ -384,7 +384,7 @@ const StaffPage: React.FC = () => {
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={() => handleOpenEdit(staff)}
-                                            className="p-1.5 transition-all text-gray-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg dark:hover:bg-white/5"
+                                            className="p-1.5 transition-colors text-gray-500 hover:text-[var(--accent)] hover:bg-[var(--bg-surface)] rounded-lg"
                                             title="Edit Profile"
                                         >
                                             <Edit size={14} />
@@ -392,7 +392,7 @@ const StaffPage: React.FC = () => {
                                         {user?.role === UserRole.MASTER_ADMIN && (
                                             <button 
                                                 onClick={() => handleDeleteStaff(staff)}
-                                                className="p-1.5 transition-all text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg dark:hover:bg-rose-500/10"
+                                                className="p-1.5 transition-colors text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg dark:hover:bg-rose-500/10"
                                                 title="Delete Staff"
                                             >
                                                 <Trash2 size={14} />
@@ -403,7 +403,7 @@ const StaffPage: React.FC = () => {
 
                                 <div className="flex flex-wrap items-center gap-2 mb-4">
                                     <span 
-                                        className="text-[10.5px] font-bold px-2 py-0.5 uppercase tracking-wider"
+                                        className="text-[11px] font-semibold px-2.5 py-0.5"
                                         style={{ 
                                             borderRadius: '99px',
                                             background: (staff.role === UserRole.ADMIN || staff.role === UserRole.MASTER_ADMIN) 
@@ -421,19 +421,19 @@ const StaffPage: React.FC = () => {
                                         {getRoleLabel(staff.role)}
                                     </span>
                                     <div 
-                                        className="flex items-center gap-1.5 px-2 py-0.5 border"
+                                        className="flex items-center gap-1.5 px-2.5 py-0.5 border"
                                         style={{ 
                                             borderRadius: '99px',
-                                            background: staff.status === 'Active' ? 'rgba(101,154,43,0.15)' : 'var(--bg-surface)',
+                                            background: staff.status === 'Active' ? 'rgba(79,178,134,0.15)' : 'var(--bg-surface)',
                                             color: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)',
-                                            borderColor: staff.status === 'Active' ? 'rgba(101,154,43,0.25)' : 'var(--border)'
+                                            borderColor: staff.status === 'Active' ? 'rgba(79,178,134,0.25)' : 'var(--border)'
                                         }}
                                     >
                                         <div 
                                             className="w-1.5 h-1.5 rounded-full" 
                                             style={{ background: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)' }} 
                                         />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                                        <span className="text-[11px] font-semibold">
                                             {staff.status || 'Active'}
                                         </span>
                                     </div>
@@ -463,18 +463,18 @@ const StaffPage: React.FC = () => {
                     style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)' }}
                 >
                     <div 
-                        className="grid items-center px-4 py-3 border-b uppercase tracking-wider font-black"
+                        className="grid items-center px-4 py-3 border-b font-semibold"
                         style={{ 
                             background: 'var(--bg-surface)', 
                             borderColor: 'var(--border)', 
                             gridTemplateColumns: '48px 2fr 1.5fr 1.5fr 1fr 80px',
-                            fontSize: '10px',
+                            fontSize: '12px',
                             color: 'var(--text-muted)'
                         }}
                     >
                         <div className="pl-2">Avatar</div>
-                        <div>Full Name</div>
-                        <div>Role / Position</div>
+                        <div>Full name</div>
+                        <div>Role / position</div>
                         <div>Department</div>
                         <div>Status</div>
                         <div className="text-right">Action</div>
@@ -511,7 +511,7 @@ const StaffPage: React.FC = () => {
                                     </div>
                                     <div className="flex">
                                         <span 
-                                            className="text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider"
+                                            className="text-xs font-semibold px-2.5 py-0.5"
                                             style={{ 
                                                 borderRadius: '99px',
                                                 background: (staff.role === UserRole.ADMIN || staff.role === UserRole.MASTER_ADMIN) 
@@ -537,16 +537,16 @@ const StaffPage: React.FC = () => {
                                             className="inline-flex items-center gap-1.5 px-2 py-0.5 border"
                                             style={{ 
                                                 borderRadius: '99px',
-                                                background: staff.status === 'Active' ? 'rgba(101,154,43,0.15)' : 'var(--bg-surface)',
+                                                background: staff.status === 'Active' ? 'rgba(79,178,134,0.15)' : 'var(--bg-surface)',
                                                 color: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)',
-                                                borderColor: staff.status === 'Active' ? 'rgba(101,154,43,0.25)' : 'var(--border)'
+                                                borderColor: staff.status === 'Active' ? 'rgba(79,178,134,0.25)' : 'var(--border)'
                                             }}
                                         >
                                             <div 
                                                 className="w-1 h-1 rounded-full" 
                                                 style={{ background: staff.status === 'Active' ? 'var(--accent)' : 'var(--text-muted)' }} 
                                             />
-                                            <span className="text-[9px] font-bold uppercase">
+                                            <span className="text-[10px] font-semibold">
                                                 {staff.status || 'Active'}
                                             </span>
                                         </div>
@@ -554,7 +554,7 @@ const StaffPage: React.FC = () => {
                                     <div className="flex items-center justify-end gap-1 px-1">
                                         <button 
                                             onClick={() => handleOpenEdit(staff)}
-                                            className="p-1.5 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                                            className="p-1.5 text-gray-400 hover:text-[var(--accent)] transition-colors"
                                             title="Edit Profile"
                                         >
                                             <Edit size={14} />
@@ -608,7 +608,7 @@ const StaffPage: React.FC = () => {
                     }}
                 >
                     <div 
-                        className="w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] border animate-in slide-in-from-bottom-2 duration-300"
+                        className="w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh] border animate-in slide-in-from-bottom-2 duration-300"
                         style={{ 
                             background: 'var(--bg-secondary)', 
                             borderColor: 'var(--border-mid)', 
@@ -617,39 +617,40 @@ const StaffPage: React.FC = () => {
                         }}
                     >
                         <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)' }}>
-                            <h3 className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-heading)' }}>
+                            <h3 className="text-base font-bold tracking-tight" style={{ color: 'var(--text-heading)' }}>
                                 {isEditing ? 'Edit Staff Profile' : 'Send Workspace Invitation'}
                             </h3>
-                            <button onClick={() => setIsModalOpen(false)} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-all">
+                            <button onClick={() => setIsModalOpen(false)} style={{ color: 'var(--text-muted)', borderRadius: 'var(--radius-md)' }} className="p-2 hover:bg-[var(--bg-surface)] transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
 
                         <form onSubmit={handleSave} className="p-6 overflow-y-auto">
                             {successMessage && (
-                                <div className="mb-4 bg-brand-500/20 text-brand-200 px-4 py-3 rounded-lg flex items-center text-sm border border-brand-500/30 animate-in fade-in duration-300">
+                                <div className="mb-4 px-4 py-3 rounded-lg flex items-center text-sm border animate-in fade-in duration-300"
+                                    style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)', color: 'var(--accent)' }}>
                                     <CheckCircle2 size={16} className="mr-2 flex-shrink-0" /> {successMessage}
                                 </div>
                             )}
                             {formError && (
-                                <div className="mb-4 bg-red-500/20 text-red-200 px-4 py-3 rounded-lg flex items-center text-sm border border-red-500/20">
+                                <div className="mb-4 bg-red-500/10 text-red-400 px-4 py-3 rounded-lg flex items-center text-sm border border-red-500/20">
                                     <AlertCircle size={16} className="mr-2" /> {formError}
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1">
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Full Name *</label>
-                                    <input required className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} />
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Full Name *</label>
+                                    <input required className="w-full px-3 py-2 text-sm border outline-none transition-colors" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} />
                                 </div>
                                 <div className="col-span-2 md:col-span-1">
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Official Email *</label>
-                                    <input type="email" required disabled={isEditing} className="w-full px-3 py-2 text-sm border outline-none transition-all disabled:opacity-50" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="staff@rsa.com" />
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Official Email *</label>
+                                    <input type="email" required disabled={isEditing} className="w-full px-3 py-2 text-sm border outline-none transition-colors disabled:opacity-50" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="staff@rsa.com" />
                                 </div>
 
                                 <div>
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Role / Permission</label>
-                                    <select className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Role / Permission</label>
+                                    <select className="w-full px-3 py-2 text-sm border outline-none transition-colors" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}>
                                         <option value={UserRole.STAFF}>User</option>
                                         {(user?.role === UserRole.MASTER_ADMIN || user?.role === UserRole.ADMIN) && <option value={UserRole.ADMIN}>Admin</option>}
                                         {user?.role === UserRole.MASTER_ADMIN && <option value={UserRole.MASTER_ADMIN}>Master Admin</option>}
@@ -658,9 +659,9 @@ const StaffPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Job Position</label>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Job Position</label>
                                     <select
-                                        className="w-full px-3 py-2 text-sm border outline-none transition-all"
+                                        className="w-full px-3 py-2 text-sm border outline-none transition-colors"
                                         style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }}
                                         value={formData.position}
                                         onChange={e => setFormData({ ...formData, position: e.target.value })}
@@ -674,9 +675,9 @@ const StaffPage: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Gender</label>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Gender</label>
                                     <select
-                                        className="w-full px-3 py-2 text-sm border outline-none transition-all"
+                                        className="w-full px-3 py-2 text-sm border outline-none transition-colors"
                                         style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }}
                                         value={formData.gender}
                                         onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
@@ -688,39 +689,38 @@ const StaffPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Phone Number</label>
-                                    <input className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} />
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Phone Number</label>
+                                    <input className="w-full px-3 py-2 text-sm border outline-none transition-colors" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Date of Joining</label>
-                                    <input type="date" className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.dateOfJoining} onChange={e => setFormData({ ...formData, dateOfJoining: e.target.value })} />
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Date of Joining</label>
+                                    <input type="date" className="w-full px-3 py-2 text-sm border outline-none transition-colors" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.dateOfJoining} onChange={e => setFormData({ ...formData, dateOfJoining: e.target.value })} />
                                 </div>
 
                                 <div>
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Status</label>
-                                    <select className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Status</label>
+                                    <select className="w-full px-3 py-2 text-sm border outline-none transition-colors" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
                                         <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>
                                     </select>
                                 </div>
 
                                 <div className="col-span-2">
-                                    <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem', display: 'block' }}>Address</label>
-                                    <input className="w-full px-3 py-2 text-sm border outline-none transition-all" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Full residential address" />
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Address</label>
+                                    <input className="w-full px-3 py-2 text-sm border outline-none transition-colors" style={{ background: 'var(--bg-main)', borderColor: 'var(--border)', color: 'var(--text-body)', borderRadius: 'var(--radius-md)' }} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Full residential address" />
                                 </div>
                             </div>
 
                             <div className="pt-6 mt-4 border-t flex justify-end space-x-3" style={{ borderColor: 'var(--border)' }}>
-                                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50" style={{ color: 'var(--text-muted)' }}>Cancel</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-xs font-semibold transition-colors disabled:opacity-50" style={{ color: 'var(--text-muted)' }}>Cancel</button>
                                 <button 
                                     type="submit" 
                                     disabled={isSaving} 
-                                    className="px-6 py-2 text-xs font-bold uppercase tracking-widest shadow-lg flex items-center min-w-[150px] justify-center transition-all"
+                                    className="px-6 py-2 text-xs font-semibold flex items-center min-w-[150px] justify-center transition-opacity disabled:opacity-50"
                                     style={{ 
                                         background: 'var(--accent)', 
-                                        color: 'white', 
-                                        borderRadius: 'var(--radius-xl)',
-                                        boxShadow: '0 4px 12px var(--accent-glow)'
+                                        color: 'var(--on-accent)', 
+                                        borderRadius: 'var(--radius-xl)'
                                     }}
                                 >
                                     {isSaving ? (

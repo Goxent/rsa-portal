@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Task, UserProfile, Client, TaskStatus, TaskPriority } from '../../types';
-import { format, subDays, addDays, startOfDay, endOfDay, eachDayOfInterval, isToday, isSameDay, differenceInDays } from 'date-fns';
+import { Task, UserProfile, Client, TaskStatus } from '../../types';
+import { format, subDays, addDays, startOfDay, endOfDay, eachDayOfInterval, isToday, differenceInDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Check } from 'lucide-react';
 import { getAvatarColor, getInitials } from '../../utils/userUtils';
 
@@ -13,49 +13,13 @@ interface TaskTimelineViewProps {
     setGroupBy: (val: any) => void;
 }
 
-const statusColors: Record<TaskStatus, string> = {
-    [TaskStatus.NOT_STARTED]: '#f59e0b',  // amber-500
-    [TaskStatus.IN_PROGRESS]: '#0ea5e9',  // sky-500
-    [TaskStatus.COMPLETED]: '#10b981',    // emerald-500
-    [TaskStatus.UNDER_REVIEW]: '#d946ef', // fuchsia-500
-    [TaskStatus.HALTED]: '#f43f5e',       // rose-500
-    [TaskStatus.ARCHIVED]: '#64748b',     // slate-500
-};
-
-const taskTypeColors: Record<string, string> = {
-    'INTERNAL_AUDIT': '#10b981',      // emerald
-    'STATUTORY_AUDIT': '#3b82f6',     // blue
-    'COMPLIANCE_AUDIT': '#f59e0b',    // amber
-    'CERTIFICATION_SERVICE': '#8b5cf6', // violet
-    'FINANCIAL_MANAGEMENT': '#ec4899', // pink
-    'GENERAL': '#6366f1',             // indigo
-    'OTHER': '#94a3b8',               // slate
-};
-
-const getTaskGradients = (task: Task) => {
-    const type = task.taskType || 'GENERAL';
-    const status = task.status as TaskStatus;
-
-    // Default gradients for types
-    const typeGradients: Record<string, string> = {
-        'INTERNAL_AUDIT': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-        'STATUTORY_AUDIT': 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-        'COMPLIANCE_AUDIT': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-        'CERTIFICATION_SERVICE': 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-        'FINANCIAL_MANAGEMENT': 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
-        'GENERAL': 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
-        'OTHER': 'linear-gradient(135deg, #64748b 0%, #334155 100%)',
-    };
-
-    // If task is completed, we might want to desaturate or keep it emerald
-    if (status === TaskStatus.COMPLETED) {
-        return 'linear-gradient(135deg, #059669 0%, #064e3b 100%)';
-    }
-    if (status === TaskStatus.HALTED) {
-        return 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-    }
-
-    return typeGradients[type] || typeGradients['OTHER'];
+const statusColorVars: Record<TaskStatus, { bg: string; border: string; text: string }> = {
+    [TaskStatus.NOT_STARTED]: { bg: 'rgba(217,164,65,0.15)', border: 'rgba(217,164,65,0.4)', text: 'var(--color-warning)' },
+    [TaskStatus.IN_PROGRESS]: { bg: 'rgba(106,163,217,0.15)', border: 'rgba(106,163,217,0.4)', text: 'var(--color-info)' },
+    [TaskStatus.COMPLETED]: { bg: 'rgba(79,178,134,0.15)', border: 'rgba(79,178,134,0.4)', text: 'var(--color-success)' },
+    [TaskStatus.UNDER_REVIEW]: { bg: 'rgba(168,85,247,0.15)', border: 'rgba(168,85,247,0.4)', text: '#a855f7' },
+    [TaskStatus.HALTED]: { bg: 'rgba(224,112,122,0.15)', border: 'rgba(224,112,122,0.4)', text: 'var(--color-danger)' },
+    [TaskStatus.ARCHIVED]: { bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.4)', text: 'var(--text-muted)' },
 };
 
 const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
@@ -66,7 +30,6 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
     groupBy,
     setGroupBy
 }) => {
-    // Safety guard for empty/undefined props
     if (!tasks) tasks = [];
     if (!usersList) usersList = [];
     if (!clientsList) clientsList = [];
@@ -100,23 +63,17 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
         if (!tasks || !Array.isArray(tasks)) return [];
 
         tasks.filter(t => t && typeof t === 'object').forEach((task) => {
-            // Refined duration logic: primarily use startDate, then fallback to createdAt
             const tStartStr = task.startDate || task.createdAt;
             const tStart = startOfDay(new Date(tStartStr));
-            
-            // Strictly follow dueDate if present, otherwise default to a small visual bar
             const tEnd = task.dueDate ? endOfDay(new Date(task.dueDate)) : endOfDay(addDays(new Date(tStartStr), 1));
             
-            // Skip tasks completely out of bounds
             if (tEnd.getTime() < startDate.getTime() || tStart.getTime() > endDate.getTime()) {
                 return;
             }
 
-            // Function to add task to a specific group
             const addToGroup = (label: string) => {
                 if (!groups[label]) groups[label] = [];
                 
-                // Calc exact placement
                 const visualStart = tStart < startDate ? startDate : tStart;
                 const visualEnd = tEnd > endDate ? endDate : tEnd;
                 
@@ -135,32 +92,30 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
             };
 
             if (groupBy === 'PHASE') {
-                const phaseLabel = task.auditPhase ? task.auditPhase.replace(/_/g, ' ') : 'No Phase';
+                const phaseLabel = task.auditPhase ? task.auditPhase.replace(/_/g, ' ') : 'No phase';
                 addToGroup(phaseLabel);
             } else if (groupBy === 'ASSIGNEE') {
-                // Multi-assignee support: task appears in each assignee's row
                 if (!task.assignedTo || !Array.isArray(task.assignedTo) || task.assignedTo.length === 0) {
                     addToGroup('Unassigned');
                 } else {
                     task.assignedTo.forEach(uid => {
-                        const u = usersList.find(u => u.uid === uid);
-                        const label = u?.displayName || 'Unknown Staff';
+                        const u = usersList.find(x => x.uid === uid);
+                        const label = u?.displayName || 'Unknown staff';
                         addToGroup(label);
                     });
                 }
             } else if (groupBy === 'AUDITOR') {
                 const tc = clientsList.find(c => task.clientIds?.includes(c.id));
-                const label = tc?.signingAuthority || 'Unassigned Auditor';
+                const label = tc?.signingAuthority || 'Unassigned auditor';
                 addToGroup(label);
             } else {
-                addToGroup('All Tasks');
+                addToGroup('All tasks');
             }
         });
 
-        // Sort groups: Handle specifically for Phase order if needed, otherwise alphabetical
         const sortedGroups = Object.keys(groups).sort((a, b) => {
-            if (a === 'Unassigned' || a === 'Unassigned Auditor') return 1;
-            if (b === 'Unassigned' || b === 'Unassigned Auditor') return -1;
+            if (a === 'Unassigned' || a === 'Unassigned auditor') return 1;
+            if (b === 'Unassigned' || b === 'Unassigned auditor') return -1;
             return a.localeCompare(b);
         }).map(k => ({
             label: k,
@@ -178,84 +133,79 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
     const safeGroupedTasks = groupedTasks || [];
 
     return (
-        <div className="h-full flex flex-col bg-slate-50/50 dark:bg-transparent overflow-hidden">
+        <div className="h-full flex flex-col bg-[var(--bg-main)] overflow-hidden">
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-4 px-6 py-4 border-b border-slate-200 dark:border-white/[0.06] bg-white/80 dark:bg-[#09090b]/50 backdrop-blur-md z-20">
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/[0.05] p-1.5 rounded-2xl border border-slate-200 dark:border-white/[0.05] shadow-inner">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)] z-20">
+                <div className="flex items-center gap-1 bg-[var(--bg-surface)] p-1 rounded-[var(--radius-md)] border border-[var(--border)]">
                     {(['NONE', 'ASSIGNEE', 'PHASE', 'AUDITOR'] as const).map(mode => (
                         <button
                             key={mode}
                             onClick={() => setGroupBy(mode)}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 ${
+                            className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium transition-colors ${
                                 groupBy === mode 
-                                    ? 'bg-amber-500 text-white shadow-[0_4px_15px_rgba(245,158,11,0.4)] scale-105' 
-                                    : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-white/10'
+                                    ? 'bg-[var(--accent)] text-[var(--on-accent)] font-semibold' 
+                                    : 'text-[var(--text-muted)] hover:text-[var(--text-heading)] hover:bg-[var(--bg-secondary)]'
                             }`}
                         >
-                            {mode === 'NONE' ? '📅 Standard' : mode === 'ASSIGNEE' ? '👤 Staff Wise' : mode}
-                            {mode === 'ASSIGNEE' && groupBy !== 'ASSIGNEE' && (
-                                <span className="flex h-2 w-2 relative">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                                </span>
-                            )}
+                            {mode === 'NONE' ? 'Standard' : mode === 'ASSIGNEE' ? 'Staff wise' : mode === 'PHASE' ? 'Phase' : 'Auditor'}
                         </button>
                     ))}
                 </div>
 
-                <div className="h-6 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block" />
-
-                <div className="flex items-center gap-3">
-                    <button onClick={handleToday} className="px-3 py-1.5 bg-slate-100 dark:bg-white/[0.03] hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-white/[0.08] rounded-md text-[11px] font-black tracking-widest uppercase text-slate-500 dark:text-slate-300 transition-colors border border-slate-200 dark:border-white/[0.08] shadow-sm hover:shadow">
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={handleToday} 
+                        className="px-3 py-1.5 bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] text-[var(--text-heading)] rounded-[var(--radius-md)] text-xs font-medium transition-colors border border-[var(--border)]"
+                    >
                         Today
                     </button>
-                    <div className="flex items-center gap-1 bg-white dark:bg-black/20 rounded-md p-0.5 border border-slate-200 dark:border-white/[0.05] shadow-sm">
-                        <button onClick={handlePrev} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-brand-600 dark:hover:text-white"><ChevronLeft size={14} strokeWidth={2.5} /></button>
-                        <span className="text-[10px] font-black text-slate-500 px-2 uppercase tracking-widest hidden sm:inline">Timeline</span>
-                        <button onClick={handleNext} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded-sm transition-colors text-slate-400 hover:text-brand-600 dark:hover:text-white"><ChevronRight size={14} strokeWidth={2.5} /></button>
+                    <div className="flex items-center gap-1 bg-[var(--bg-surface)] rounded-[var(--radius-md)] p-0.5 border border-[var(--border)]">
+                        <button onClick={handlePrev} className="p-1 hover:bg-[var(--bg-secondary)] rounded-[var(--radius-sm)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-heading)]"><ChevronLeft size={14} /></button>
+                        <span className="text-xs font-medium text-[var(--text-muted)] px-1.5">Timeline</span>
+                        <button onClick={handleNext} className="p-1 hover:bg-[var(--bg-secondary)] rounded-[var(--radius-sm)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-heading)]"><ChevronRight size={14} /></button>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white dark:bg-black/20 px-3 py-1.5 rounded-md border border-slate-200 dark:border-white/[0.05] shadow-sm">
+                    <div className="flex items-center gap-1.5 bg-[var(--bg-surface)] px-2.5 py-1 rounded-[var(--radius-md)] border border-[var(--border)] text-xs">
                         <input
                             type="date"
                             value={startDateStr}
                             onChange={e => setStartDateStr(e.target.value)}
-                            className="bg-transparent text-[11px] text-brand-600 dark:text-amber-500 font-black focus:outline-none cursor-pointer uppercase tracking-wider"
+                            className="bg-transparent text-xs text-[var(--text-heading)] font-medium focus:outline-none cursor-pointer"
                         />
-                        <span className="text-slate-400 text-[10px] font-black">—</span>
+                        <span className="text-[var(--text-muted)]">—</span>
                         <input
                             type="date"
                             value={endDateStr}
                             onChange={e => setEndDateStr(e.target.value)}
-                            className="bg-transparent text-[11px] text-brand-600 dark:text-amber-500 font-black focus:outline-none cursor-pointer uppercase tracking-wider"
+                            className="bg-transparent text-xs text-[var(--text-heading)] font-medium focus:outline-none cursor-pointer"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Timeline Area */}
-            <div className="flex-1 overflow-auto custom-scrollbar relative bg-white dark:bg-[#09090b]">
-                <div className="min-w-max pb-24" style={{ width: SIDEBAR_WIDTH + (safeDaysInterval.length) * DAY_WIDTH }}>
+            <div className="flex-1 overflow-auto custom-scrollbar relative bg-[var(--bg-main)]">
+                <div className="min-w-max pb-20" style={{ width: SIDEBAR_WIDTH + (safeDaysInterval.length) * DAY_WIDTH }}>
                     
                     {/* Header Row (Dates) */}
-                    <div className="sticky top-0 z-30 flex bg-white dark:bg-[#09090b] border-b border-slate-200 dark:border-white/[0.08] shadow-sm">
+                    <div className="sticky top-0 z-30 flex bg-[var(--bg-secondary)] border-b border-[var(--border)]">
                         <div 
-                            className="flex-shrink-0 border-r border-slate-200 dark:border-white/[0.08] px-5 py-3 flex items-end sticky left-0 z-40 bg-white dark:bg-[#09090b]" 
+                            className="flex-shrink-0 border-r border-[var(--border)] px-4 py-2.5 flex items-end sticky left-0 z-40 bg-[var(--bg-secondary)]" 
                             style={{ width: SIDEBAR_WIDTH }}
                         >
-                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Task Details</span>
+                            <span className="text-xs font-semibold text-[var(--text-muted)]">Task details</span>
                         </div>
                         <div className="flex">
-                            {safeDaysInterval.map((day, i) => {
+                            {safeDaysInterval.map((day) => {
                                 const today = isToday(day);
                                 return (
                                     <div 
                                         key={day.toISOString()} 
-                                        className={`flex-shrink-0 flex flex-col items-center justify-end py-2.5 border-r border-slate-200 dark:border-white/[0.06] transition-colors ${today ? 'bg-brand-50 dark:bg-amber-500/10' : 'bg-white dark:bg-[#09090b]'}`}
+                                        className={`flex-shrink-0 flex flex-col items-center justify-end py-2 border-r border-[var(--border)] transition-colors ${today ? 'bg-[var(--accent-dim)]' : ''}`}
                                         style={{ width: DAY_WIDTH }}
                                     >
-                                        <span className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${today ? 'text-brand-600 dark:text-amber-500' : 'text-slate-400 dark:text-slate-500'}`}>{format(day, 'EEE')}</span>
-                                        <span className={`text-[12px] font-black ${today ? 'text-brand-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'}`}>{format(day, 'd')}</span>
+                                        <span className={`text-[10px] font-medium mb-0.5 ${today ? 'text-[var(--accent)] font-semibold' : 'text-[var(--text-muted)]'}`}>{format(day, 'EEE')}</span>
+                                        <span className={`text-xs tabular-nums font-semibold ${today ? 'text-[var(--accent)] font-bold' : 'text-[var(--text-heading)]'}`}>{format(day, 'd')}</span>
                                     </div>
                                 );
                             })}
@@ -264,31 +214,31 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
 
                     {/* Timeline Data */}
                     <div className="relative">
-                        {/* Background Grid Lines (Absolute overlay just for the grid) */}
+                        {/* Background Grid Lines */}
                         <div className="absolute inset-0 flex pointer-events-none z-0">
-                            <div className="flex-shrink-0 border-r border-slate-200 dark:border-white/[0.04]" style={{ width: SIDEBAR_WIDTH }} />
+                            <div className="flex-shrink-0 border-r border-[var(--border)]" style={{ width: SIDEBAR_WIDTH }} />
                             {safeDaysInterval.map(day => (
-                                <div key={day.toISOString()} className={`flex-shrink-0 border-r border-slate-200/50 dark:border-white/[0.02] ${isToday(day) ? 'bg-brand-50/50 dark:bg-amber-500/[0.02]' : ''}`} style={{ width: DAY_WIDTH }} />
+                                <div key={day.toISOString()} className={`flex-shrink-0 border-r border-[var(--border)] ${isToday(day) ? 'bg-[var(--accent-dim)] opacity-40' : ''}`} style={{ width: DAY_WIDTH }} />
                             ))}
                         </div>
 
                         {/* Content Rows */}
                         <div className="relative z-10 flex flex-col">
                             {safeGroupedTasks.length === 0 ? (
-                                <div className="h-64 flex flex-col items-center justify-center text-center mt-8 sticky left-0 w-full">
-                                    <CalendarIcon size={40} className="mb-4 text-slate-400 dark:text-slate-700 opacity-50" />
-                                    <p className="font-black text-slate-500 dark:text-slate-400">No tasks visible in this timeframe.</p>
-                                    <p className="text-[11px] mt-1 text-slate-400 font-medium">Try zooming out the dates or adjusting filters.</p>
+                                <div className="h-56 flex flex-col items-center justify-center text-center mt-8 sticky left-0 w-full">
+                                    <CalendarIcon size={36} className="mb-3 text-[var(--text-muted)] opacity-30" />
+                                    <p className="text-xs font-semibold text-[var(--text-heading)]">No tasks visible in this timeframe</p>
+                                    <p className="text-xs text-[var(--text-muted)] mt-1">Try expanding the date range or adjusting filters</p>
                                 </div>
                             ) : (
                                 safeGroupedTasks.map((group, groupIdx) => (
-                                    <div key={groupIdx} className="flex flex-col border-b border-slate-200 dark:border-white/[0.04]">
+                                    <div key={groupIdx} className="flex flex-col border-b border-[var(--border)]">
                                         
                                         {/* Group Header Row */}
                                         {groupBy !== 'NONE' && (
-                                            <div className="flex w-full group">
+                                            <div className="flex w-full group bg-[var(--bg-secondary)]">
                                                 <div 
-                                                    className="flex-shrink-0 px-5 py-3 border-r border-slate-200 dark:border-white/[0.08] sticky left-0 z-20 bg-slate-50 dark:bg-[#0c1222] transition-colors"
+                                                    className="flex-shrink-0 px-4 py-2 border-r border-[var(--border)] sticky left-0 z-20 bg-[var(--bg-secondary)] transition-colors"
                                                     style={{ width: SIDEBAR_WIDTH }}
                                                 >
                                                     <div className="flex items-center gap-2">
@@ -297,22 +247,21 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                                                 const user = usersList.find(u => u.displayName === group.label);
                                                                 const av = getAvatarColor(user?.uid || '');
                                                                 return (
-                                                                    <div className={`w-6 h-6 rounded-lg ${av.bg} ${av.text} flex items-center justify-center text-[10px] font-black shadow-sm`}>
+                                                                    <div className={`w-5 h-5 rounded-full ${av.bg} ${av.text} flex items-center justify-center text-[9px] font-medium`}>
                                                                         {getInitials(group.label)}
                                                                     </div>
                                                                 );
                                                             })()
                                                         ) : (
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-500 dark:bg-slate-600" />
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
                                                         )}
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider truncate">{group.label}</span>
-                                                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Workload: {group.items?.length || 0} tasks</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-semibold text-[var(--text-heading)] truncate">{group.label}</span>
+                                                            <span className="text-[11px] text-[var(--text-muted)] tabular-nums">({group.items?.length || 0})</span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {/* Empty span for the rest of the row */}
-                                                <div className="flex-1 bg-slate-50/30 dark:bg-white/[0.01]" />
+                                                <div className="flex-1 bg-[var(--bg-surface)] opacity-50" />
                                             </div>
                                         )}
 
@@ -320,37 +269,32 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                         {(group.items || []).map((item: any, itemIdx: number) => {
                                             const { task, offsetDays, durationDays, isCutStart, isCutEnd } = item;
                                             const isDone = task.status === TaskStatus.COMPLETED;
-                                            const barGradient = getTaskGradients(task);
-                                            const baseColor = taskTypeColors[task.taskType || 'OTHER'] || statusColors[task.status as TaskStatus] || '#94a3b8';
+                                            const statusStyle = statusColorVars[task.status as TaskStatus] || statusColorVars[TaskStatus.NOT_STARTED];
                                             
-                                            // Ensure width fits within the visible window
                                             const visibleOffset = Math.max(0, offsetDays);
-                                            // Max available slots from offset to end of interval
                                             const maxAvailableDuration = safeDaysInterval.length - visibleOffset;
-                                            // Ensure duration visually doesn't burst out of the right side completely
                                             const visibleDuration = Math.min(durationDays, maxAvailableDuration);
 
                                             return (
-                                                <div key={task.id || `task-${itemIdx}`} className="flex w-full relative group/row hover:bg-emerald-50/50 dark:hover:bg-white/[0.02]">
+                                                <div key={task.id || `task-${itemIdx}`} className="flex w-full relative group/row hover:bg-[var(--bg-surface)] transition-colors">
                                                     {/* Sidebar Context */}
                                                     <div 
-                                                        className="flex-shrink-0 px-5 py-3 border-r border-slate-200 dark:border-white/[0.08] sticky left-0 z-20 bg-white dark:bg-[#09090b] group-hover/row:bg-slate-50 dark:group-hover/row:bg-[#111827] transition-colors flex items-center gap-3 overflow-hidden cursor-pointer shadow-sm group-hover/row:shadow-md"
+                                                        className="flex-shrink-0 px-4 py-2.5 border-r border-[var(--border)] sticky left-0 z-20 bg-[var(--bg-main)] group-hover/row:bg-[var(--bg-surface)] transition-colors flex items-center gap-2.5 overflow-hidden cursor-pointer"
                                                         style={{ width: SIDEBAR_WIDTH }}
                                                         onClick={() => handleOpenEdit(task)}
                                                     >
-                                                        {isDone ? <Check size={14} className="text-brand-500 dark:text-emerald-500 flex-shrink-0" strokeWidth={3} /> : <div className="w-3.5 h-3.5 rounded-[4px] border-[1.5px] border-slate-300 dark:border-slate-600 transition-colors group-hover/row:border-brand-400 dark:group-hover/row:border-slate-400 flex-shrink-0" />}
-                                                        <div className="min-w-0 flex-1 pl-1">
-                                                            <div className={`text-[12px] font-black truncate transition-colors ${isDone ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-200 group-hover/row:text-brand-700 dark:group-hover/row:text-white'}`}>{task.title}</div>
-                                                            <div className="text-[10px] text-slate-500 font-bold truncate mt-0.5">{task.clientName || 'Internal'}</div>
+                                                        {isDone ? <Check size={13} className="text-[var(--color-success)] flex-shrink-0" /> : <div className="w-3 h-3 rounded-[var(--radius-sm)] border border-[var(--border-mid)] flex-shrink-0" />}
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className={`text-xs font-medium truncate ${isDone ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-heading)]'}`}>{task.title}</div>
+                                                            <div className="text-[11px] text-[var(--text-muted)] truncate">{task.clientName || 'Internal'}</div>
                                                         </div>
-                                                        {/* Avatar summary */}
                                                         {task.assignedTo?.length > 0 && (
-                                                            <div className="flex -space-x-1 flex-shrink-0 group-hover/row:space-x-0 transition-all duration-300">
-                                                                {(task.assignedTo || []).slice(0,2).map((uid: string, i: number) => {
+                                                            <div className="flex -space-x-1 flex-shrink-0">
+                                                                {(task.assignedTo || []).slice(0, 2).map((uid: string, i: number) => {
                                                                     const u = usersList.find(x => x.uid === uid);
                                                                     const av = getAvatarColor(uid);
                                                                     return (
-                                                                        <div key={uid || `assignee-${i}`} className={`w-[24px] h-[24px] rounded-full ring-2 ring-white dark:ring-[#09090b] group-hover/row:ring-emerald-50 group-hover/row:dark:ring-[#0c1322] flex items-center justify-center text-[8px] font-black text-white shadow-sm transition-all duration-300 ${av.bg} ${av.text}`}>
+                                                                        <div key={uid || `assignee-${i}`} className={`w-5 h-5 rounded-full ring-1 ring-[var(--bg-main)] flex items-center justify-center text-[8px] font-medium ${av.bg} ${av.text}`}>
                                                                             {getInitials(u?.displayName || '?')}
                                                                         </div>
                                                                     );
@@ -360,32 +304,21 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                                                     </div>
 
                                                     {/* Timeline placement */}
-                                                    <div className="relative py-2.5" style={{ width: (safeDaysInterval.length) * DAY_WIDTH }}>
+                                                    <div className="relative py-2" style={{ width: (safeDaysInterval.length) * DAY_WIDTH }}>
                                                         <div 
                                                             onClick={(e) => { e.stopPropagation(); handleOpenEdit(task); }}
-                                                            className={`absolute top-1 bottom-1 rounded-xl flex items-center px-3 cursor-pointer transition-all duration-500 overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-0.5 z-10 hover:z-20 backdrop-blur-md border ${isDone ? 'opacity-40 saturate-50' : 'group-hover/row:opacity-100 opacity-95'}`}
+                                                            className={`absolute top-1.5 bottom-1.5 rounded-[var(--radius-sm)] flex items-center px-2.5 cursor-pointer transition-colors overflow-hidden border ${isDone ? 'opacity-50' : 'opacity-90 hover:opacity-100'}`}
                                                             style={{ 
-                                                                left: visibleOffset * DAY_WIDTH + 4,
-                                                                width: (visibleDuration * DAY_WIDTH) - 8,
-                                                                background: barGradient,
-                                                                borderColor: `${baseColor}40`,
-                                                                borderLeft: isCutStart ? 'none' : `4px solid white`,
-                                                                borderTopLeftRadius: isCutStart ? 0 : 12,
-                                                                borderBottomLeftRadius: isCutStart ? 0 : 12,
-                                                                borderTopRightRadius: isCutEnd ? 0 : 12,
-                                                                borderBottomRightRadius: isCutEnd ? 0 : 12,
-                                                                boxShadow: `0 8px 24px ${baseColor}40`,
+                                                                left: visibleOffset * DAY_WIDTH + 2,
+                                                                width: Math.max(16, (visibleDuration * DAY_WIDTH) - 4),
+                                                                background: statusStyle.bg,
+                                                                borderColor: statusStyle.border,
+                                                                borderLeft: isCutStart ? 'none' : undefined,
+                                                                borderRight: isCutEnd ? 'none' : undefined,
                                                             }}
                                                         >
-                                                            {/* Glow effect */}
-                                                            <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-500" />
-                                                            
-                                                            {/* Shine Effect */}
-                                                            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
-                                                            
-                                                            {/* Pill inner text */}
-                                                            <div className="min-w-0 flex-1 truncate relative z-10">
-                                                                <span className="text-[11px] font-black truncate tracking-wide text-white drop-shadow-md">
+                                                            <div className="min-w-0 flex-1 truncate">
+                                                                <span className="text-[11px] font-semibold truncate tracking-tight" style={{ color: statusStyle.text }}>
                                                                     {task.title}
                                                                 </span>
                                                             </div>

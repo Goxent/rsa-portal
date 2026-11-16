@@ -48,15 +48,15 @@ const fmtSize = (bytes?: number) => {
 const renderMd = (text: string) => {
     const rawHtml = text
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold text-white mt-4 mb-2">$1</h3>')
-        .replace(/^## (.+)$/gm,  '<h2 class="text-xl font-bold text-white mt-5 mb-2">$1</h2>')
-        .replace(/^# (.+)$/gm,   '<h1 class="text-2xl font-bold text-white mt-6 mb-3">$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+        .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-[var(--text-heading)] mt-4 mb-2">$1</h3>')
+        .replace(/^## (.+)$/gm,  '<h2 class="text-lg font-semibold text-[var(--text-heading)] mt-5 mb-2">$1</h2>')
+        .replace(/^# (.+)$/gm,   '<h1 class="text-xl font-semibold text-[var(--text-heading)] mt-6 mb-3">$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong class="text-[var(--text-heading)] font-semibold">$1</strong>')
         .replace(/\*(.+?)\*/g,   '<em>$1</em>')
-        .replace(/^- (.+)$/gm,   '<li class="ml-4 list-disc text-gray-300">$1</li>')
-        .replace(/\n\n/g, '</p><p class="mb-3 text-gray-300">')
+        .replace(/^- (.+)$/gm,   '<li class="ml-4 list-disc text-[var(--text-muted)]">$1</li>')
+        .replace(/\n\n/g, '</p><p class="mb-3 text-[var(--text-muted)]">')
         .replace(/\n/g, '<br/>');
-    const formatted = `<p class="mb-3 text-gray-300">${rawHtml}</p>`;
+    const formatted = `<p class="mb-3 text-[var(--text-muted)]">${rawHtml}</p>`;
     return DOMPurify.sanitize(formatted);
 };
 
@@ -246,27 +246,27 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
     return (
         <div className="space-y-4">
             {/* Toolbar */}
-            <div className="flex flex-col md:flex-row gap-3 justify-between items-center glass-panel p-3 rounded-xl">
+            <div className="flex flex-col md:flex-row gap-3 justify-between items-center bg-[var(--bg-surface)] border border-[var(--border)] p-3 rounded-xl">
                 {/* Breadcrumbs / Trash title */}
                 {showTrash ? (
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setShowTrash(false)} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400"><ArrowLeft size={16} /></button>
-                        <Trash2 size={16} className="text-red-400" />
-                        <span className="text-sm font-bold text-red-300">Recycle Bin</span>
-                        <span className="text-xs text-gray-500 ml-1">({trashedItems.length} item{trashedItems.length !== 1 ? 's' : ''})</span>
+                        <button onClick={() => setShowTrash(false)} className="p-1.5 rounded-lg hover:bg-[var(--accent-dim)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-heading)]"><ArrowLeft size={16} /></button>
+                        <Trash2 size={16} className="text-[var(--color-danger)]" />
+                        <span className="text-sm font-semibold text-[var(--color-danger)]">Recycle bin</span>
+                        <span className="text-xs text-[var(--text-muted)] ml-1 tabular-nums">({trashedItems.length} {trashedItems.length !== 1 ? 'items' : 'item'})</span>
                     </div>
                 ) : (
                     <div className="flex items-center gap-1 overflow-x-auto max-w-full md:max-w-sm no-scrollbar">
                         <button
                             onClick={() => setCurrentFolder(null)}
-                            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${!currentFolder ? 'text-white bg-white/10' : 'text-gray-400'}`}
+                            className={`p-1.5 rounded-lg transition-colors ${!currentFolder ? 'text-[var(--text-heading)] bg-[var(--accent-dim)] font-medium' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}
                         ><Home size={16} /></button>
                         {breadcrumbs.map((crumb, idx) => (
                             <div key={crumb.id} className="flex items-center">
-                                <ChevronRight size={12} className="text-gray-600 mx-0.5" />
+                                <ChevronRight size={12} className="text-[var(--text-subtle)] mx-0.5" />
                                 <button
                                     onClick={() => setCurrentFolder(crumb.id)}
-                                    className={`px-2 py-1 rounded text-xs hover:bg-white/10 whitespace-nowrap transition-colors ${idx === breadcrumbs.length - 1 ? 'text-white font-bold' : 'text-gray-400'}`}
+                                    className={`px-2 py-1 rounded text-xs whitespace-nowrap transition-colors ${idx === breadcrumbs.length - 1 ? 'text-[var(--text-heading)] font-semibold' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}
                                 >{crumb.title}</button>
                             </div>
                         ))}
@@ -276,44 +276,44 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     {!showTrash && (
                         <div className="relative flex-1 md:w-56">
-                            <Search className="absolute left-3 top-2.5 text-gray-400" size={14} />
+                            <Search className="absolute left-3 top-2.5 text-[var(--text-subtle)]" size={14} />
                             <input
                                 type="text" value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 placeholder="Search library..."
-                                className="w-full pl-9 pr-3 py-2 bg-transparent border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                className="w-full pl-9 pr-3 py-1.5 bg-[var(--bg-main)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-heading)] placeholder-[var(--text-subtle)] focus:outline-none focus:border-[var(--border-accent)]"
                             />
                         </div>
                     )}
                     {!showTrash && (
-                        <div className="flex items-center bg-white/5 p-1 rounded-lg border border-white/10">
-                            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400'}`}><Grid size={15} /></button>
-                            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400'}`}><List size={15} /></button>
+                        <div className="flex items-center bg-[var(--bg-main)] p-1 rounded-lg border border-[var(--border)]">
+                            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-[var(--accent-dim)] text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}><Grid size={14} /></button>
+                            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-[var(--accent-dim)] text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}><List size={14} /></button>
                         </div>
                     )}
                     {canAdd && !showTrash && (
                         <button
                             onClick={() => setAddOpen(true)}
-                            className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all"
+                            className="bg-[var(--accent)] hover:opacity-90 text-[var(--on-accent)] px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-opacity"
                         ><Plus size={14} /> Add</button>
                     )}
                     {canDelete && !showTrash && (
                         <button
                             onClick={() => setShowTrash(true)}
-                            className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border border-white/10 bg-white/5 text-gray-400 hover:text-red-300 hover:border-red-500/30 transition-all"
+                            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-[var(--border)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--color-danger)] transition-colors"
                         >
                             <Trash2 size={14} />
                             {trashedItems.length > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">{trashedItems.length}</span>
+                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--color-danger)] text-white text-[9px] rounded-full flex items-center justify-center font-bold tabular-nums">{trashedItems.length}</span>
                             )}
                         </button>
                     )}
                     {canDelete && showTrash && trashedItems.length > 0 && (
                         <button
                             onClick={emptyTrash}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-red-600/20 border border-red-500/30 text-red-300 hover:bg-red-600/40 transition-all font-bold"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[rgba(224,112,122,0.1)] border border-[rgba(224,112,122,0.25)] text-[var(--color-danger)] hover:bg-[rgba(224,112,122,0.2)] transition-colors font-medium"
                         >
-                            <Flame size={14} /> Empty Trash
+                            <Flame size={14} /> Empty trash
                         </button>
                     )}
                 </div>
@@ -321,58 +321,58 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
 
             {/* ── TRASH VIEW (Master Admin only) ── */}
             {showTrash ? (
-                <div className="glass-panel rounded-xl overflow-hidden animate-in fade-in duration-200">
-                    <div className="px-5 py-3 bg-red-900/10 border-b border-red-500/20 flex items-center gap-2">
-                        <AlertTriangle size={14} className="text-red-400" />
-                        <p className="text-xs text-red-300 font-medium">Items in the Recycle Bin are automatically permanently deleted after <strong>30 days</strong>.</p>
+                <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] overflow-hidden">
+                    <div className="px-5 py-3 bg-[rgba(224,112,122,0.06)] border-b border-[rgba(224,112,122,0.2)] flex items-center gap-2">
+                        <AlertTriangle size={14} className="text-[var(--color-danger)]" />
+                        <p className="text-xs text-[var(--color-danger)] font-medium">Items in the recycle bin are automatically permanently deleted after <strong>30 days</strong>.</p>
                     </div>
                     {trashedItems.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                            <Trash2 size={48} className="mb-3 opacity-10" />
-                            <p className="font-medium text-gray-400">Recycle Bin is empty</p>
+                        <div className="flex flex-col items-center justify-center py-16 text-[var(--text-muted)]">
+                            <Trash2 size={40} className="mb-2 opacity-20" />
+                            <p className="font-medium text-sm text-[var(--text-heading)]">Recycle bin is empty</p>
                         </div>
                     ) : (
-                        <table className="w-full text-left text-sm text-gray-300">
-                            <thead className="bg-red-900/10 text-gray-400 border-b border-white/10">
+                        <table className="w-full text-left text-sm text-[var(--text-heading)]">
+                            <thead className="bg-[var(--bg-secondary)] text-[var(--text-muted)] border-b border-[var(--border)] text-xs">
                                 <tr>
-                                    <th className="px-5 py-3 font-semibold">Name</th>
-                                    <th className="px-5 py-3 font-semibold">Type</th>
-                                    <th className="px-5 py-3 font-semibold">Deleted</th>
-                                    <th className="px-5 py-3 font-semibold text-center">Auto-delete in</th>
-                                    <th className="px-5 py-3 font-semibold text-right">Actions</th>
+                                    <th className="px-5 py-3 font-medium">Name</th>
+                                    <th className="px-5 py-3 font-medium">Type</th>
+                                    <th className="px-5 py-3 font-medium">Deleted</th>
+                                    <th className="px-5 py-3 font-medium text-center">Auto-delete in</th>
+                                    <th className="px-5 py-3 font-medium text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-[var(--border)] text-xs">
                                 {trashedItems.map(res => {
                                     const days = daysLeft(res.deletedAt);
                                     return (
-                                        <tr key={res.id} className="hover:bg-white/5 transition-colors group">
+                                        <tr key={res.id} className="hover:bg-[var(--accent-dim)] transition-colors group">
                                             <td className="px-5 py-3 flex items-center gap-3">
-                                                <div className="p-1.5 rounded-lg bg-white/5 opacity-50"><ResourceIcon type={res.type} size={16} /></div>
-                                                <span className="font-medium text-gray-400 line-through group-hover:no-underline">{res.title}</span>
+                                                <div className="p-1.5 rounded-lg bg-[var(--bg-elevated)] opacity-60"><ResourceIcon type={res.type} size={15} /></div>
+                                                <span className="font-medium text-[var(--text-muted)] line-through group-hover:no-underline">{res.title}</span>
                                             </td>
                                             <td className="px-5 py-3">
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase ${TYPE_BADGE[res.type] || ''}`}>{res.type}</span>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-md border font-medium ${TYPE_BADGE[res.type] || ''}`}>{res.type}</span>
                                             </td>
-                                            <td className="px-5 py-3 text-gray-500 text-xs">
+                                            <td className="px-5 py-3 text-[var(--text-muted)] tabular-nums">
                                                 {res.deletedAt ? new Date(res.deletedAt).toLocaleDateString() : '—'}
                                             </td>
                                             <td className="px-5 py-3 text-center">
-                                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                                                    days <= 3 ? 'bg-red-500/20 text-red-300' :
-                                                    days <= 10 ? 'bg-amber-500/20 text-amber-300' :
-                                                    'bg-white/10 text-gray-400'
+                                                <span className={`text-xs font-medium px-2 py-0.5 rounded-md tabular-nums ${
+                                                    days <= 3 ? 'bg-[rgba(224,112,122,0.1)] text-[var(--color-danger)]' :
+                                                    days <= 10 ? 'bg-[rgba(217,164,65,0.1)] text-[var(--color-warning)]' :
+                                                    'bg-[var(--bg-main)] text-[var(--text-muted)]'
                                                 }`}>{days}d</span>
                                             </td>
                                             <td className="px-5 py-3">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => restoreRes(res)}
-                                                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-brand-500/20 border border-brand-500/30 text-brand-300 hover:bg-brand-500/40 transition-all font-bold"
+                                                        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-[var(--accent-dim)] border border-[var(--border-accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-colors font-medium"
                                                     ><RotateCcw size={12} /> Restore</button>
                                                     <button
                                                         onClick={() => { setDeleteTarget(res); }}
-                                                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-red-600/20 border border-red-500/30 text-red-300 hover:bg-red-600/40 transition-all font-bold"
+                                                        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-[rgba(224,112,122,0.1)] border border-[rgba(224,112,122,0.25)] text-[var(--color-danger)] hover:bg-[rgba(224,112,122,0.2)] transition-colors font-medium"
                                                     ><Trash2 size={12} /> Delete</button>
                                                 </div>
                                             </td>
@@ -385,81 +385,79 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                 </div>
             ) : (
                 loading ? (
-                    <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-purple-400" /></div>
+                    <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-[var(--accent)]" /></div>
                 ) : visible.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                    <Folder size={52} className="mb-3 opacity-10" />
-                    <p className="font-medium text-gray-400">Empty folder</p>
-                    <p className="text-sm opacity-60">No resources here yet.</p>
+                <div className="flex flex-col items-center justify-center py-20 text-[var(--text-muted)] border border-dashed border-[var(--border)] rounded-xl bg-[var(--bg-surface)]">
+                    <Folder size={44} className="mb-2 opacity-20" />
+                    <p className="font-medium text-sm text-[var(--text-heading)]">Empty folder</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">No resources here yet.</p>
                     {canAdd && (
-                        <button onClick={() => setAddOpen(true)} className="mt-4 px-5 py-2 bg-purple-600/20 border border-purple-500/20 text-purple-300 rounded-lg text-sm font-bold hover:bg-purple-600/30 transition-colors">
-                            Add First Resource
+                        <button onClick={() => setAddOpen(true)} className="mt-4 px-4 py-1.5 bg-[var(--accent-dim)] border border-[var(--border-accent)] text-[var(--accent)] rounded-lg text-xs font-medium hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-colors">
+                            Add first resource
                         </button>
                     )}
                 </div>
             ) : viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {visible.map((res, i) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {visible.map((res) => (
                         <div
                             key={res.id} onClick={() => openRes(res)}
-                            className="glass-panel p-0 rounded-2xl overflow-hidden group border border-white/5 hover:border-white/20 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-1 cursor-pointer flex flex-col"
-                            style={{ animationDelay: `${i * 40}ms` }}
+                            className="bg-[var(--bg-surface)] rounded-xl overflow-hidden group border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors cursor-pointer flex flex-col"
                         >
-                            <div className={`p-5 bg-gradient-to-br ${colorFor(res.id, res.type)} relative overflow-hidden`}>
-                                <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500" />
-                                <div className="relative z-10 flex justify-between items-start">
-                                    <div className="p-3 rounded-xl bg-white/10 border border-white/20 group-hover:scale-110 transition-transform duration-300">
-                                        <ResourceIcon type={res.type} size={26} />
+                            <div className="p-4 bg-[var(--bg-main)] border-b border-[var(--border)] relative">
+                                <div className="flex justify-between items-start">
+                                    <div className="p-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
+                                        <ResourceIcon type={res.type} size={22} />
                                     </div>
                                     {canDelete && (
                                         <button
                                             onClick={e => { e.stopPropagation(); setDeleteTarget(res); }}
-                                            className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-all"
-                                        ><Trash2 size={15} /></button>
+                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-[var(--accent-dim)] rounded-md text-[var(--text-muted)] hover:text-[var(--color-danger)] transition-colors"
+                                        ><Trash2 size={14} /></button>
                                     )}
                                 </div>
-                                <h3 className="font-bold text-white text-base mt-3 leading-tight line-clamp-2 min-h-[2.8rem]">{res.title}</h3>
+                                <h3 className="font-medium text-[var(--text-heading)] text-sm mt-3 leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-[var(--accent)] transition-colors">{res.title}</h3>
                             </div>
-                            <div className="p-3 bg-navy-900/40 backdrop-blur-sm flex-1 flex flex-col gap-2">
+                            <div className="p-3 bg-[var(--bg-surface)] flex-1 flex flex-col gap-2">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wide ${TYPE_BADGE[res.type] || 'bg-gray-500/15 text-gray-300 border-gray-500/25'}`}>{res.type}</span>
-                                    {fmtSize(res.fileSize) && <span className="text-[10px] text-gray-500">{fmtSize(res.fileSize)}</span>}
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-md border font-medium ${TYPE_BADGE[res.type] || 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]'}`}>{res.type}</span>
+                                    {fmtSize(res.fileSize) && <span className="text-[11px] text-[var(--text-muted)] tabular-nums">{fmtSize(res.fileSize)}</span>}
                                 </div>
-                                <div className="flex items-center justify-between text-[10px] text-gray-500">
+                                <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                                     <span>{res.category || 'General'}</span>
-                                    <span>{res.updatedAt}</span>
+                                    <span className="tabular-nums">{res.updatedAt}</span>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
-                <div className="glass-panel rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-sm text-gray-300">
-                        <thead className="bg-navy-900/50 text-gray-400 border-b border-white/10">
+                <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] overflow-hidden">
+                    <table className="w-full text-left text-sm text-[var(--text-heading)]">
+                        <thead className="bg-[var(--bg-secondary)] text-[var(--text-muted)] border-b border-[var(--border)] text-xs">
                             <tr>
-                                <th className="px-5 py-3 font-semibold">Name</th>
-                                <th className="px-5 py-3 font-semibold">Category</th>
-                                <th className="px-5 py-3 font-semibold">Type</th>
-                                <th className="px-5 py-3 font-semibold">Size</th>
-                                <th className="px-5 py-3 font-semibold">Updated</th>
-                                {canDelete && <th className="px-5 py-3 font-semibold text-right">Action</th>}
+                                <th className="px-5 py-3 font-medium">Name</th>
+                                <th className="px-5 py-3 font-medium">Category</th>
+                                <th className="px-5 py-3 font-medium">Type</th>
+                                <th className="px-5 py-3 font-medium">Size</th>
+                                <th className="px-5 py-3 font-medium">Updated</th>
+                                {canDelete && <th className="px-5 py-3 font-medium text-right">Action</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-[var(--border)] text-xs">
                             {visible.map(res => (
-                                <tr key={res.id} onClick={() => openRes(res)} className="hover:bg-white/5 transition-colors cursor-pointer group">
+                                <tr key={res.id} onClick={() => openRes(res)} className="hover:bg-[var(--accent-dim)] transition-colors cursor-pointer group">
                                     <td className="px-5 py-3 flex items-center gap-3">
-                                        <div className="p-1.5 rounded-lg bg-white/5"><ResourceIcon type={res.type} size={16} /></div>
-                                        <span className="font-medium text-white group-hover:text-purple-300 transition-colors">{res.title}</span>
+                                        <div className="p-1.5 rounded-lg bg-[var(--bg-elevated)]"><ResourceIcon type={res.type} size={15} /></div>
+                                        <span className="font-medium text-[var(--text-heading)] group-hover:text-[var(--accent)] transition-colors">{res.title}</span>
                                     </td>
-                                    <td className="px-5 py-3"><span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-xs">{res.category || '—'}</span></td>
-                                    <td className="px-5 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase ${TYPE_BADGE[res.type] || ''}`}>{res.type}</span></td>
-                                    <td className="px-5 py-3 text-gray-400 text-xs">{fmtSize(res.fileSize) || '—'}</td>
-                                    <td className="px-5 py-3 text-gray-400 text-xs">{res.updatedAt}</td>
+                                    <td className="px-5 py-3"><span className="bg-[var(--bg-main)] border border-[var(--border)] px-2 py-0.5 rounded text-xs text-[var(--text-muted)]">{res.category || '—'}</span></td>
+                                    <td className="px-5 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-md border font-medium ${TYPE_BADGE[res.type] || ''}`}>{res.type}</span></td>
+                                    <td className="px-5 py-3 text-[var(--text-muted)] tabular-nums">{fmtSize(res.fileSize) || '—'}</td>
+                                    <td className="px-5 py-3 text-[var(--text-muted)] tabular-nums">{res.updatedAt}</td>
                                     {canDelete && (
                                         <td className="px-5 py-3 text-right">
-                                            <button onClick={e => { e.stopPropagation(); setDeleteTarget(res); }} className="text-gray-500 hover:text-red-400 p-1.5 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={15} /></button>
+                                            <button onClick={e => { e.stopPropagation(); setDeleteTarget(res); }} className="text-[var(--text-muted)] hover:text-[var(--color-danger)] p-1.5 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
                                         </td>
                                     )}
                                 </tr>
@@ -472,21 +470,21 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
 
             {/* ── Add Modal ── */}
             {addOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-lg border border-white/10">
-                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="text-lg font-bold text-white">Add to {currentFolder ? 'Folder' : 'Library'}</h3>
-                            <button onClick={() => setAddOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200">
+                    <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] shadow-xl w-full max-w-lg overflow-hidden">
+                        <div className="px-6 py-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-main)]">
+                            <h3 className="text-base font-semibold text-[var(--text-heading)]">Add to {currentFolder ? 'folder' : 'library'}</h3>
+                            <button onClick={() => setAddOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-heading)]"><X size={18} /></button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Title</label>
-                                <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newRes.title} onChange={e => setNewRes({ ...newRes, title: e.target.value })} placeholder="Resource Name..." />
+                                <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Title</label>
+                                <input className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-heading)] focus:border-[var(--border-accent)] outline-none" value={newRes.title} onChange={e => setNewRes({ ...newRes, title: e.target.value })} placeholder="Resource name..." />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Type</label>
-                                    <select className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newRes.type} onChange={e => setNewRes({ ...newRes, type: e.target.value as any })}>
+                                    <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Type</label>
+                                    <select className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-heading)] focus:border-[var(--border-accent)] outline-none" value={newRes.type} onChange={e => setNewRes({ ...newRes, type: e.target.value as any })}>
                                         <option value="folder">Folder</option>
                                         <option value="article">Article / Note</option>
                                         <option value="pdf">PDF</option>
@@ -495,30 +493,30 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1 uppercase">Category</label>
-                                    <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newRes.category} onChange={e => setNewRes({ ...newRes, category: e.target.value })} placeholder="e.g. Audit, Tax" />
+                                    <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Category</label>
+                                    <input className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-heading)] focus:border-[var(--border-accent)] outline-none" value={newRes.category} onChange={e => setNewRes({ ...newRes, category: e.target.value })} placeholder="e.g. Audit, Tax" />
                                 </div>
                             </div>
                             {newRes.type !== 'folder' && newRes.type !== 'article' && (
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase">Source</label>
-                                        <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10">
-                                            <button type="button" onClick={() => setUploadMode(false)} className={`px-3 py-1 text-xs rounded-md transition-all ${!uploadMode ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>Link</button>
-                                            <button type="button" onClick={() => setUploadMode(true)}  className={`px-3 py-1 text-xs rounded-md transition-all ${uploadMode  ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>Upload</button>
+                                        <label className="block text-xs font-medium text-[var(--text-muted)]">Source</label>
+                                        <div className="flex bg-[var(--bg-main)] rounded-lg p-0.5 border border-[var(--border)]">
+                                            <button type="button" onClick={() => setUploadMode(false)} className={`px-2.5 py-1 text-xs rounded-md transition-colors ${!uploadMode ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)]'}`}>Link</button>
+                                            <button type="button" onClick={() => setUploadMode(true)}  className={`px-2.5 py-1 text-xs rounded-md transition-colors ${uploadMode  ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)]'}`}>Upload</button>
                                         </div>
                                     </div>
                                     {uploadMode ? (
                                         <FileUploader onUploadComplete={fd => setNewRes({ ...newRes, title: newRes.title || fd.name, link: fd.url, type: fd.type as any, fileId: fd.id, downloadUrl: StorageService.getDownloadUrl(fd.id), fileSize: (fd as any).size })} />
                                     ) : (
-                                        <input className="w-full glass-input rounded-lg px-3 py-2 text-sm" value={newRes.link} onChange={e => setNewRes({ ...newRes, link: e.target.value })} placeholder="https://..." />
+                                        <input className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-heading)] focus:border-[var(--border-accent)] outline-none" value={newRes.link} onChange={e => setNewRes({ ...newRes, link: e.target.value })} placeholder="https://..." />
                                     )}
                                 </div>
                             )}
                             <button type="button" onClick={createRes} disabled={creating || !newRes.title?.trim()}
-                                className="w-full bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-lg font-bold transition-all mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
-                                {creating && <Loader2 size={15} className="animate-spin" />}
-                                {creating ? 'Creating...' : 'Create Resource'}
+                                className="w-full bg-[var(--accent)] text-[var(--on-accent)] py-2 rounded-lg font-medium text-xs transition-opacity mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
+                                {creating && <Loader2 size={14} className="animate-spin" />}
+                                {creating ? 'Creating...' : 'Create resource'}
                             </button>
                         </div>
                     </div>
@@ -527,17 +525,17 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
 
             {/* ── Delete Modal ── */}
             {deleteTarget && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-200">
-                    <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-md border border-white/10">
-                        <div className="px-6 py-4 border-b border-white/10 bg-white/5">
-                            <h3 className="text-lg font-bold text-white">Delete resource?</h3>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200">
+                    <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="px-5 py-4 border-b border-[var(--border)] bg-[var(--bg-main)]">
+                            <h3 className="text-base font-semibold text-[var(--text-heading)]">Delete resource?</h3>
                         </div>
-                        <div className="p-6">
-                            <p className="text-gray-300 text-sm mb-6">Are you sure you want to delete <span className="font-bold text-white">"{deleteTarget.title}"</span>? This cannot be undone.</p>
-                            <div className="flex justify-end gap-3">
-                                <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all">Cancel</button>
+                        <div className="p-5">
+                            <p className="text-[var(--text-muted)] text-sm mb-5">Are you sure you want to delete <span className="font-semibold text-[var(--text-heading)]">"{deleteTarget.title}"</span>? This cannot be undone.</p>
+                            <div className="flex justify-end gap-2.5">
+                                <button onClick={() => setDeleteTarget(null)} className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-main)] border border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--accent-dim)] transition-colors">Cancel</button>
                                 <button onClick={async () => { await deleteRes(deleteTarget); setDeleteTarget(null); }}
-                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-700 transition-all shadow-lg shadow-red-900/30">Delete</button>
+                                    className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--color-danger)] text-white hover:opacity-90 transition-opacity">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -546,45 +544,45 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
 
             {/* ── Article Viewer/Editor ── */}
             {previewRes && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className={`glass-modal h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-white/10 transition-all duration-300 ${showAi ? 'w-[95%] max-w-7xl' : 'w-full max-w-6xl'}`}>
-                        <div className="px-6 py-3 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200">
+                    <div className={`bg-[var(--bg-surface)] h-[88vh] rounded-xl flex flex-col shadow-2xl overflow-hidden border border-[var(--border)] transition-all duration-300 ${showAi ? 'w-[95%] max-w-7xl' : 'w-full max-w-5xl'}`}>
+                        <div className="px-5 py-3 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-main)] shrink-0">
                             <div className="flex items-center gap-3">
                                 <ResourceIcon type={previewRes.type} />
-                                <h3 className="text-lg font-bold text-white max-w-md truncate">{previewRes.title}</h3>
+                                <h3 className="text-sm font-semibold text-[var(--text-heading)] max-w-md truncate">{previewRes.title}</h3>
                             </div>
                             <div className="flex items-center gap-2">
                                 {isAdmin && previewRes.type === 'article' && (
                                     <>
                                         <button onClick={() => { if (isEditing) saveArticle(previewRes.content || ''); setIsEditing(!isEditing); }}
-                                            className={`px-3 py-1.5 rounded-lg text-sm border flex items-center gap-1.5 ${isEditing ? 'bg-green-600 border-green-500 text-white' : 'bg-white/5 border-white/10 text-gray-300'}`}>
+                                            className={`px-3 py-1.5 rounded-lg text-xs border font-medium flex items-center gap-1.5 transition-colors ${isEditing ? 'bg-[var(--accent)] border-[var(--border-accent)] text-[var(--on-accent)]' : 'bg-[var(--bg-main)] border-[var(--border)] text-[var(--text-heading)]'}`}>
                                             {isEditing ? <><Save size={13} /> Save</> : <><PenTool size={13} /> Edit</>}
                                         </button>
                                         {isEditing && (
-                                            <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10">
+                                            <div className="flex bg-[var(--bg-main)] rounded-lg p-0.5 border border-[var(--border)]">
                                                 {(['edit', 'split', 'preview'] as const).map(m => (
-                                                    <button key={m} onClick={() => setEditorMode(m)} className={`px-2 py-1 text-[10px] rounded-md transition-all capitalize ${editorMode === m ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>{m}</button>
+                                                    <button key={m} onClick={() => setEditorMode(m)} className={`px-2 py-0.5 text-[11px] rounded transition-colors capitalize ${editorMode === m ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)]'}`}>{m}</button>
                                                 ))}
                                             </div>
                                         )}
                                     </>
                                 )}
-                                <button onClick={() => setShowAi(!showAi)} className={`px-3 py-1.5 rounded-lg text-sm border flex items-center gap-1.5 ${showAi ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-purple-300'}`}>
+                                <button onClick={() => setShowAi(!showAi)} className={`px-3 py-1.5 rounded-lg text-xs border font-medium flex items-center gap-1.5 transition-colors ${showAi ? 'bg-[var(--accent)] border-[var(--border-accent)] text-[var(--on-accent)]' : 'bg-[var(--bg-main)] border-[var(--border)] text-[var(--accent)]'}`}>
                                     <Sparkles size={13} /> AI
                                 </button>
-                                <button onClick={() => setPreviewRes(null)}><X size={22} className="text-gray-400 hover:text-white" /></button>
+                                <button onClick={() => setPreviewRes(null)}><X size={18} className="text-[var(--text-muted)] hover:text-[var(--text-heading)]" /></button>
                             </div>
                         </div>
                         <div className="flex flex-1 overflow-hidden">
-                            <div className={`flex-1 bg-navy-900 relative overflow-hidden ${showAi ? 'w-2/3' : 'w-full'}`}>
+                            <div className={`flex-1 bg-[var(--bg-surface)] relative overflow-hidden ${showAi ? 'w-2/3' : 'w-full'}`}>
                                 {previewRes.type === 'article' ? (
                                     isEditing ? (
                                         <div className="flex h-full">
                                             {(editorMode === 'edit' || editorMode === 'split') && (
-                                                <div className={`${editorMode === 'split' ? 'w-1/2 border-r border-white/10' : 'w-full'} flex flex-col`}>
-                                                    <div className="px-4 py-2 border-b border-white/10 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Markdown</div>
+                                                <div className={`${editorMode === 'split' ? 'w-1/2 border-r border-[var(--border)]' : 'w-full'} flex flex-col`}>
+                                                    <div className="px-4 py-2 border-b border-[var(--border)] text-xs font-medium text-[var(--text-muted)]">Markdown</div>
                                                     <textarea
-                                                        className="w-full flex-1 bg-navy-950 p-6 text-gray-200 font-mono text-sm outline-none resize-none"
+                                                        className="w-full flex-1 bg-[var(--bg-main)] p-4 text-[var(--text-heading)] font-mono text-xs outline-none resize-none"
                                                         value={previewRes.content || ''}
                                                         onChange={e => setPreviewRes({ ...previewRes, content: e.target.value })}
                                                         placeholder="Write markdown here..."
@@ -593,46 +591,46 @@ const LibraryTab: React.FC<LibraryTabProps> = ({ categoryFilter }) => {
                                             )}
                                             {(editorMode === 'preview' || editorMode === 'split') && (
                                                 <div className={`${editorMode === 'split' ? 'w-1/2' : 'w-full'} flex flex-col overflow-y-auto custom-scrollbar`}>
-                                                    <div className="px-4 py-2 border-b border-white/10 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Preview</div>
-                                                    <div className="p-6 prose prose-invert max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMd(previewRes.content || '') }} />
+                                                    <div className="px-4 py-2 border-b border-[var(--border)] text-xs font-medium text-[var(--text-muted)]">Preview</div>
+                                                    <div className="p-5 prose max-w-none leading-relaxed text-sm text-[var(--text-heading)]" dangerouslySetInnerHTML={{ __html: renderMd(previewRes.content || '') }} />
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="p-8 overflow-y-auto custom-scrollbar h-full">
+                                        <div className="p-6 overflow-y-auto custom-scrollbar h-full">
                                             {previewRes.content
-                                                ? <div className="prose prose-invert max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMd(previewRes.content) }} />
-                                                : <div className="text-center opacity-40 py-20">No content yet.</div>
+                                                ? <div className="prose max-w-none leading-relaxed text-sm text-[var(--text-heading)]" dangerouslySetInnerHTML={{ __html: renderMd(previewRes.content) }} />
+                                                : <div className="text-center opacity-40 py-20 text-[var(--text-muted)]">No content yet.</div>
                                             }
                                         </div>
                                     )
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
-                                        <ResourceIcon type={previewRes.type} size={48} />
-                                        <p className="text-lg font-semibold text-white">{previewRes.title}</p>
+                                    <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] gap-3">
+                                        <ResourceIcon type={previewRes.type} size={40} />
+                                        <p className="text-base font-medium text-[var(--text-heading)]">{previewRes.title}</p>
                                         {previewRes.downloadUrl && (
                                             <a href={previewRes.downloadUrl} target="_blank" rel="noopener noreferrer"
-                                                className="flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-all">
-                                                <Download size={16} /> Download
+                                                className="flex items-center gap-1.5 px-4 py-2 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-xs font-medium hover:opacity-90 transition-opacity">
+                                                <Download size={14} /> Download
                                             </a>
                                         )}
                                     </div>
                                 )}
                             </div>
                             {showAi && (
-                                <div className="w-80 border-l border-white/10 bg-navy-900 flex flex-col">
-                                    <div className="p-4 bg-purple-900/10 border-b border-white/10"><h4 className="text-purple-300 font-bold flex items-center gap-2"><Bot size={15} /> Research Assistant</h4></div>
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                                        {aiResp && <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-sm text-gray-200 whitespace-pre-wrap">{aiResp}</div>}
-                                        {aiLoading && <div className="text-center py-4 text-purple-400 text-xs animate-pulse">Analyzing...</div>}
+                                <div className="w-80 border-l border-[var(--border)] bg-[var(--bg-main)] flex flex-col">
+                                    <div className="p-3 border-b border-[var(--border)] bg-[var(--bg-surface)]"><h4 className="text-[var(--accent)] text-xs font-medium flex items-center gap-2"><Bot size={14} /> Research assistant</h4></div>
+                                    <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+                                        {aiResp && <div className="bg-[var(--bg-surface)] p-3 rounded-lg border border-[var(--border)] text-xs text-[var(--text-heading)] whitespace-pre-wrap">{aiResp}</div>}
+                                        {aiLoading && <div className="text-center py-4 text-[var(--accent)] text-xs animate-pulse">Analyzing...</div>}
                                     </div>
-                                    <div className="p-4 border-t border-white/10">
+                                    <div className="p-3 border-t border-[var(--border)]">
                                         <div className="relative">
-                                            <input className="w-full bg-navy-800 border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-sm text-white focus:border-purple-500 outline-none"
+                                            <input className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg pl-3 pr-9 py-1.5 text-xs text-[var(--text-heading)] focus:border-[var(--border-accent)] outline-none"
                                                 placeholder="Ask AI..." value={aiQuery}
                                                 onChange={e => setAiQuery(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && askAI()} />
-                                            <button onClick={askAI} className="absolute right-2 top-1.5 p-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-500"><Send size={13} /></button>
+                                            <button onClick={askAI} className="absolute right-1.5 top-1 p-1 bg-[var(--accent)] text-[var(--on-accent)] rounded-md hover:opacity-90"><Send size={12} /></button>
                                         </div>
                                     </div>
                                 </div>

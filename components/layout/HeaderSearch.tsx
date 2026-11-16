@@ -84,8 +84,8 @@ const HeaderSearch: React.FC = () => {
     return (
         <div className="relative flex-1 max-w-xl hidden sm:block mx-4">
             <CommandPrimitive className="relative w-full" shouldFilter={false}>
-                <div className="relative flex items-center w-full h-10 rounded-xl bg-navy-900/50 border border-white/10 group focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 focus-within:bg-[#0c0c0e] transition-all shadow-inner">
-                    <Search size={16} className="absolute left-3 text-gray-500 group-focus-within:text-brand-400 transition-colors" />
+                <div className="relative flex items-center w-full h-9 rounded-lg bg-[var(--bg-main)] border border-[var(--border)] group focus-within:border-[var(--accent)] transition-colors">
+                    <Search size={15} className="absolute left-3 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors" />
 
                     <CommandPrimitive.Input
                         ref={inputRef}
@@ -94,19 +94,19 @@ const HeaderSearch: React.FC = () => {
                         onFocus={() => setIsOpen(true)}
                         onBlur={handleBlur}
                         placeholder="Search for pages, features, or actions..."
-                        className="w-full h-full pl-10 pr-16 bg-transparent text-sm text-white placeholder-gray-500 outline-none rounded-xl"
+                        className="w-full h-full pl-9 pr-14 bg-transparent text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] outline-none rounded-lg"
                     />
 
                     {search ? (
                         <button
                             onClick={() => { clearSearch(); inputRef.current?.focus(); }}
-                            className="absolute right-3 p-1 hover:bg-white/10 rounded-md transition-colors"
+                            className="absolute right-2.5 p-1 hover:bg-[var(--bg-surface)] rounded-md transition-colors"
                         >
-                            <X size={14} className="text-gray-400" />
+                            <X size={13} className="text-[var(--text-muted)] hover:text-[var(--text-heading)]" />
                         </button>
                     ) : (
-                        <div className="absolute right-3 text-[10px] text-gray-500 font-mono font-medium hidden md:flex items-center gap-1 border border-white/10 px-1.5 py-0.5 rounded shadow-sm">
-                            <span className="text-gray-400">Ctrl</span> K
+                        <div className="absolute right-2.5 text-[10px] text-[var(--text-muted)] font-mono font-medium hidden md:flex items-center gap-1 border border-[var(--border)] px-1.5 py-0.5 rounded bg-[var(--bg-surface)]">
+                            <span>Ctrl</span> K
                         </div>
                     )}
                 </div>
@@ -114,15 +114,15 @@ const HeaderSearch: React.FC = () => {
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
-                            initial={{ opacity: 0, y: 5 }}
+                            initial={{ opacity: 0, y: 4 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-navy-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[100]"
+                            exit={{ opacity: 0, y: 4 }}
+                            transition={{ duration: 0.12 }}
+                            className="absolute top-full left-0 right-0 mt-1.5 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-[100]"
                         >
-                            <CommandPrimitive.List className="max-h-[50vh] overflow-y-auto p-2 custom-scrollbar">
-                                <CommandPrimitive.Empty className="py-8 text-center text-sm text-gray-400">
-                                    No results found for "<span className="text-white">{search}</span>"
+                            <CommandPrimitive.List className="max-h-[50vh] overflow-y-auto p-1.5 custom-scrollbar">
+                                <CommandPrimitive.Empty className="py-6 text-center text-xs text-[var(--text-muted)]">
+                                    No results found for "<span className="text-[var(--text-heading)] font-medium">{search}</span>"
                                 </CommandPrimitive.Empty>
 
                                 {nonEmptyCategories.map(category => {
@@ -133,7 +133,7 @@ const HeaderSearch: React.FC = () => {
                                         <CommandPrimitive.Group
                                             key={category}
                                             heading={
-                                                <div className="flex items-center gap-2 px-2 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2 mb-1">
+                                                <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold text-[var(--text-muted)] mt-1.5 mb-0.5">
                                                     {category === 'recent' && <History size={12} />}
                                                     {CATEGORY_LABELS[category]}
                                                 </div>
@@ -167,29 +167,29 @@ const SearchItem: React.FC<{ command: Command; onSelect: () => void }> = ({
         <CommandPrimitive.Item
             value={command.id}
             onSelect={onSelect}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all text-gray-300 data-[selected=true]:bg-brand-600/20 data-[selected=true]:text-white hover:bg-white/5 my-0.5 outline-none group border border-transparent data-[selected=true]:border-brand-500/30"
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors text-[var(--text-body)] data-[selected=true]:bg-[var(--accent-dim)] data-[selected=true]:text-[var(--text-heading)] hover:bg-[var(--bg-surface)] my-0.5 outline-none group border border-transparent data-[selected=true]:border-[var(--border-accent)]"
         >
             {Icon && (
-                <div className="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center group-data-[selected=true]:bg-brand-600/30 shadow-sm transition-colors">
-                    <Icon size={16} className="text-gray-400 group-data-[selected=true]:text-brand-400" />
+                <div className="w-7 h-7 rounded-md bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center group-data-[selected=true]:bg-[var(--accent)] group-data-[selected=true]:text-[var(--on-accent)] transition-colors">
+                    <Icon size={14} className="text-[var(--text-muted)] group-data-[selected=true]:text-[var(--on-accent)]" />
                 </div>
             )}
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate text-white">{command.title}</p>
+                <p className="text-xs font-medium truncate text-[var(--text-heading)]">{command.title}</p>
                 {command.subtitle && (
-                    <p className="text-[11px] text-gray-500 truncate mt-0.5">{command.subtitle}</p>
+                    <p className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">{command.subtitle}</p>
                 )}
             </div>
             {command.shortcut && (
                 <div className="flex items-center gap-0.5">
                     {command.shortcut.map((key, i) => (
-                        <kbd key={i} className="px-1.5 py-0.5 text-[10px] bg-white/10 border border-white/5 rounded text-gray-400 font-mono shadow-sm">
+                        <kbd key={i} className="px-1.5 py-0.5 text-[10px] bg-[var(--bg-main)] border border-[var(--border)] rounded text-[var(--text-muted)] font-mono">
                             {key}
                         </kbd>
                     ))}
                 </div>
             )}
-            <ArrowRight size={14} className="text-brand-400 opacity-0 group-data-[selected=true]:opacity-100 transition-opacity ml-2 shrink-0 translate-x-1 group-data-[selected=true]:translate-x-0 duration-200" />
+            <ArrowRight size={13} className="text-[var(--accent)] opacity-0 group-data-[selected=true]:opacity-100 transition-opacity ml-1.5 shrink-0" />
         </CommandPrimitive.Item>
     );
 };

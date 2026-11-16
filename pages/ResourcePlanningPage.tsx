@@ -5,7 +5,7 @@ import { Task, UserProfile, TaskStatus } from '../types';
 import {
     LayoutDashboard, AlertTriangle, CheckCircle2, Clock, Briefcase,
     Loader2, ChevronDown, ChevronUp, Search, Users, Zap,
-    TrendingUp, TrendingDown, Filter, X, ArrowUpRight, ExternalLink, Calendar
+    TrendingUp, Filter, X, ExternalLink, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useUsers } from '../hooks/useStaff';
@@ -19,7 +19,7 @@ interface StaffWorkload {
     uid: string;
     name: string;
     totalTasks: number;
-    estimatedWorkdays: number;  // NEW: primary workload measure
+    estimatedWorkdays: number;
     highRisk: number;
     overdue: number;
     inProgress: number;
@@ -31,36 +31,38 @@ type FilterKey = 'all' | 'overloaded' | 'free' | 'atrisk';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getCapacityLevel = (count: number) => {
-    // Monotonic (Brand Indigo) color ramp
-    if (count === 0) return { label: 'Free', color: 'emerald', bar: 'from-brand-500/20 to-brand-/10', dot: 'bg-brand-400', text: 'text-brand-400', bg: 'bg-brand-500/10', border: 'border-brand-500/20' };
+    if (count === 0) {
+        return {
+            label: 'Free',
+            dot: 'bg-[var(--color-success)]',
+            text: 'text-[var(--color-success)]',
+            bg: 'bg-[rgba(79,178,134,0.1)]',
+            border: 'border-[rgba(79,178,134,0.25)]'
+        };
+    }
     
-    // Use varying brand-500 opacities for a monotonic ramp
-    const intensity = Math.min(Math.ceil(count / 2), 4); // 1, 2, 3, 4
-    const labels = ['Light', 'Moderate', 'Steady', 'Heavy', 'Critical'];
-    const opacities = ['20', '40', '60', '80', '100'];
-    const bgOpacities = ['5', '10', '15', '20', '25'];
+    const intensity = Math.min(Math.ceil(count / 2), 4);
+    const configs = [
+        { label: 'Light', dot: 'bg-[var(--accent)]', text: 'text-[var(--accent)]', bg: 'bg-[var(--accent-dim)]', border: 'border-[var(--border-accent)]' },
+        { label: 'Moderate', dot: 'bg-[var(--accent)]', text: 'text-[var(--accent)]', bg: 'bg-[var(--accent-dim)]', border: 'border-[var(--border-accent)]' },
+        { label: 'Steady', dot: 'bg-[var(--color-warning)]', text: 'text-[var(--color-warning)]', bg: 'bg-[rgba(217,164,65,0.1)]', border: 'border-[rgba(217,164,65,0.25)]' },
+        { label: 'Heavy', dot: 'bg-[var(--color-danger)]', text: 'text-[var(--color-danger)]', bg: 'bg-[rgba(224,112,122,0.1)]', border: 'border-[rgba(224,112,122,0.25)]' },
+        { label: 'Critical', dot: 'bg-[var(--color-danger)]', text: 'text-[var(--color-danger)]', bg: 'bg-[rgba(224,112,122,0.15)]', border: 'border-[rgba(224,112,122,0.3)]' },
+    ];
     
-    return { 
-        label: labels[intensity] || 'Critical', 
-        color: 'brand', 
-        bar: `from-brand-500/${opacities[intensity-1] || '100'} to-brand-600/${opacities[intensity-1] || '100'}`, 
-        dot: 'bg-brand-400', 
-        text: 'text-brand-300', 
-        bg: `bg-brand-500/${bgOpacities[intensity-1] || '20'}`, 
-        border: `border-brand-500/${bgOpacities[intensity-1] || '30'}` 
-    };
+    return configs[intensity] || configs[4];
 };
 
 const getPriorityStyle = (priority?: string) => {
-    if (priority === 'HIGH') return 'bg-red-500/10 text-red-300 border-red-500/20';
-    if (priority === 'MEDIUM') return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
-    return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+    if (priority === 'HIGH') return 'bg-[rgba(224,112,122,0.1)] text-[var(--color-danger)] border-[rgba(224,112,122,0.25)]';
+    if (priority === 'MEDIUM') return 'bg-[rgba(217,164,65,0.1)] text-[var(--color-warning)] border-[rgba(217,164,65,0.25)]';
+    return 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]';
 };
 
 const getStatusStyle = (status: string) => {
-    if (status === TaskStatus.IN_PROGRESS) return 'bg-brand-500/10 text-brand-300 border-brand-500/20';
-    if (status === TaskStatus.UNDER_REVIEW) return 'bg-purple-500/10 text-purple-300 border-purple-500/20';
-    return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    if (status === TaskStatus.IN_PROGRESS) return 'bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)]';
+    if (status === TaskStatus.UNDER_REVIEW) return 'bg-[rgba(106,163,217,0.1)] text-[var(--color-info)] border-[rgba(106,163,217,0.25)]';
+    return 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]';
 };
 
 // ─── Staff Card ───────────────────────────────────────────────────────────────
@@ -72,10 +74,8 @@ const StaffCard: React.FC<{
     onSelect: () => void;
 }> = ({ staff, maxDays, sprintCapacity, isSelected, onSelect }) => {
     const cap = getCapacityLevel(staff.totalTasks);
-    const barWidth = staff.estimatedWorkdays === 0 ? 3 : Math.min((staff.estimatedWorkdays / Math.max(maxDays, 1)) * 100, 100);
-    // Sprint capacity progress bar
     const sprintPct = Math.min((staff.estimatedWorkdays / Math.max(sprintCapacity, 1)) * 100, 100);
-    const sprintColor = sprintPct >= 100 ? '#ef4444' : sprintPct >= 70 ? '#f59e0b' : '#22c55e';
+    const sprintColor = sprintPct >= 100 ? 'var(--color-danger)' : sprintPct >= 70 ? 'var(--color-warning)' : 'var(--color-success)';
     const initials = staff.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
     // 4-Week Timeline Logic
@@ -98,61 +98,60 @@ const StaffCard: React.FC<{
     return (
         <div
             onClick={onSelect}
-            className={`relative group rounded-2xl border p-4 cursor-pointer transition-all duration-200 hover:scale-[1.01]
+            className={`relative group rounded-xl border p-4 cursor-pointer transition-colors duration-150
                 ${isSelected
-                    ? 'bg-brand-500/10 border-brand-500/40 shadow-lg shadow-brand-500/10'
-                    : 'bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15'
+                    ? 'bg-[var(--accent-dim)] border-[var(--border-accent)] ring-1 ring-[var(--accent)]'
+                    : 'bg-[var(--bg-surface)] border-[var(--border)] hover:border-[var(--border-mid)]'
                 }`}
         >
             {/* Selection indicator */}
             {isSelected && (
-                <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-brand-400 shadow-lg shadow-brand-400/50" />
+                <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-[var(--accent)]" />
             )}
 
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3.5">
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-600/80 to-brand-900/80 flex items-center justify-center text-sm font-bold text-white shadow-lg border border-white/10">
+                    <div className="w-11 h-11 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center text-xs font-semibold text-[var(--text-heading)]">
                         {initials}
                     </div>
-                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#0a0f1e] shadow-md ${cap.dot}`} />
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--bg-surface)] ${cap.dot}`} />
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-bold text-white text-sm truncate">{staff.name}</h3>
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-black uppercase tracking-tighter ${cap.bg} ${cap.border} ${cap.text}`}>
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                        <h3 className="font-semibold text-[var(--text-heading)] text-sm truncate">{staff.name}</h3>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-md border font-medium ${cap.bg} ${cap.border} ${cap.text}`}>
                             {cap.label}
                         </span>
                     </div>
 
                     {/* Workload summary */}
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[12px] text-white font-bold">{staff.estimatedWorkdays} days estimated</span>
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs text-[var(--text-heading)] font-semibold tabular-nums">{staff.estimatedWorkdays} days estimated</span>
+                        <span className="text-[11px] text-[var(--text-muted)] tabular-nums">({staff.totalTasks} tasks)</span>
                     </div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[11px] text-gray-500 font-medium">{staff.totalTasks} tasks</span>
-                    </div>
+
                     {/* Sprint capacity progress bar */}
-                    <div className="w-full h-1.5 rounded-full bg-white/8 mb-2 overflow-hidden" title={`${Math.round(sprintPct)}% of sprint capacity`}>
+                    <div className="w-full h-1.5 rounded-full bg-[var(--border)] my-2 overflow-hidden" title={`${Math.round(sprintPct)}% of sprint capacity`}>
                         <div
-                            className="h-full rounded-full transition-all duration-500"
+                            className="h-full rounded-full transition-all duration-300"
                             style={{ width: `${sprintPct}%`, backgroundColor: sprintColor }}
                         />
                     </div>
 
-                    {/* 4-Week Timeline View (New) */}
-                    <div className="flex gap-1.5 h-1.5 mb-2">
+                    {/* 4-Week Timeline View */}
+                    <div className="flex gap-1 h-1.5 mb-1">
                         {weekLoads.map((load, i) => (
                             <div 
                                 key={i} 
-                                className="flex-1 rounded-full bg-white/5 overflow-hidden group/tip relative"
+                                className="flex-1 rounded-full bg-[var(--border)] overflow-hidden relative"
                                 title={`Week ${i+1}: ${load} tasks`}
                             >
                                 <div 
-                                    className={`h-full transition-all duration-500 ${load === 0 ? 'bg-transparent' : 'bg-brand-500'}`}
-                                    style={{ opacity: load === 0 ? 0 : Math.min(0.2 + (load * 0.2), 1) }}
+                                    className="h-full transition-all duration-300 bg-[var(--accent)]"
+                                    style={{ opacity: load === 0 ? 0 : Math.min(0.3 + (load * 0.2), 1) }}
                                 />
                             </div>
                         ))}
@@ -162,16 +161,16 @@ const StaffCard: React.FC<{
 
             {/* Risk indicators */}
             {(staff.highRisk > 0 || staff.overdue > 0) && (
-                <div className="flex gap-3 mt-3 pt-3 border-t border-white/5">
+                <div className="flex gap-3 mt-3 pt-2.5 border-t border-[var(--border)]">
                     {staff.overdue > 0 && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-red-400 font-bold">
-                            <Clock size={11} />
+                        <div className="flex items-center gap-1 text-xs text-[var(--color-danger)] font-medium tabular-nums">
+                            <Clock size={12} />
                             <span>{staff.overdue} overdue</span>
                         </div>
                     )}
                     {staff.highRisk > 0 && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-bold">
-                            <Zap size={11} />
+                        <div className="flex items-center gap-1 text-xs text-[var(--color-warning)] font-medium tabular-nums">
+                            <Zap size={12} />
                             <span>{staff.highRisk} at risk</span>
                         </div>
                     )}
@@ -189,39 +188,40 @@ const TaskCard: React.FC<{ task: Task; onClick?: () => void; onReassign?: (e: Re
     return (
         <div
             onClick={onClick}
-            className={`p-4 bg-white/3 rounded-xl border border-white/8 hover:bg-white/6 hover:border-white/15 transition-all duration-150 group relative ${onClick ? 'cursor-pointer' : ''}`}
+            className={`p-3.5 bg-[var(--bg-main)] rounded-lg border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors group relative ${onClick ? 'cursor-pointer' : ''}`}
         >
             <div className="flex items-start justify-between gap-2 mb-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded-md border font-bold uppercase tracking-wide ${getPriorityStyle(task.priority)}`}>
-                    {task.priority || 'LOW'}
+                <span className={`text-[10px] px-2 py-0.5 rounded-md border font-medium ${getPriorityStyle(task.priority)}`}>
+                    {task.priority ? task.priority.charAt(0) + task.priority.slice(1).toLowerCase() : 'Low'}
                 </span>
                 <div className="flex items-center gap-2">
                     {onReassign && (
                         <button 
+                            type="button"
                             onClick={onReassign}
-                            className="p-1 rounded-md bg-brand-500/10 text-brand-400 hover:bg-brand-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                            title="Reassign Task"
+                            className="p-1 rounded-md bg-[var(--accent-dim)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-colors opacity-0 group-hover:opacity-100"
+                            title="Reassign task"
                         >
-                            <Users size={10} />
+                            <Users size={12} />
                         </button>
                     )}
                     {dueDateStr && (
-                        <span className={`flex items-center gap-1 text-[10px] font-medium ${isOverdue ? 'text-red-400' : 'text-gray-500'}`}>
-                            <Clock size={9} />
+                        <span className={`flex items-center gap-1 text-[11px] tabular-nums ${isOverdue ? 'text-[var(--color-danger)] font-medium' : 'text-[var(--text-muted)]'}`}>
+                            <Clock size={11} />
                             {isOverdue ? 'Overdue · ' : ''}{dueDateStr}
                         </span>
                     )}
                 </div>
             </div>
-            <h4 className="font-semibold text-white text-sm mb-1 leading-snug">{task.title}</h4>
-            <p className="text-[11px] text-gray-500 mb-3 truncate">{task.clientName || 'Internal'}</p>
+            <h4 className="font-medium text-[var(--text-heading)] text-sm mb-1 leading-snug">{task.title}</h4>
+            <p className="text-xs text-[var(--text-muted)] mb-2.5 truncate">{task.clientName || 'Internal'}</p>
             <div className="flex items-center justify-between">
                 <span className={`text-[10px] px-2 py-0.5 rounded-md border ${getStatusStyle(task.status)}`}>
-                    {task.status.replace(/_/g, ' ')}
+                    {task.status.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase())}
                 </span>
                 {task.riskLevel === 'HIGH' && (
-                    <span className="flex items-center gap-1 text-[10px] text-amber-400 font-bold">
-                        <Zap size={9} /> High Risk
+                    <span className="flex items-center gap-1 text-[11px] text-[var(--color-warning)] font-medium">
+                        <Zap size={11} /> High risk
                     </span>
                 )}
             </div>
@@ -234,7 +234,6 @@ const ResourcePlanningPage: React.FC = () => {
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // React Query — shared cached data with Dashboard and TasksPage
     const { data: users = [], isLoading: usersLoading } = useUsers();
     const { data: tasks = [], isLoading: tasksLoading } = useTasks();
     const loading = usersLoading || tasksLoading;
@@ -261,8 +260,8 @@ const ResourcePlanningPage: React.FC = () => {
             return {
                 uid: user.uid,
                 name: user.displayName || 'Unknown',
-                totalTasks: userTasks.length,           // keep for display
-                estimatedWorkdays,                       // NEW: primary workload measure
+                totalTasks: userTasks.length,
+                estimatedWorkdays,
                 highRisk: userTasks.filter(t => t.riskLevel === 'HIGH').length,
                 overdue: userTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date()).length,
                 inProgress: userTasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
@@ -299,20 +298,19 @@ const ResourcePlanningPage: React.FC = () => {
 
     const filteredData = useMemo(() => {
         let data = [...workloadData];
-        // Filter
         if (filter === 'overloaded') data = data.filter(d => d.estimatedWorkdays >= sprintCapacity);
         else if (filter === 'free') data = data.filter(d => d.totalTasks === 0);
         else if (filter === 'atrisk') data = data.filter(d => d.highRisk > 0 || d.overdue > 0);
-        // Department Filter
+
         if (selectedDept !== 'All') {
             data = data.filter(d => {
                 const user = users.find(u => u.uid === d.uid);
                 return user?.department === selectedDept;
             });
         }
-        // Search
+
         if (search.trim()) data = data.filter(d => d.name.toLowerCase().includes(search.toLowerCase()));
-        // Sort
+
         data.sort((a, b) => {
             let diff = 0;
             if (sortKey === 'name') diff = a.name.localeCompare(b.name);
@@ -320,7 +318,7 @@ const ResourcePlanningPage: React.FC = () => {
             return sortAsc ? diff : -diff;
         });
         return data;
-    }, [workloadData, filter, search, sortKey, sortAsc, overloadThreshold, sprintCapacity]);
+    }, [workloadData, filter, search, sortKey, sortAsc, selectedDept, sprintCapacity, users]);
 
     const maxDays = Math.max(...workloadData.map(d => d.estimatedWorkdays), 1);
     const selectedStaff = workloadData.find(d => d.uid === selectedUser);
@@ -333,7 +331,6 @@ const ResourcePlanningPage: React.FC = () => {
     const handleReassign = async (targetUserId: string) => {
         if (!reassignTarget || !selectedUser) return;
         try {
-            // Update assignedTo: remove selectedUser, add targetUserId
             const newAssignedTo = reassignTarget.assignedTo.filter(uid => uid !== selectedUser);
             if (!newAssignedTo.includes(targetUserId)) {
                 newAssignedTo.push(targetUserId);
@@ -342,7 +339,6 @@ const ResourcePlanningPage: React.FC = () => {
             await AuthService.updateTask(reassignTarget.id!, { assignedTo: newAssignedTo });
             toast.success(`Task reassigned to ${users.find(u => u.uid === targetUserId)?.displayName}`);
             setReassignTarget(null);
-            // React Query will refetch automatically
         } catch (error) {
             console.error("Reassign error:", error);
             toast.error("Failed to reassign task");
@@ -351,103 +347,93 @@ const ResourcePlanningPage: React.FC = () => {
 
     const SortIcon = ({ k }: { k: SortKey }) => (
         sortKey === k
-            ? (sortAsc ? <ChevronUp size={12} className="text-brand-400" /> : <ChevronDown size={12} className="text-brand-400" />)
-            : <ChevronDown size={12} className="text-gray-600" />
+            ? (sortAsc ? <ChevronUp size={12} className="text-[var(--accent)]" /> : <ChevronDown size={12} className="text-[var(--accent)]" />)
+            : <ChevronDown size={12} className="text-[var(--text-subtle)]" />
     );
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-                <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
-                <p className="text-sm text-gray-400">Loading resource data...</p>
+            <div className="flex flex-col items-center justify-center h-64 gap-3">
+                <Loader2 className="w-7 h-7 text-[var(--accent)] animate-spin" />
+                <p className="text-sm text-[var(--text-muted)]">Loading resource data...</p>
             </div>
         );
     }
 
     return (
-        <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500">
+        <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
             {/* ── Header ── */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
-                        <div className="p-1.5 bg-brand-500/15 rounded-lg border border-brand-500/25">
-                            <LayoutDashboard className="text-brand-400" size={18} />
-                        </div>
-                        Resource Planning
+                    <h1 className="font-display text-2xl font-semibold text-[var(--text-heading)] tracking-tight">
+                        Resource planning
                     </h1>
-                    <p className="text-gray-500 text-xs mt-0.5 ml-10">Team capacity · workload balance · task distribution</p>
+                    <p className="text-[var(--text-muted)] text-xs mt-0.5">Team capacity, workload balance, and task distribution</p>
                 </div>
                 <button
+                    type="button"
                     onClick={() => setShowHeatmap(p => !p)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${showHeatmap ? 'bg-brand-500/15 border-brand-500/30 text-brand-300' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        showHeatmap 
+                        ? 'bg-[var(--accent-dim)] border-[var(--border-accent)] text-[var(--accent)]' 
+                        : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-heading)]'
+                    }`}
                 >
                     <TrendingUp size={13} />
-                    {showHeatmap ? 'Hide' : 'Show'} Heatmap
+                    {showHeatmap ? 'Hide' : 'Show'} heatmap
                 </button>
             </div>
 
             {/* ── KPI Summary Bar ── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
                     {
-                        icon: <Users size={14} className="text-brand-400" />,
+                        icon: <Users size={15} className="text-[var(--accent)]" />,
                         value: users.length,
-                        label: 'Team Members',
+                        label: 'Team members',
                         sub: `${freeCount} available`,
-                        accent: 'border-brand-500/20 bg-brand-500/5',
-                        leftBorder: 'border-l-brand-500',
                     },
                     {
-                        icon: <Briefcase size={14} className="text-amber-400" />,
+                        icon: <Briefcase size={15} className="text-[var(--color-info)]" />,
                         value: activeTasks.length,
-                        label: 'Active Tasks',
-                        sub: `${workloadData.length > 0 ? (activeTasks.length / workloadData.length).toFixed(1) : 0} avg`,
-                        accent: 'border-amber-500/20 bg-amber-500/5',
-                        leftBorder: 'border-l-indigo-500',
+                        label: 'Active tasks',
+                        sub: `${workloadData.length > 0 ? (activeTasks.length / workloadData.length).toFixed(1) : 0} avg / member`,
                     },
                     {
-                        icon: <AlertTriangle size={14} className="text-red-400" />,
+                        icon: <AlertTriangle size={15} className={overloadedCount > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'} />,
                         value: overloadedCount,
                         label: 'Overloaded',
                         sub: overloadedCount > 0 ? 'Action needed' : 'All balanced',
-                        accent: overloadedCount > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-brand-500/20 bg-brand-500/5',
-                        leftBorder: overloadedCount > 0 ? 'border-l-red-500' : 'border-l-brand-',
                     },
                     {
-                        icon: <Clock size={14} className="text-amber-400" />,
+                        icon: <Clock size={15} className={totalOverdue > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--text-muted)]'} />,
                         value: totalOverdue,
-                        label: 'Overdue Tasks',
+                        label: 'Overdue tasks',
                         sub: `${totalHighRisk} high risk`,
-                        accent: totalOverdue > 0 ? 'border-red-500/25 bg-red-500/8' : 'border-brand-500/20 bg-brand-500/5',
-                        leftBorder: totalOverdue > 0 ? 'border-l-red-500' : 'border-l-brand-',
                     },
                     {
-                        icon: <Calendar size={14} className="text-purple-400" />,
+                        icon: <Calendar size={15} className="text-[var(--accent)]" />,
                         value: deadlinesThisWeek,
-                        label: 'Due This Week',
+                        label: 'Due this week',
                         sub: `${deadlinesNextWeek} due next week`,
-                        accent: 'border-purple-500/20 bg-purple-500/5',
-                        leftBorder: 'border-l-purple-500',
                     },
                 ].map((kpi, i) => (
-                    <div key={i} className={`rounded-xl border border-l-2 p-4 ${kpi.accent} ${kpi.leftBorder}`}>
+                    <div key={i} className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] p-4">
                         <div className="flex items-center justify-between mb-2">
                             {kpi.icon}
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{kpi.label}</span>
+                            <span className="text-xs text-[var(--text-muted)]">{kpi.label}</span>
                         </div>
-                        <div className="text-2xl font-black text-white tabular-nums">{kpi.value}</div>
-                        <div className="text-[11px] text-gray-400 mt-1">{kpi.sub}</div>
+                        <div className="font-display text-2xl font-semibold text-[var(--text-heading)] tabular-nums">{kpi.value}</div>
+                        <div className="text-[11px] text-[var(--text-muted)] mt-0.5">{kpi.sub}</div>
                     </div>
                 ))}
             </div>
 
-            {/* ── Heatmap (shown by default, above staff cards) ── */}
+            {/* ── Heatmap ── */}
             {showHeatmap && (
-                <div className="animate-in slide-in-from-top-2 duration-300">
-                    <div className="glass-panel rounded-2xl border border-white/5 p-1 h-[420px]">
-                        <StaffCapacityHeatmap users={selectedDept === 'All' ? users : users.filter(u => u.department === selectedDept)} tasks={tasks} />
-                    </div>
+                <div className="h-[420px]">
+                    <StaffCapacityHeatmap users={selectedDept === 'All' ? users : users.filter(u => u.department === selectedDept)} tasks={tasks} />
                 </div>
             )}
 
@@ -461,33 +447,38 @@ const ResourcePlanningPage: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-3">
                         {/* Search */}
                         <div className="relative flex-1 min-w-[180px]">
-                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-subtle)] pointer-events-none" />
                             <input
                                 type="text"
                                 placeholder="Search staff..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/50 transition-all"
+                                className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[var(--text-heading)] placeholder-[var(--text-subtle)] focus:outline-none focus:border-[var(--border-accent)] transition-colors"
                             />
                             {search && (
-                                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                                <button type="button" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-heading)]">
                                     <X size={12} />
                                 </button>
                             )}
                         </div>
 
                         {/* Filter pills */}
-                        <div className="flex items-center gap-1.5 bg-white/5 border border-white/8 rounded-xl p-1">
+                        <div className="flex items-center gap-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg p-1">
                             {([
                                 { key: 'all', label: 'All' },
-                                { key: 'overloaded', label: `🔴 Overloaded (≥${overloadThreshold})` },
-                                { key: 'atrisk', label: '⚠️ At Risk' },
-                                { key: 'free', label: '🟢 Free' },
+                                { key: 'overloaded', label: `Overloaded (≥${overloadThreshold})` },
+                                { key: 'atrisk', label: 'At risk' },
+                                { key: 'free', label: 'Free' },
                             ] as { key: FilterKey; label: string }[]).map(f => (
                                 <button
                                     key={f.key}
+                                    type="button"
                                     onClick={() => setFilter(f.key)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filter === f.key ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                                        filter === f.key 
+                                        ? 'bg-[var(--accent)] text-[var(--on-accent)]' 
+                                        : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'
+                                    }`}
                                 >
                                     {f.label}
                                 </button>
@@ -495,7 +486,7 @@ const ResourcePlanningPage: React.FC = () => {
                         </div>
 
                         {/* Overload threshold control */}
-                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                             <span className="whitespace-nowrap">Overload at:</span>
                             <input
                                 type="number"
@@ -503,12 +494,12 @@ const ResourcePlanningPage: React.FC = () => {
                                 max={20}
                                 value={overloadThreshold}
                                 onChange={e => setOverloadThreshold(Math.max(1, parseInt(e.target.value) || 1))}
-                                className="w-12 bg-white/5 border border-white/10 rounded-lg text-xs text-center text-white py-1 focus:outline-none focus:border-brand-500/50"
+                                className="w-12 bg-[var(--bg-surface)] border border-[var(--border)] rounded-md text-xs text-center text-[var(--text-heading)] py-1 tabular-nums focus:outline-none focus:border-[var(--border-accent)]"
                             />
                         </div>
 
                         {/* Sort */}
-                        <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                        <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                             <Filter size={11} />
                             <span>Sort:</span>
                             {([
@@ -519,23 +510,27 @@ const ResourcePlanningPage: React.FC = () => {
                             ] as { key: SortKey; label: string }[]).map(s => (
                                 <button
                                     key={s.key}
+                                    type="button"
                                     onClick={() => handleSort(s.key)}
-                                    className={`flex items-center gap-0.5 px-2 py-1 rounded-lg transition-all ${sortKey === s.key ? 'text-brand-400 bg-brand-500/10' : 'text-gray-500 hover:text-white'}`}
+                                    className={`flex items-center gap-0.5 px-2 py-1 rounded-md transition-colors ${
+                                        sortKey === s.key ? 'text-[var(--accent)] bg-[var(--accent-dim)] font-medium' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'
+                                    }`}
                                 >
                                     {s.label} <SortIcon k={s.key} />
                                 </button>
                             ))}
                         </div>
 
-                        <div className="h-4 w-[1px] bg-white/10 hidden md:block"></div>
-
                         {/* Department Tabs */}
-                        <div className="flex items-center gap-1.5 bg-white/5 border border-white/8 rounded-xl p-1 overflow-x-auto">
-                            {['All', 'Audit', 'Tax', 'Admin', 'Consulting', 'R. SAPKOTA & ASSOCIATES'].map(dept => (
+                        <div className="flex items-center gap-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg p-1 overflow-x-auto">
+                            {['All', 'Audit', 'Tax', 'Admin', 'Consulting', 'R. Sapkota & Associates'].map(dept => (
                                 <button
                                     key={dept}
+                                    type="button"
                                     onClick={() => setSelectedDept(dept)}
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${selectedDept === dept ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                                        selectedDept === dept ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'
+                                    }`}
                                 >
                                     {dept}
                                 </button>
@@ -545,8 +540,8 @@ const ResourcePlanningPage: React.FC = () => {
 
                     {/* Cards Grid */}
                     {filteredData.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                            <Users size={32} className="mb-3 opacity-30" />
+                        <div className="flex flex-col items-center justify-center py-16 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl text-[var(--text-muted)]">
+                            <Users size={32} className="mb-2 opacity-30" />
                             <p className="text-sm">No staff match your filters</p>
                         </div>
                     ) : (
@@ -567,55 +562,55 @@ const ResourcePlanningPage: React.FC = () => {
 
                 {/* ── Drilldown Panel ── */}
                 {selectedUser && selectedStaff && (
-                    <div className="xl:col-span-1 animate-in slide-in-from-right-4 duration-300">
-                        <div className="glass-panel rounded-2xl border border-white/8 p-5 sticky top-6">
+                    <div className="xl:col-span-1">
+                        <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] p-4 sticky top-6">
                             {/* Header */}
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border)]">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-accent-purple flex items-center justify-center text-sm font-bold text-white">
+                                    <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center text-xs font-semibold text-[var(--text-heading)]">
                                         {selectedStaff.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                     </div>
                                     <div>
-                                        <h2 className="font-bold text-white text-sm">{selectedStaff.name}</h2>
-                                        <p className="text-[11px] text-gray-500">{selectedStaff.totalTasks} active tasks</p>
+                                        <h2 className="font-semibold text-[var(--text-heading)] text-sm">{selectedStaff.name}</h2>
+                                        <p className="text-xs text-[var(--text-muted)] tabular-nums">{selectedStaff.totalTasks} active tasks</p>
                                     </div>
                                 </div>
                                 <button
+                                    type="button"
                                     onClick={() => setSelectedUser(null)}
-                                    className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+                                    className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-heading)] hover:bg-[var(--accent-dim)] transition-colors"
                                 >
-                                    <X size={14} />
+                                    <X size={16} />
                                 </button>
                             </div>
 
                             {/* Mini stats */}
                             <div className="grid grid-cols-3 gap-2 mb-4">
                                 {[
-                                    { label: 'Total', value: selectedStaff.totalTasks, color: 'text-white' },
-                                    { label: 'Overdue', value: selectedStaff.overdue, color: selectedStaff.overdue > 0 ? 'text-red-400' : 'text-gray-400' },
-                                    { label: 'High Risk', value: selectedStaff.highRisk, color: selectedStaff.highRisk > 0 ? 'text-amber-400' : 'text-gray-400' },
+                                    { label: 'Total', value: selectedStaff.totalTasks, color: 'text-[var(--text-heading)]' },
+                                    { label: 'Overdue', value: selectedStaff.overdue, color: selectedStaff.overdue > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--text-muted)]' },
+                                    { label: 'High risk', value: selectedStaff.highRisk, color: selectedStaff.highRisk > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--text-muted)]' },
                                 ].map(stat => (
-                                    <div key={stat.label} className="bg-white/5 rounded-xl p-2.5 text-center border border-white/5">
-                                        <div className={`text-xl font-bold ${stat.color}`}>{stat.value}</div>
-                                        <div className="text-[10px] text-gray-500 mt-0.5">{stat.label}</div>
+                                    <div key={stat.label} className="bg-[var(--bg-main)] rounded-lg p-2.5 text-center border border-[var(--border)]">
+                                        <div className={`text-lg font-semibold tabular-nums ${stat.color}`}>{stat.value}</div>
+                                        <div className="text-[11px] text-[var(--text-muted)] mt-0.5">{stat.label}</div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Task list */}
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <Briefcase size={11} /> Assigned Tasks
+                            <h3 className="text-xs font-medium text-[var(--text-muted)] mb-2.5 flex items-center gap-1.5">
+                                <Briefcase size={12} /> Assigned tasks
                             </h3>
                             {selectedStaff.tasks.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-8 text-gray-600">
-                                    <CheckCircle2 size={24} className="mb-2 text-brand-500/50" />
+                                <div className="flex flex-col items-center justify-center py-8 text-[var(--text-muted)]">
+                                    <CheckCircle2 size={20} className="mb-1 text-[var(--color-success)]" />
                                     <p className="text-xs">No active tasks</p>
                                 </div>
                             ) : (
-                                <div className="space-y-2 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+                                <div className="space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
                                     {selectedStaff.tasks
                                         .sort((a, b) => {
-                                            // Sort: overdue first, then high priority, then by due date
                                             const aOverdue = a.dueDate && new Date(a.dueDate) < new Date() ? 1 : 0;
                                             const bOverdue = b.dueDate && new Date(b.dueDate) < new Date() ? 1 : 0;
                                             if (bOverdue !== aOverdue) return bOverdue - aOverdue;
@@ -633,12 +628,14 @@ const ResourcePlanningPage: React.FC = () => {
                                     }
                                 </div>
                             )}
+                            
                             {/* Navigate to full workflow view */}
                             <button
+                                type="button"
                                 onClick={() => navigate(`/tasks?staff=${selectedUser}`)}
-                                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-bold hover:bg-brand-500/20 transition-all"
+                                className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--accent-dim)] border border-[var(--border-accent)] text-[var(--accent)] text-xs font-medium hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-colors"
                             >
-                                <ExternalLink size={13} /> View all in Workflow →
+                                <ExternalLink size={13} /> View all in workflow
                             </button>
                         </div>
                     </div>
@@ -649,56 +646,58 @@ const ResourcePlanningPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Overloaded alert */}
                 {overloadedCount > 0 && (
-                    <div className="bg-red-500/8 border border-red-500/20 rounded-2xl p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle size={16} className="text-red-400" />
-                            <h3 className="font-bold text-red-200 text-sm">Overloaded Staff ({overloadedCount})</h3>
+                    <div className="bg-[rgba(224,112,122,0.06)] border border-[rgba(224,112,122,0.25)] rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2.5">
+                            <AlertTriangle size={15} className="text-[var(--color-danger)]" />
+                            <h3 className="font-semibold text-[var(--color-danger)] text-sm">Overloaded staff ({overloadedCount})</h3>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             {workloadData.filter(d => d.estimatedWorkdays >= sprintCapacity).map(d => (
                                 <div key={d.uid} className="flex items-center justify-between text-xs">
-                                    <span className="text-red-300 font-medium">{d.name}</span>
-                                    <div className="flex items-center gap-3 text-gray-400">
+                                    <span className="text-[var(--text-heading)] font-medium">{d.name}</span>
+                                    <div className="flex items-center gap-3 text-[var(--text-muted)] tabular-nums">
                                         <span>{d.estimatedWorkdays} days</span>
-                                        <span className="text-gray-500">{d.totalTasks} tasks</span>
-                                        {d.overdue > 0 && <span className="text-red-400">{d.overdue} overdue</span>}
+                                        <span>{d.totalTasks} tasks</span>
+                                        {d.overdue > 0 && <span className="text-[var(--color-danger)] font-medium">{d.overdue} overdue</span>}
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <p className="text-[11px] text-red-400/70 mt-3">Consider reassigning tasks from overloaded members to available staff.</p>
+                        <p className="text-[11px] text-[var(--text-muted)] mt-2.5">Consider reassigning tasks from overloaded members to available staff.</p>
                     </div>
                 )}
 
                 {/* Available capacity */}
                 {freeCount > 0 && (
-                    <div className="bg-brand-500/8 border border-brand-500/20 rounded-2xl p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                            <CheckCircle2 size={16} className="text-brand-400" />
-                            <h3 className="font-bold text-brand-200 text-sm">Available Capacity ({freeCount})</h3>
+                    <div className="bg-[rgba(79,178,134,0.06)] border border-[rgba(79,178,134,0.25)] rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2.5">
+                            <CheckCircle2 size={15} className="text-[var(--color-success)]" />
+                            <h3 className="font-semibold text-[var(--color-success)] text-sm">Available capacity ({freeCount})</h3>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             {workloadData.filter(d => d.totalTasks === 0).map(d => (
                                 <div key={d.uid} className="flex items-center justify-between text-xs">
-                                    <span className="text-brand-300 font-medium">{d.name}</span>
-                                    <span className="text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-500/20">Ready to assign</span>
+                                    <span className="text-[var(--text-heading)] font-medium">{d.name}</span>
+                                    <span className="text-[var(--color-success)] bg-[rgba(79,178,134,0.1)] px-2 py-0.5 rounded-md border border-[rgba(79,178,134,0.2)]">Ready to assign</span>
                                 </div>
                             ))}
                         </div>
-                        <p className="text-[11px] text-brand-400/70 mt-3">These team members have no active tasks and can take on new work.</p>
+                        <p className="text-[11px] text-[var(--text-muted)] mt-2.5">These team members have no active tasks and can take on new work.</p>
                     </div>
                 )}
 
                 {/* Balanced state */}
                 {overloadedCount === 0 && freeCount === 0 && (
-                    <div className="md:col-span-2 bg-brand-500/8 border border-brand-500/20 rounded-2xl p-4 flex items-center gap-4">
-                        <CheckCircle2 size={32} className="text-brand-400 flex-shrink-0" />
+                    <div className="md:col-span-2 bg-[rgba(79,178,134,0.06)] border border-[rgba(79,178,134,0.25)] rounded-xl p-4 flex items-center gap-3.5">
+                        <CheckCircle2 size={24} className="text-[var(--color-success)] flex-shrink-0" />
                         <div>
-                            <h3 className="font-bold text-brand-200 text-sm mb-0.5">Team Workload is Well Balanced</h3>
-                            <p className="text-[12px] text-brand-400/70">All team members have active tasks and no one is overloaded. Great distribution!</p>
+                            <h3 className="font-semibold text-[var(--text-heading)] text-sm mb-0.5">Team workload is well balanced</h3>
+                            <p className="text-xs text-[var(--text-muted)]">All team members have active tasks and no one is overloaded.</p>
                         </div>
                     </div>
                 )}
+            </div>
+
             {/* Reassign Modal */}
             {reassignTarget && (
                 <ReassignModal 
@@ -708,7 +707,6 @@ const ResourcePlanningPage: React.FC = () => {
                     onReassign={handleReassign}
                 />
             )}
-            </div>
         </div>
     );
 };

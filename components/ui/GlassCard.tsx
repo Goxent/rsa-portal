@@ -17,9 +17,9 @@ const GlassCard: React.FC<GlassCardProps> = ({
     onClick,
     hoverEffect = false
 }) => {
-    const baseClasses = 'glass-panel rounded-xl';
+    const baseClasses = 'glass-panel';
     const hoverClasses = hoverEffect
-        ? 'hover:border-amber-500/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer'
+        ? 'hover:border-[var(--border-mid)] hover:bg-[var(--bg-surface)] transition-colors duration-150 cursor-pointer'
         : '';
 
     return (

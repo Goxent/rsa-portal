@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 import { Trophy, Target, Check, X, Plus } from 'lucide-react';
@@ -110,31 +110,29 @@ const FocusWidget: React.FC = () => {
     const atLimit        = false; // Limit removed
 
     return (
-        <div className="relative rounded-xl border p-5 flex flex-col gap-3 h-full min-h-[140px] transition-all duration-200" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+        <div className="relative rounded-[var(--radius-lg)] border p-5 flex flex-col gap-3 h-full min-h-[140px] transition-colors duration-150" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
 
             {/* ── Header ────────────────────────────────────────────── */}
             <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-lg flex-shrink-0 ${allCompleted ? 'bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400' : 'bg-brand-100 text-brand-600 dark:bg-amber-500/20 dark:text-amber-400'}`}>
-                    {allCompleted ? <Trophy size={15} /> : <Target size={15} />}
+                <div className="p-1.5 rounded-[var(--radius-sm)] flex-shrink-0" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+                    {allCompleted ? <Trophy size={15} strokeWidth={1.75} /> : <Target size={15} strokeWidth={1.75} />}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-xs font-black text-slate-800 dark:text-gray-300 uppercase tracking-widest truncate">
-                            Today's Focus
+                        <h3 className="text-xs font-semibold" style={{ color: 'var(--text-heading)' }}>
+                            Today's focus
                         </h3>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                             {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse animate-duration-700" title="Syncing..." />}
-                             <span className="text-[10px] font-bold text-slate-500 dark:text-gray-500 tabular-nums">{completedCount}/{goals.length}</span>
+                             {isSyncing && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--accent)' }} title="Syncing..." />}
+                             <span className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--text-muted)' }}>{completedCount}/{goals.length}</span>
                         </div>
                     </div>
-                    <div className="mt-1.5 h-1 rounded-full bg-slate-200 dark:bg-white/[0.06] overflow-hidden">
+                    <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface)' }}>
                         <div
-                            className="h-full rounded-full transition-all duration-500"
+                            className="h-full rounded-full transition-all duration-300"
                             style={{
                                 width: `${progress}%`,
-                                background: allCompleted
-                                    ? 'linear-gradient(90deg, #10b981, #34d399)'
-                                    : 'linear-gradient(90deg, #6366f1, #818cf8)',
+                                background: 'var(--accent)',
                             }}
                         />
                     </div>
@@ -144,23 +142,34 @@ const FocusWidget: React.FC = () => {
             {/* ── List & Input ── */}
             <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto custom-scrollbar">
                 {goals.map(goal => (
-                    <div key={goal.id} className="flex items-center gap-2.5 group/item rounded-lg px-1.5 py-1 hover:bg-brand-50 dark:hover:bg-white/[0.03] transition-colors">
+                    <div key={goal.id} className="flex items-center gap-2.5 group/item rounded-[var(--radius-sm)] px-2 py-1.5 transition-colors" onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                         <div
                             onClick={() => toggleGoal(goal.id)}
-                            className={`w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200 ${celebratingId === goal.id ? 'fw-pop' : ''} ${goal.completed ? 'bg-brand-500 border-brand-500' : 'border-slate-300 dark:border-slate-600 bg-transparent hover:border-brand-400 dark:hover:border-indigo-400'}`}
+                            className={`w-[18px] h-[18px] rounded-[var(--radius-sm)] border flex items-center justify-center cursor-pointer flex-shrink-0 transition-colors ${celebratingId === goal.id ? 'fw-pop' : ''}`}
+                            style={{
+                                borderColor: goal.completed ? 'var(--accent)' : 'var(--border-mid)',
+                                background: goal.completed ? 'var(--accent)' : 'transparent',
+                            }}
                         >
-                            {goal.completed && <Check size={11} className="text-white" strokeWidth={3} />}
+                            {goal.completed && <Check size={11} strokeWidth={2.5} style={{ color: 'var(--on-accent)' }} />}
                         </div>
                         <p
                             onClick={() => toggleGoal(goal.id)}
-                            className={`flex-1 text-sm cursor-pointer transition-all duration-200 truncate leading-none ${goal.completed ? 'text-slate-400 dark:text-gray-500 line-through decoration-slate-300 dark:decoration-gray-600' : 'text-slate-800 dark:text-gray-200 hover:text-brand-900 dark:hover:text-white font-medium'}`}
+                            className="flex-1 text-xs cursor-pointer transition-colors truncate leading-tight"
+                            style={{
+                                color: goal.completed ? 'var(--text-muted)' : 'var(--text-heading)',
+                                textDecoration: goal.completed ? 'line-through' : 'none',
+                                fontWeight: goal.completed ? 400 : 500
+                            }}
                             title={goal.text}
                         >
                             {goal.text}
                         </p>
                         <button
                             onClick={() => deleteGoal(goal.id)}
-                            className="opacity-0 group-hover/item:opacity-100 p-1 rounded text-gray-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all flex-shrink-0"
+                            className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:text-[var(--color-danger)] transition-opacity flex-shrink-0"
+                            style={{ color: 'var(--text-muted)' }}
+                            aria-label="Delete focus goal"
                         >
                             <X size={12} />
                         </button>
@@ -168,35 +177,34 @@ const FocusWidget: React.FC = () => {
                 ))}
                 
                 {goals.length === 0 && !inputFocused && (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-2 py-4 animate-in fade-in duration-500">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                            <Plus size={14} className="text-slate-400" />
-                        </div>
-                        <p className="text-[10px] text-slate-500 dark:text-gray-600 text-center italic">
-                            No focus items yet — stay sharp!
+                    <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-4">
+                        <Target size={16} strokeWidth={1.75} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+                        <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
+                            No focus items yet. Add a priority for today.
                         </p>
                     </div>
                 )}
             </div>
 
             {/* Inline add */}
-            <div className="pt-2 border-t border-slate-100 dark:border-white/[0.05]">
+            <div className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
                 {atLimit ? (
                     <div className="flex flex-col items-center gap-1.5 py-1">
-                        <p className="text-[10px] text-slate-500 dark:text-gray-600 text-center">
+                        <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
                             Limit reached
                         </p>
                         <button 
                             onClick={() => persist(goals.filter(g => !g.completed))}
-                            className="text-[9px] font-black uppercase tracking-wider text-brand-600 hover:text-brand-700 transition-colors"
+                            className="text-xs font-semibold hover:underline transition-colors"
+                            style={{ color: 'var(--accent)' }}
                         >
-                            Clear Completed
+                            Clear completed
                         </button>
                     </div>
                 ) : (
                     <form onSubmit={handleAddGoal}>
-                        <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${inputFocused ? 'bg-white dark:bg-white/[0.04] border border-brand-300 dark:border-brand-500/30 shadow-sm' : 'border border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03]'}`}>
-                            <Plus size={13} className={`flex-shrink-0 transition-colors ${inputFocused ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-gray-600'}`} />
+                        <div className="flex items-center gap-2 rounded-[var(--radius-md)] px-2.5 py-1.5 transition-colors border" style={{ borderColor: inputFocused ? 'var(--accent)' : 'var(--border)', background: 'var(--bg-main)' }}>
+                            <Plus size={13} strokeWidth={1.75} style={{ color: inputFocused ? 'var(--accent)' : 'var(--text-muted)' }} />
                             <input
                                 ref={inputRef}
                                 type="text"
@@ -205,11 +213,12 @@ const FocusWidget: React.FC = () => {
                                 onFocus={() => setInputFocused(true)}
                                 onBlur={() => setInputFocused(false)}
                                 onKeyDown={e => { if (e.key === 'Escape') { setInputValue(''); setInputFocused(false); e.currentTarget.blur(); } }}
-                                placeholder="+ Add focus item..."
-                                className="flex-1 bg-transparent text-xs text-slate-800 dark:text-gray-300 placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:placeholder-slate-300 dark:focus:placeholder-gray-500"
+                                placeholder="Add focus item..."
+                                className="flex-1 bg-transparent text-xs outline-none"
+                                style={{ color: 'var(--text-heading)' }}
                             />
                             {inputValue.trim() && (
-                                <button type="submit" className="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex-shrink-0 transition-colors">
+                                <button type="submit" className="text-xs font-semibold flex-shrink-0 transition-colors" style={{ color: 'var(--accent)' }}>
                                     Add
                                 </button>
                             )}
@@ -218,20 +227,26 @@ const FocusWidget: React.FC = () => {
                 )}
                 
                 {goals.length > 0 && (
-                    <div className="mt-2 flex items-center justify-center gap-4 border-t border-slate-50 dark:border-white/[0.02] pt-2">
+                    <div className="mt-2 flex items-center justify-center gap-4 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
                         {completedCount > 0 && (
                             <button
                                 onClick={() => persist(goals.filter(g => !g.completed))}
-                                className="text-[9px] font-bold text-slate-400 hover:text-brand-500 transition-colors"
+                                className="text-[11px] font-medium transition-colors"
+                                style={{ color: 'var(--text-muted)' }}
+                                onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+                                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                             >
-                                Clear Completed
+                                Clear completed
                             </button>
                         )}
                         <button
                             onClick={() => persist([])}
-                            className="text-[9px] font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                            className="text-[11px] font-medium transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                         >
-                            Reset All
+                            Reset all
                         </button>
                     </div>
                 )}

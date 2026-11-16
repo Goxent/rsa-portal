@@ -28,22 +28,22 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(({
                     ref={ref}
                     id={checkboxId}
                     disabled={disabled}
-                    className="w-4 h-4 rounded border-gray-600 bg-white/5 text-brand-600 focus:ring-brand-500 focus:ring-offset-navy-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-4 h-4 rounded border-[var(--border-mid)] bg-[var(--bg-main)] text-[var(--accent)] focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer accent-[var(--accent)]"
                     {...props}
                 />
             </div>
             {(label || description) && (
-                <div className="ml-3 text-sm">
+                <div className="ml-2.5 text-xs">
                     {label && (
-                        <label htmlFor={checkboxId} className={`font-medium ${disabled ? 'text-gray-500' : 'text-gray-200'}`}>
+                        <label htmlFor={checkboxId} className={`font-medium cursor-pointer ${disabled ? 'text-[var(--text-muted)] opacity-50' : 'text-[var(--text-heading)]'}`}>
                             {label}
                         </label>
                     )}
                     {description && (
-                        <p className="text-gray-500">{description}</p>
+                        <p className="text-[var(--text-muted)] text-[11px] mt-0.5">{description}</p>
                     )}
                     {error && (
-                        <p className="text-red-400 text-xs mt-1">{error}</p>
+                        <p className="text-[var(--color-danger)] text-[11px] mt-0.5">{error}</p>
                     )}
                 </div>
             )}

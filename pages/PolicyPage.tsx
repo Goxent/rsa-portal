@@ -45,50 +45,50 @@ const getInitials = (name: string) => {
 const getRolePill = (role: string, isVacant?: boolean) => {
     if (isVacant) {
         return {
-            bg: 'bg-secondary text-muted border-border/60',
-            dot: 'bg-muted/40',
+            bg: 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)]',
+            dot: 'bg-[var(--text-muted)] opacity-40',
             label: 'Vacant Desk',
         };
     }
     const r = (role || '').toLowerCase();
     if (r.includes('associate') || r.includes('lead')) {
         return {
-            bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-            dot: 'bg-emerald-400',
+            bg: 'bg-[rgba(79,178,134,0.1)] text-[var(--color-success)] border-[rgba(79,178,134,0.25)]',
+            dot: 'bg-[var(--color-success)]',
             label: role,
         };
     }
     if (r.includes('third') || r.includes('3rd')) {
         return {
-            bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-            dot: 'bg-amber-400',
+            bg: 'bg-[rgba(217,164,65,0.1)] text-[var(--color-warning)] border-[rgba(217,164,65,0.25)]',
+            dot: 'bg-[var(--color-warning)]',
             label: role,
         };
     }
     if (r.includes('second') || r.includes('2nd')) {
         return {
-            bg: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-            dot: 'bg-cyan-400',
+            bg: 'bg-[rgba(106,163,217,0.1)] text-[var(--color-info)] border-[rgba(106,163,217,0.25)]',
+            dot: 'bg-[var(--color-info)]',
             label: role,
         };
     }
     if (r.includes('first') || r.includes('1st')) {
         return {
-            bg: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
-            dot: 'bg-indigo-400',
+            bg: 'bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)]',
+            dot: 'bg-[var(--accent)]',
             label: role,
         };
     }
     if (r.includes('trainee') || r.includes('intern')) {
         return {
-            bg: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-            dot: 'bg-purple-400',
+            bg: 'bg-[rgba(217,164,65,0.1)] text-[var(--color-warning)] border-[rgba(217,164,65,0.25)]',
+            dot: 'bg-[var(--color-warning)]',
             label: role,
         };
     }
     return {
-        bg: 'bg-secondary text-heading border-border',
-        dot: 'bg-accent',
+        bg: 'bg-[var(--bg-secondary)] text-[var(--text-heading)] border-[var(--border)]',
+        dot: 'bg-[var(--accent)]',
         label: role,
     };
 };
@@ -96,44 +96,44 @@ const getRolePill = (role: string, isVacant?: boolean) => {
 const getSeatBadgeStyle = (role: string, isVacant?: boolean, isLeader?: boolean) => {
     if (isVacant) {
         return {
-            container: 'bg-secondary/30 border-dashed border-border/60 opacity-60 hover:opacity-100',
-            title: 'text-muted italic',
-            roleText: 'text-muted/70',
+            container: 'bg-[var(--bg-secondary)]/30 border-dashed border-[var(--border)] opacity-60 hover:opacity-100',
+            title: 'text-[var(--text-muted)] italic',
+            roleText: 'text-[var(--text-muted)]/70',
         };
     }
     if (isLeader) {
         return {
-            container: 'bg-accent/10 border-accent/40 shadow-xs hover:border-accent',
-            title: 'font-bold text-accent',
-            roleText: 'text-accent/90',
+            container: 'bg-[var(--accent-dim)] border-[var(--border-accent)] hover:border-[var(--accent)]',
+            title: 'font-bold text-[var(--accent)]',
+            roleText: 'text-[var(--accent)]/90',
         };
     }
     const r = (role || '').toLowerCase();
     if (r.includes('senior') || r.includes('lead')) {
         return {
-            container: 'bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/60',
-            title: 'font-semibold text-emerald-400',
-            roleText: 'text-emerald-300/80',
+            container: 'bg-[rgba(79,178,134,0.08)] border-[rgba(79,178,134,0.25)] hover:border-[rgba(79,178,134,0.5)]',
+            title: 'font-semibold text-[var(--color-success)]',
+            roleText: 'text-[var(--color-success)]/80',
         };
     }
     if (r.includes('associate') || r.includes('tax')) {
         return {
-            container: 'bg-sky-500/10 border-sky-500/30 hover:border-sky-500/60',
-            title: 'font-semibold text-sky-400',
-            roleText: 'text-sky-300/80',
+            container: 'bg-[rgba(106,163,217,0.08)] border-[rgba(106,163,217,0.25)] hover:border-[rgba(106,163,217,0.5)]',
+            title: 'font-semibold text-[var(--color-info)]',
+            roleText: 'text-[var(--color-info)]/80',
         };
     }
     if (r.includes('trainee') || r.includes('intern')) {
         return {
-            container: 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/60',
-            title: 'font-semibold text-amber-400',
-            roleText: 'text-amber-300/80',
+            container: 'bg-[rgba(217,164,65,0.08)] border-[rgba(217,164,65,0.25)] hover:border-[rgba(217,164,65,0.5)]',
+            title: 'font-semibold text-[var(--color-warning)]',
+            roleText: 'text-[var(--color-warning)]/80',
         };
     }
     return {
-        container: 'bg-surface border-border hover:border-accent/40',
-        title: 'font-medium text-heading',
-        roleText: 'text-muted',
+        container: 'bg-[var(--bg-surface)] border-[var(--border)] hover:border-[var(--border-accent)]',
+        title: 'font-medium text-[var(--text-heading)]',
+        roleText: 'text-[var(--text-muted)]',
     };
 };
 
@@ -423,7 +423,7 @@ const PolicyPage: React.FC = () => {
     return (
         <div className="flex-1 flex flex-col h-full bg-surface overflow-hidden">
             {/* ── Top Executive Header ─────────────────────────────────────────── */}
-            <header className="flex-none bg-surface/90 backdrop-blur-md border-b border-border px-6 py-4 z-20">
+            <header className="flex-none bg-surface border-b border-border px-6 py-4 z-20">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-xs flex-shrink-0">
@@ -1220,7 +1220,7 @@ const PolicyPage: React.FC = () => {
                                                                 {/* Desk Block Body */}
                                                                 <div className="my-1.5 flex items-center gap-2">
                                                                     <div
-                                                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0 transition-transform group-hover:scale-105 ${
+                                                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-colors ${
                                                                             seat.isVacant
                                                                                 ? 'bg-secondary/60 border border-dashed border-border text-muted'
                                                                                 : 'bg-accent/15 text-accent border border-accent/30'
@@ -1408,7 +1408,7 @@ const PolicyPage: React.FC = () => {
             {/* ── SEAT CONFIGURATION MODAL (MASTER ADMIN LIVE EDIT) ── */}
             <AnimatePresence>
                 {editingSeat && isMasterAdmin && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-in fade-in duration-200">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1714,7 +1714,7 @@ const PolicyPage: React.FC = () => {
             {/* ── SEAT INSPECTION MODAL (READ-ONLY FOR STAFF) ── */}
             <AnimatePresence>
                 {inspectingSeat && !isMasterAdmin && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-200">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}

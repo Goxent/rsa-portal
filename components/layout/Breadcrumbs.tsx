@@ -29,16 +29,16 @@ const Breadcrumbs: React.FC = () => {
     // Don't show on Dashboard (it's root-like)
     if (pathnames.length === 0 || pathnames[0] === 'dashboard') {
         return (
-            <div className="flex items-center text-gray-500 text-sm">
+            <div className="flex items-center text-[var(--text-muted)] text-sm">
                 <Home size={14} className="mr-2" />
-                <span className="font-medium text-white">Dashboard</span>
+                <span className="font-medium text-[var(--text-heading)]">Dashboard</span>
             </div>
         );
     }
 
     return (
-        <div className="flex items-center text-sm text-gray-500">
-            <Link to="/dashboard" className="hidden md:flex hover:text-white transition-colors items-center">
+        <div className="flex items-center text-sm text-[var(--text-muted)]">
+            <Link to="/dashboard" className="hidden md:flex hover:text-[var(--text-heading)] transition-colors items-center">
                 <Home size={14} />
             </Link>
 
@@ -55,9 +55,9 @@ const Breadcrumbs: React.FC = () => {
 
                 return (
                     <React.Fragment key={to}>
-                        {!isLast && <ChevronRight size={14} className="hidden md:block mx-2 text-gray-600" />}
+                        {!isLast && <ChevronRight size={14} className="hidden md:block mx-2 text-[var(--text-muted)] opacity-60" />}
                         {isLast ? (
-                            <span className={`font-semibold md:font-medium text-[var(--text-heading)] md:text-white pointer-events-none ${isLast ? 'text-[0.875rem] md:text-sm' : ''}`}>
+                            <span className={`font-semibold md:font-medium text-[var(--text-heading)] md:text-[var(--text-heading)] pointer-events-none ${isLast ? 'text-[0.875rem] md:text-sm' : ''}`}>
                                 {displayName}
                             </span>
                         ) : (

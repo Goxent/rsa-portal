@@ -36,9 +36,6 @@ const ClientDetailPage: React.FC = () => {
     const [newDocTitle, setNewDocTitle] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
-
-
-
     // Fetch Client Data
     const { data: clients = [], isLoading: clientsLoading } = useQuery({
         queryKey: clientKeys.all,
@@ -53,8 +50,6 @@ const ClientDetailPage: React.FC = () => {
     // Fetch Tasks
     const { data: allTasks = [], isLoading: tasksLoading } = useTasks();
 
-
-
     const client = clients.find(c => c.id === clientId);
     const isLoading = clientsLoading || staffLoading || tasksLoading;
 
@@ -63,16 +58,12 @@ const ClientDetailPage: React.FC = () => {
         return allTasks.filter(t => t.clientIds?.includes(client.id));
     }, [allTasks, client]);
 
-
-
     // Fetch attendance/work logs linked to this client
     const { data: clientWorkLogs = [] } = useQuery({
         queryKey: ['attendance', 'client', clientId],
         queryFn: () => getAttendanceByClientId(clientId!),
         enabled: !!clientId
     });
-
-
 
     const overdueTasks = useMemo(() => clientTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'COMPLETED'), [clientTasks]);
 
@@ -84,20 +75,15 @@ const ClientDetailPage: React.FC = () => {
              }
         });
         return [
-            { name: 'To Do', value: statuses.NOT_STARTED, color: '#64748b' },
-            { name: 'In Progress', value: statuses.IN_PROGRESS, color: '#3b82f6' },
-            { name: 'Review', value: statuses.IN_REVIEW, color: '#f59e0b' },
-            { name: 'Completed', value: statuses.COMPLETED, color: '#10b981' },
-            { name: 'Blocked', value: statuses.BLOCKED, color: '#ef4444' }
+            { name: 'To do', value: statuses.NOT_STARTED, color: '#64748b' },
+            { name: 'In progress', value: statuses.IN_PROGRESS, color: 'var(--color-info)' },
+            { name: 'Review', value: statuses.IN_REVIEW, color: 'var(--color-warning)' },
+            { name: 'Completed', value: statuses.COMPLETED, color: 'var(--color-success)' },
+            { name: 'Blocked', value: statuses.BLOCKED, color: 'var(--color-danger)' }
         ].filter(s => s.value > 0);
     }, [clientTasks]);
 
-
-
-
-
     const handleAddDocument = async (docData: { title: string, url: string, category: any, id?: string }) => {
-
         if (!client) return;
         setIsSaving(true);
         try {
@@ -148,18 +134,22 @@ const ClientDetailPage: React.FC = () => {
     if (client && !isPermitted) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
-                <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-8 shadow-2xl bg-black/20 border border-white/10">
-                    <Lock size={40} className="text-gray-500" />
+                <div 
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                >
+                    <Lock size={36} style={{ color: 'var(--text-muted)' }} />
                 </div>
-                <h2 className="text-xl font-bold mb-3 text-white">Access Denied</h2>
-                <p className="text-sm max-w-md leading-relaxed mb-6 text-gray-400">
+                <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-heading)' }}>Access denied</h2>
+                <p className="text-sm max-w-md leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
                     You do not have permission to view or manage this client's profile.
                 </p>
                 <button
                     onClick={() => navigate('/clients')}
-                    className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all"
+                    className="px-5 py-2.5 rounded-lg text-sm font-medium transition-opacity"
+                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                 >
-                    Back to Directory
+                    Back to directory
                 </button>
             </div>
         );
@@ -168,14 +158,15 @@ const ClientDetailPage: React.FC = () => {
     if (!client) {
         return (
             <div className="flex flex-col items-center justify-center h-full pt-20">
-                <Building2 size={64} className="text-gray-600 mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">Client Not Found</h2>
-                <p className="text-gray-400 mb-6">The client you are looking for does not exist or has been removed.</p>
+                <Building2 size={56} className="mb-4" style={{ color: 'var(--text-muted)' }} />
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-heading)' }}>Client not found</h2>
+                <p className="mb-6 text-sm" style={{ color: 'var(--text-muted)' }}>The client you are looking for does not exist or has been removed.</p>
                 <button
                     onClick={() => navigate('/clients')}
-                    className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all"
+                    className="px-5 py-2.5 rounded-lg text-sm font-medium transition-opacity"
+                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                 >
-                    Back to Clients
+                    Back to clients
                 </button>
             </div>
         );
@@ -185,462 +176,642 @@ const ClientDetailPage: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-transparent">
-            <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
-            {/* Back Button */}
-            <button
-                onClick={() => navigate('/clients')}
-                className="flex items-center text-sm font-bold text-gray-400 hover:text-white transition-colors group"
-            >
-                <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
-                Back to Directory
-            </button>
+            <div className="space-y-6 max-w-7xl mx-auto">
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate('/clients')}
+                    className="flex items-center text-sm font-medium transition-colors group"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-heading)'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                >
+                    <ArrowLeft size={16} className="mr-2" />
+                    Back to directory
+                </button>
 
-            {/* Client Header */}
-            <div className="p-6 rounded-xl relative overflow-hidden border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', opacity: 0.8 }}></div>
-
-                <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
-                    {/* Avatar / Code Card */}
-                    <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black shrink-0 border" style={{ background: 'var(--bg-elevated)', color: 'var(--accent)', borderColor: 'var(--border-mid)' }}>
-                        {client.code?.substring(0, 2).toUpperCase() || 'CL'}
-                    </div>
-
-                    <div className="flex-1 space-y-4">
-                        <div>
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <h1 className="text-2xl font-black" style={{ color: 'var(--text-heading)' }}>{client.name}</h1>
-                                <span className="px-2 py-0.5 rounded text-xs font-mono border" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
-                                    {client.code}
-                                </span>
-                                <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border" style={{ background: client.status === 'Active' ? 'var(--accent-dim)' : 'rgba(196,68,90,0.12)', color: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', borderColor: client.status === 'Active' ? 'var(--border-accent)' : 'rgba(196,68,90,0.25)' }}>
-                                    {client.status}
-                                </span>
-                            </div>
-                            <div className="flex gap-4 mt-2 text-sm font-medium text-gray-400">
-                                {client.pan && (
-                                    <span className="flex items-center group"><BadgeCheck size={14} className="mr-1.5 text-brand-400" /> PAN: {client.pan}
-                                        <button 
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(client.pan!);
-                                                toast.success('PAN copied to clipboard');
-                                            }}
-                                            className="ml-2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400 hover:text-white"
-                                            title="Copy PAN"
-                                        >
-                                            <Copy size={12} />
-                                        </button>
-                                    </span>
-                                )}
-                                <span className="flex items-center"><Briefcase size={14} className="mr-1.5 text-amber-400" /> {client.serviceType}</span>
-                                <span className="flex items-center"><Building2 size={14} className="mr-1.5 text-purple-400" /> {client.industry || 'General Sector'}</span>
-                            </div>
-                        </div>
-
-                        {/* Quick Stats / Info Row */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/5">
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Lead Auditor / Focal</p>
-                                <div className="flex items-center text-sm text-gray-200 font-medium">
-                                    <User size={14} className="mr-2 text-amber-400" />
-                                    {focalPerson?.displayName || 'Unassigned'}
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Firm Authority</p>
-                                <div className="flex items-center text-sm text-gray-200 font-medium truncate" title={client.signingAuthority}>
-                                    <BadgeCheck size={14} className="mr-2 text-amber-400" />
-                                    {client.signingAuthority || 'N/A'}
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Contact</p>
-                                <div className="flex flex-col gap-1 text-sm text-gray-200 font-medium">
-                                    {client.phone && <span className="flex items-center"><Phone size={12} className="mr-2 text-brand-400" /> {client.phone}</span>}
-                                    {client.email && <span className="flex items-center"><Mail size={12} className="mr-2 text-amber-400" /> <span className="truncate">{client.email}</span></span>}
-                                    {!client.phone && !client.email && <span className="text-gray-500 italic">No contact info</span>}
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Location</p>
-                                <div className="flex items-center text-sm text-gray-200 font-medium">
-                                    <MapPin size={14} className="mr-2 text-rose-400" />
-                                    <span className="truncate">{client.address || 'N/A'}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Nepal Statutory Info Row */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/5">
-                            <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">VAT Number</p>
-                                <div className="text-sm text-gray-200 font-medium">
-                                    {client.vatNumber || 'Not Registered'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Mini Task Chart */}
-                    <div className="w-full md:w-64 shrink-0 flex flex-col items-center justify-center p-4 bg-black/20 rounded-xl border border-white/5">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider w-full mb-2">Task Distribution</p>
-                        {taskStats.length > 0 ? (
-                            <div className="h-28 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={taskStats}
-                                            innerRadius={25}
-                                            outerRadius={40}
-                                            paddingAngle={2}
-                                            dataKey="value"
-                                            stroke="none"
-                                        >
-                                            {taskStats.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <RechartsTooltip 
-                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', fontSize: '12px', padding: '4px 8px' }}
-                                            itemStyle={{ color: '#e2e8f0' }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                        ) : (
-                            <div className="h-28 w-full flex items-center justify-center text-xs text-gray-500 italic">
-                                No tasks assigned
-                            </div>
-                        )}
-                        {taskStats.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2 justify-center">
-                                {taskStats.map(s => (
-                                    <div key={s.name} className="flex items-center gap-1 text-[9px] text-gray-400">
-                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }}></span>
-                                        {s.name} ({s.value})
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Tabs & Content */}
-            <div className="space-y-6">
-                <div className="flex gap-1 overflow-x-auto pb-1 border-b hide-scrollbar" style={{ borderColor: 'var(--border)' }}>
-                    {(['OVERVIEW', 'TASKS', 'DOCUMENTS', 'WORK_LOGS'] as Tab[]).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-2.5 rounded-t-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap border-b-2 ${activeTab === tab ? '' : 'border-transparent'}`} style={{ color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', borderColor: activeTab === tab ? 'var(--accent)' : 'transparent', background: activeTab === tab ? 'var(--bg-elevated)' : 'transparent' }}
-                        >
-                            {tab === 'OVERVIEW' && <Building2 size={15} />}
-                            {tab === 'TASKS' && <CheckCircle2 size={15} />}
-
-                            {tab === 'DOCUMENTS' && <FileText size={15} />}
-                            {tab === 'WORK_LOGS' && <Clock size={15} />}
-
-                            {tab === 'TASKS' ? `Tasks (${clientTasks.length})` :
-                             tab === 'WORK_LOGS' ? `Work Logs (${clientWorkLogs.length})` :
-                             tab.replace('_', ' ')}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="min-h-[400px]">
-                    {/* OVERVIEW TAB */}
-                    {activeTab === 'OVERVIEW' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Engagement Info */}
-                                <div className="p-5 rounded-xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                                    <h4 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Briefcase size={14} /> Engagement Info</h4>
-                                    <div className="space-y-3 text-sm">
-                                        <div><span className="text-gray-500 text-xs">Audit Period:</span><p className="text-white font-medium">{client.auditPeriod || 'Not Set'}</p></div>
-                                        <div><span className="text-gray-500 text-xs">Start / End:</span><p className="text-white font-medium">{client.auditStartDate ? new Date(client.auditStartDate).toLocaleDateString() : '—'} → {client.auditEndDate ? new Date(client.auditEndDate).toLocaleDateString() : '—'}</p></div>
-                                        <div><span className="text-gray-500 text-xs">Signing Authority:</span><p className="text-white font-medium">{client.signingAuthority || 'N/A'}</p></div>
-                                        <div><span className="text-gray-500 text-xs">Focal Person:</span><p className="text-white font-medium">{focalPerson?.displayName || 'Unassigned'}</p></div>
-                                        {client.engagementLetterUrl && (
-                                            <a href={client.engagementLetterUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-brand-400 hover:text-brand-300 text-xs font-bold mt-2"><ExternalLink size={12} /> View Engagement Letter</a>
-                                        )}
-                                    </div>
-                                </div>
-                                {/* Work Status */}
-                                <div className="p-5 rounded-xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                                    <h4 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}><CheckCircle2 size={14} /> Work Status</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-white/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-white">{clientTasks.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Tasks</p></div>
-                                        <div className="bg-brand-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-brand-400">{clientTasks.filter(t => t.status === 'COMPLETED').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Completed</p></div>
-                                        <div className="bg-rose-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-rose-400">{overdueTasks.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Overdue</p></div>
-                                        <div className="bg-amber-500/5 rounded-xl p-3 text-center"><p className="text-2xl font-black text-amber-400">{clientTasks.filter(t => t.status === 'IN_PROGRESS').length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">In Progress</p></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    )}
-
-                    {/* DOCUMENTS TAB */}
-
-                    {activeTab === 'DOCUMENTS' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             <div className="flex justify-between items-center">
-                                <h3 className="text-xl font-bold text-white">Knowledge Base & KYC</h3>
-                                <button 
-                                    onClick={() => setIsAddDocModalOpen(true)}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all shadow-lg shadow-brand-900/20"
-                                >
-                                    <Plus size={16} /> Add Document
-                                </button>
-                            </div>
-
-                            {client.documents && client.documents.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {client.documents.map(doc => (
-                                        <div key={doc.id} className="glass-panel p-5 rounded-2xl border border-white/5 hover:border-brand-500/30 transition-all group">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400">
-                                                    <FileText size={24} />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="font-bold text-white text-base truncate">{doc.title}</h4>
-                                                    <p className="text-xs text-brand-400 font-bold uppercase">{doc.category}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                                                <span className="text-[10px] text-gray-500 font-bold uppercase">{new Date(doc.uploadedAt).toLocaleDateString()}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors">
-                                                        View <ArrowRight size={14} />
-                                                    </a>
-                                                    <button 
-                                                        onClick={() => handleDeleteDocument(doc.id)}
-                                                        className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="py-20 flex flex-col items-center justify-center glass-panel rounded-[32px] border-dashed border-2 border-white/10">
-                                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
-                                        <FileText size={32} className="text-gray-600" />
-                                    </div>
-                                    <h4 className="text-xl font-bold text-white mb-2">No documents attached</h4>
-                                    <p className="text-gray-500 text-sm max-w-md text-center">Repository for KYC, registration certificates, and legal documents is empty for this client.</p>
-                                </div>
-                            )}
-
-                            <div className="mt-8 pt-8 border-t border-white/10">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
-                                        <FolderArchive size={20} className="text-brand-400" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white">Engagement Documentation</h3>
-                                        <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Standardized Audit Folders Repository</p>
-                                    </div>
-                                </div>
-                                <div className="h-[600px] border border-white/10 rounded-2xl overflow-hidden bg-black/20 relative">
-                                    <AuditWorkspace clientId={client.id} clientName={client.name} isReadOnly={false} />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* TASKS TAB */}
-                    {activeTab === 'TASKS' && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            {clientTasks.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {clientTasks.map(task => (
-                                        <div key={task.id} className="glass-card p-5 rounded-2xl hover:border-brand-500/30 transition-all cursor-pointer" onClick={() => navigate('/tasks')}>
-                                            <div className="flex justify-between items-start mb-3">
-                                                <h4 className="font-bold text-white text-sm line-clamp-2">{task.title}</h4>
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${task.status === 'COMPLETED' ? 'bg-brand-500/20 text-brand-400 border-brand-500/30' :
-                                                    task.status === 'IN_PROGRESS' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                                                        'bg-gray-500/20 text-gray-400 border-gray-500/30'
-                                                    }`}>
-                                                    {task.status.replace('_', ' ')}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-xs text-gray-400 mt-4 pt-4 border-t border-white/5">
-                                                <div className="flex items-center gap-1.5">
-                                                    <CalIcon size={12} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Date'}
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <User size={12} /> {task.assignedToNames?.[0] || 'Unassigned'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState
-                                    icon={CheckCircle2}
-                                    title="No associated tasks"
-                                    description="This client currently has no active or completed tasks."
-                                />
-                            )}
-                        </div>
-                    )}
-
-
-
-
-
-                    {/* WORK_LOGS TAB */}
-                    {activeTab === 'WORK_LOGS' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            {clientWorkLogs.length > 0 ? (
-                                <>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-black text-white">{clientWorkLogs.reduce((sum, w) => sum + (w.workHours || 0), 0).toFixed(1)}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Total Hours</p></div>
-                                        <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-black text-amber-400">{new Set(clientWorkLogs.map(w => w.userId)).size}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Unique Staff</p></div>
-                                        <div className="glass-panel p-4 rounded-xl text-center"><p className="text-2xl font-black text-brand-400">{clientWorkLogs.length}</p><p className="text-[10px] text-gray-500 font-bold uppercase">Sessions</p></div>
-                                    </div>
-                                    <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
-                                        <table className="w-full text-sm">
-                                            <thead><tr className="border-b border-white/10 text-xs text-gray-500 uppercase">
-                                                <th className="p-4 text-left font-bold">Date</th><th className="p-4 text-left font-bold">Staff</th><th className="p-4 text-left font-bold">Clock In</th><th className="p-4 text-left font-bold">Clock Out</th><th className="p-4 text-left font-bold">Hours</th><th className="p-4 text-left font-bold">Description</th><th className="p-4 text-left font-bold">Status</th>
-                                            </tr></thead>
-                                            <tbody>{clientWorkLogs.map(log => (
-                                                <tr key={log.id} className="border-b border-white/5 hover:bg-white/5">
-                                                    <td className="p-4 text-gray-300">{new Date(log.date).toLocaleDateString()}</td>
-                                                    <td className="p-4 text-white font-medium">{log.userName}</td>
-                                                    <td className="p-4 text-gray-300">{log.clockIn ? (log.clockIn.includes(':') && !log.clockIn.includes('T') ? log.clockIn : (isNaN(new Date(log.clockIn).getTime()) ? log.clockIn : new Date(log.clockIn).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}))) : '—'}</td>
-                                                    <td className="p-4 text-gray-300">{log.clockOut ? (log.clockOut.includes(':') && !log.clockOut.includes('T') ? log.clockOut : (isNaN(new Date(log.clockOut).getTime()) ? log.clockOut : new Date(log.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}))) : '—'}</td>
-                                                    <td className="p-4 text-gray-200 font-medium">{log.workHours?.toFixed(1) || '—'}</td>
-                                                    <td className="p-4 text-gray-400 max-w-[200px] truncate">{log.workDescription || '—'}</td>
-                                                    <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${(log.status === 'PRESENT' || log.status === 'COMPLETED') ? 'bg-brand-500/20 text-brand-400' : 'bg-amber-500/20 text-amber-400'}`}>{log.status}</span></td>
-                                                </tr>
-                                            ))}</tbody>
-                                        </table>
-                                    </div>
-                                </>
-                            ) : (
-                                <EmptyState icon={Clock} title="No work logs" description="Attendance records linked to this client will appear here." />
-                            )}
-                        </div>
-                    )}
-
-
-                </div>
-            </div>
-        </div>
-
-
-        {/* Add Document Modal */}
-        <AnimatePresence>
-            {isAddDocModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setIsAddDocModalOpen(false)}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                {/* Client Header Card */}
+                <div 
+                    className="p-6 rounded-xl relative overflow-hidden border"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                >
+                    <div 
+                        className="absolute left-0 top-0 bottom-0 w-1" 
+                        style={{ background: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)' }}
                     />
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="relative w-full max-w-md bg-navy-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6"
-                    >
-                        <h3 className="text-xl font-bold text-white mb-4">Attach Document</h3>
-                        
-                        <div className="space-y-5">
+
+                    <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start">
+                        {/* Avatar / Code Card */}
+                        <div 
+                            className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 border"
+                            style={{ background: 'var(--bg-elevated)', color: 'var(--accent)', borderColor: 'var(--border-mid)' }}
+                        >
+                            {client.code?.substring(0, 2).toUpperCase() || 'CL'}
+                        </div>
+
+                        <div className="flex-1 space-y-4">
                             <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Document Title</label>
-                                <input 
-                                    type="text"
-                                    value={newDocTitle}
-                                    onChange={(e) => setNewDocTitle(e.target.value)}
-                                    placeholder="e.g., Audit Report 2080"
-                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-brand-500 transition-all font-medium"
-                                />
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <h1 className="text-2xl font-bold font-display" style={{ color: 'var(--text-heading)' }}>{client.name}</h1>
+                                    <span 
+                                        className="px-2 py-0.5 rounded text-xs font-mono border"
+                                        style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+                                    >
+                                        {client.code}
+                                    </span>
+                                    <span 
+                                        className="px-2.5 py-0.5 rounded-full text-xs font-medium border"
+                                        style={{ 
+                                            background: client.status === 'Active' ? 'var(--accent-dim)' : 'rgba(224,112,122,0.1)', 
+                                            color: client.status === 'Active' ? 'var(--accent)' : 'var(--color-danger)', 
+                                            borderColor: client.status === 'Active' ? 'var(--border-accent)' : 'rgba(224,112,122,0.25)' 
+                                        }}
+                                    >
+                                        {client.status}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-4 mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+                                    {client.pan && (
+                                        <span className="flex items-center group">
+                                            <BadgeCheck size={14} className="mr-1.5" style={{ color: 'var(--accent)' }} /> 
+                                            PAN: <span className="font-mono ml-1" style={{ color: 'var(--text-heading)' }}>{client.pan}</span>
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(client.pan!);
+                                                    toast.success('PAN copied to clipboard');
+                                                }}
+                                                className="ml-2 p-1 rounded hover:bg-[var(--bg-elevated)] transition-colors"
+                                                title="Copy PAN"
+                                                aria-label="Copy PAN"
+                                            >
+                                                <Copy size={12} />
+                                            </button>
+                                        </span>
+                                    )}
+                                    <span className="flex items-center">
+                                        <Briefcase size={14} className="mr-1.5" style={{ color: 'var(--color-warning)' }} /> 
+                                        {client.serviceType}
+                                    </span>
+                                    <span className="flex items-center">
+                                        <Building2 size={14} className="mr-1.5" style={{ color: 'var(--color-info)' }} /> 
+                                        {client.industry || 'General sector'}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">Storage Source</label>
-                                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
-                                        <button 
-                                            onClick={() => setIsUploadMode(true)}
-                                            className={`px-3 py-1 text-[10px] font-black rounded-md transition-all ${isUploadMode ? 'bg-brand-600 text-white' : 'text-gray-500'}`}
-                                        >
-                                            Upload
-                                        </button>
-                                        <button 
-                                            onClick={() => setIsUploadMode(false)}
-                                            className={`px-3 py-1 text-[10px] font-black rounded-md transition-all ${!isUploadMode ? 'bg-brand-600 text-white' : 'text-gray-500'}`}
-                                        >
-                                            Link
-                                        </button>
+                            {/* Quick Stats / Info Row */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                                <div>
+                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Lead auditor / focal</p>
+                                    <div className="flex items-center text-sm font-medium" style={{ color: 'var(--text-heading)' }}>
+                                        <User size={14} className="mr-2" style={{ color: 'var(--color-warning)' }} />
+                                        {focalPerson?.displayName || 'Unassigned'}
                                     </div>
                                 </div>
+                                <div>
+                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Firm authority</p>
+                                    <div className="flex items-center text-sm font-medium truncate" style={{ color: 'var(--text-heading)' }} title={client.signingAuthority}>
+                                        <BadgeCheck size={14} className="mr-2" style={{ color: 'var(--color-warning)' }} />
+                                        {client.signingAuthority || 'N/A'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Contact</p>
+                                    <div className="flex flex-col gap-1 text-sm font-medium" style={{ color: 'var(--text-heading)' }}>
+                                        {client.phone && <span className="flex items-center"><Phone size={12} className="mr-2" style={{ color: 'var(--accent)' }} /> {client.phone}</span>}
+                                        {client.email && <span className="flex items-center"><Mail size={12} className="mr-2" style={{ color: 'var(--color-warning)' }} /> <span className="truncate">{client.email}</span></span>}
+                                        {!client.phone && !client.email && <span className="italic" style={{ color: 'var(--text-muted)' }}>No contact info</span>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Location</p>
+                                    <div className="flex items-center text-sm font-medium" style={{ color: 'var(--text-heading)' }}>
+                                        <MapPin size={14} className="mr-2" style={{ color: 'var(--color-danger)' }} />
+                                        <span className="truncate">{client.address || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                                {isUploadMode ? (
-                                    <FileUploader 
-                                        onUploadComplete={(fileData) => handleAddDocument({
-                                            title: newDocTitle || fileData.name,
-                                            url: fileData.url,
-                                            category: 'KYC',
-                                            id: fileData.id
-                                        })}
-                                    />
+                            {/* Statutory Info */}
+                            {client.vatNumber && (
+                                <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                                    <span className="text-xs font-medium mr-2" style={{ color: 'var(--text-muted)' }}>VAT number:</span>
+                                    <span className="text-sm font-mono font-medium" style={{ color: 'var(--text-heading)' }}>{client.vatNumber}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Mini Task Chart */}
+                        <div 
+                            className="w-full md:w-56 shrink-0 flex flex-col items-center justify-center p-3.5 rounded-xl border"
+                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+                        >
+                            <p className="text-xs font-semibold w-full mb-1" style={{ color: 'var(--text-muted)' }}>Task distribution</p>
+                            {taskStats.length > 0 ? (
+                                <div className="h-24 w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={taskStats}
+                                                innerRadius={22}
+                                                outerRadius={36}
+                                                paddingAngle={2}
+                                                dataKey="value"
+                                                stroke="none"
+                                            >
+                                                {taskStats.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip 
+                                                contentStyle={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', borderRadius: '8px', fontSize: '12px', padding: '4px 8px' }}
+                                                itemStyle={{ color: 'var(--text-heading)' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            ) : (
+                                <div className="h-24 w-full flex items-center justify-center text-xs italic" style={{ color: 'var(--text-muted)' }}>
+                                    No tasks assigned
+                                </div>
+                            )}
+                            {taskStats.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-1 justify-center">
+                                    {taskStats.map(s => (
+                                        <div key={s.name} className="flex items-center gap-1 text-[11px] tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                            {s.name} ({s.value})
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs & Content */}
+                <div className="space-y-6">
+                    <div className="flex gap-1 overflow-x-auto pb-1 border-b hide-scrollbar" style={{ borderColor: 'var(--border)' }}>
+                        {(['OVERVIEW', 'TASKS', 'DOCUMENTS', 'WORK_LOGS'] as Tab[]).map((tab) => {
+                            const isActive = activeTab === tab;
+                            return (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-4 py-2 rounded-t-lg text-xs font-medium transition-colors flex items-center gap-2 whitespace-nowrap border-b-2 ${isActive ? '' : 'border-transparent'}`}
+                                    style={{
+                                        color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                                        borderColor: isActive ? 'var(--accent)' : 'transparent',
+                                        background: isActive ? 'var(--bg-elevated)' : 'transparent'
+                                    }}
+                                >
+                                    {tab === 'OVERVIEW' && <Building2 size={14} />}
+                                    {tab === 'TASKS' && <CheckCircle2 size={14} />}
+                                    {tab === 'DOCUMENTS' && <FileText size={14} />}
+                                    {tab === 'WORK_LOGS' && <Clock size={14} />}
+
+                                    {tab === 'OVERVIEW' ? 'Overview' :
+                                     tab === 'TASKS' ? `Tasks (${clientTasks.length})` :
+                                     tab === 'DOCUMENTS' ? `Documents (${client.documents?.length || 0})` :
+                                     `Work logs (${clientWorkLogs.length})`}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="min-h-[400px]">
+                        {/* OVERVIEW TAB */}
+                        {activeTab === 'OVERVIEW' && (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Engagement Info */}
+                                    <div className="p-5 rounded-xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                        <h4 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}>
+                                            <Briefcase size={15} /> Engagement info
+                                        </h4>
+                                        <div className="space-y-3 text-sm">
+                                            <div>
+                                                <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Audit period:</span>
+                                                <p className="font-medium" style={{ color: 'var(--text-heading)' }}>{client.auditPeriod || 'Not set'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Start / end:</span>
+                                                <p className="font-medium tabular-nums" style={{ color: 'var(--text-heading)' }}>
+                                                    {client.auditStartDate ? new Date(client.auditStartDate).toLocaleDateString() : '—'} → {client.auditEndDate ? new Date(client.auditEndDate).toLocaleDateString() : '—'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Signing authority:</span>
+                                                <p className="font-medium" style={{ color: 'var(--text-heading)' }}>{client.signingAuthority || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Focal person:</span>
+                                                <p className="font-medium" style={{ color: 'var(--text-heading)' }}>{focalPerson?.displayName || 'Unassigned'}</p>
+                                            </div>
+                                            {client.engagementLetterUrl && (
+                                                <a 
+                                                    href={client.engagementLetterUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    className="inline-flex items-center gap-1.5 text-xs font-medium mt-2 transition-opacity hover:opacity-80"
+                                                    style={{ color: 'var(--accent)' }}
+                                                >
+                                                    <ExternalLink size={12} /> View engagement letter
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Work Status */}
+                                    <div className="p-5 rounded-xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                        <h4 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}>
+                                            <CheckCircle2 size={15} /> Work status
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="p-3.5 rounded-lg border text-center" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+                                                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text-heading)' }}>{clientTasks.length}</p>
+                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Total tasks</p>
+                                            </div>
+                                            <div className="p-3.5 rounded-lg border text-center" style={{ background: 'rgba(79,178,134,0.06)', borderColor: 'rgba(79,178,134,0.2)' }}>
+                                                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-success)' }}>{clientTasks.filter(t => t.status === 'COMPLETED').length}</p>
+                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Completed</p>
+                                            </div>
+                                            <div className="p-3.5 rounded-lg border text-center" style={{ background: 'rgba(224,112,122,0.06)', borderColor: 'rgba(224,112,122,0.2)' }}>
+                                                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-danger)' }}>{overdueTasks.length}</p>
+                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Overdue</p>
+                                            </div>
+                                            <div className="p-3.5 rounded-lg border text-center" style={{ background: 'rgba(217,164,65,0.06)', borderColor: 'rgba(217,164,65,0.2)' }}>
+                                                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-warning)' }}>{clientTasks.filter(t => t.status === 'IN_PROGRESS').length}</p>
+                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>In progress</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* DOCUMENTS TAB */}
+                        {activeTab === 'DOCUMENTS' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-base font-semibold" style={{ color: 'var(--text-heading)' }}>Knowledge base & KYC</h3>
+                                    <button 
+                                        onClick={() => setIsAddDocModalOpen(true)}
+                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-opacity"
+                                        style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
+                                    >
+                                        <Plus size={14} /> Add document
+                                    </button>
+                                </div>
+
+                                {client.documents && client.documents.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {client.documents.map(doc => (
+                                            <div 
+                                                key={doc.id} 
+                                                className="p-4 rounded-xl border transition-colors group"
+                                                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-mid)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+                                            >
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div 
+                                                        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                                                        style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}
+                                                    >
+                                                        <FileText size={20} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-sm truncate" style={{ color: 'var(--text-heading)' }}>{doc.title}</h4>
+                                                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{doc.category}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                                                    <span className="text-xs tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                                                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <a 
+                                                            href={doc.url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="flex items-center gap-1 text-xs font-medium transition-colors"
+                                                            style={{ color: 'var(--accent)' }}
+                                                        >
+                                                            View <ArrowRight size={12} />
+                                                        </a>
+                                                        <button 
+                                                            onClick={() => handleDeleteDocument(doc.id)}
+                                                            className="p-1.5 rounded transition-colors opacity-0 group-hover:opacity-100 hover:bg-rose-500/10"
+                                                            style={{ color: 'var(--color-danger)' }}
+                                                            aria-label="Delete document"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : (
+                                    <div 
+                                        className="py-14 flex flex-col items-center justify-center rounded-xl border border-dashed text-center p-6"
+                                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                    >
+                                        <div 
+                                            className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+                                            style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                                        >
+                                            <FileText size={24} />
+                                        </div>
+                                        <h4 className="text-base font-semibold mb-1" style={{ color: 'var(--text-heading)' }}>No documents attached</h4>
+                                        <p className="text-xs max-w-sm" style={{ color: 'var(--text-muted)' }}>
+                                            Repository for KYC, registration certificates, and legal documents is empty for this client.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="mt-8 pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div 
+                                            className="w-9 h-9 rounded-lg flex items-center justify-center border"
+                                            style={{ background: 'var(--accent-dim)', color: 'var(--accent)', borderColor: 'var(--border-accent)' }}
+                                        >
+                                            <FolderArchive size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-semibold" style={{ color: 'var(--text-heading)' }}>Engagement documentation</h3>
+                                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Standardized audit folders repository</p>
+                                        </div>
+                                    </div>
+                                    <div 
+                                        className="h-[600px] border rounded-xl overflow-hidden relative"
+                                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                    >
+                                        <AuditWorkspace clientId={client.id} clientName={client.name} isReadOnly={false} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TASKS TAB */}
+                        {activeTab === 'TASKS' && (
+                            <div className="space-y-4">
+                                {clientTasks.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {clientTasks.map(task => {
+                                            const statusColor = task.status === 'COMPLETED' ? 'var(--color-success)' :
+                                                               task.status === 'IN_PROGRESS' ? 'var(--color-warning)' :
+                                                               'var(--text-muted)';
+                                            const statusBg = task.status === 'COMPLETED' ? 'rgba(79,178,134,0.1)' :
+                                                             task.status === 'IN_PROGRESS' ? 'rgba(217,164,65,0.1)' :
+                                                             'var(--bg-elevated)';
+                                            return (
+                                                <div 
+                                                    key={task.id} 
+                                                    className="p-4 rounded-xl border transition-colors cursor-pointer"
+                                                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                                    onClick={() => navigate('/tasks')}
+                                                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-mid)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+                                                >
+                                                    <div className="flex justify-between items-start gap-2 mb-2">
+                                                        <h4 className="font-semibold text-sm line-clamp-2" style={{ color: 'var(--text-heading)' }}>{task.title}</h4>
+                                                        <span 
+                                                            className="px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap border"
+                                                            style={{ color: statusColor, background: statusBg, borderColor: 'var(--border)' }}
+                                                        >
+                                                            {task.status.replace('_', ' ').toLowerCase()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                                                        <div className="flex items-center gap-1.5 tabular-nums">
+                                                            <CalIcon size={12} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No date'}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <User size={12} /> {task.assignedToNames?.[0] || 'Unassigned'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <EmptyState
+                                        icon={CheckCircle2}
+                                        title="No associated tasks"
+                                        description="This client currently has no active or completed tasks."
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        {/* WORK_LOGS TAB */}
+                        {activeTab === 'WORK_LOGS' && (
+                            <div className="space-y-6">
+                                {clientWorkLogs.length > 0 ? (
+                                    <>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="p-4 rounded-xl border text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text-heading)' }}>
+                                                    {clientWorkLogs.reduce((sum, w) => sum + (w.workHours || 0), 0).toFixed(1)}
+                                                </p>
+                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Total hours</p>
+                                            </div>
+                                            <div className="p-4 rounded-xl border text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-warning)' }}>
+                                                    {new Set(clientWorkLogs.map(w => w.userId)).size}
+                                                </p>
+                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Unique staff</p>
+                                            </div>
+                                            <div className="p-4 rounded-xl border text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-success)' }}>
+                                                    {clientWorkLogs.length}
+                                                </p>
+                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Sessions</p>
+                                            </div>
+                                        </div>
+                                        <div className="rounded-xl overflow-hidden border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                            <table className="w-full text-xs">
+                                                <thead>
+                                                    <tr className="border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
+                                                        <th className="p-3 text-left font-semibold">Date</th>
+                                                        <th className="p-3 text-left font-semibold">Staff</th>
+                                                        <th className="p-3 text-left font-semibold">Clock in</th>
+                                                        <th className="p-3 text-left font-semibold">Clock out</th>
+                                                        <th className="p-3 text-right font-semibold">Hours</th>
+                                                        <th className="p-3 text-left font-semibold">Description</th>
+                                                        <th className="p-3 text-left font-semibold">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {clientWorkLogs.map(log => {
+                                                        const isPresent = log.status === 'PRESENT' || log.status === 'COMPLETED';
+                                                        return (
+                                                            <tr 
+                                                                key={log.id} 
+                                                                className="border-b transition-colors hover:bg-[var(--bg-secondary)]"
+                                                                style={{ borderColor: 'var(--border)' }}
+                                                            >
+                                                                <td className="p-3 tabular-nums" style={{ color: 'var(--text-muted)' }}>{new Date(log.date).toLocaleDateString()}</td>
+                                                                <td className="p-3 font-medium" style={{ color: 'var(--text-heading)' }}>{log.userName}</td>
+                                                                <td className="p-3 tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                                                                    {log.clockIn ? (log.clockIn.includes(':') && !log.clockIn.includes('T') ? log.clockIn : (isNaN(new Date(log.clockIn).getTime()) ? log.clockIn : new Date(log.clockIn).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}))) : '—'}
+                                                                </td>
+                                                                <td className="p-3 tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                                                                    {log.clockOut ? (log.clockOut.includes(':') && !log.clockOut.includes('T') ? log.clockOut : (isNaN(new Date(log.clockOut).getTime()) ? log.clockOut : new Date(log.clockOut).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}))) : '—'}
+                                                                </td>
+                                                                <td className="p-3 text-right font-medium tabular-nums" style={{ color: 'var(--text-heading)' }}>
+                                                                    {log.workHours?.toFixed(1) || '—'}
+                                                                </td>
+                                                                <td className="p-3 max-w-[200px] truncate" style={{ color: 'var(--text-muted)' }}>{log.workDescription || '—'}</td>
+                                                                <td className="p-3">
+                                                                    <span 
+                                                                        className="px-2 py-0.5 rounded text-[11px] font-medium border"
+                                                                        style={{ 
+                                                                            color: isPresent ? 'var(--color-success)' : 'var(--color-warning)',
+                                                                            background: isPresent ? 'rgba(79,178,134,0.1)' : 'rgba(217,164,65,0.1)',
+                                                                            borderColor: isPresent ? 'rgba(79,178,134,0.25)' : 'rgba(217,164,65,0.25)'
+                                                                        }}
+                                                                    >
+                                                                        {log.status}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <EmptyState icon={Clock} title="No work logs" description="Attendance records linked to this client will appear here." />
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Add Document Modal */}
+            <AnimatePresence>
+                {isAddDocModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsAddDocModalOpen(false)}
+                            className="absolute inset-0 bg-black/60"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            className="relative w-full max-w-md border rounded-xl overflow-hidden shadow-xl p-6"
+                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                        >
+                            <h3 className="text-base font-bold mb-4" style={{ color: 'var(--text-heading)' }}>Attach document</h3>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Document title</label>
                                     <input 
                                         type="text"
-                                        placeholder="Drive or External Link..."
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
+                                        value={newDocTitle}
+                                        onChange={(e) => setNewDocTitle(e.target.value)}
+                                        placeholder="e.g., Audit Report 2080"
+                                        className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none transition-colors"
+                                        style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
+                                    />
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Storage source</label>
+                                        <div className="flex p-0.5 rounded-lg border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+                                            <button 
+                                                onClick={() => setIsUploadMode(true)}
+                                                className="px-3 py-1 text-xs font-medium rounded transition-colors"
+                                                style={{
+                                                    background: isUploadMode ? 'var(--accent)' : 'transparent',
+                                                    color: isUploadMode ? 'var(--on-accent)' : 'var(--text-muted)'
+                                                }}
+                                            >
+                                                Upload
+                                            </button>
+                                            <button 
+                                                onClick={() => setIsUploadMode(false)}
+                                                className="px-3 py-1 text-xs font-medium rounded transition-colors"
+                                                style={{
+                                                    background: !isUploadMode ? 'var(--accent)' : 'transparent',
+                                                    color: !isUploadMode ? 'var(--on-accent)' : 'var(--text-muted)'
+                                                }}
+                                            >
+                                                Link
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {isUploadMode ? (
+                                        <FileUploader 
+                                            onUploadComplete={(fileData) => handleAddDocument({
+                                                title: newDocTitle || fileData.name,
+                                                url: fileData.url,
+                                                category: 'KYC',
+                                                id: fileData.id
+                                            })}
+                                        />
+                                    ) : (
+                                        <input 
+                                            type="text"
+                                            placeholder="Drive or external link..."
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleAddDocument({
+                                                        title: newDocTitle || 'Linked Doc',
+                                                        url: (e.target as HTMLInputElement).value,
+                                                        category: 'Other'
+                                                    });
+                                                }
+                                            }}
+                                            className="w-full px-3.5 py-2 border rounded-lg text-sm outline-none transition-colors"
+                                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-2.5">
+                                <button 
+                                    onClick={() => setIsAddDocModalOpen(false)}
+                                    className="px-4 py-2 text-xs font-medium rounded-lg transition-colors border"
+                                    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+                                >
+                                    Cancel
+                                </button>
+                                {!isUploadMode && (
+                                    <button 
+                                        onClick={() => {
+                                            const input = document.querySelector('input[placeholder="Drive or external link..."]') as HTMLInputElement;
+                                            if (input?.value) {
                                                 handleAddDocument({
                                                     title: newDocTitle || 'Linked Doc',
-                                                    url: (e.target as HTMLInputElement).value,
+                                                    url: input.value,
                                                     category: 'Other'
                                                 });
                                             }
                                         }}
-                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-brand-500 transition-all text-sm"
-                                    />
+                                        className="px-4 py-2 rounded-lg text-xs font-medium transition-opacity"
+                                        style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
+                                    >
+                                        Save link
+                                    </button>
                                 )}
                             </div>
-                        </div>
-
-                        <div className="mt-8 flex justify-end gap-3">
-                            <button 
-                                onClick={() => setIsAddDocModalOpen(false)}
-                                className="px-4 py-2 text-xs font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            {!isUploadMode && (
-                                <button 
-                                    onClick={() => {
-                                        const input = document.querySelector('input[placeholder="Drive or External Link..."]') as HTMLInputElement;
-                                        if (input?.value) {
-                                            handleAddDocument({
-                                                title: newDocTitle || 'Linked Doc',
-                                                url: input.value,
-                                                category: 'Other'
-                                            });
-                                        }
-                                    }}
-                                    className="px-6 py-2 bg-brand-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-brand-700 transition-all shadow-lg shadow-brand-900/40"
-                                >
-                                    Save Link
-                                </button>
-                            )}
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
-
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

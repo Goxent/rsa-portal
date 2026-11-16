@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronsUpDown, Search, Building2, User } from 'lucide-react';
+import { Check, ChevronsUpDown, Search, Building2 } from 'lucide-react';
 import { Client } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-
-
-// Simple Popover implementation if not exists (using standard conditional rendering for now to be safe)
-// Actually, let's build a self-contained component to avoid missing dependency issues
 
 interface ClientSelectProps {
     clients: Client[];
@@ -23,7 +19,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     value,
     onChange,
     multi = false,
-    placeholder = "Select Client...",
+    placeholder = "Select client...",
     disabled = false,
     className
 }) => {
@@ -77,7 +73,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     };
 
     const getDisplayLabel = () => {
-        if (selectedIds.length === 0) return <span className="text-gray-400">{placeholder}</span>;
+        if (selectedIds.length === 0) return <span style={{ color: 'var(--text-muted)' }}>{placeholder}</span>;
 
         if (multi) {
             return (
@@ -85,23 +81,27 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                     {selectedIds.map(id => {
                         const client = clients.find(c => c.id === id);
                         return client ? (
-                            <span key={id} className="bg-brand-500/20 text-brand-200 text-xs px-2 py-0.5 rounded border border-brand-500/30 flex items-center">
+                            <span 
+                                key={id} 
+                                className="text-xs px-2 py-0.5 rounded border flex items-center"
+                                style={{ background: 'var(--accent-dim)', color: 'var(--accent)', borderColor: 'var(--border-accent)' }}
+                            >
                                 {client.name}
-                                <span className="ml-1 opacity-50 text-[10px]">({client.code})</span>
+                                <span className="ml-1 opacity-70 text-[10px] font-mono">({client.code})</span>
                             </span>
                         ) : null;
                     })}
-                    {selectedIds.length > 2 && <span className="text-xs text-gray-400">+{selectedIds.length - 2} more</span>}
+                    {selectedIds.length > 2 && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>+{selectedIds.length - 2} more</span>}
                 </div>
             );
         } else {
             const client = clients.find(c => c.id === selectedIds[0]);
             return client ? (
-                <span className="text-white flex items-center">
-                    <span className="font-semibold mr-2">{client.name}</span>
-                    <span className="text-xs text-gray-400 font-mono bg-white/10 px-1.5 rounded">{client.code}</span>
+                <span className="flex items-center" style={{ color: 'var(--text-heading)' }}>
+                    <span className="font-medium mr-2">{client.name}</span>
+                    <span className="text-xs font-mono px-1.5 py-0.5 rounded border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>{client.code}</span>
                 </span>
-            ) : <span className="text-gray-400">{placeholder}</span>;
+            ) : <span style={{ color: 'var(--text-muted)' }}>{placeholder}</span>;
         }
     };
 
@@ -116,12 +116,16 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
             }}
             onClick={(e) => e.stopPropagation()}
         >
-            <div className="bg-[#1a1b26] border border-white/10 rounded-xl shadow-2xl overflow-hidden p-2">
+            <div 
+                className="border rounded-xl shadow-xl overflow-hidden p-2"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+            >
                 {/* Search Input */}
-                <div className="flex items-center px-3 pb-2 border-b border-white/5 mb-2">
-                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                <div className="flex items-center px-3 pb-2 border-b mb-2" style={{ borderColor: 'var(--border)' }}>
+                    <Search className="mr-2 h-4 w-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
                     <input
-                        className="flex h-10 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-gray-500 text-white"
+                        className="flex h-9 w-full rounded-md bg-transparent text-sm outline-none"
+                        style={{ color: 'var(--text-heading)' }}
                         placeholder="Search clients..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -132,7 +136,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                 {/* List */}
                 <div className="max-h-[250px] overflow-y-auto custom-scrollbar space-y-1">
                     {filteredClients.length === 0 ? (
-                        <div className="py-6 text-center text-sm text-gray-500">No client found.</div>
+                        <div className="py-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>No clients found.</div>
                     ) : (
                         filteredClients.map((client) => {
                             const isSelected = selectedIds.includes(client.id);
@@ -140,23 +144,33 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                                 <div
                                     key={client.id}
                                     onClick={() => handleSelect(client.id)}
-                                    className={`
-                                        relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm outline-none 
-                                        transition-colors hover:bg-amber-600/20 data-[disabled]:pointer-events-none data-[disabled]:opacity-50
-                                        ${isSelected ? 'bg-amber-600/30 text-blue-100' : 'text-gray-300'}
-                                    `}
+                                    className="relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm outline-none transition-colors"
+                                    style={{
+                                        background: isSelected ? 'var(--accent-dim)' : 'transparent',
+                                        color: isSelected ? 'var(--accent)' : 'var(--text-body)'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (!isSelected) e.currentTarget.style.background = 'var(--bg-secondary)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (!isSelected) e.currentTarget.style.background = 'transparent';
+                                    }}
                                 >
                                     <div className="flex-1">
-                                        <div className="font-medium text-white flex justify-between">
+                                        <div className="font-medium flex justify-between items-center" style={{ color: isSelected ? 'var(--accent)' : 'var(--text-heading)' }}>
                                             <span>{client.name}</span>
-                                            {client.code && <span className="text-xs bg-white/10 px-1.5 rounded text-gray-400 font-mono ml-2">{client.code}</span>}
+                                            {client.code && (
+                                                <span className="text-xs px-1.5 py-0.2 rounded border font-mono ml-2" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                                                    {client.code}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="text-xs text-gray-500 flex items-center mt-0.5">
+                                        <div className="text-xs flex items-center mt-0.5" style={{ color: 'var(--text-muted)' }}>
                                             {client.serviceType}
-                                            {client.status === 'Inactive' && <span className="ml-2 text-red-400">• Inactive</span>}
+                                            {client.status === 'Inactive' && <span className="ml-2" style={{ color: 'var(--color-danger)' }}>• Inactive</span>}
                                         </div>
                                     </div>
-                                    {isSelected && <Check className="ml-auto h-4 w-4 text-amber-400" />}
+                                    {isSelected && <Check className="ml-auto h-4 w-4" style={{ color: 'var(--accent)' }} />}
                                 </div>
                             );
                         })
@@ -164,7 +178,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="pt-2 mt-2 border-t border-white/5 text-[10px] text-center text-gray-500">
+                <div className="pt-2 mt-2 border-t text-[11px] text-center" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                     Showing {filteredClients.length} of {clients.length} clients
                 </div>
             </div>
@@ -172,24 +186,24 @@ const ClientSelect: React.FC<ClientSelectProps> = ({
     );
 
     return (
-        <div className={`relative ${className}`}>
+        <div className={`relative ${className || ''}`}>
             <button
                 ref={triggerRef}
                 type="button"
                 onClick={() => !disabled && setOpen(!open)}
                 disabled={disabled}
-                className={`
-                    w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 
-                    transition-all text-sm text-left
-                    ${disabled ? 'opacity-50 cursor-not-allowed bg-white/5' : 'cursor-pointer hover:bg-white/10 hover:border-white/20'}
-                    ${open ? 'ring-2 ring-amber-500/50 border-amber-500/50' : ''}
-                `}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-colors text-sm text-left ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                style={{
+                    background: 'var(--bg-elevated)',
+                    borderColor: open ? 'var(--accent)' : 'var(--border)',
+                    boxShadow: open ? '0 0 0 1px var(--accent)' : 'none'
+                }}
             >
                 <div className="flex items-center gap-2 overflow-hidden">
-                    <Building2 size={16} className="text-gray-400 flex-shrink-0" />
+                    <Building2 size={16} className="shrink-0" style={{ color: 'var(--text-muted)' }} />
                     {getDisplayLabel()}
                 </div>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
             </button>
 
             <AnimatePresence>

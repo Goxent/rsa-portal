@@ -121,173 +121,171 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                    className="absolute inset-0 bg-black/60"
                 />
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-5xl bg-[#0a0f1e] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                    exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                    className="relative w-full max-w-5xl bg-[var(--bg-main)] border border-[var(--border)] rounded-[var(--radius-xl)] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                 >
                     {/* Header Banner */}
-                    <div className="shrink-0 p-8 pb-6 bg-gradient-to-br from-blue-600/10 to-transparent border-b border-white/5 relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                        
-                        <div className="flex justify-between items-start relative z-10">
-                            <div className="flex gap-6 items-start">
-                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-amber-500/30 flex items-center justify-center text-2xl font-black text-amber-400 shadow-xl shadow-blue-900/20 shrink-0">
+                    <div className="shrink-0 p-6 bg-[var(--bg-secondary)] border-b border-[var(--border)]">
+                        <div className="flex justify-between items-start">
+                            <div className="flex gap-4 items-start">
+                                <div className="w-14 h-14 rounded-[var(--radius-md)] bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-lg font-bold text-[var(--accent)] shrink-0">
                                     {client.code?.substring(0, 2).toUpperCase() || 'CL'}
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h2 className="text-3xl font-black text-white">{client.name}</h2>
-                                        <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-gray-400">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h2 className="text-xl font-semibold text-[var(--text-heading)]">{client.name}</h2>
+                                        <span className="px-2 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-[var(--border)] text-xs font-mono text-[var(--text-muted)]">
                                             {client.code}
                                         </span>
                                     </div>
-                                    <div className="flex gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                        <span className="flex items-center gap-1.5"><Briefcase size={14} className="text-amber-500" /> {client.serviceType}</span>
-                                        <span className="flex items-center gap-1.5"><Tag size={14} className="text-amber-500" /> {client.industry}</span>
-                                        <span className={`flex items-center gap-1.5 ${client.status === 'Active' ? 'text-brand-400' : 'text-rose-400'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'Active' ? 'bg-brand-500' : 'bg-rose-500'}`} />
+                                    <div className="flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
+                                        <span className="flex items-center gap-1"><Briefcase size={13} className="text-[var(--accent)]" /> {client.serviceType}</span>
+                                        <span className="flex items-center gap-1"><Tag size={13} className="text-[var(--accent)]" /> {client.industry}</span>
+                                        <span className="flex items-center gap-1.5" style={{ color: client.status === 'Active' ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                                            <div className="w-1.5 h-1.5 rounded-full" style={{ background: client.status === 'Active' ? 'var(--color-success)' : 'var(--color-danger)' }} />
                                             {client.status}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex items-center gap-2">
                                 {isAdmin && (
                                     <button
                                         onClick={() => navigate(`/clients/${client.id}`)}
-                                        className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all flex items-center gap-2 text-sm font-bold border border-white/5"
+                                        className="h-8 px-3 rounded-[var(--radius-md)] bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] text-[var(--text-heading)] transition-colors flex items-center gap-1.5 text-xs font-medium border border-[var(--border)]"
                                     >
-                                        <ExternalLink size={18} />
-                                        Full Profile
+                                        <ExternalLink size={14} />
+                                        Full profile
                                     </button>
                                 )}
                                 <button
                                     onClick={onClose}
-                                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all border border-white/5"
+                                    className="p-1.5 rounded-[var(--radius-md)] bg-[var(--bg-surface)] hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors border border-[var(--border)]"
                                 >
-                                    <X size={20} />
+                                    <X size={16} />
                                 </button>
                             </div>
                         </div>
 
                         {/* Quick Stats */}
-                        <div className="flex gap-8 mt-8 border-t border-white/5 pt-6 relative z-10">
+                        <div className="flex gap-8 mt-5 border-t border-[var(--border)] pt-4">
                             {[
-                                { label: 'Active Tasks', value: stats.active, color: 'text-amber-400' },
-                                { label: 'Completed', value: stats.completed, color: 'text-brand-400' },
-                                { label: 'Compliance items', value: stats.compliance, color: 'text-amber-400' },
+                                { label: 'Active tasks', value: stats.active },
+                                { label: 'Completed', value: stats.completed },
+                                { label: 'Compliance items', value: stats.compliance },
                             ].map(s => (
                                 <div key={s.label}>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">{s.label}</p>
-                                    <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                                    <p className="text-xs text-[var(--text-muted)]">{s.label}</p>
+                                    <p className="text-base font-semibold tabular-nums text-[var(--text-heading)] mt-0.5">{s.value}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Navigation */}
-                    <div className="shrink-0 px-8 bg-black/20 flex gap-6">
+                    <div className="shrink-0 px-6 bg-[var(--bg-surface)] border-b border-[var(--border)] flex gap-4">
                         {(['OVERVIEW', 'TASKS', 'DOCUMENTS', 'COMPLIANCE', 'HISTORY'] as Tab[]).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                                className={`py-3 text-xs font-medium border-b-2 transition-colors ${activeTab === tab ? 'border-[var(--accent)] text-[var(--accent)] font-semibold' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}
                             >
-                                {tab}
+                                {tab === 'OVERVIEW' ? 'Overview' : tab === 'TASKS' ? 'Tasks' : tab === 'DOCUMENTS' ? 'Documents' : tab === 'COMPLIANCE' ? 'Compliance' : 'History'}
                             </button>
                         ))}
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[var(--bg-main)]">
                         {activeTab === 'OVERVIEW' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-6">
-                                    <section className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                            <Building2 size={16} className="text-amber-500" /> Organization Info
+                                    <section className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] p-5 border border-[var(--border)] space-y-4">
+                                        <h3 className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-2">
+                                            <Building2 size={15} className="text-[var(--accent)]" /> Organization info
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-y-6">
+                                        <div className="grid grid-cols-2 gap-y-4">
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">PAN Number</p>
-                                                <p className="text-white font-bold">{client.pan || 'Not provided'}</p>
+                                                <p className="text-xs text-[var(--text-muted)]">PAN number</p>
+                                                <p className="text-xs font-medium text-[var(--text-heading)] mt-0.5">{client.pan || 'Not provided'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Signing Authority</p>
-                                                <p className="text-white font-bold">{client.signingAuthority || 'N/A'}</p>
+                                                <p className="text-xs text-[var(--text-muted)]">Signing authority</p>
+                                                <p className="text-xs font-medium text-[var(--text-heading)] mt-0.5">{client.signingAuthority || 'N/A'}</p>
                                             </div>
                                             <div className="col-span-2">
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Address</p>
-                                                <p className="text-white font-medium flex items-center gap-2">
-                                                    <MapPin size={14} className="text-rose-400" /> {client.address || 'No address set'}
+                                                <p className="text-xs text-[var(--text-muted)]">Address</p>
+                                                <p className="text-xs font-medium text-[var(--text-heading)] flex items-center gap-1.5 mt-0.5">
+                                                    <MapPin size={13} className="text-[var(--color-danger)]" /> {client.address || 'No address set'}
                                                 </p>
                                             </div>
                                         </div>
                                     </section>
 
-                                    <section className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                            <ShieldCheck size={16} className="text-brand-500" /> Statutory & Compliance (Nepal)
+                                    <section className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] p-5 border border-[var(--border)] space-y-4">
+                                        <h3 className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-2">
+                                            <ShieldCheck size={15} className="text-[var(--accent)]" /> Statutory & compliance (Nepal)
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-y-6">
+                                        <div className="grid grid-cols-2 gap-y-4">
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">VAT Number</p>
-                                                <p className="text-white font-bold">{client.vatNumber || 'Not registered'}</p>
+                                                <p className="text-xs text-[var(--text-muted)]">VAT number</p>
+                                                <p className="text-xs font-medium text-[var(--text-heading)] mt-0.5">{client.vatNumber || 'Not registered'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Fiscal Year End</p>
-                                                <p className="text-white font-bold">{client.fiscalYearEnd || 'Ashad End'}</p>
+                                                <p className="text-xs text-[var(--text-muted)]">Fiscal year end</p>
+                                                <p className="text-xs font-medium text-[var(--text-heading)] mt-0.5">{client.fiscalYearEnd || 'Ashad End'}</p>
                                             </div>
                                         </div>
                                     </section>
 
-                                    <section className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                            <User size={16} className="text-amber-500" /> Focal Person (Staff)
+                                    <section className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] p-5 border border-[var(--border)] space-y-3">
+                                        <h3 className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-2">
+                                            <User size={15} className="text-[var(--accent)]" /> Focal person (staff)
                                         </h3>
                                         {focalPerson ? (
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-sm font-black text-amber-400 uppercase">
-                                                    {focalPerson.displayName?.substring(0, 2)}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-xs font-semibold text-[var(--accent)]">
+                                                    {focalPerson.displayName?.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-white font-bold text-lg">{focalPerson.displayName}</p>
-                                                    <p className="text-gray-500 text-xs font-medium">{focalPerson.email}</p>
+                                                    <p className="text-xs font-semibold text-[var(--text-heading)]">{focalPerson.displayName}</p>
+                                                    <p className="text-xs text-[var(--text-muted)]">{focalPerson.email}</p>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <p className="text-gray-500 italic text-sm">No internal focal person assigned.</p>
+                                            <p className="text-xs text-[var(--text-muted)] italic">No internal focal person assigned.</p>
                                         )}
                                     </section>
                                 </div>
 
-                                <section className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                                    <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                        <Phone size={16} className="text-brand-500" /> Contact Details
+                                <section className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] p-5 border border-[var(--border)] space-y-4">
+                                    <h3 className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-2">
+                                        <Phone size={15} className="text-[var(--accent)]" /> Contact details
                                     </h3>
-                                    <div className="space-y-4">
-                                        <div className="p-4 bg-black/20 rounded-xl border border-white/5 flex items-center gap-4">
-                                            <div className="p-2.5 rounded-lg bg-brand-500/10 text-brand-400">
-                                                <Phone size={18} />
+                                    <div className="space-y-3">
+                                        <div className="p-3 bg-[var(--bg-surface)] rounded-[var(--radius-md)] border border-[var(--border)] flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--accent-dim)] text-[var(--accent)] flex items-center justify-center">
+                                                <Phone size={15} />
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase">Phone Number</p>
-                                                <p className="text-white font-bold">{client.phone || 'N/A'}</p>
+                                                <p className="text-xs text-[var(--text-muted)]">Phone number</p>
+                                                <p className="text-xs font-medium text-[var(--text-heading)] mt-0.5">{client.phone || 'N/A'}</p>
                                             </div>
                                         </div>
-                                        <div className="p-4 bg-black/20 rounded-xl border border-white/5 flex items-center gap-4">
-                                            <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
-                                                <Mail size={18} />
+                                        <div className="p-3 bg-[var(--bg-surface)] rounded-[var(--radius-md)] border border-[var(--border)] flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--accent-dim)] text-[var(--accent)] flex items-center justify-center">
+                                                <Mail size={15} />
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-600 uppercase">Email Address</p>
-                                                <p className="text-white font-bold">{client.email || 'N/A'}</p>
+                                                <p className="text-xs text-[var(--text-muted)]">Email address</p>
+                                                <p className="text-xs font-medium text-[var(--text-heading)] mt-0.5">{client.email || 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -296,42 +294,42 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         )}
 
                         {activeTab === 'DOCUMENTS' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-xl font-bold text-white">Client Knowledge Base</h3>
+                                    <h3 className="text-sm font-semibold text-[var(--text-heading)]">Client knowledge base</h3>
                                     {isAdmin && (
                                         <button 
                                             onClick={() => setIsAddDocModalOpen(true)}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/20"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--on-accent)] text-xs font-semibold hover:opacity-90 transition-colors"
                                         >
-                                            <Plus size={16} /> Add Document
+                                            <Plus size={14} /> Add document
                                         </button>
                                     )}
                                 </div>
 
                                 {client.documents && client.documents.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {client.documents.map((doc, idx) => (
-                                            <div key={doc.id || `doc-${idx}`} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
-                                                        <FileText size={20} />
+                                            <div key={doc.id || `doc-${idx}`} className="p-3.5 bg-[var(--bg-secondary)] rounded-[var(--radius-md)] border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors flex items-center justify-between group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-heading)]">
+                                                        <FileText size={16} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-bold text-white text-sm">{doc.title}</h4>
-                                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{doc.category} • {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                                                        <h4 className="font-medium text-[var(--text-heading)] text-xs">{doc.title}</h4>
+                                                        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{doc.category} • {new Date(doc.uploadedAt).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all">
-                                                        <ArrowRight size={18} />
+                                                <div className="flex items-center gap-1">
+                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[var(--text-heading)] opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <ArrowRight size={14} />
                                                     </a>
                                                     {isAdmin && (
                                                         <button 
                                                             onClick={() => handleDeleteDocument(doc.id)}
-                                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 opacity-0 group-hover:opacity-100 transition-all"
+                                                            className="p-1.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[var(--color-danger)] opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
-                                                            <Trash2 size={16} />
+                                                            <Trash2 size={13} />
                                                         </button>
                                                     )}
                                                 </div>
@@ -339,34 +337,34 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-20 flex flex-col items-center justify-center bg-white/[0.02] rounded-[32px] border border-dashed border-white/10">
-                                        <FileText size={48} className="text-gray-700 mb-4" />
-                                        <h4 className="text-white font-bold mb-1">No documents attached</h4>
-                                        <p className="text-gray-500 text-sm">Upload KYC, registrations, or legal documents here.</p>
+                                    <div className="py-16 flex flex-col items-center justify-center bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] border border-dashed border-[var(--border)]">
+                                        <FileText size={36} className="text-[var(--text-muted)] opacity-30 mb-2" />
+                                        <h4 className="text-xs font-semibold text-[var(--text-heading)] mb-0.5">No documents attached</h4>
+                                        <p className="text-xs text-[var(--text-muted)]">Upload KYC, registrations, or legal documents here.</p>
                                     </div>
                                 )}
                             </div>
                         )}
 
                         {activeTab === 'TASKS' && (
-                            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="space-y-2">
                                 {clientTasks.length > 0 ? (
                                     clientTasks.map((task, idx) => (
-                                        <div key={task.id || `task-${idx}`} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex items-center justify-between group">
+                                        <div key={task.id || `task-${idx}`} className="p-3.5 bg-[var(--bg-secondary)] rounded-[var(--radius-md)] border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors flex items-center justify-between group">
                                             <div>
-                                                <h4 className="font-bold text-white text-base mb-1 group-hover:text-amber-400 transition-colors">{task.title}</h4>
-                                                <div className="flex gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                                    <span className="flex items-center gap-1.5"><CalIcon size={12} /> Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                                                    <span className="flex items-center gap-1.5"><User size={12} /> {task.assignedToNames?.[0] || 'Unassigned'}</span>
+                                                <h4 className="font-medium text-[var(--text-heading)] text-xs mb-1">{task.title}</h4>
+                                                <div className="flex gap-3 text-[11px] text-[var(--text-muted)]">
+                                                    <span className="flex items-center gap-1"><CalIcon size={12} /> Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                                                    <span className="flex items-center gap-1"><User size={12} /> {task.assignedToNames?.[0] || 'Unassigned'}</span>
                                                 </div>
                                             </div>
-                                            <div className={`px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest ${task.status === 'COMPLETED' ? 'bg-brand-500/10 border-brand-500/20 text-brand-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
-                                                {task.status.replace('_', ' ')}
+                                            <div className="px-2.5 py-1 rounded-[var(--radius-sm)] border text-xs font-medium" style={{ background: task.status === 'COMPLETED' ? 'rgba(79,178,134,0.1)' : 'rgba(217,164,65,0.1)', borderColor: task.status === 'COMPLETED' ? 'rgba(79,178,134,0.25)' : 'rgba(217,164,65,0.25)', color: task.status === 'COMPLETED' ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                                                {task.status.replace('_', ' ').toLowerCase()}
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="py-20 flex flex-col items-center opacity-40">
+                                    <div className="py-16 flex flex-col items-center opacity-40">
                                         <EmptyState icon={Briefcase} title="Empty Board" description="No tasks scheduled for this client." />
                                     </div>
                                 )}
@@ -374,43 +372,42 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         )}
 
                         {activeTab === 'COMPLIANCE' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {clientCompliance.length > 0 ? (
                                     clientCompliance.map((event, idx) => (
-                                        <div key={event.id || `event-${idx}`} className="p-6 bg-white/5 rounded-2xl border-l-[6px] border border-white/5 border-l-amber-500">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <span className="px-2 py-0.5 rounded-md bg-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest">{event.category}</span>
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
-                                                    <Clock size={14} />
+                                        <div key={event.id || `event-${idx}`} className="p-4 bg-[var(--bg-secondary)] rounded-[var(--radius-md)] border border-[var(--border)] border-l-4 border-l-[var(--color-warning)] space-y-2">
+                                            <div className="flex justify-between items-start">
+                                                <span className="px-2 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] text-[11px] font-medium text-[var(--text-muted)]">{event.category}</span>
+                                                <div className="flex items-center gap-1 text-xs font-medium text-[var(--color-warning)]">
+                                                    <Clock size={12} />
                                                     {new Date(event.dueDate).toLocaleDateString()}
                                                 </div>
                                             </div>
-                                            <h4 className="text-white font-black text-lg mb-2">{event.title}</h4>
-                                            <p className="text-sm text-gray-400 leading-relaxed">{event.description}</p>
+                                            <h4 className="text-xs font-semibold text-[var(--text-heading)]">{event.title}</h4>
+                                            <p className="text-xs text-[var(--text-muted)] leading-relaxed">{event.description}</p>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="col-span-2 py-20 flex flex-col items-center opacity-40">
+                                    <div className="col-span-2 py-16 flex flex-col items-center opacity-40">
                                         <EmptyState icon={ShieldCheck} title="Clean Compliance" description="No statutory compliance events found." />
                                     </div>
                                 )}
                             </div>
                         )}
                         
-                        {/* History could be an activity log, but for now we'll just show a simplified list */}
                         {activeTab === 'HISTORY' && (
-                            <div className="flex flex-col items-center justify-center py-20 opacity-30">
-                                <Activity size={64} className="mb-4 text-gray-600" />
-                                <h3 className="text-xl font-bold text-white mb-2">History Under Dev</h3>
-                                <p className="text-sm text-gray-400">Activity logs are being integrated into the Client profile.</p>
+                            <div className="flex flex-col items-center justify-center py-16 text-center text-[var(--text-muted)]">
+                                <Activity size={36} className="mb-2 opacity-30" />
+                                <h3 className="text-xs font-semibold text-[var(--text-heading)] mb-1">History log</h3>
+                                <p className="text-xs">Activity logs are being integrated into the client profile.</p>
                             </div>
                         )}
                     </div>
                     
                     {/* Footnote */}
-                    <div className="shrink-0 p-6 bg-black/40 border-t border-white/5 flex justify-between items-center text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+                    <div className="shrink-0 px-6 py-2.5 bg-[var(--bg-secondary)] border-t border-[var(--border)] flex justify-between items-center text-xs text-[var(--text-muted)]">
                         <span>Organization Management System • R. Sapkota & Associates</span>
-                        <span>v2.0 Premium Workflow</span>
+                        <span>Client view</span>
                     </div>
                 </motion.div>
             </div>
@@ -424,41 +421,41 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsAddDocModalOpen(false)}
-                            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/60"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="relative w-full max-w-md bg-[#0a0f1e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6"
+                            className="relative w-full max-w-md bg-[var(--bg-main)] border border-[var(--border)] rounded-[var(--radius-xl)] overflow-hidden shadow-2xl p-6"
                         >
-                            <h3 className="text-lg font-bold text-white mb-4">Add Document</h3>
+                            <h3 className="text-sm font-semibold text-[var(--text-heading)] mb-4">Add document</h3>
                             
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Document Title</label>
+                                    <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Document title</label>
                                     <input 
                                         type="text"
                                         value={newDocTitle}
                                         onChange={(e) => setNewDocTitle(e.target.value)}
                                         placeholder="e.g., PAN Certificate"
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 transition-all"
+                                        className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] text-xs text-[var(--text-heading)] outline-none focus:border-[var(--accent)] transition-colors"
                                     />
                                 </div>
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Source</label>
-                                        <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                                        <label className="block text-xs font-medium text-[var(--text-muted)]">Source</label>
+                                        <div className="flex bg-[var(--bg-surface)] p-0.5 rounded-[var(--radius-md)] border border-[var(--border)]">
                                             <button 
                                                 onClick={() => setIsUploadMode(true)}
-                                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isUploadMode ? 'bg-amber-600 text-white' : 'text-gray-500'}`}
+                                                className={`px-3 py-1 text-xs font-medium rounded-[var(--radius-sm)] transition-colors ${isUploadMode ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)]'}`}
                                             >
                                                 Upload
                                             </button>
                                             <button 
                                                 onClick={() => setIsUploadMode(false)}
-                                                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${!isUploadMode ? 'bg-amber-600 text-white' : 'text-gray-500'}`}
+                                                className={`px-3 py-1 text-xs font-medium rounded-[var(--radius-sm)] transition-colors ${!isUploadMode ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)]'}`}
                                             >
                                                 Link
                                             </button>
@@ -487,16 +484,16 @@ const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                                                     });
                                                 }
                                             }}
-                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 transition-all"
+                                            className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-md)] text-xs text-[var(--text-heading)] outline-none focus:border-[var(--accent)] transition-colors"
                                         />
                                     )}
                                 </div>
                             </div>
 
-                            <div className="mt-6 flex justify-end">
+                            <div className="mt-5 flex justify-end gap-2">
                                 <button 
                                     onClick={() => setIsAddDocModalOpen(false)}
-                                    className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-white transition-colors"
+                                    className="px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors"
                                 >
                                     Cancel
                                 </button>

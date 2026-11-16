@@ -44,62 +44,62 @@ const TaskDetailsTab: React.FC<TaskDetailsTabProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     {/* Left Column: Core Identity (Read-only) */}
                     <div className="lg:col-span-3 space-y-6">
-                        <div className="bg-white dark:bg-white/5 rounded-[32px] p-8 border border-black/5 dark:border-white/10 shadow-sm">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="w-10 h-10 rounded-2xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
-                                    <Briefcase size={20} className="text-brand-400" />
+                        <div className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] p-6 border border-[var(--border)] shadow-none">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--accent-dim)] flex items-center justify-center border border-[var(--border-accent)] text-[var(--accent)]">
+                                    <Briefcase size={16} />
                                 </div>
                                 <div>
-                                    <h4 className="text-[14px] font-black text-white uppercase tracking-widest">Engagement Overview</h4>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Core Information Summary</p>
+                                    <h4 className="text-xs font-semibold text-[var(--text-heading)]">Engagement overview</h4>
+                                    <p className="text-[11px] text-[var(--text-muted)] font-normal">Core information summary</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Title</label>
-                                    <p className="text-[14px] font-bold text-white">{task.title}</p>
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Title</label>
+                                    <p className="text-xs font-semibold text-[var(--text-heading)]">{task.title}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Client</label>
-                                    <p className="text-[14px] font-bold text-white">{task.clientName || 'N/A'}</p>
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Client</label>
+                                    <p className="text-xs font-semibold text-[var(--text-heading)]">{task.clientName || 'N/A'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Fiscal Year</label>
-                                    <p className="text-[14px] font-bold text-emerald-400">FY {task.fiscalYear}</p>
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Fiscal year</label>
+                                    <p className="text-xs font-semibold tabular-nums text-[var(--color-success)]">FY {task.fiscalYear}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Status & Phase</label>
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Status & phase</label>
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <span className="px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-black uppercase tracking-widest border border-brand-500/20">
-                                            {task.status?.replace('_', ' ')}
+                                        <span className="px-2 py-0.5 rounded-[var(--radius-sm)] bg-[var(--accent-dim)] text-[var(--accent)] text-[10px] font-medium border border-[var(--border-accent)] capitalize">
+                                            {task.status?.replace('_', ' ').toLowerCase()}
                                         </span>
-                                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                        <span className="px-2 py-0.5 rounded-[var(--radius-sm)] bg-[rgba(79,178,134,0.1)] text-[var(--color-success)] text-[10px] font-medium border border-[rgba(79,178,134,0.25)]">
                                             {(PHASE_LABELS_FULL as any)[task.auditPhase as AuditPhase] || task.auditPhase}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Start Date</label>
-                                    <p className="text-[14px] font-bold text-emerald-400">{task.startDate || '—'}</p>
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Start date</label>
+                                    <p className="text-xs font-semibold tabular-nums text-[var(--text-heading)]">{task.startDate || '—'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Deadline</label>
-                                    <p className="text-[14px] font-bold text-rose-400">{task.dueDate}</p>
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Deadline</label>
+                                    <p className="text-xs font-semibold tabular-nums text-[var(--color-danger)]">{task.dueDate}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Lead Auditor</label>
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Lead auditor</label>
                                     <div className="flex items-center gap-2">
-                                        <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] font-bold text-brand-400 uppercase">
+                                        <div className="w-5 h-5 rounded-full bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-[10px] font-semibold text-[var(--accent)]">
                                             {task.assignedToNames?.[0]?.charAt(0) || 'A'}
                                         </div>
-                                        <p className="text-[13px] font-bold text-white">{task.assignedToNames?.[0] || 'Unassigned'}</p>
+                                        <p className="text-xs font-semibold text-[var(--text-heading)]">{task.assignedToNames?.[0] || 'Unassigned'}</p>
                                     </div>
                                 </div>
 
-                                <div className="md:col-span-2 space-y-2 pt-4 border-t border-white/5">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Description / Audit Scope</label>
-                                    <p className="text-[13px] text-gray-400 leading-relaxed font-semibold italic">
+                                <div className="md:col-span-2 space-y-1.5 pt-3 border-t border-[var(--border)]">
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Description / audit scope</label>
+                                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed italic">
                                         "{task.description || 'No engagement scope defined.'}"
                                     </p>
                                 </div>
@@ -107,37 +107,37 @@ const TaskDetailsTab: React.FC<TaskDetailsTabProps> = ({
                         </div>
 
                         {/* Engagement Team Section */}
-                        <div className="bg-white dark:bg-white/5 rounded-[32px] p-8 border border-black/5 dark:border-white/10 shadow-sm">
-                            <div className="flex items-center justify-between mb-8">
+                        <div className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] p-6 border border-[var(--border)] shadow-none">
+                            <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-2xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20">
-                                        <CheckCircle2 size={20} className="text-brand-400" />
+                                    <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--accent-dim)] flex items-center justify-center border border-[var(--border-accent)] text-[var(--accent)]">
+                                        <CheckCircle2 size={16} />
                                     </div>
                                     <div>
-                                        <h4 className="text-[14px] font-black text-white uppercase tracking-widest">Engagement Team</h4>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Assigned Staff & Hierarchy</p>
+                                        <h4 className="text-xs font-semibold text-[var(--text-heading)]">Engagement team</h4>
+                                        <p className="text-[11px] text-[var(--text-muted)]">Assigned staff & hierarchy</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setActiveDetailTab('SETTINGS')}
-                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all border border-white/5"
+                                    className="px-3 py-1.5 bg-[var(--bg-surface)] hover:bg-[var(--bg-secondary)] rounded-[var(--radius-md)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-heading)] transition-colors border border-[var(--border)]"
                                 >
-                                    Modify Team
+                                    Modify team
                                 </button>
                             </div>
 
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 {/* Hierarchy Roles */}
                                 {teamMembers.length > 0 && (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         {teamMembers.map((member) => (
-                                            <div key={member.role} className={`p-4 rounded-2xl bg-${member.color}-500/5 border border-${member.color}-500/10 flex items-center gap-3`}>
-                                                <div className={`w-8 h-8 rounded-xl bg-${member.color}-500/20 flex items-center justify-center text-[10px] font-bold text-${member.color}-400 uppercase`}>
+                                            <div key={member.role} className="p-3 rounded-[var(--radius-md)] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center gap-2.5">
+                                                <div className="w-7 h-7 rounded-[var(--radius-sm)] bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-[10px] font-semibold text-[var(--accent)]">
                                                     {getMemberName(member.id)?.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <p className={`text-[8px] font-black text-${member.color}-500/70 uppercase tracking-widest`}>{member.role}</p>
-                                                    <p className="text-[12px] font-bold text-white">{getMemberName(member.id)}</p>
+                                                    <p className="text-[10px] font-medium text-[var(--text-muted)]">{member.role}</p>
+                                                    <p className="text-xs font-semibold text-[var(--text-heading)]">{getMemberName(member.id)}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -145,20 +145,20 @@ const TaskDetailsTab: React.FC<TaskDetailsTabProps> = ({
                                 )}
 
                                 {/* Assigned Staff List */}
-                                <div className="space-y-3">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em]">Assigned Audit Staff</label>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-medium text-[var(--text-muted)]">Assigned audit staff</label>
                                     <div className="flex flex-wrap gap-2">
                                         {assignedStaff.length > 0 ? (
                                             assignedStaff.map((name, idx) => (
-                                                <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
-                                                    <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-[8px] font-bold text-brand-400 uppercase">
+                                                <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-sm)] bg-[var(--bg-surface)] border border-[var(--border)]">
+                                                    <div className="w-4 h-4 rounded-full bg-[var(--accent-dim)] flex items-center justify-center text-[8px] font-semibold text-[var(--accent)]">
                                                         {name.charAt(0)}
                                                     </div>
-                                                    <span className="text-[11px] font-bold text-gray-300">{name}</span>
+                                                    <span className="text-xs font-medium text-[var(--text-secondary)]">{name}</span>
                                                 </div>
                                             ))
                                         ) : (
-                                            <p className="text-[11px] text-gray-600 italic">No staff members assigned to this engagement yet.</p>
+                                            <p className="text-xs text-[var(--text-muted)] italic">No staff members assigned to this engagement yet.</p>
                                         )}
                                     </div>
                                 </div>
@@ -168,88 +168,78 @@ const TaskDetailsTab: React.FC<TaskDetailsTabProps> = ({
 
                     {/* Right Column: Key Pulse Metrics */}
                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-white/5 rounded-[32px] p-8 border border-black/5 dark:border-white/10 shadow-sm space-y-8">
-                            <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Pulse Indicator</h4>
+                        <div className="bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] p-6 border border-[var(--border)] shadow-none space-y-5">
+                            <h4 className="text-xs font-semibold text-[var(--text-heading)]">Key metrics</h4>
                             
-                            <div className="space-y-6">
-                                {/* Progress Pulsar */}
-                                <div className="space-y-3">
+                            <div className="space-y-4">
+                                {/* Progress */}
+                                <div className="space-y-2">
                                     <div className="flex justify-between items-end">
-                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Execution Progress</span>
-                                        <span className="text-[16px] font-black text-brand-400">{Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / (task.subtasks || []).length) * 100 || 0)}%</span>
+                                        <span className="text-xs text-[var(--text-muted)]">Execution progress</span>
+                                        <span className="text-base font-semibold tabular-nums text-[var(--accent)]">{Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / (task.subtasks || []).length) * 100 || 0)}%</span>
                                     </div>
-                                    <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                    <div className="h-1.5 bg-[var(--bg-surface)] rounded-full overflow-hidden border border-[var(--border)]">
                                         <div 
-                                            className="h-full bg-gradient-to-r from-emerald-500 to-brand-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all duration-1000"
+                                            className="h-full bg-[var(--accent)] rounded-full transition-all duration-500"
                                             style={{ width: `${Math.round(((task.subtasks || []).filter(s => s.isCompleted).length / (task.subtasks || []).length) * 100 || 0)}%` }}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('PROCEDURES')}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="p-1 rounded bg-brand-500/10 text-brand-400">
-                                                <ClipboardCheck size={12} />
-                                            </div>
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Sub task</span>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-[var(--bg-surface)] rounded-[var(--radius-md)] p-3 border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors cursor-pointer group" onClick={() => setActiveDetailTab('PROCEDURES')}>
+                                        <div className="flex items-center gap-1.5 mb-1 text-[var(--text-muted)]">
+                                            <ClipboardCheck size={12} />
+                                            <span className="text-[11px] font-medium">Procedures</span>
                                         </div>
-                                        <p className="text-xl font-black text-white">{(task.subtasks || []).filter(s => s.isCompleted).length}<span className="text-[10px] text-gray-600 font-bold"> / {(task.subtasks || []).length}</span></p>
+                                        <p className="text-base font-semibold tabular-nums text-[var(--text-heading)]">{(task.subtasks || []).filter(s => s.isCompleted).length}<span className="text-xs text-[var(--text-muted)] font-normal"> / {(task.subtasks || []).length}</span></p>
                                     </div>
 
-                                    <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('OBSERVATIONS')}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="p-1 rounded bg-rose-500/10 text-rose-400">
-                                                <Eye size={12} />
-                                            </div>
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Findings</span>
+                                    <div className="bg-[var(--bg-surface)] rounded-[var(--radius-md)] p-3 border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors cursor-pointer group" onClick={() => setActiveDetailTab('OBSERVATIONS')}>
+                                        <div className="flex items-center gap-1.5 mb-1 text-[var(--text-muted)]">
+                                            <Eye size={12} />
+                                            <span className="text-[11px] font-medium">Findings</span>
                                         </div>
-                                        <p className="text-xl font-black text-white">{(task.observations || []).length}</p>
+                                        <p className="text-base font-semibold tabular-nums text-[var(--text-heading)]">{(task.observations || []).length}</p>
                                     </div>
 
-                                    <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('EVIDENCE')}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="p-1 rounded bg-emerald-500/10 text-emerald-400">
-                                                <FolderOpen size={12} />
-                                            </div>
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Documents</span>
+                                    <div className="bg-[var(--bg-surface)] rounded-[var(--radius-md)] p-3 border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors cursor-pointer group" onClick={() => setActiveDetailTab('EVIDENCE')}>
+                                        <div className="flex items-center gap-1.5 mb-1 text-[var(--text-muted)]">
+                                            <FolderOpen size={12} />
+                                            <span className="text-[11px] font-medium">Documents</span>
                                         </div>
-                                        <p className="text-xl font-black text-white">{auditFiles.length}</p>
+                                        <p className="text-base font-semibold tabular-nums text-[var(--text-heading)]">{auditFiles.length}</p>
                                     </div>
 
-                                    <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer group" onClick={() => setActiveDetailTab('COMMENTS')}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="p-1 rounded bg-amber-500/10 text-amber-400">
-                                                <MessageSquare size={12} />
-                                            </div>
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Activity</span>
+                                    <div className="bg-[var(--bg-surface)] rounded-[var(--radius-md)] p-3 border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors cursor-pointer group" onClick={() => setActiveDetailTab('COMMENTS')}>
+                                        <div className="flex items-center gap-1.5 mb-1 text-[var(--text-muted)]">
+                                            <MessageSquare size={12} />
+                                            <span className="text-[11px] font-medium">Activity</span>
                                         </div>
-                                        <p className="text-xl font-black text-white">{(task.comments || []).length}</p>
+                                        <p className="text-base font-semibold tabular-nums text-[var(--text-heading)]">{(task.comments || []).length}</p>
                                     </div>
 
-                                    <div className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-indigo-500/20 transition-all cursor-pointer group col-span-2" onClick={() => setActiveDetailTab('REVIEW_CHECKLIST')}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1 rounded bg-indigo-500/10 text-indigo-400">
-                                                    <ShieldCheck size={12} />
-                                                </div>
-                                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Review Protocol</span>
+                                    <div className="bg-[var(--bg-surface)] rounded-[var(--radius-md)] p-3 border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors cursor-pointer group col-span-2" onClick={() => setActiveDetailTab('REVIEW_CHECKLIST')}>
+                                        <div className="flex items-center justify-between mb-1.5 text-[var(--text-muted)]">
+                                            <div className="flex items-center gap-1.5">
+                                                <ShieldCheck size={12} />
+                                                <span className="text-[11px] font-medium">Review protocol</span>
                                             </div>
-                                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">LAYER 1/2/3</span>
+                                            <span className="text-[10px] font-medium text-[var(--accent)]">3-Layer check</span>
                                         </div>
-                                        <div className="flex items-center gap-3 mt-1">
+                                        <div className="flex items-center gap-2 mt-1">
                                             {[
-                                                { label: 'TL', done: !!task.teamLeadApprovedAt, color: 'brand' },
-                                                { label: 'ER', done: !!task.engagementReviewerApprovedAt, color: 'indigo' },
-                                                { label: 'SP', done: !!task.signingPartnerApprovedAt, color: 'rose' }
+                                                { label: 'TL', done: !!task.teamLeadApprovedAt },
+                                                { label: 'ER', done: !!task.engagementReviewerApprovedAt },
+                                                { label: 'SP', done: !!task.signingPartnerApprovedAt }
                                             ].map(lv => (
-                                                <div key={lv.label} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg border transition-all ${
+                                                <div key={lv.label} className={`flex-1 flex items-center justify-center gap-1.5 py-1 rounded-[var(--radius-sm)] border text-xs font-medium transition-colors ${
                                                     lv.done 
-                                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                                                        : 'bg-white/5 border-white/5 text-gray-600'
+                                                        ? 'bg-[rgba(79,178,134,0.1)] border-[rgba(79,178,134,0.25)] text-[var(--color-success)]' 
+                                                        : 'bg-[var(--bg-secondary)] border-[var(--border)] text-[var(--text-muted)]'
                                                 }`}>
                                                     {lv.done ? <CheckCircle2 size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-30" />}
-                                                    <span className="text-[9px] font-black">{lv.label}</span>
+                                                    <span>{lv.label}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -260,9 +250,9 @@ const TaskDetailsTab: React.FC<TaskDetailsTabProps> = ({
                             {!isArchived && (
                                 <button 
                                     onClick={() => setActiveDetailTab('SETTINGS')}
-                                    className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] transition-all border border-white/5 flex items-center justify-center gap-2"
+                                    className="w-full py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-secondary)] rounded-[var(--radius-md)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-heading)] transition-colors border border-[var(--border)] flex items-center justify-center gap-2"
                                 >
-                                    <Settings2 size={12} /> Manage Engagement
+                                    <Settings2 size={13} /> Manage engagement
                                 </button>
                             )}
                         </div>

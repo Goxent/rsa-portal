@@ -135,7 +135,7 @@ const TasksOverviewWidget: React.FC<TasksOverviewWidgetProps> = ({ recentTasks =
             <div className="flex flex-wrap gap-1.5">
                 <button
                     onClick={() => setFilterStatus('active')}
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'active' ? 'bg-brand-500/20 border-brand-500/30 text-brand-600 dark:text-brand-300 shadow-[0_0_12px_rgba(101,154,43,0.1)]' : 'bg-slate-50 dark:bg-brand-950/20 border-slate-200 dark:border-brand-500/10 text-slate-500 dark:text-gray-500'}`}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${filterStatus === 'active' ? 'bg-brand-500/20 border-brand-500/30 text-brand-600 dark:text-brand-300 shadow-[0_0_12px_rgba(79,178,134,0.1)]' : 'bg-slate-50 dark:bg-brand-950/20 border-slate-200 dark:border-brand-500/10 text-slate-500 dark:text-gray-500'}`}
                 >
                     Active · {activeCount}
                 </button>

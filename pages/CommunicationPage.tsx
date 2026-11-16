@@ -116,9 +116,9 @@ export default function CommunicationPage() {
     };
 
     const getPriorityColor = (p: string) => {
-        if (p === 'HIGH') return 'text-red-600 bg-red-100 border-red-200';
-        if (p === 'MEDIUM') return 'text-yellow-600 bg-yellow-100 border-yellow-200';
-        return 'text-green-600 bg-green-100 border-green-200';
+        if (p === 'HIGH') return 'text-[var(--color-danger)] bg-[rgba(224,112,122,0.1)] border-[rgba(224,112,122,0.2)]';
+        if (p === 'MEDIUM') return 'text-[var(--color-warning)] bg-[rgba(217,164,65,0.1)] border-[rgba(217,164,65,0.25)]';
+        return 'text-[var(--color-success)] bg-[rgba(79,178,134,0.1)] border-[rgba(79,178,134,0.25)]';
     };
 
     const getRecipientCount = (recipients: string[] | 'ALL') => {
@@ -201,7 +201,7 @@ export default function CommunicationPage() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Category</label>
+                                        <label className="block text-xs font-semibold text-[var(--text-muted)] mb-2">Category</label>
                                         <select
                                             value={type}
                                             onChange={(e: any) => setType(e.target.value)}
@@ -214,7 +214,7 @@ export default function CommunicationPage() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Priority</label>
+                                        <label className="block text-xs font-semibold text-[var(--text-muted)] mb-2">Priority</label>
                                         <select
                                             value={priority}
                                             onChange={(e: any) => setPriority(e.target.value)}
@@ -247,11 +247,11 @@ export default function CommunicationPage() {
                                     </label>
                                 </div>
 
-                                <button
+                                    <button
                                     onClick={handleSend}
                                     disabled={isSubmitting}
-                                    className={`w-full btn-primary py-3 flex items-center justify-center gap-2 text-[15px] shadow-lg ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}
-                                    style={{ background: isSubmitting ? 'var(--text-muted)' : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))' }}
+                                    className={`w-full py-3 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg transition-colors ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}
+                                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                                 >
                                     {isSubmitting ? (
                                         <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Broadcasting...</>
@@ -277,7 +277,7 @@ export default function CommunicationPage() {
                             </div>
                         ) : notices.length === 0 ? (
                             <div className="text-center bg-[var(--bg-elevated)] border border-[var(--border-mid)] rounded-2xl p-16">
-                                <div className="w-20 h-20 mx-auto mb-6 bg-[var(--bg-surface)] rounded-full flex items-center justify-center border-4 border-white shadow-sm">
+                                <div className="w-20 h-20 mx-auto mb-6 bg-[var(--bg-surface)] rounded-full flex items-center justify-center border border-[var(--border)] shadow-sm">
                                     <Megaphone size={32} className="text-[var(--text-muted)] opacity-50" />
                                 </div>
                                 <h3 className="text-xl font-bold text-[var(--text-heading)] mb-2">No Notices Yet</h3>
@@ -295,15 +295,15 @@ export default function CommunicationPage() {
 
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getPriorityColor(notice.priority)}`}>
-                                                    {notice.priority}
+                                                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${getPriorityColor(notice.priority)}`}>
+                                                    {notice.priority.toLowerCase()}
                                                 </span>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-[var(--bg-surface)] text-[var(--text-body)] border-[var(--border-mid)]">
-                                                    {notice.type}
+                                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-md border bg-[var(--bg-surface)] text-[var(--text-body)] border-[var(--border)]">
+                                                    {notice.type.toLowerCase()}
                                                 </span>
                                                 {notice.sendEmail && (
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)] flex items-center gap-1">
-                                                        <Mail size={10} /> Email Sent
+                                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-md border bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)] flex items-center gap-1">
+                                                        <Mail size={10} /> Email sent
                                                     </span>
                                                 )}
                                             </div>
@@ -321,7 +321,7 @@ export default function CommunicationPage() {
                                         <div className="shrink-0 flex items-center md:items-end flex-row md:flex-col justify-between md:justify-center gap-2 md:gap-4 w-full md:w-auto h-full border-t md:border-t-0 md:border-l border-[var(--border-mid)] pt-4 md:pt-0 md:pl-6">
                                             <div className="text-right">
                                                 <p className="text-sm font-bold text-[var(--accent)]">{notice.readBy?.length || 0}</p>
-                                                <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold">Views</p>
+                                                <p className="text-[10px] text-[var(--text-muted)] font-semibold">Views</p>
                                             </div>
                                             <div className="flex gap-2">
                                                 {/* In a real app we might want Edit/Delete for recent notices */}

@@ -409,24 +409,25 @@ const AttendanceWidget: React.FC = () => {
     if (isFloating) {
         return (
             <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-300">
-                <div className="bg-white/95 dark:bg-navy-800/95 backdrop-blur-md border border-brand-100 dark:border-white/10 rounded-2xl shadow-2xl p-4 flex items-center gap-4 w-auto min-w-[280px]">
-                    <div className={`p-2 rounded-xl ${status === 'CLOCKED_IN' ? 'bg-green-500/20 text-green-600 dark:text-green-400 animate-pulse' :
-                        status === 'COMPLETED' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-red-500/20 text-red-600 dark:text-red-400'
-                        }`}>
-                        <Clock size={20} />
+                <div className="border rounded-[var(--radius-lg)] p-4 flex items-center gap-4 w-auto min-w-[280px]" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-modal)' }}>
+                    <div className="p-2 rounded-[var(--radius-sm)]" style={{
+                        background: status === 'CLOCKED_IN' ? 'var(--accent-dim)' : status === 'COMPLETED' ? 'rgba(217,164,65,0.1)' : 'rgba(224,112,122,0.1)',
+                        color: status === 'CLOCKED_IN' ? 'var(--accent)' : status === 'COMPLETED' ? 'var(--color-warning)' : 'var(--color-danger)'
+                    }}>
+                        <Clock size={18} strokeWidth={1.75} />
                     </div>
 
                     <div className="flex-1">
                         <div className="flex items-center justify-between">
-                            <p className="text-xs text-slate-500 dark:text-gray-400 font-medium uppercase tracking-wider">
-                                {status === 'CLOCKED_IN' ? 'Active Session' : 'Attendance'}
+                            <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+                                {status === 'CLOCKED_IN' ? 'Active session' : 'Attendance'}
                             </p>
-                            <button onClick={() => setIsFloating(false)} className="text-slate-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-white transition-colors">
+                            <button onClick={() => setIsFloating(false)} className="transition-colors" style={{ color: 'var(--text-muted)' }} aria-label="Expand floating widget">
                                 <Maximize2 size={14} />
                             </button>
                         </div>
                         <div className="flex items-baseline gap-2 mt-0.5">
-                            <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">
+                            <div className="text-lg font-semibold tabular-nums font-mono" style={{ color: 'var(--text-heading)' }}>
                                 {status === 'CLOCKED_IN' ? (
                                     <SessionTimer initialSeconds={sessionSeconds} isRunning={true} />
                                 ) : (
@@ -439,10 +440,12 @@ const AttendanceWidget: React.FC = () => {
                     {status === 'CLOCKED_IN' && (
                         <button
                             onClick={() => setIsFloating(false)}
-                            className="p-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-600 dark:text-gray-300 transition-colors"
+                            className="p-1.5 rounded-[var(--radius-sm)] transition-colors border"
+                            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                             title="Expand to manage"
+                            aria-label="Expand to manage"
                         >
-                            <ChevronUp size={18} />
+                            <ChevronUp size={16} />
                         </button>
                     )}
                 </div>
@@ -451,30 +454,30 @@ const AttendanceWidget: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full rounded-2xl z-[20] border transition-all duration-200 shadow-sm" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+        <div className="relative w-full rounded-[var(--radius-lg)] z-[20] border transition-colors duration-150" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-card)' }}>
             {/* Left accent stripe */}
-            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl" style={{ background: 'var(--accent)', opacity: 0.9 }}></div>
+            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: 'var(--accent)' }}></div>
             
             {/* Top Bar */}
-            <div className="p-6 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 border-b border-[var(--border)]">
+            <div className="p-5 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10 border-b" style={{ borderColor: 'var(--border)' }}>
                 <div>
                     <div className="flex items-center gap-3 mb-1">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            <Clock className="text-brand-500 dark:text-brand-400" size={20} />
-                            Attendance Center
+                        <h2 className="text-base font-semibold flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
+                            <Clock size={18} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+                            Attendance center
                         </h2>
-                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider ${
-                            status === 'CLOCKED_IN' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' :
-                            status === 'COMPLETED' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' :
-                            'bg-slate-100 border-slate-200 text-slate-600 dark:bg-gray-500/10 dark:border-gray-500/20 dark:text-gray-400'
-                        }`}>
-                            {isSyncingLogs && <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse mr-1.5" />}
-                            {status === 'CLOCKED_IN' ? 'Active Session' : status === 'COMPLETED' ? 'Shift Completed' : 'Not Started'}
+                        <span className="text-xs px-2.5 py-0.5 rounded-full border font-medium" style={{
+                            background: status === 'CLOCKED_IN' ? 'var(--accent-dim)' : status === 'COMPLETED' ? 'rgba(217,164,65,0.08)' : 'var(--bg-surface)',
+                            borderColor: status === 'CLOCKED_IN' ? 'var(--border-accent)' : status === 'COMPLETED' ? 'rgba(217,164,65,0.3)' : 'var(--border)',
+                            color: status === 'CLOCKED_IN' ? 'var(--accent)' : status === 'COMPLETED' ? 'var(--color-warning)' : 'var(--text-muted)'
+                        }}>
+                            {isSyncingLogs && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse mr-1.5" style={{ background: 'var(--accent)' }} />}
+                            {status === 'CLOCKED_IN' ? 'Active session' : status === 'COMPLETED' ? 'Shift completed' : 'Not started'}
                         </span>
 
                         {!isOnline && (
-                            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold">
-                                <WifiOff size={11} /> Offline — Saved Locally
+                            <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border font-medium" style={{ background: 'rgba(217,164,65,0.08)', borderColor: 'rgba(217,164,65,0.3)', color: 'var(--color-warning)' }}>
+                                <WifiOff size={11} /> Offline — saved locally
                             </span>
                         )}
                     </div>
@@ -512,8 +515,8 @@ const AttendanceWidget: React.FC = () => {
                     </button>
 
                     {status === 'CLOCKED_IN' && (
-                        <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-xl px-4 py-2 text-center min-w-[130px]">
-                            <p className="text-[9px] text-brand-600 dark:text-brand-400 uppercase tracking-widest font-black">Session Timer</p>
+                        <div className="border rounded-[var(--radius-md)] px-3 py-1.5 text-center min-w-[120px]" style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)' }}>
+                            <p className="text-[10px] font-medium" style={{ color: 'var(--accent)' }}>Session timer</p>
                             <SessionTimer initialSeconds={sessionSeconds} isRunning={true} />
                         </div>
                     )}
@@ -521,52 +524,60 @@ const AttendanceWidget: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="p-6">
+            <div className="p-5">
                 {/* Time Stats Bar */}
                 {(status === 'CLOCKED_IN' || status === 'COMPLETED') && (
-                    <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
                         {/* Clocked In Card */}
-                        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
-                            <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                                <Timer size={18} />
+                        <div className="border rounded-[var(--radius-md)] p-3.5 flex items-center gap-3" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                            <div className="w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+                                <Timer size={16} strokeWidth={1.75} />
                             </div>
                             <div>
-                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest">Clocked In</p>
-                                <p className="text-base font-black text-slate-900 dark:text-white">
+                                <p className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>Clocked in</p>
+                                <p className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-heading)' }}>
                                     {formatToAMPM(clockInTime)}
                                 </p>
                             </div>
                         </div>
 
                         {/* Clocked Out / Status Card */}
-                        <div className={`bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-xl p-4 flex items-center gap-3.5 shadow-sm ${status === 'CLOCKED_IN' ? 'border-l-4 border-l-brand-500/60' : 'border-l-4 border-l-rose-500/60'}`}>
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === 'CLOCKED_IN' ? 'bg-brand-500/10 text-brand-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                                {status === 'CLOCKED_IN' ? <Activity size={18} className="animate-pulse" /> : <Square size={16} className="fill-current" />}
+                        <div className="border rounded-[var(--radius-md)] p-3.5 flex items-center gap-3" style={{
+                            background: 'var(--bg-surface)',
+                            borderColor: 'var(--border)',
+                            borderLeftWidth: '3px',
+                            borderLeftColor: status === 'CLOCKED_IN' ? 'var(--accent)' : 'var(--color-danger)'
+                        }}>
+                            <div className="w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0" style={{
+                                background: status === 'CLOCKED_IN' ? 'var(--accent-dim)' : 'rgba(224,112,122,0.1)',
+                                color: status === 'CLOCKED_IN' ? 'var(--accent)' : 'var(--color-danger)'
+                            }}>
+                                {status === 'CLOCKED_IN' ? <Activity size={16} strokeWidth={1.75} /> : <Square size={14} className="fill-current" />}
                             </div>
                             <div>
-                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest">
-                                    {status === 'CLOCKED_IN' ? 'Status' : 'Clocked Out'}
+                                <p className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>
+                                    {status === 'CLOCKED_IN' ? 'Status' : 'Clocked out'}
                                 </p>
-                                <p className="text-base font-black text-slate-900 dark:text-white">
-                                    {status === 'CLOCKED_IN' ? <span className="text-brand-600 dark:text-brand-400">On Duty</span> : formatToAMPM(clockOutTime)}
+                                <p className="text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>
+                                    {status === 'CLOCKED_IN' ? <span style={{ color: 'var(--accent)' }}>On duty</span> : formatToAMPM(clockOutTime)}
                                 </p>
                             </div>
                         </div>
 
                         {/* Duration Card */}
-                        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-                                <Clock size={18} />
+                        <div className="border rounded-[var(--radius-md)] p-3.5 flex items-center gap-3" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                            <div className="w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0" style={{ background: 'rgba(106,163,217,0.1)', color: 'var(--color-info)' }}>
+                                <Clock size={16} strokeWidth={1.75} />
                             </div>
                             <div>
-                                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-black uppercase tracking-widest">
-                                    {status === 'CLOCKED_IN' ? 'Live Progress' : 'Total Duration'}
+                                <p className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>
+                                    {status === 'CLOCKED_IN' ? 'Live progress' : 'Total duration'}
                                 </p>
-                                <div className="text-base font-black text-slate-900 dark:text-white font-mono">
+                                <div className="text-sm font-semibold tabular-nums font-mono" style={{ color: 'var(--text-heading)' }}>
                                     {status === 'CLOCKED_IN' ? (
-                                        <SessionTimer initialSeconds={sessionSeconds} isRunning={true} className="text-base font-black font-mono text-indigo-600 dark:text-indigo-400" />
+                                        <SessionTimer initialSeconds={sessionSeconds} isRunning={true} className="text-sm font-semibold font-mono" />
                                     ) : (
-                                        <span className="text-indigo-600 dark:text-indigo-400">{totalWorkHours ? `${Math.floor(totalWorkHours)}h ${Math.round((totalWorkHours % 1) * 60)}m` : '--'}</span>
+                                        <span>{totalWorkHours ? `${Math.floor(totalWorkHours)}h ${Math.round((totalWorkHours % 1) * 60)}m` : '--'}</span>
                                     )}
                                 </div>
                             </div>
@@ -576,52 +587,55 @@ const AttendanceWidget: React.FC = () => {
 
                 {/* Pre-Clock-In Controls: Check-In Type & Site Client Selection (A3) */}
                 {status === 'CLOCKED_OUT' && (
-                    <div className="mb-6 space-y-4 bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
+                    <div className="mb-6 space-y-3.5 border rounded-[var(--radius-md)] p-4" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                         <div>
-                            <label className="block text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2.5">
-                                Select Today's Work Location
+                            <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>
+                                Select today's work location
                             </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setCheckInType('OFFICE')}
-                                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                                        checkInType === 'OFFICE'
-                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--accent-dim)]'
-                                            : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[var(--accent)]'
-                                    }`}
+                                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-[var(--radius-md)] border text-xs font-medium transition-colors cursor-pointer"
+                                    style={{
+                                        background: checkInType === 'OFFICE' ? 'var(--accent)' : 'var(--bg-secondary)',
+                                        color: checkInType === 'OFFICE' ? 'var(--on-accent)' : 'var(--text-heading)',
+                                        borderColor: checkInType === 'OFFICE' ? 'var(--accent)' : 'var(--border)'
+                                    }}
                                 >
-                                    <Building2 size={16} /> Office Base
+                                    <Building2 size={15} strokeWidth={1.75} /> Office base
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setCheckInType('CLIENT_SITE')}
-                                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                                        checkInType === 'CLIENT_SITE'
-                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--accent-dim)]'
-                                            : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[var(--accent)]'
-                                    }`}
+                                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-[var(--radius-md)] border text-xs font-medium transition-colors cursor-pointer"
+                                    style={{
+                                        background: checkInType === 'CLIENT_SITE' ? 'var(--accent)' : 'var(--bg-secondary)',
+                                        color: checkInType === 'CLIENT_SITE' ? 'var(--on-accent)' : 'var(--text-heading)',
+                                        borderColor: checkInType === 'CLIENT_SITE' ? 'var(--accent)' : 'var(--border)'
+                                    }}
                                 >
-                                    <Briefcase size={16} /> Client Site Visit
+                                    <Briefcase size={15} strokeWidth={1.75} /> Client site visit
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setCheckInType('REMOTE')}
-                                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                                        checkInType === 'REMOTE'
-                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--accent-dim)]'
-                                            : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-[var(--accent)]'
-                                    }`}
+                                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-[var(--radius-md)] border text-xs font-medium transition-colors cursor-pointer"
+                                    style={{
+                                        background: checkInType === 'REMOTE' ? 'var(--accent)' : 'var(--bg-secondary)',
+                                        color: checkInType === 'REMOTE' ? 'var(--on-accent)' : 'var(--text-heading)',
+                                        borderColor: checkInType === 'REMOTE' ? 'var(--accent)' : 'var(--border)'
+                                    }}
                                 >
-                                    <Home size={16} /> Remote / Home
+                                    <Home size={15} strokeWidth={1.75} /> Remote / home
                                 </button>
                             </div>
                         </div>
 
                         {checkInType === 'CLIENT_SITE' && (
-                            <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-1.5 pt-2">
-                                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                    Which Client Are You Visiting Today? *
+                            <div className="space-y-1.5 pt-1">
+                                <label className="block text-xs font-normal" style={{ color: 'var(--text-muted)' }}>
+                                    Which client are you visiting today? *
                                 </label>
                                 <SearchableClientSelect
                                     clients={clients.filter(c => c.id !== 'INTERNAL')}
@@ -636,17 +650,17 @@ const AttendanceWidget: React.FC = () => {
 
                 {/* Late Arrival Alert Card */}
                 {isLate && status === 'CLOCKED_OUT' && (
-                    <div className="mb-6 bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-transparent border border-amber-200 dark:border-amber-500/30 rounded-2xl p-5 shadow-sm">
-                        <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                                <AlertTriangle className="text-amber-600 dark:text-amber-400" size={20} />
+                    <div className="mb-6 border rounded-[var(--radius-md)] p-4" style={{ background: 'rgba(217,164,65,0.06)', borderColor: 'rgba(217,164,65,0.25)' }}>
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-[var(--radius-sm)] flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(217,164,65,0.15)', color: 'var(--color-warning)' }}>
+                                <AlertTriangle size={16} strokeWidth={1.75} />
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
-                                    Late Arrival Notice (After 10:15 AM)
+                                <h3 className="text-xs font-semibold mb-1" style={{ color: 'var(--text-heading)' }}>
+                                    Late arrival notice (after 10:15 AM)
                                 </h3>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">
+                                <p className="text-xs mb-2.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                                     As per the RSA Employee Handbook, arrivals after 10:15 AM require a justification note. 6 unjustified late marks in a Bikram Sambat month result in 1 day leave deduction.
                                 </p>
                                 <input
@@ -654,7 +668,8 @@ const AttendanceWidget: React.FC = () => {
                                     placeholder="Type your late arrival reason..."
                                     value={lateReason}
                                     onChange={(e) => setLateReason(e.target.value)}
-                                    className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50"
+                                    className="w-full border rounded-[var(--radius-md)] px-3 py-2 text-xs outline-none"
+                                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-mid)', color: 'var(--text-heading)' }}
                                 />
                             </div>
                         </div>
@@ -666,13 +681,17 @@ const AttendanceWidget: React.FC = () => {
                     <button
                         onClick={handleClockIn}
                         disabled={loading || (isLate && !lateReason.trim()) || (checkInType === 'CLIENT_SITE' && !selectedSiteClientId)}
-                        className="w-full py-4 bg-[var(--accent)] hover:opacity-95 text-white rounded-2xl font-bold shadow-lg shadow-[var(--accent-dim)] transition-all transform active:scale-[0.99] disabled:opacity-30 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1 min-h-[56px] cursor-pointer"
+                        className="w-full py-3 rounded-[var(--radius-md)] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 min-h-[48px] cursor-pointer"
+                        style={{
+                            background: 'var(--accent)',
+                            color: 'var(--on-accent)'
+                        }}
                     >
-                        <div className="flex items-center gap-2.5 uppercase tracking-widest text-sm font-black">
-                            {loading ? <Loader2 className="animate-spin" size={20} /> : <Play size={20} className="fill-current" />}
-                            Start Work Day
+                        <div className="flex items-center gap-2 text-sm font-semibold">
+                            {loading ? <Loader2 className="animate-spin" size={16} /> : <Play size={16} className="fill-current" />}
+                            Start work day
                         </div>
-                        <span className="text-[10px] opacity-75 font-medium lowercase">
+                        <span className="text-[11px] opacity-80 font-normal">
                             {checkInType === 'CLIENT_SITE' ? 'Checking in at client premises' : checkInType === 'REMOTE' ? 'Checking in remotely' : 'Checking in at Kathmandu office'}
                         </span>
                     </button>

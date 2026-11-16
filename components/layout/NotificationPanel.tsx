@@ -62,10 +62,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'WARNING': return <AlertTriangle size={16} className="text-red-400" />;
-            case 'TASK': return <CheckCheck size={16} className="text-amber-400" />;
-            case 'MESSAGE': return <MessageSquare size={16} className="text-purple-400" />;
-            default: return <Info size={16} className="text-gray-400" />;
+            case 'WARNING': return <AlertTriangle size={15} style={{ color: 'var(--color-danger)' }} />;
+            case 'TASK': return <CheckCheck size={15} style={{ color: 'var(--accent)' }} />;
+            case 'MESSAGE': return <MessageSquare size={15} style={{ color: 'var(--color-info)' }} />;
+            default: return <Info size={15} style={{ color: 'var(--text-muted)' }} />;
         }
     };
 
@@ -95,25 +95,25 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
         <div
             key={notification.id}
             onClick={() => handleNotificationClick(notification)}
-            className={`p-4 hover:bg-white/5 transition-colors cursor-pointer group relative ${!notification.read ? 'bg-amber-500/5' : ''}`}
+            className={`p-4 hover:bg-[var(--bg-elevated)]/60 transition-colors cursor-pointer group relative ${!notification.read ? 'bg-[var(--accent-dim)]/30' : ''}`}
         >
             {!notification.read && (
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
+                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--accent)]" />
             )}
             <div className="flex gap-3">
-                <div className={`mt-1 p-2 rounded-lg bg-white/5 shrink-0 h-fit border border-white/5 ${!notification.read ? 'bg-amber-500/10 border-amber-500/20' : ''}`}>
+                <div className={`mt-0.5 p-2 rounded-lg shrink-0 h-fit border border-[var(--border)] ${!notification.read ? 'bg-[var(--accent-dim)] border-[var(--border-accent)]' : 'bg-[var(--bg-main)]'}`}>
                     {getIcon(notification.type)}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-1">
-                        <h4 className={`text-sm font-bold leading-tight ${!notification.read ? 'text-white' : 'text-gray-300'}`}>
+                        <h4 className={`text-xs font-semibold leading-tight ${!notification.read ? 'text-[var(--text-heading)]' : 'text-[var(--text-body)]'}`}>
                             {notification.title}
                         </h4>
-                        <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
+                        <span className="text-[10px] text-[var(--text-muted)] tabular-nums whitespace-nowrap ml-2">
                             {new Date(notification.createdAt).toLocaleDateString()}
                         </span>
                     </div>
-                    <p className={`text-xs leading-relaxed line-clamp-2 ${!notification.read ? 'text-gray-300' : 'text-gray-500'}`}>
+                    <p className={`text-xs leading-relaxed line-clamp-2 ${!notification.read ? 'text-[var(--text-body)]' : 'text-[var(--text-muted)]'}`}>
                         {notification.message}
                     </p>
                 </div>
@@ -126,7 +126,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
         return (
             <div className="mb-2">
                 <div
-                    className="px-6 py-2 sticky top-0 backdrop-blur-sm z-10"
+                    className="px-6 py-2 sticky top-0 z-10"
                     style={{
                         background: 'var(--bg-main)',
                         borderTop: '1px solid var(--border)',
@@ -134,11 +134,11 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                     }}
                 >
                     <span
-                        className="text-xs font-bold uppercase tracking-widest"
-                        style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}
+                        className="text-xs font-semibold"
+                        style={{ color: 'var(--text-muted)' }}
                     >{title}</span>
                 </div>
-                <div style={{ borderColor: 'var(--border)' }} className="divide-y">
+                <div style={{ borderColor: 'var(--border)' }} className="divide-y divide-[var(--border)]">
                     {items.map(renderNotificationItem)}
                 </div>
             </div>
@@ -151,7 +151,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[90] transition-opacity"
+                className="fixed inset-0 bg-black/40 z-[90] transition-opacity"
                 onClick={onClose}
             />
 
@@ -177,10 +177,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                         <h2 className="text-lg font-bold" style={{ color: 'var(--text-heading)' }}>Notifications</h2>
                         {notifications.filter(n => !n.read).length > 0 && (
                             <span
-                                className="text-white text-[10px] px-2 py-0.5 rounded-full font-bold"
-                                style={{ background: 'var(--accent)' }}
+                                className="text-[10px] px-2 py-0.5 rounded-full font-semibold tabular-nums"
+                                style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                             >
-                                {notifications.filter(n => !n.read).length} New
+                                {notifications.filter(n => !n.read).length} new
                             </span>
                         )}
                     </div>

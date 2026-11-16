@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { Quote } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -101,50 +101,38 @@ const GreetingsWidget: React.FC<GreetingsWidgetProps> = ({
     const firstName = user?.displayName?.split(' ')[0] ?? 'Explorer';
 
     return (
-        <div className="relative overflow-hidden min-h-[160px] flex items-center rounded-xl border transition-all duration-300" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+        <div className="relative overflow-hidden min-h-[140px] flex items-center rounded-[var(--radius-lg)] border transition-colors duration-150" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
             {/* Subtle left accent stripe */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{ background: 'var(--accent)', opacity: 0.8 }} />
+            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: 'var(--accent)' }} />
 
             {/* Content */}
-            <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
-                <div className="flex flex-col gap-2">
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        className="flex items-center gap-3.5"
-                    >
-                        <span className="text-3xl drop-shadow-md select-none">{greetingEmoji}</span>
-                        <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none" style={{ color: 'var(--text-heading)' }}>
+            <div className="relative z-10 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
+                <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl select-none" aria-hidden="true">{greetingEmoji}</span>
+                        <h1 className="font-display text-2xl md:text-3xl font-medium tracking-tight leading-none" style={{ color: 'var(--text-heading)' }}>
                             {greeting}, <span style={{ color: 'var(--accent)' }}>{firstName}</span>
                         </h1>
-                    </motion.div>
+                    </div>
 
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="text-muted text-sm font-semibold tracking-tight mt-1 opacity-90 max-w-md"
-                    >
+                    <p className="text-sm font-normal mt-1 max-w-md" style={{ color: 'var(--text-muted)' }}>
                         {subtitle}
-                    </motion.p>
+                    </p>
                 </div>
 
                 {/* Quote Section */}
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="relative max-w-xs p-4 rounded-xl hidden sm:block transition-colors" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                <div 
+                    className="relative max-w-xs p-3.5 rounded-[var(--radius-md)] hidden sm:block transition-colors" 
+                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
                 >
-                    <Quote size={16} className="text-accent mb-2 opacity-50" />
-                    <p className="text-xs italic text-heading font-medium leading-relaxed">
+                    <Quote size={14} className="mb-1.5 opacity-40" style={{ color: 'var(--accent)' }} />
+                    <p className="text-xs italic font-normal leading-relaxed" style={{ color: 'var(--text-heading)' }}>
                         "{randomQuote.text}"
                     </p>
-                    <p className="text-[10px] text-muted mt-2 font-bold tracking-widest uppercase">
+                    <p className="text-[11px] mt-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>
                         — {randomQuote.author}
                     </p>
-                </motion.div>
+                </div>
             </div>
         </div>
     );

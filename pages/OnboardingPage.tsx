@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/firebase';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    User, Phone, ShieldCheck, Briefcase, 
-    CheckCircle2, ArrowRight, Loader2, Sparkles,
-    UserCircle2, Building2, Smartphone
+    User, ShieldCheck, 
+    CheckCircle2, Loader2,
+    UserCircle2, Smartphone
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -14,7 +13,6 @@ const OnboardingPage: React.FC = () => {
     const { user, refreshUser } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(1);
     
     const [formData, setFormData] = useState({
         displayName: user?.displayName || '',
@@ -22,6 +20,11 @@ const OnboardingPage: React.FC = () => {
         department: user?.department || 'Audit',
         theme: user?.theme || 'dark'
     });
+
+    React.useEffect(() => {
+        document.title = 'Complete Setup — RSA';
+        return () => { document.title = 'RSA'; };
+    }, []);
 
     useEffect(() => {
         if (user?.isOnboardingComplete) {
@@ -31,7 +34,7 @@ const OnboardingPage: React.FC = () => {
 
     const handleComplete = async () => {
         if (!formData.displayName.trim()) {
-            toast.error("Please provide your full identity name.");
+            toast.error("Please provide your full legal name.");
             return;
         }
 
@@ -54,95 +57,75 @@ const OnboardingPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#080a0c] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            {/* Background Aesthetics */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 blur-[120px] rounded-full animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full" />
-            </div>
-
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-2xl z-10"
-            >
-                {/* Header Container */}
-                <div className="text-center mb-12">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-brand-500/10 border border-brand-500/20 mb-6 shadow-2xl">
-                        <ShieldCheck size={40} className="text-brand-400" />
+        <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-4 md:p-6">
+            <div className="w-full max-w-lg bg-[var(--bg-surface)] p-8 md:p-10 rounded-2xl border border-[var(--border)] shadow-sm">
+                {/* Header */}
+                <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--accent-dim)] border border-[var(--border-accent)] mb-4 text-[var(--accent)]">
+                        <ShieldCheck size={28} />
                     </div>
-                    <h1 className="text-4xl font-black tracking-tighter uppercase mb-3">Initialize Workspace</h1>
-                    <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-[11px]">Welcome to the RSA Professional Network</p>
+                    <h1 className="text-xl font-bold text-[var(--text-heading)] mb-1">Initialize workspace</h1>
+                    <p className="text-xs text-[var(--text-muted)] font-medium">Welcome to the R. Sapkota & Associates portal</p>
                 </div>
 
-                {/* Progress Stepper */}
-                <div className="flex items-center justify-center gap-4 mb-12">
-                    {[1, 2].map(s => (
-                        <div 
-                            key={s} 
-                            className={`h-1.5 w-16 rounded-full transition-all duration-500 ${step >= s ? 'bg-brand-500' : 'bg-white/5'}`} 
-                        />
-                    ))}
-                </div>
+                <div className="space-y-5">
+                    <div className="border-b border-[var(--border)] pb-3">
+                        <h2 className="text-sm font-semibold text-[var(--text-heading)] flex items-center gap-2">
+                            <UserCircle2 size={16} className="text-[var(--accent)]" />
+                            Identity & profile details
+                        </h2>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">Verify how you appear to clients and team members</p>
+                    </div>
 
-                {/* Main Card */}
-                <div className="glass-card rounded-[40px] p-10 border border-white/5 shadow-2xl relative overflow-hidden">
-                    <div className="space-y-8">
-                        <div className="space-y-2">
-                            <h2 className="text-[14px] font-black text-white uppercase tracking-widest flex items-center gap-3">
-                                <UserCircle2 size={18} className="text-brand-400" />
-                                Identity & Profile
-                            </h2>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Verify how you appear to clients and colleagues</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black text-gray-700 uppercase tracking-widest ml-1">Full Legal Name</label>
-                                <div className="relative group">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-brand-400 transition-colors" size={16} />
-                                    <input 
-                                        className="glass-input w-full !pl-12 !py-4 rounded-xl text-[13px] font-bold"
-                                        placeholder="John Doe"
-                                        value={formData.displayName}
-                                        onChange={e => setFormData({ ...formData, displayName: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black text-gray-700 uppercase tracking-widest ml-1">Contact Number</label>
-                                <div className="relative group">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-emerald-400 transition-colors" size={16} />
-                                    <input 
-                                        className="glass-input w-full !pl-12 !py-4 rounded-xl text-[13px] font-bold"
-                                        placeholder="Your Contact Number"
-                                        value={formData.phoneNumber}
-                                        onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                                <label className="text-[9px] font-black text-gray-700 uppercase tracking-widest ml-1">Email</label>
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-[var(--text-body)]">Full legal name</label>
+                            <div className="relative">
+                                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={15} />
                                 <input 
-                                    className="glass-input w-full !py-4 rounded-xl text-[13px] font-bold opacity-50 cursor-not-allowed border-dashed"
-                                    value={user?.email || ''}
-                                    disabled
+                                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border)] text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                                    placeholder="Your Full Name"
+                                    value={formData.displayName}
+                                    onChange={e => setFormData({ ...formData, displayName: e.target.value })}
                                 />
                             </div>
                         </div>
 
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-[var(--text-body)]">Contact phone number</label>
+                            <div className="relative">
+                                <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={15} />
+                                <input 
+                                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border)] text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                                    placeholder="e.g. 9800000000"
+                                    value={formData.phoneNumber}
+                                    onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-[var(--text-body)]">Assigned email address</label>
+                            <input 
+                                className="w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border)] text-xs text-[var(--text-muted)] opacity-60 cursor-not-allowed"
+                                value={user?.email || ''}
+                                disabled
+                            />
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
                         <button 
                             onClick={handleComplete}
                             disabled={loading}
-                            className="w-full h-[60px] bg-brand-500 hover:bg-brand-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[12px] flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-xl shadow-brand-500/20 disabled:opacity-50"
+                            className="w-full h-10 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                            style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                         >
-                            {loading ? <Loader2 size={18} className="animate-spin" /> : <><CheckCircle2 size={18} /> Finalize Account</>}
+                            {loading ? <Loader2 size={16} className="animate-spin" /> : <><CheckCircle2 size={16} /> Finalize workspace</>}
                         </button>
                     </div>
                 </div>
-
-                <div className="h-8" />
-            </motion.div>
+            </div>
         </div>
     );
 };

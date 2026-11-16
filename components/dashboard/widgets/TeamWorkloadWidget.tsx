@@ -69,9 +69,9 @@ const TeamWorkloadWidget: React.FC<TeamWorkloadWidgetProps> = ({
 
     if (totalStaff === 0) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[160px] text-muted">
-                <Users size={24} className="mb-2 opacity-20" />
-                <p className="text-[11px] font-medium uppercase tracking-widest">No Staff Connected</p>
+            <div className="flex flex-col items-center justify-center min-h-[160px] text-center p-4">
+                <Users size={24} strokeWidth={1.75} className="mb-2 opacity-40" style={{ color: 'var(--text-muted)' }} />
+                <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>No staff connected</p>
             </div>
         );
     }
@@ -79,32 +79,35 @@ const TeamWorkloadWidget: React.FC<TeamWorkloadWidgetProps> = ({
     return (
         <div className="space-y-4 py-1">
             {/* Summary Row */}
-            <div className="grid grid-cols-3 gap-3">
-                <div className="bg-surface rounded-xl p-3 border border-border shadow-sm">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                        <Users size={12} className="text-muted" />
-                        <span className="text-xl font-bold text-heading tabular-nums">{totalStaff}</span>
+            <div className="grid grid-cols-3 gap-2.5">
+                <div className="rounded-[var(--radius-md)] p-3 border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                        <Users size={13} strokeWidth={1.75} style={{ color: 'var(--text-muted)' }} />
+                        <span className="font-display text-lg font-medium tabular-nums" style={{ color: 'var(--text-heading)' }}>{totalStaff}</span>
                     </div>
-                    <p className="text-[9px] text-muted font-black uppercase tracking-widest text-center">Connected</p>
+                    <p className="text-[11px] text-center font-normal" style={{ color: 'var(--text-muted)' }}>Connected</p>
                 </div>
-                <div className="bg-surface rounded-xl p-3 border border-border shadow-sm">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                        <TrendingUp size={12} className="text-accent" />
-                        <span className="text-xl font-bold text-heading tabular-nums">{avgTasks}</span>
+                <div className="rounded-[var(--radius-md)] p-3 border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                        <TrendingUp size={13} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+                        <span className="font-display text-lg font-medium tabular-nums" style={{ color: 'var(--text-heading)' }}>{avgTasks}</span>
                     </div>
-                    <p className="text-[9px] text-muted font-black uppercase tracking-widest text-center">Avg Load</p>
+                    <p className="text-[11px] text-center font-normal" style={{ color: 'var(--text-muted)' }}>Avg load</p>
                 </div>
-                <div className={`rounded-xl p-3 border shadow-sm transition-colors ${overloadedCount > 0 ? 'bg-status-halted-dim border-status-halted-dim' : 'bg-status-completed-dim border-status-completed-dim'}`}>
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                <div className="rounded-[var(--radius-md)] p-3 border" style={{
+                    background: overloadedCount > 0 ? 'rgba(224,112,122,0.08)' : 'var(--accent-dim)',
+                    borderColor: overloadedCount > 0 ? 'rgba(224,112,122,0.3)' : 'var(--border-accent)'
+                }}>
+                    <div className="flex items-center justify-center gap-1.5 mb-0.5">
                         {overloadedCount > 0
-                            ? <Zap size={12} className="text-status-halted" />
-                            : <CheckCircle size={12} className="text-status-completed" />
+                            ? <Zap size={13} strokeWidth={1.75} style={{ color: 'var(--color-danger)' }} />
+                            : <CheckCircle size={13} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
                         }
-                        <span className={`text-xl font-bold tabular-nums ${overloadedCount > 0 ? 'text-status-halted' : 'text-status-completed'}`}>
+                        <span className="font-display text-lg font-medium tabular-nums" style={{ color: overloadedCount > 0 ? 'var(--color-danger)' : 'var(--accent)' }}>
                             {overloadedCount > 0 ? overloadedCount : '✓'}
                         </span>
                     </div>
-                    <p className={`text-[9px] font-black uppercase tracking-widest text-center ${overloadedCount > 0 ? 'text-status-halted' : 'text-status-completed'}`}>
+                    <p className="text-[11px] text-center font-medium" style={{ color: overloadedCount > 0 ? 'var(--color-danger)' : 'var(--accent)' }}>
                         {overloadedCount > 0 ? 'Strain' : 'Stable'}
                     </p>
                 </div>

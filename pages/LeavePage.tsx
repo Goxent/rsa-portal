@@ -61,11 +61,11 @@ const CircularProgress: React.FC<{
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[13px] font-bold text-heading leading-none">{value}</span>
-                    <span className="text-[10px] text-muted font-medium mt-0.5 tracking-tighter">/ {max}</span>
+                    <span className="text-[13px] font-bold text-heading leading-none tabular-nums">{value}</span>
+                    <span className="text-[10px] text-muted font-medium mt-0.5 tracking-tighter tabular-nums">/ {max}</span>
                 </div>
             </div>
-            <span className="text-[10px] font-semibold text-muted uppercase tracking-[0.05em] text-center group-hover:text-heading transition-colors">{label}</span>
+            <span className="text-xs font-medium text-muted text-center group-hover:text-heading transition-colors">{label}</span>
         </div>
     );
 };
@@ -292,22 +292,25 @@ const LeavePage: React.FC = () => {
         switch (status) {
             case 'APPROVED': 
                 return (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-completed-dim text-status-completed text-[10px] font-bold uppercase tracking-wider border border-status-completed-dim">
-                        <CheckCircle size={10} />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border"
+                        style={{ color: 'var(--color-success)', background: 'rgba(79,178,134,0.1)', borderColor: 'rgba(79,178,134,0.25)' }}>
+                        <CheckCircle size={12} />
                         Approved
                     </div>
                 );
             case 'REJECTED': 
                 return (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-halted-dim text-status-halted text-[10px] font-bold uppercase tracking-wider border border-status-halted-dim">
-                        <XCircle size={10} />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border"
+                        style={{ color: 'var(--color-danger)', background: 'rgba(224,112,122,0.1)', borderColor: 'rgba(224,112,122,0.2)' }}>
+                        <XCircle size={12} />
                         Rejected
                     </div>
                 );
             default: 
                 return (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-pending-dim text-status-pending text-[10px] font-bold uppercase tracking-wider border border-status-pending-dim animate-pulse">
-                        <Clock size={10} />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border"
+                        style={{ color: 'var(--color-warning)', background: 'rgba(217,164,65,0.1)', borderColor: 'rgba(217,164,65,0.25)' }}>
+                        <Clock size={12} />
                         Pending
                     </div>
                 );
@@ -333,24 +336,25 @@ const LeavePage: React.FC = () => {
                         <div className="flex bg-surface p-1 rounded-lg border border-border">
                             <button
                                 onClick={() => setActiveTab('my')}
-                                className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'my' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
+                                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${activeTab === 'my' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
                             >
-                                My History
+                                My history
                             </button>
                             <button
                                 onClick={() => setActiveTab('calendar')}
-                                className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'calendar' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
+                                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${activeTab === 'calendar' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
                             >
                                 Calendar
                             </button>
                             {isAdmin && (
                                 <button
                                     onClick={() => setActiveTab('admin')}
-                                    className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'admin' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
+                                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${activeTab === 'admin' ? 'bg-secondary text-heading shadow-card' : 'text-muted hover:text-heading'}`}
                                 >
-                                    Admin Panel
+                                    Admin panel
                                     {leaves.filter(l => l.status === 'PENDING').length > 0 && (
-                                        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-brand-500 text-white text-[9px] font-black animate-in zoom-in duration-300">
+                                        <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-bold"
+                                            style={{ background: 'var(--color-danger)' }}>
                                             {leaves.filter(l => l.status === 'PENDING').length}
                                         </span>
                                     )}
@@ -359,7 +363,7 @@ const LeavePage: React.FC = () => {
                         </div>
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="bg-accent text-accent-fg px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-accent-hover transition-all flex items-center shadow-accent-glow"
+                            className="bg-accent text-accent-fg px-4 py-2 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity flex items-center"
                         >
                             <Plus size={16} className="mr-2" /> Request
                         </button>
@@ -378,14 +382,14 @@ const LeavePage: React.FC = () => {
                                 <div className="px-6 py-4 border-b border-border flex items-center gap-3">
                                     <AlertTriangle size={18} className="text-status-pending" />
                                     <div>
-                                        <h3 className="text-sm font-bold text-heading uppercase tracking-wider">Pending Approvals</h3>
-                                        <p className="text-[10px] text-muted tracking-wide mt-0.5">ACTION REQUIRED</p>
+                                        <h3 className="text-sm font-semibold text-heading">Pending approvals</h3>
+                                        <p className="text-xs text-muted mt-0.5">Action required</p>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-sm">
                                         <thead>
-                                            <tr className="border-b border-border bg-secondary/30 text-[10px] uppercase font-black tracking-widest text-muted">
+                                            <tr className="border-b border-border bg-secondary/30 text-xs font-semibold text-muted">
                                                 <th className="px-6 py-3">Employee</th>
                                                 <th className="px-6 py-3">Type</th>
                                                 <th className="px-6 py-3">Duration</th>
@@ -436,17 +440,17 @@ const LeavePage: React.FC = () => {
                         {/* Staff Balance Admin Table */}
                         <div className="bg-secondary rounded-xl border border-border overflow-hidden shadow-card">
                             <div className="px-6 py-4 border-b border-border">
-                                <h3 className="text-sm font-bold text-heading uppercase tracking-wider">Staff Leave Utilization</h3>
+                                <h3 className="text-sm font-semibold text-heading">Staff leave utilization</h3>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
                                     <thead>
-                                        <tr className="border-b border-border bg-secondary/50 text-[10px] uppercase font-black tracking-widest text-muted">
+                                        <tr className="border-b border-border bg-secondary/50 text-xs font-semibold text-muted">
                                             <th className="px-6 py-4">Employee</th>
                                             <th className="px-6 py-4">Position</th>
                                             <th className="px-6 py-4">Used</th>
                                             <th className="px-6 py-4">Adj</th>
-                                            <th className="px-6 py-4">Status / Balance</th>
+                                            <th className="px-6 py-4">Status / balance</th>
                                             <th className="px-6 py-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -474,8 +478,8 @@ const LeavePage: React.FC = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-xs text-muted">{staff.position || 'Staff'}</td>
-                                                    <td className="px-6 py-4 font-mono font-bold text-accent">{taken}d</td>
-                                                    <td className="px-6 py-4 font-mono">
+                                                    <td className="px-6 py-4 tabular-nums font-semibold text-accent">{taken}d</td>
+                                                    <td className="px-6 py-4 tabular-nums">
                                                         <span className={adj > 0 ? 'text-status-in-progress' : adj < 0 ? 'text-accent' : 'text-muted'}>
                                                             {adj > 0 ? `+${adj}` : adj}d
                                                         </span>
@@ -483,10 +487,10 @@ const LeavePage: React.FC = () => {
                                                     <td className="px-6 py-4">
                                                         {isStaffArticle ? (
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`font-bold font-mono text-xs ${net! < 20 ? 'text-status-halted' : 'text-accent'}`}>{net} Days</span>
+                                                                <span className={`font-semibold tabular-nums text-xs ${net! < 20 ? 'text-status-halted' : 'text-accent'}`}>{net} days</span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-muted text-[10px] uppercase font-bold tracking-widest">Active</span>
+                                                            <span className="text-muted text-xs font-medium">Active</span>
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
@@ -495,7 +499,7 @@ const LeavePage: React.FC = () => {
                                                                 setAdjustmentData({ uid: staff.uid, name: staff.displayName, amount: staff.leaveAdjustment || 0 });
                                                                 setIsAdjustModalOpen(true);
                                                             }}
-                                                            className="p-2 hover:bg-accent/10 rounded-lg text-muted hover:text-accent transition-all"
+                                                            className="p-2 hover:bg-accent/10 rounded-lg text-muted hover:text-accent transition-colors"
                                                         >
                                                             <UserCog size={16} />
                                                         </button>
@@ -515,16 +519,16 @@ const LeavePage: React.FC = () => {
                             
                             {/* Usage Card */}
                             <div className={`${isArticleTrainee ? 'lg:col-span-12' : 'lg:col-span-5'} bg-secondary p-6 rounded-2xl border border-border shadow-card relative overflow-hidden group`}>
-                                <div className="absolute top-[-20px] right-[-20px] p-6 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700">
+                                <div className="absolute top-[-20px] right-[-20px] p-6 opacity-[0.03]">
                                     <CalendarDays size={180} />
                                 </div>
                                 <div className="relative z-10">
                                     <div className="flex justify-between items-start mb-8">
                                         <div>
-                                            <p className="text-[10px] font-black text-accent uppercase tracking-[0.15em]">Quota Utilization</p>
-                                            <h2 className="text-4xl font-black text-heading mt-2">
+                                            <p className="text-xs font-semibold text-accent">Quota utilization</p>
+                                            <h2 className="text-4xl font-bold font-display text-heading mt-2 tabular-nums">
                                                 {totalDaysTaken}
-                                                <span className="text-muted ml-3 text-sm font-bold uppercase tracking-widest opacity-60">
+                                                <span className="text-muted ml-3 text-sm font-medium opacity-60">
                                                     / {isArticleTrainee ? ARTICLESHIP_LEAVE_LIMIT : 'Annual'}
                                                 </span>
                                             </h2>
@@ -537,24 +541,24 @@ const LeavePage: React.FC = () => {
                                     {isArticleTrainee ? (
                                         <div className="bg-surface p-4 rounded-xl border border-border">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <div className="w-5 h-5 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-400">
+                                                <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
                                                     <BookOpen size={12} />
                                                 </div>
-                                                <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest">Articleship Allowance — 120 Days Total</span>
+                                                <span className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>Articleship allowance — 120 days total</span>
                                             </div>
-                                            <div className="flex justify-between text-[11px] font-bold text-muted mb-3 uppercase tracking-wider">
-                                                <span>Total Consumed</span>
-                                                <span className={`${totalDaysTaken > 100 ? 'text-status-halted' : 'text-accent'}`}>
-                                                    {balanceRemaining} Days Available
+                                            <div className="flex justify-between text-xs font-medium text-muted mb-3">
+                                                <span>Total consumed</span>
+                                                <span className={`tabular-nums ${totalDaysTaken > 100 ? 'text-status-halted' : 'text-accent'}`}>
+                                                    {balanceRemaining} days available
                                                 </span>
                                             </div>
                                             <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden ring-1 ring-white/5">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-[2000ms] ${totalDaysTaken > 100 ? 'bg-status-halted' : 'bg-brand-500'} shadow-[0_0_10px_rgba(16,185,129,0.3)]`}
+                                                    className={`h-full rounded-full transition-all duration-[2000ms] ${totalDaysTaken > 100 ? 'bg-status-halted' : 'bg-accent'}`}
                                                     style={{ width: `${Math.min((totalDaysTaken / ARTICLESHIP_LEAVE_LIMIT) * 100, 100)}%` }}
                                                 />
                                             </div>
-                                            <p className="text-[9px] text-muted italic mt-2 opacity-60">Cumulative across 3-year term. No annual reset for trainees.</p>
+                                            <p className="text-[10px] text-muted italic mt-2 opacity-60">Cumulative across 3-year term. No annual reset for trainees.</p>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
@@ -574,8 +578,8 @@ const LeavePage: React.FC = () => {
                             {!isArticleTrainee && (
                                 <div className="lg:col-span-7 bg-surface p-6 rounded-2xl border border-border flex flex-col justify-between shadow-card">
                                     <div className="flex items-center justify-between mb-8">
-                                        <h3 className="text-[11px] font-black text-muted uppercase tracking-[0.15em]">Leave Type Analysis</h3>
-                                        <span className="text-[9px] bg-secondary px-2 py-1 rounded text-muted border border-border font-bold uppercase tracking-widest">Analytics</span>
+                                        <h3 className="text-xs font-semibold text-muted">Leave type analysis</h3>
+                                        <span className="text-xs bg-secondary px-2.5 py-1 rounded text-muted border border-border font-medium">Analytics</span>
                                     </div>
                                     
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -586,7 +590,7 @@ const LeavePage: React.FC = () => {
                                     </div>
                                     
                                     <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
-                                        <p className="text-[9px] text-muted italic font-medium">Auto-derived from approved requests across the active period.</p>
+                                        <p className="text-[10px] text-muted italic font-medium">Auto-derived from approved requests across the active period.</p>
                                     </div>
                                 </div>
                             )}
@@ -595,12 +599,12 @@ const LeavePage: React.FC = () => {
                         {/* Recent History Section */}
                         <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-card">
                             <div className="px-6 py-4 border-b border-border bg-secondary/30 flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-heading uppercase tracking-wider">Request Timeline</h3>
+                                <h3 className="text-sm font-semibold text-heading">Request timeline</h3>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
                                     <thead>
-                                        <tr className="border-b border-border text-[10px] uppercase font-black tracking-widest text-muted bg-secondary/30">
+                                        <tr className="border-b border-border text-xs font-semibold text-muted bg-secondary/30">
                                             {isAdmin && <th className="px-6 py-3">Staff</th>}
                                             <th className="px-6 py-3">Applied</th>
                                             <th className="px-6 py-3">Type</th>
@@ -648,16 +652,16 @@ const LeavePage: React.FC = () => {
             {/* Request Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-                    <div className="relative bg-secondary rounded-2xl border border-border shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+                    <div className="absolute inset-0 bg-black/60" onClick={() => setIsModalOpen(false)} />
+                    <div className="relative bg-secondary rounded-2xl border border-border w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-heading uppercase tracking-widest">New Leave Request</h3>
+                            <h3 className="text-sm font-semibold text-heading">New leave request</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-muted hover:text-heading transition-colors"><X size={18} /></button>
                         </div>
 
                         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
                             <div>
-                                <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">Leave Type</label>
+                                <label className="text-xs font-semibold text-muted block mb-2">Leave type</label>
                                 <select
                                     className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-sm text-heading focus:border-accent outline-none appearance-none"
                                     {...register('type')}
@@ -671,14 +675,14 @@ const LeavePage: React.FC = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">Start Date</label>
+                                    <label className="text-xs font-semibold text-muted block mb-2">Start date</label>
                                     <input type="date" className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-heading focus:border-accent outline-none" {...register('startDate')} />
                                     {startBSStr && (
                                         <p className="text-[10px] text-accent font-semibold mt-1 pl-1">{startBSStr} BS</p>
                                     )}
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">End Date</label>
+                                    <label className="text-xs font-semibold text-muted block mb-2">End date</label>
                                     <input type="date" className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-heading focus:border-accent outline-none" {...register('endDate')} />
                                     {endBSStr && (
                                         <p className="text-[10px] text-accent font-semibold mt-1 pl-1">{endBSStr} BS</p>
@@ -687,17 +691,17 @@ const LeavePage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-2">Detailed Reason</label>
+                                <label className="text-xs font-semibold text-muted block mb-2">Detailed reason</label>
                                 <textarea rows={3} className="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-sm text-heading focus:border-accent outline-none" {...register('reason')} />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={isSaving}
-                                className="w-full bg-accent text-accent-fg py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-accent-hover transition-all flex items-center justify-center shadow-accent-glow disabled:opacity-50"
+                                className="w-full bg-accent text-accent-fg py-2.5 rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity flex items-center justify-center disabled:opacity-50"
                             >
                                 {isSaving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Mail size={16} className="mr-2" />}
-                                {isSaving ? 'Processing...' : 'Send Request'}
+                                {isSaving ? 'Processing...' : 'Send request'}
                             </button>
                         </form>
                     </div>
@@ -707,10 +711,10 @@ const LeavePage: React.FC = () => {
             {/* Rejection Modal */}
             {rejectionTarget && (
                 <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setRejectionTarget(null)} />
-                    <div className="relative bg-secondary rounded-2xl border border-border shadow-2xl w-full max-w-sm overflow-hidden animate-in scale-in duration-150">
+                    <div className="absolute inset-0 bg-black/80" onClick={() => setRejectionTarget(null)} />
+                    <div className="relative bg-secondary rounded-2xl border border-border w-full max-w-sm overflow-hidden animate-in scale-in duration-150">
                         <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-                            <h3 className="text-[11px] font-black text-heading uppercase tracking-widest">Reject Request</h3>
+                            <h3 className="text-xs font-semibold text-heading">Reject request</h3>
                             <button onClick={() => setRejectionTarget(null)} className="text-muted hover:text-heading transition-colors"><X size={18} /></button>
                         </div>
                         <div className="p-6">
@@ -721,13 +725,13 @@ const LeavePage: React.FC = () => {
                                 onChange={(e) => setRejectionReason(e.target.value)}
                             />
                             <div className="flex gap-3 mt-5">
-                                <button onClick={() => setRejectionTarget(null)} className="flex-1 py-3 text-[11px] font-bold uppercase text-muted hover:text-heading transition-colors">Cancel</button>
+                                <button onClick={() => setRejectionTarget(null)} className="flex-1 py-2 text-xs font-semibold text-muted hover:text-heading transition-colors">Cancel</button>
                                 <button
                                     onClick={confirmRejection}
                                     disabled={!rejectionReason.trim() || isSaving}
-                                    className="flex-1 bg-status-halted text-white rounded-xl text-[11px] font-bold uppercase shadow-lg shadow-status-halted-dim disabled:opacity-50"
+                                    className="flex-1 bg-status-halted text-white rounded-xl text-xs font-semibold disabled:opacity-50"
                                 >
-                                    Confirm Rejection
+                                    Confirm rejection
                                 </button>
                             </div>
                         </div>
@@ -738,32 +742,32 @@ const LeavePage: React.FC = () => {
             {/* Adjustment Modal */}
             {isAdjustModalOpen && (
                 <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsAdjustModalOpen(false)} />
-                    <div className="relative bg-secondary rounded-2xl border border-border shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
+                    <div className="absolute inset-0 bg-black/80" onClick={() => setIsAdjustModalOpen(false)} />
+                    <div className="relative bg-secondary rounded-2xl border border-border w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-heading uppercase tracking-widest">Adjust Balance</h3>
+                            <h3 className="text-sm font-semibold text-heading">Adjust balance</h3>
                             <button onClick={() => setIsAdjustModalOpen(false)} className="text-muted hover:text-heading transition-colors"><X size={18} /></button>
                         </div>
                         <div className="p-6">
                             <div className="text-center mb-6">
-                                <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Target Individual</p>
+                                <p className="text-xs text-muted font-medium mb-1">Target individual</p>
                                 <p className="text-lg font-bold text-heading">{adjustmentData.name}</p>
                             </div>
                             <div className="bg-surface border border-border rounded-xl p-6 mb-6">
                                 <input
                                     type="number"
-                                    className="w-full bg-transparent text-center text-4xl font-black text-accent outline-none"
+                                    className="w-full bg-transparent text-center text-4xl font-black text-accent outline-none tabular-nums"
                                     value={adjustmentData.amount}
                                     onChange={(e) => setAdjustmentData({ ...adjustmentData, amount: parseInt(e.target.value) || 0 })}
                                 />
-                                <p className="text-[10px] text-muted text-center mt-2 uppercase font-bold tracking-widest">Adjusted Days</p>
+                                <p className="text-xs text-muted text-center mt-2 font-medium">Adjusted days</p>
                             </div>
                             <button
                                 onClick={handleAdjustLeave}
                                 disabled={isSaving}
-                                className="w-full bg-accent text-accent-fg py-3 rounded-xl text-xs font-bold uppercase tracking-widest shadow-accent-glow disabled:opacity-50"
+                                className="w-full bg-accent text-accent-fg py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity"
                             >
-                                {isSaving ? 'Updating...' : 'Save Adjustment'}
+                                {isSaving ? 'Updating...' : 'Save adjustment'}
                             </button>
                         </div>
                     </div>

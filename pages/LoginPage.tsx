@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormValues } from '../utils/validationSchemas';
-import { motion } from 'framer-motion';
 import { SessionLimitError } from '../services/firebase';
 import { SessionMetadata } from '../services/sessionService';
 import DeviceChooserModal from '../components/DeviceChooserModal';
@@ -76,7 +75,6 @@ const LoginPage: React.FC = () => {
       navigate('/dashboard');
       toast.success('Access Granted');
     } catch (error: any) {
-      // Session limit reached — show device chooser
       if (error instanceof SessionLimitError || error.name === 'SessionLimitError') {
         setDeviceModal({
             sessions: error.sessions,
@@ -90,10 +88,8 @@ const LoginPage: React.FC = () => {
 
       recordAttempt();
       
-      // Check for first-time invited users who haven't signed up yet
       if (error.code === 'auth/user-not-found' || error.message.includes('not found')) {
         try {
-          // Quick check in firestore to see if they are a "Pending" invited user
           const { AuthService } = await import('../services/firebase');
           const statusResult = await AuthService.checkInvitationStatus(data.email);
           
@@ -128,7 +124,6 @@ const LoginPage: React.FC = () => {
     setDeviceModal(null);
     setLoading(true);
     try {
-        // The chosen session was already removed — re-attempt login
         await login(deviceModal.email, deviceModal.password);
         clearAttempts();
         navigate('/dashboard');
@@ -141,67 +136,60 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative font-inter overflow-hidden bg-[#05070a]">
-      
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" 
-        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(99,102,241,0.15) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-600/5 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* LOGIN CARD */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full max-w-[420px] relative z-10 glass-card p-10 border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,1)]"
-      >
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-6 bg-[var(--bg-main)]">
+      {/* Login Card */}
+      <div className="w-full max-w-[420px] bg-[var(--bg-surface)] p-8 md:p-10 rounded-2xl border border-[var(--border)] shadow-sm">
         {/* Brand Header */}
-        <div className="flex flex-col items-center mb-8 text-center">
-            <RSALogo size="xl" themeOverride="dark" className="mb-4 rounded-2xl shadow-2xl" />
+        <div className="flex flex-col items-center mb-6 text-center">
+            <RSALogo size="xl" className="mb-4" />
             
-            <h2 className="text-2xl font-black text-white tracking-tight mb-1">Welcome Back</h2>
-            <p className="text-gray-400 text-xs font-medium leading-relaxed">Sign in to your RSA account</p>
+            <h1 className="text-xl font-bold text-[var(--text-heading)] mb-1">Welcome back</h1>
+            <p className="text-[var(--text-muted)] text-xs font-medium">Sign in to your RSA account</p>
         </div>
 
         {rateLimitError && (
-          <div className="mb-6 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 flex flex-col gap-2">
-            <div className="flex items-center gap-3 text-rose-400 text-xs font-bold">
-              <AlertCircle size={16} className="shrink-0" />
+          <div className="mb-5 p-3.5 rounded-lg bg-[rgba(224,112,122,0.1)] border border-[rgba(224,112,122,0.25)] flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 text-[var(--color-danger)] text-xs font-semibold">
+              <AlertCircle size={15} className="shrink-0" />
               {rateLimitError}
             </div>
             {rateLimitError.includes("invitation") && (
-              <Link to={`/signup?email=${encodeURIComponent(watchEmail)}`} className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors ml-7">
-                Complete Signup Now →
+              <Link to={`/signup?email=${encodeURIComponent(watchEmail)}`} className="text-xs font-semibold text-[var(--accent)] hover:underline ml-6">
+                Complete signup now →
               </Link>
             )}
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Email</label>
-            <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-brand-400 transition-colors z-10" size={16} />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--text-body)]">Email address</label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={15} />
               <input
                 type="email"
-                className={`glass-input w-full !pl-11 pr-4 py-3.5 rounded-xl text-[13px] font-bold transition-all ${errors.email ? 'border-rose-500/50' : ''}`}
-                placeholder="Email"
+                className={`w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[var(--bg-main)] border text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors ${
+                  errors.email ? 'border-[var(--color-danger)]' : 'border-[var(--border)]'
+                }`}
+                placeholder="name@rsapkota.com"
                 {...register('email')}
               />
             </div>
-            {errors.email && <p className="text-rose-400 text-xs font-bold mt-1 px-1">{errors.email.message}</p>}
+            {errors.email && <p className="text-[var(--color-danger)] text-[11px] font-medium mt-1">{errors.email.message}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center ml-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</label>
-              <Link to="/forgot-password" className="text-xs font-semibold text-brand-400 hover:text-brand-300 uppercase tracking-wider transition-colors">Forgot password?</Link>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-medium text-[var(--text-body)]">Password</label>
+              <Link to="/forgot-password" className="text-xs font-medium text-[var(--accent)] hover:underline transition-colors">Forgot password?</Link>
             </div>
-            <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-brand-400 transition-colors z-10" size={16} />
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={15} />
               <input
                 type={showPassword ? 'text' : 'password'}
-                className={`glass-input w-full !pl-11 pr-11 py-3.5 rounded-xl text-[13px] transition-all ${errors.password ? 'border-rose-500/50' : ''}`}
+                className={`w-full pl-9 pr-10 py-2.5 rounded-lg bg-[var(--bg-main)] border text-xs text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors ${
+                  errors.password ? 'border-[var(--color-danger)]' : 'border-[var(--border)]'
+                }`}
                 placeholder="••••••••"
                 {...register('password')}
               />
@@ -209,74 +197,72 @@ const LoginPage: React.FC = () => {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors p-1"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {errors.password && <p className="text-rose-400 text-xs font-bold mt-1 px-1">{errors.password.message}</p>}
+            {errors.password && <p className="text-[var(--color-danger)] text-[11px] font-medium mt-1">{errors.password.message}</p>}
           </div>
 
           <button
             type="submit"
             disabled={loading || !!rateLimitError?.includes("locked")}
-            className="w-full bg-brand-500 hover:bg-brand-600 text-white h-[52px] rounded-xl font-black uppercase tracking-[0.2em] text-[11px] transition-all shadow-xl shadow-brand-500/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group relative overflow-hidden"
+            className="w-full h-10 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+            style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
           >
             {loading ? (
-              <Loader2 size={18} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin" />
             ) : (
               <>
-                <span className="relative z-10">Sign In</span>
-                <ArrowRight size={16} className="relative z-10 group-hover:translate-x-1 transition-transform" />
-                <div className="absolute inset-x-0 bottom-0 h-[100%] bg-gradient-to-t from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                <span>Sign in</span>
+                <ArrowRight size={15} />
               </>
             )}
           </button>
         </form>
 
-        <div className="relative my-10 text-center flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-            <span className="relative z-10 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-[#0c1015] rounded-full py-0.5 border border-white/5">or</span>
+        <div className="relative my-6 text-center flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[var(--border)]"></div></div>
+            <span className="relative z-10 px-3 text-xs text-[var(--text-muted)] bg-[var(--bg-surface)]">or</span>
         </div>
 
         <button
           type="button"
           onClick={handleGoogleLogin}
           aria-label="Sign in with Google"
-          className="w-full h-[52px] bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 text-[10px] text-gray-300 shadow-sm active:scale-[0.98]"
+          className="w-full h-10 bg-[var(--bg-main)] hover:bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg font-medium transition-colors flex items-center justify-center gap-2.5 text-xs text-[var(--text-heading)]"
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
           Continue with Google
         </button>
 
-        <div className="mt-8 space-y-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">New to RSA?</p>
-          <div className="grid grid-cols-1 gap-3">
-            <Link 
-              to="/signup" 
-              className="group flex items-center justify-between px-6 py-4 rounded-xl border border-white/5 bg-white/[0.03] hover:bg-brand-500/10 hover:border-brand-500/30 transition-all shadow-sm"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-all shadow-inner">
-                  <UserPlus size={18} />
-                </div>
-                <div className="text-left">
-                  <span className="block text-[11px] font-black text-white uppercase tracking-wider">Create Account</span>
-                  <span className="block text-[9px] font-bold text-gray-600 mt-1 uppercase tracking-widest">Set up your account</span>
-                </div>
+        <div className="mt-6 space-y-3">
+          <p className="text-xs text-[var(--text-muted)] text-center font-medium">New to RSA?</p>
+          <Link 
+            to="/signup" 
+            className="flex items-center justify-between p-3.5 rounded-lg border border-[var(--border)] bg-[var(--bg-main)] hover:bg-[var(--bg-elevated)] hover:border-[var(--border-accent)] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-[var(--accent)]">
+                <UserPlus size={16} />
               </div>
-              <ArrowRight size={16} className="text-gray-700 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" />
-            </Link>
-          </div>
+              <div className="text-left">
+                <span className="block text-xs font-semibold text-[var(--text-heading)]">Create account</span>
+                <span className="block text-[11px] text-[var(--text-muted)]">Set up your portal access</span>
+              </div>
+            </div>
+            <ArrowRight size={15} className="text-[var(--text-muted)]" />
+          </Link>
         </div>
 
-        <div className="mt-12 text-center space-y-4">
-          <div className="flex items-center justify-center gap-2 text-[10px] font-black text-gray-800 uppercase tracking-widest pt-4 border-t border-white/5">
-            <ShieldCheck size={12} className="text-brand-500/40" />
+        <div className="mt-8 text-center">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--text-muted)] pt-4 border-t border-[var(--border)]">
+            <ShieldCheck size={14} className="text-[var(--accent)]" />
             Secured with end-to-end encryption
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Device Chooser Modal */}
       {deviceModal && (

@@ -112,26 +112,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                 onClick={closeMobileMenu}
                 onContextMenu={(e) => togglePin(e, item.id)}
                 className={({ isActive }) => `
-                    relative flex items-center gap-[0.625rem] px-3 transition-all duration-200 mb-[2px] rounded-[var(--radius-md)] group h-[40px] overflow-hidden
+                    relative flex items-center gap-[0.75rem] px-3 transition-colors duration-150 mb-[2px] rounded-[var(--radius-md)] group h-[38px] overflow-hidden
                     ${isActive ? '' : 'hover:bg-[var(--bg-surface)]'}
                 `}
                 style={({ isActive }) => ({
-                    background: isActive ? 'var(--accent-dim)' : 'transparent',
-                    color: isActive ? 'var(--accent)' : 'var(--text-body)',
-                    border: isActive ? '1px solid var(--border-accent)' : '1px solid transparent',
+                    background: isActive ? 'var(--bg-surface)' : 'transparent',
+                    color: isActive ? 'var(--text-heading)' : 'var(--text-body)',
+                    boxShadow: isActive ? 'inset 2px 0 0 var(--accent)' : 'none',
                     fontWeight: isActive ? 600 : 500,
-                    fontSize: '0.8125rem'
+                    fontSize: '0.875rem'
                 })}
             >
                 {({ isActive }) => (
                     <>
                         <Icon 
                             size={18} 
-                            className="shrink-0 transition-all duration-200" 
-                            style={{ 
-                                color: isActive ? 'var(--accent)' : 'inherit',
-                                transform: !isExpanded ? 'scale(1.1)' : 'scale(1)'
-                            }}
+                            strokeWidth={1.75}
+                            className="shrink-0" 
+                            style={{ color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}
                         />
                         
                         <div className={`flex-1 flex items-center justify-between min-w-0 transition-all duration-300 ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'}`}>
@@ -148,7 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
 
                         {!isExpanded && (
                             <div
-                                className="absolute left-full ml-4 px-2.5 py-1.5 text-xs rounded-[var(--radius-sm)] border opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0 whitespace-nowrap z-50 pointer-events-none shadow-xl flex items-center gap-2"
+                                className="absolute left-full ml-4 px-2.5 py-1.5 text-xs rounded-[var(--radius-sm)] border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl flex items-center gap-2"
                                 style={{ background: 'var(--bg-elevated)', color: 'var(--text-heading)', borderColor: 'var(--border-mid)' }}
                             >
                                 {item.label}
@@ -163,10 +161,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
 
     const SectionLabel = ({ label }: { label: string }) => {
         return (
-            <p className={`uppercase transition-all duration-300 ${isExpanded ? 'opacity-100 px-[0.875rem]' : 'opacity-0 px-0'}`} style={{ 
-                fontSize: '0.625rem', 
-                fontWeight: 700, 
-                letterSpacing: '0.1em', 
+            <p className={`transition-opacity duration-200 ${isExpanded ? 'opacity-100 px-[0.75rem]' : 'opacity-0 px-0'}`} style={{ 
+                fontSize: '0.75rem', 
+                fontWeight: 500, 
                 color: 'var(--text-muted)',
                 paddingTop: '1.25rem',
                 paddingBottom: '0.5rem',
@@ -192,23 +189,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                 onMouseLeave={() => setIsHovered(false)}
                 initial={{ x: -280 }}
                 animate={{ x: 0 }}
-                transition={{ duration: 0.5, ease: "circOut" }}
-                className={`fixed inset-y-0 left-0 z-[60] flex flex-col transition-all duration-300 ease-in-out dotted-grid ${isMobileOpen ? 'translate-x-0' : 'hidden md:flex -translate-x-full md:translate-x-0'}`}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className={`fixed inset-y-0 left-0 z-[60] flex flex-col transition-all duration-300 ease-in-out ${isMobileOpen ? 'translate-x-0' : 'hidden md:flex -translate-x-full md:translate-x-0'}`}
                 style={{ 
                     width: isExpanded ? 'var(--sidebar-width)' : 'var(--sidebar-collapsed)',
                     background: 'var(--bg-secondary)',
                     borderRight: '1px solid var(--border)',
-                    boxShadow: isExpanded && isCollapsed ? '10px 0 30px rgba(0,0,0,0.5)' : 'none',
+                    boxShadow: isExpanded && isCollapsed ? '8px 0 24px rgba(0,0,0,0.18)' : 'none',
                     top: 0,
                     bottom: 0,
                     height: '100vh'
                 }}
             >
-                {/* Brand glow at bottom of sidebar */}
-                <div 
-                    className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none opacity-20"
-                    style={{ backgroundImage: 'radial-gradient(circle at 50% 100%, var(--accent) 0%, transparent 70%)' }}
-                />
                 {/* Logo Area */}
                 <div
                     className="flex items-center"
@@ -221,17 +213,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                     <div className="flex items-center gap-3 overflow-hidden select-none">
                         <RSALogo 
                             size="sm" 
-                            className="shrink-0 rounded-lg shadow-sm transition-transform duration-300" 
+                            className="shrink-0 rounded-lg" 
                             style={{ 
                                 width: '32px', 
-                                height: '32px', 
-                                transform: !isExpanded ? 'scale(1.05)' : 'scale(1)' 
+                                height: '32px' 
                             }} 
                         />
                         <div className={`truncate transition-all duration-300 origin-left flex flex-col justify-center ${isExpanded ? 'opacity-100 scale-100 w-auto' : 'opacity-0 scale-95 w-0 pointer-events-none'}`}>
                             <h1 style={{ 
-                                fontSize: '0.9375rem', 
-                                fontWeight: 700, 
+                                fontSize: '1rem', 
+                                fontWeight: 600, 
                                 color: 'var(--text-heading)',
                                 letterSpacing: '-0.02em',
                                 lineHeight: 1.15
@@ -239,11 +230,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                                 RSA Portal
                             </h1>
                             <span style={{ 
-                                fontSize: '0.625rem', 
+                                fontSize: '0.6875rem', 
                                 color: 'var(--text-muted)', 
-                                fontWeight: 600, 
-                                letterSpacing: '0.02em',
-                                textTransform: 'uppercase'
+                                fontWeight: 500
                             }}>
                                 Chartered Accountants
                             </span>
@@ -285,13 +274,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         {isExpanded ? (
                             <button
                                 onClick={() => setIsMoreOpen(!isMoreOpen)}
-                                className="w-full flex items-center justify-between px-[0.875rem] mb-1.5 group transition-colors mt-6"
+                                className="w-full flex items-center justify-between px-[0.75rem] mb-1.5 group transition-colors mt-5"
                                 style={{ 
-                                    fontSize: '0.625rem', 
-                                    fontWeight: 700, 
-                                    letterSpacing: '0.1em', 
-                                    color: 'var(--text-muted)',
-                                    textTransform: 'uppercase'
+                                    fontSize: '0.75rem', 
+                                    fontWeight: 500, 
+                                    color: 'var(--text-muted)'
                                 }}
                             >
                                 <span>More</span>
@@ -339,15 +326,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                         onMouseLeave={e => { if (!isCollapsed) e.currentTarget.style.background = 'transparent'; }}
                     >
                         <div 
-                            className="shrink-0 flex items-center justify-center text-white transition-transform duration-300"
+                            className="shrink-0 flex items-center justify-center"
                             style={{ 
-                                width: '24px',
-                                height: '24px',
+                                width: '26px',
+                                height: '26px',
                                 borderRadius: '99px',
-                                background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+                                background: 'var(--accent)',
+                                color: 'var(--on-accent)',
                                 fontSize: '0.625rem',
-                                fontWeight: 700,
-                                transform: !isExpanded ? 'scale(1.1)' : 'scale(1)'
+                                fontWeight: 600
                             }}
                         >
                             {user?.displayName?.charAt(0).toUpperCase() || 'U'}
@@ -360,14 +347,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleCollapse, isMobile
                                 </p>
                             </div>
                             <span className="shrink-0" style={{ 
-                                fontSize: '0.625rem', 
-                                padding: '1px 6px', 
+                                fontSize: '0.6875rem', 
+                                padding: '1px 7px', 
                                 borderRadius: '99px', 
-                                background: 'var(--accent-dim)', 
-                                color: 'var(--accent)',
-                                fontWeight: 600
+                                background: 'var(--bg-surface)', 
+                                color: 'var(--text-body)',
+                                fontWeight: 500
                             }}>
-                                {user?.role === 'STAFF' ? 'USER' : user?.role}
+                                {user?.role === 'STAFF' ? 'Staff' : (user?.role ? user.role.charAt(0) + user.role.slice(1).toLowerCase().replace('_', ' ') : '')}
                             </span>
                         </div>
                     </div>

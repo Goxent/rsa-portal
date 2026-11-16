@@ -20,10 +20,10 @@ const PerformanceWidget: React.FC<PerformanceWidgetProps> = ({
         : 100;
 
     const getScoreColor = (score: number) => {
-        if (score >= 80) return { text: 'text-brand-400', ring: '#10b981', label: 'Excellent' };
-        if (score >= 60) return { text: 'text-yellow-400', ring: '#f59e0b', label: 'Good' };
-        if (score >= 40) return { text: 'text-orange-400', ring: '#f97316', label: 'Fair' };
-        return { text: 'text-red-400', ring: '#ef4444', label: 'Needs Work' };
+        if (score >= 80) return { text: 'var(--accent)', ring: 'var(--accent)', label: 'Excellent' };
+        if (score >= 60) return { text: 'var(--color-warning)', ring: 'var(--color-warning)', label: 'Good' };
+        if (score >= 40) return { text: 'var(--color-warning)', ring: 'var(--color-warning)', label: 'Fair' };
+        return { text: 'var(--color-danger)', ring: 'var(--color-danger)', label: 'Needs work' };
     };
 
     const compStyle = getScoreColor(completionRate);
@@ -36,22 +36,22 @@ const PerformanceWidget: React.FC<PerformanceWidgetProps> = ({
         const dash = (rate / 100) * circ;
         return (
             <svg width={size} height={size} className="-rotate-90">
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth="5" />
                 <circle
                     cx={size / 2} cy={size / 2} r={r}
-                    fill="none" stroke={color} strokeWidth="6"
+                    fill="none" stroke={color} strokeWidth="5"
                     strokeLinecap="round"
                     strokeDasharray={`${dash} ${circ}`}
-                    className="transition-all duration-1000"
+                    className="transition-all duration-700"
                 />
             </svg>
         );
     };
 
     const TrendIcon = ({ rate }: { rate: number }) => {
-        if (rate >= 70) return <TrendingUp size={12} className="text-brand-400" />;
-        if (rate >= 40) return <Minus size={12} className="text-yellow-400" />;
-        return <TrendingDown size={12} className="text-red-400" />;
+        if (rate >= 70) return <TrendingUp size={12} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />;
+        if (rate >= 40) return <Minus size={12} strokeWidth={1.75} style={{ color: 'var(--color-warning)' }} />;
+        return <TrendingDown size={12} strokeWidth={1.75} style={{ color: 'var(--color-danger)' }} />;
     };
 
     return (
@@ -59,75 +59,78 @@ const PerformanceWidget: React.FC<PerformanceWidgetProps> = ({
             {/* Dual rings */}
             <div className="grid grid-cols-2 gap-3">
                 {/* Completion Rate */}
-                <div className="bg-white/3 border border-white/8 rounded-xl p-3 text-center">
+                <div className="rounded-[var(--radius-md)] border p-3 text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                     <div className="relative inline-flex items-center justify-center mb-1">
                         <Ring rate={completionRate} color={compStyle.ring} />
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <span className={`text-sm font-bold ${compStyle.text}`}>{completionRate}%</span>
+                            <span className="font-display text-sm font-medium tabular-nums" style={{ color: compStyle.text }}>{completionRate}%</span>
                         </div>
                     </div>
                     <div className="flex items-center justify-center gap-1">
-                        <Target size={10} className="text-gray-500" />
-                        <span className="text-[10px] text-gray-400">Completion</span>
+                        <Target size={11} strokeWidth={1.75} style={{ color: 'var(--text-muted)' }} />
+                        <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>Completion</span>
                     </div>
-                    <div className={`text-[9px] font-medium mt-0.5 ${compStyle.text}`}>{compStyle.label}</div>
+                    <div className="text-[11px] font-medium mt-0.5" style={{ color: compStyle.text }}>{compStyle.label}</div>
                 </div>
 
                 {/* On-Time Rate */}
-                <div className="bg-white/3 border border-white/8 rounded-xl p-3 text-center">
+                <div className="rounded-[var(--radius-md)] border p-3 text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                     <div className="relative inline-flex items-center justify-center mb-1">
                         <Ring rate={onTimeRate} color={onTimeStyle.ring} />
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <span className={`text-sm font-bold ${onTimeStyle.text}`}>{onTimeRate}%</span>
+                            <span className="font-display text-sm font-medium tabular-nums" style={{ color: onTimeStyle.text }}>{onTimeRate}%</span>
                         </div>
                     </div>
                     <div className="flex items-center justify-center gap-1">
-                        <Clock size={10} className="text-gray-500" />
-                        <span className="text-[10px] text-gray-400">On-Time</span>
+                        <Clock size={11} strokeWidth={1.75} style={{ color: 'var(--text-muted)' }} />
+                        <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>On-time</span>
                     </div>
-                    <div className={`text-[9px] font-medium mt-0.5 ${onTimeStyle.text}`}>{onTimeStyle.label}</div>
+                    <div className="text-[11px] font-medium mt-0.5" style={{ color: onTimeStyle.text }}>{onTimeStyle.label}</div>
                 </div>
             </div>
 
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-2">
-                <div className="text-center">
+                <div className="text-center p-2 rounded-[var(--radius-sm)]" style={{ background: 'var(--bg-surface)' }}>
                     <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <Award size={11} className="text-brand-400" />
-                        <span className="text-base font-bold text-white">{staffPerformance.completed}</span>
+                        <Award size={12} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+                        <span className="text-base font-semibold tabular-nums" style={{ color: 'var(--text-heading)' }}>{staffPerformance.completed}</span>
                     </div>
-                    <span className="text-[10px] text-gray-500">Completed</span>
+                    <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Completed</span>
                 </div>
-                <div className="text-center">
+                <div className="text-center p-2 rounded-[var(--radius-sm)]" style={{ background: 'var(--bg-surface)' }}>
                     <div className="flex items-center justify-center gap-1 mb-0.5">
                         <TrendIcon rate={completionRate} />
-                        <span className="text-base font-bold text-white">{staffPerformance.pending}</span>
+                        <span className="text-base font-semibold tabular-nums" style={{ color: 'var(--text-heading)' }}>{staffPerformance.pending}</span>
                     </div>
-                    <span className="text-[10px] text-gray-500">Pending</span>
+                    <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Pending</span>
                 </div>
-                <div className="text-center">
+                <div className="text-center p-2 rounded-[var(--radius-sm)]" style={{ background: 'var(--bg-surface)' }}>
                     <div className="flex items-center justify-center gap-1 mb-0.5">
-                        <Clock size={11} className={staffPerformance.lateCount > 0 ? 'text-red-400' : 'text-gray-500'} />
-                        <span className={`text-base font-bold ${staffPerformance.lateCount > 0 ? 'text-red-300' : 'text-white'}`}>
+                        <Clock size={12} strokeWidth={1.75} style={{ color: staffPerformance.lateCount > 0 ? 'var(--color-danger)' : 'var(--text-muted)' }} />
+                        <span className="text-base font-semibold tabular-nums" style={{ color: staffPerformance.lateCount > 0 ? 'var(--color-danger)' : 'var(--text-heading)' }}>
                             {staffPerformance.lateCount}
                         </span>
                     </div>
-                    <span className="text-[10px] text-gray-500">Late (30d)</span>
+                    <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Late (30d)</span>
                 </div>
             </div>
 
             {/* Overall score bar */}
             <div>
                 <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] text-gray-400 font-medium">Overall Score</span>
-                    <span className={`text-[11px] font-bold ${compStyle.text}`}>
+                    <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>Overall score</span>
+                    <span className="font-display text-xs font-medium tabular-nums" style={{ color: compStyle.text }}>
                         {Math.round((completionRate + onTimeRate) / 2)}%
                     </span>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface)' }}>
                     <div
-                        className="h-full bg-gradient-to-r from-brand-500 to-brand- rounded-full transition-all duration-1000"
-                        style={{ width: `${Math.round((completionRate + onTimeRate) / 2)}%` }}
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                            width: `${Math.round((completionRate + onTimeRate) / 2)}%`,
+                            background: 'var(--accent)'
+                        }}
                     />
                 </div>
             </div>

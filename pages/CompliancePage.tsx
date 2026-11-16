@@ -242,7 +242,7 @@ const CompliancePage: React.FC = () => {
     const getStatusStyle = (status: string) => {
         switch (status) {
             case 'COMPLETED': // Compliant
-                return { color: 'var(--accent)', background: 'rgba(101,154,43,0.1)' };
+                return { color: 'var(--accent)', background: 'rgba(79,178,134,0.1)' };
             case 'DUE_SOON': // At risk
                 return { color: 'var(--color-warning)', background: 'rgba(201,138,42,0.1)' };
             case 'OVERDUE': // Non-compliant

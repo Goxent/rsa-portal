@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Trophy, TrendingUp, Clock, CheckCircle2, User,
-    Calendar, ArrowUpRight, ArrowDownRight, Loader2,
-    BarChart3, Award, Star, FileDown, AlertTriangle, Zap,
-    CheckCircle, XCircle, Info, HelpCircle, Lock, Unlock
+    Trophy, TrendingUp, Clock, CheckCircle2,
+    Loader2, Award, FileDown,
+    Info, HelpCircle, Lock
 } from 'lucide-react';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, doc, getDoc, limit } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { PerformanceCycle } from '../types';
 import { PerformanceService, PerformanceStats } from '../services/performance';
@@ -44,7 +43,6 @@ const PerformancePage: React.FC = () => {
             setStaff(users);
 
             if (viewMode === 'monthly') {
-                // Check if month is finalized
                 const monthKey = subMonths(new Date(), selectedMonth).toISOString().substring(0, 7);
                 const cycleDoc = await getDoc(doc(db, 'performance_cycles', `${monthKey}_default`));
 
@@ -87,24 +85,22 @@ const PerformancePage: React.FC = () => {
                 } else {
                     setFinalizedCycle(null);
                     const scores: Record<string, PerformanceStats> = {};
-                    for (const user of users) {
-                        const stats = await PerformanceService.getStaffPerformance(user.uid, selectedMonth);
-                        scores[user.uid] = stats;
+                    for (const u of users) {
+                        const stats = await PerformanceService.getStaffPerformance(u.uid, selectedMonth);
+                        scores[u.uid] = stats;
                     }
                     setPerformanceData(scores);
                 }
             } else {
-                // Quarterly Mode
                 setFinalizedCycle(null);
                 const scores: Record<string, PerformanceStats> = {};
-                for (const user of users) {
-                    const stats = await PerformanceService.getQuarterlyPerformance(user.uid, selectedQuarter, selectedYear);
-                    scores[user.uid] = stats;
+                for (const u of users) {
+                    const stats = await PerformanceService.getQuarterlyPerformance(u.uid, selectedQuarter, selectedYear);
+                    scores[u.uid] = stats;
                 }
                 setPerformanceData(scores);
             }
 
-            // Staff of the month logic
             if (selectedMonth === 0) {
                 const som = await PerformanceService.getStaffOfTheMonth();
                 if (som) {
@@ -115,7 +111,6 @@ const PerformancePage: React.FC = () => {
                 }
             }
 
-            // Calculate benchmarks (live only for current month or if cycle doesn't have them)
             const scoresList = Object.values(performanceData);
             if (scoresList.length > 0) {
                 const allScores = scoresList.map(s => s.totalScore).sort((a, b) => b - a);
@@ -148,7 +143,7 @@ const PerformancePage: React.FC = () => {
     };
 
     const handleFinalize = async () => {
-        if (!window.confirm("Are you sure you want to finalize performance for the PREVIOUS month? This will freeze all scores and identify the Staff of the Month.")) return;
+        if (!window.confirm("Are you sure you want to finalize performance for the previous month? This will freeze all scores and identify the Staff of the Month.")) return;
 
         setIsFinalizing(true);
         try {
@@ -165,48 +160,35 @@ const PerformancePage: React.FC = () => {
         }
     };
 
-    const getTierColor = (tier: string) => {
-        switch (tier) {
-            case 'Exceptional': return 'text-brand-400 bg-brand-500/10 border-brand-500/30';
-            case 'Strong': return 'text-brand-400 bg-brand-500/10 border-brand-500/30';
-            case 'Meeting Expectations': return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-            case 'Needs Improvement': return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
-            default: return 'text-red-400 bg-red-500/10 border-red-500/30';
-        }
-    };
-
     const exportPDF = () => {
-        const doc = new jsPDF();
+        const pdfDoc = new jsPDF();
         const targetDate = subMonths(new Date(), selectedMonth);
 
-        // Enhanced Letterhead with violet gradient
-        doc.setFillColor(124, 58, 237); // Violet-600
-        doc.rect(0, 0, 210, 45, 'F');
+        pdfDoc.setFillColor(42, 106, 75);
+        pdfDoc.rect(0, 0, 210, 45, 'F');
 
-        doc.setFontSize(24);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.text("R. SAPKOTA & ASSOCIATES", 105, 18, { align: "center" });
+        pdfDoc.setFontSize(22);
+        pdfDoc.setTextColor(255, 255, 255);
+        pdfDoc.setFont("helvetica", "bold");
+        pdfDoc.text("R. SAPKOTA & ASSOCIATES", 105, 18, { align: "center" });
 
-        doc.setFontSize(10);
-        doc.setTextColor(233, 213, 255); // Light violet
-        doc.setFont("helvetica", "normal");
-        doc.text("Chartered Accountants | Mid-Baneshwor, Kathmandu", 105, 26, { align: "center" });
+        pdfDoc.setFontSize(10);
+        pdfDoc.setTextColor(230, 245, 238);
+        pdfDoc.setFont("helvetica", "normal");
+        pdfDoc.text("Chartered Accountants | Mid-Baneshwor, Kathmandu", 105, 26, { align: "center" });
 
-        doc.setFontSize(14);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.text("Staff Performance Evaluation Report", 105, 38, { align: "center" });
+        pdfDoc.setFontSize(14);
+        pdfDoc.setTextColor(255, 255, 255);
+        pdfDoc.setFont("helvetica", "bold");
+        pdfDoc.text("Staff Performance Evaluation Report", 105, 38, { align: "center" });
 
-        // Report info
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Period: ${format(targetDate, 'MMMM yyyy')}`, 14, 55);
-        doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, 14, 61);
-        doc.text(`Total Staff Evaluated: ${staff.length}`, 14, 67);
+        pdfDoc.setFontSize(10);
+        pdfDoc.setTextColor(100);
+        pdfDoc.setFont("helvetica", "normal");
+        pdfDoc.text(`Period: ${format(targetDate, 'MMMM yyyy')}`, 14, 55);
+        pdfDoc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, 14, 61);
+        pdfDoc.text(`Total Staff Evaluated: ${staff.length}`, 14, 67);
 
-        // Table data
         const tableColumn = ["Staff", "Score", "Tier", "Tasks", "Completion", "On-Time", "Punctuality", "Priority"];
         const tableRows = staff.map(member => {
             const stats = performanceData[member.uid];
@@ -223,14 +205,14 @@ const PerformancePage: React.FC = () => {
             ];
         }).filter(Boolean);
 
-        autoTable(doc, {
+        autoTable(pdfDoc, {
             head: [tableColumn],
             body: tableRows as any,
             startY: 75,
             theme: 'grid',
             headStyles: {
-                fillColor: [124, 58, 237],  // Violet-600
-                textColor: [255, 255, 255], // White
+                fillColor: [42, 106, 75],
+                textColor: [255, 255, 255],
                 fontStyle: 'bold',
                 halign: 'center',
                 fontSize: 8
@@ -238,11 +220,10 @@ const PerformancePage: React.FC = () => {
             styles: {
                 fontSize: 8,
                 cellPadding: 3,
-                fillColor: [250, 245, 255], // Light violet
-                textColor: [76, 29, 149]    // Violet-900
+                textColor: [30, 41, 59]
             },
             alternateRowStyles: {
-                fillColor: [237, 233, 254]  // Violet-100
+                fillColor: [245, 247, 246]
             },
             columnStyles: {
                 0: { cellWidth: 35 },
@@ -251,90 +232,93 @@ const PerformancePage: React.FC = () => {
             }
         });
 
-        // Benchmark summary
-        const finalY = (doc as any).lastAutoTable.finalY + 15;
-        doc.setFontSize(11);
-        doc.setTextColor(59, 130, 246);
-        doc.setFont("helvetica", "bold");
-        doc.text("Benchmark Summary", 14, finalY);
+        const finalY = (pdfDoc as any).lastAutoTable.finalY + 15;
+        pdfDoc.setFontSize(11);
+        pdfDoc.setTextColor(42, 106, 75);
+        pdfDoc.setFont("helvetica", "bold");
+        pdfDoc.text("Benchmark Summary", 14, finalY);
 
-        const avgScore = Object.values(performanceData).reduce((sum, s) => sum + s.totalScore, 0) / staff.length;
+        const avgScore = Object.values(performanceData).reduce((sum, s) => sum + s.totalScore, 0) / (staff.length || 1);
         const exceptional = Object.values(performanceData).filter(s => s.performanceTier === 'Exceptional').length;
         const needsImprovement = Object.values(performanceData).filter(s =>
             s.performanceTier === 'Needs Improvement' || s.performanceTier === 'Critical'
         ).length;
 
-        doc.setFontSize(9);
-        doc.setTextColor(100);
-        doc.setFont("helvetica", "normal");
-        doc.text(`• Average Team Score: ${avgScore.toFixed(1)}%`, 18, finalY + 8);
-        doc.text(`• Exceptional Performers: ${exceptional} staff members`, 18, finalY + 14);
-        doc.text(`• Needing Improvement: ${needsImprovement} staff members`, 18, finalY + 20);
+        pdfDoc.setFontSize(9);
+        pdfDoc.setTextColor(100);
+        pdfDoc.setFont("helvetica", "normal");
+        pdfDoc.text(`• Average Team Score: ${avgScore.toFixed(1)}%`, 18, finalY + 8);
+        pdfDoc.text(`• Exceptional Performers: ${exceptional} staff members`, 18, finalY + 14);
+        pdfDoc.text(`• Needing Improvement: ${needsImprovement} staff members`, 18, finalY + 20);
 
-        // Footer
-        const pageCount = doc.getNumberOfPages();
+        const pageCount = pdfDoc.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(150);
-            doc.text(`Page ${i} of ${pageCount}`, 196, 285, { align: 'right' });
-            doc.text("Confidential - RSA Portal Performance Analytics", 14, 285);
+            pdfDoc.setPage(i);
+            pdfDoc.setFontSize(8);
+            pdfDoc.setTextColor(150);
+            pdfDoc.text(`Page ${i} of ${pageCount}`, 196, 285, { align: 'right' });
+            pdfDoc.text("Confidential - RSA Portal Performance Analytics", 14, 285);
         }
 
-        doc.save(`RSA_Performance_Report_${format(targetDate, 'MMM_yyyy')}.pdf`);
+        pdfDoc.save(`RSA_Performance_Report_${format(targetDate, 'MMM_yyyy')}.pdf`);
     };
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-                <Loader2 size={48} className="animate-spin text-brand-500 mb-4" />
-                <p className="text-gray-400 font-medium">Analyzing historical performance data...</p>
+            <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 size={36} className="animate-spin text-[var(--accent)] mb-3" />
+                <p className="text-sm text-[var(--text-muted)]">Analyzing performance metrics...</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
+        <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white font-heading">Performance Evaluation</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <p className="text-sm text-gray-400">Comprehensive staff performance metrics and benchmarking</p>
+                    <h1 className="font-display text-2xl font-semibold text-[var(--text-heading)] tracking-tight">Performance evaluation</h1>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-[var(--text-muted)]">Staff performance metrics and benchmarking</p>
                         <button
+                            type="button"
                             onClick={() => setShowScoringInfo(!showScoringInfo)}
-                            className="text-gray-500 hover:text-brand-400 transition-colors"
+                            className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
                         >
-                            <HelpCircle size={14} />
+                            <HelpCircle size={13} />
                         </button>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-4">
+                <div className="flex flex-wrap items-center gap-2.5">
+                    <div className="flex bg-[var(--bg-surface)] p-1 rounded-lg border border-[var(--border)]">
                         <button
+                            type="button"
                             onClick={() => setViewMode('monthly')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'monthly' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'monthly' ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}
                         >
                             Monthly
                         </button>
                         <button
+                            type="button"
                             onClick={() => setViewMode('quarterly')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'quarterly' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'quarterly' ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}
                         >
                             Quarterly
                         </button>
                     </div>
 
-                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 mr-4">
+                    <div className="flex bg-[var(--bg-surface)] p-1 rounded-lg border border-[var(--border)]">
                         <button
+                            type="button"
                             onClick={() => setActiveTab('roster')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'roster' ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20' : 'text-gray-400'}`}
+                            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${activeTab === 'roster' ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}
                         >
-                            Staff Roster
+                            Staff roster
                         </button>
                         <button
+                            type="button"
                             onClick={() => setActiveTab('leaderboard')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'leaderboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20' : 'text-gray-400'}`}
+                            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${activeTab === 'leaderboard' ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-heading)]'}`}
                         >
                             Leaderboard
                         </button>
@@ -344,24 +328,25 @@ const PerformancePage: React.FC = () => {
                         <>
                             {AuthService.isAdmin(user?.role) && selectedMonth === 0 && !finalizedCycle && (
                                 <button
+                                    type="button"
                                     onClick={handleFinalize}
                                     disabled={isFinalizing}
-                                    className="bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-all"
+                                    className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--on-accent)] px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition-opacity"
                                 >
-                                    {isFinalizing ? <Loader2 size={16} className="animate-spin mr-2" /> : <Lock size={16} className="mr-2" />}
-                                    Finalize {format(subMonths(new Date(), 1), 'MMM')} Performance
+                                    {isFinalizing ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <Lock size={13} className="mr-1.5" />}
+                                    Finalize {format(subMonths(new Date(), 1), 'MMM')} performance
                                 </button>
                             )}
                             {finalizedCycle && (
-                                <div className="flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 px-3 py-1.5 rounded-lg">
-                                    <Lock size={14} className="text-brand-400" />
-                                    <span className="text-xs font-bold text-brand-400 uppercase tracking-tight">Finalized</span>
+                                <div className="flex items-center gap-1.5 bg-[var(--accent-dim)] border border-[var(--border-accent)] px-2.5 py-1 rounded-md">
+                                    <Lock size={12} className="text-[var(--accent)]" />
+                                    <span className="text-xs font-medium text-[var(--accent)]">Finalized</span>
                                 </div>
                             )}
                             <select
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--border-accent)]"
                             >
                                 <option value={0}>{format(new Date(), 'MMMM yyyy')}</option>
                                 <option value={1}>{format(subMonths(new Date(), 1), 'MMMM yyyy')}</option>
@@ -374,17 +359,17 @@ const PerformancePage: React.FC = () => {
                             <select
                                 value={selectedQuarter}
                                 onChange={(e) => setSelectedQuarter(Number(e.target.value))}
-                                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--border-accent)]"
                             >
-                                <option value={0}>Q1 (Jan - Mar)</option>
-                                <option value={1}>Q2 (Apr - Jun)</option>
-                                <option value={2}>Q3 (Jul - Sep)</option>
-                                <option value={3}>Q4 (Oct - Dec)</option>
+                                <option value={0}>Q1 (Jan – Mar)</option>
+                                <option value={1}>Q2 (Apr – Jun)</option>
+                                <option value={2}>Q3 (Jul – Sep)</option>
+                                <option value={3}>Q4 (Oct – Dec)</option>
                             </select>
                             <select
                                 value={selectedYear}
                                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--border-accent)]"
                             >
                                 <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
                                 <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
@@ -392,31 +377,32 @@ const PerformancePage: React.FC = () => {
                         </div>
                     )}
                     <button
+                        type="button"
                         onClick={exportPDF}
-                        className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow-lg transition-transform hover:scale-105 active:scale-95"
+                        className="bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-mid)] text-[var(--text-heading)] px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition-colors"
                     >
-                        <FileDown size={16} className="mr-2" /> Export PDF
+                        <FileDown size={13} className="mr-1.5 text-[var(--accent)]" /> Export PDF
                     </button>
                 </div>
             </div>
 
             {showScoringInfo && (
-                <div className="glass-panel p-6 rounded-2xl border border-brand-500/30 bg-brand-500/5 animate-in slide-in-from-top duration-300">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                        <Info size={20} className="mr-2 text-brand-400" /> Weighted Scoring Algorithm
+                <div className="bg-[var(--bg-surface)] p-5 rounded-xl border border-[var(--border)]">
+                    <h3 className="text-sm font-semibold text-[var(--text-heading)] mb-3 flex items-center">
+                        <Info size={16} className="mr-2 text-[var(--accent)]" /> Weighted scoring algorithm
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {[
-                            { label: 'Completion Rate', weight: '30%', desc: 'Tasks completed vs assigned' },
-                            { label: 'On-Time Delivery', weight: '25%', desc: 'Completed before due date' },
+                            { label: 'Completion rate', weight: '30%', desc: 'Tasks completed vs assigned' },
+                            { label: 'On-time delivery', weight: '25%', desc: 'Completed before due date' },
                             { label: 'Punctuality', weight: '20%', desc: 'Clock-in consistency' },
-                            { label: 'Quality Score', weight: '15%', desc: 'Accuracy and feedback' },
-                            { label: 'Difficulty Bonus', weight: '10%', desc: 'Complexity and priority' },
+                            { label: 'Quality score', weight: '15%', desc: 'Accuracy and feedback' },
+                            { label: 'Difficulty bonus', weight: '10%', desc: 'Complexity and priority' },
                         ].map((item, i) => (
-                            <div key={i} className="space-y-1 text-center md:text-left">
-                                <p className="text-sm font-bold text-white">{item.label}</p>
-                                <p className="text-2xl font-black text-brand-400">{item.weight}</p>
-                                <p className="text-[10px] text-gray-500">{item.desc}</p>
+                            <div key={i} className="bg-[var(--bg-main)] p-3 rounded-lg border border-[var(--border)] space-y-1">
+                                <p className="text-xs font-medium text-[var(--text-heading)]">{item.label}</p>
+                                <p className="font-display text-xl font-semibold text-[var(--accent)] tabular-nums">{item.weight}</p>
+                                <p className="text-[11px] text-[var(--text-muted)]">{item.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -425,72 +411,64 @@ const PerformancePage: React.FC = () => {
 
             {/* Staff of the Month Section */}
             {staffOfTheMonth && selectedMonth === 0 && (
-                <div className="relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-600/20 to-brand-/20 rounded-3xl blur-3xl -z-10 animate-pulse" />
-                    <div className="glass-panel p-8 rounded-3xl border-2 border-brand-500/30 flex flex-col md:flex-row items-center gap-8 relative">
-                        <div className="relative">
-                            <div className="w-32 h-32 rounded-full border-4 border-brand-500 p-1 shadow-2xl overflow-hidden ring-8 ring-brand-500/10">
-                                {staffOfTheMonth.profile.photoURL ? (
-                                    <img src={staffOfTheMonth.profile.photoURL} alt={staffOfTheMonth.profile.displayName} className="w-full h-full object-cover rounded-full" />
-                                ) : (
-                                    <div className="w-full h-full bg-navy-800 flex items-center justify-center text-3xl font-bold text-brand-400">
-                                        {staffOfTheMonth.profile.displayName?.[0]}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="absolute -bottom-2 -right-2 bg-brand-500 p-2 rounded-full shadow-lg border-4 border-navy-900 text-white">
-                                <Trophy size={20} />
-                            </div>
-                        </div>
-
-                        <div className="text-center md:text-left space-y-2">
-                            <span className="px-3 py-1 bg-brand-500/20 text-brand-400 text-[10px] font-bold uppercase tracking-widest rounded-full border border-brand-500/30">Official Staff of the Month</span>
-                            <h2 className="text-4xl font-black text-white">{staffOfTheMonth.profile.displayName}</h2>
-                            <p className="text-gray-400 max-w-md">Recognized for exceptional task completion rate and punctuality throughout the previous month.</p>
-
-                            <div className="flex flex-wrap gap-4 mt-4">
-                                <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold">Performance Score</p>
-                                    <p className="text-xl font-mono font-bold text-brand-400">{staffOfTheMonth.score.toFixed(1)}%</p>
+                <div className="bg-[var(--bg-surface)] p-6 rounded-xl border border-[var(--border-accent)] flex flex-col md:flex-row items-center gap-6 relative">
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-2 border-[var(--accent)] p-0.5 overflow-hidden">
+                            {staffOfTheMonth.profile.photoURL ? (
+                                <img src={staffOfTheMonth.profile.photoURL} alt={staffOfTheMonth.profile.displayName} className="w-full h-full object-cover rounded-full" />
+                            ) : (
+                                <div className="w-full h-full bg-[var(--bg-elevated)] flex items-center justify-center text-xl font-semibold text-[var(--accent)]">
+                                    {staffOfTheMonth.profile.displayName?.[0]}
                                 </div>
-                                <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold">Status</p>
-                                    <p className="text-xl font-bold text-white flex items-center"><Award size={18} className="mr-2 text-yellow-500" /> Outstanding</p>
-                                </div>
-                            </div>
+                            )}
                         </div>
+                        <div className="absolute -bottom-1 -right-1 bg-[var(--accent)] p-1.5 rounded-full text-[var(--on-accent)]">
+                            <Trophy size={14} />
+                        </div>
+                    </div>
 
-                        <div className="hidden lg:block ml-auto opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Award size={160} />
+                    <div className="text-center md:text-left space-y-1.5 flex-1">
+                        <span className="px-2.5 py-0.5 bg-[var(--accent-dim)] text-[var(--accent)] text-xs font-medium rounded-md border border-[var(--border-accent)]">Staff of the month</span>
+                        <h2 className="font-display text-2xl font-semibold text-[var(--text-heading)]">{staffOfTheMonth.profile.displayName}</h2>
+                        <p className="text-xs text-[var(--text-muted)] max-w-md">Recognized for exceptional task completion rate and punctuality throughout the previous month.</p>
+
+                        <div className="flex flex-wrap gap-3 mt-3">
+                            <div className="bg-[var(--bg-main)] px-3.5 py-1.5 rounded-lg border border-[var(--border)]">
+                                <p className="text-[11px] text-[var(--text-muted)]">Performance score</p>
+                                <p className="font-display text-base font-semibold text-[var(--accent)] tabular-nums">{staffOfTheMonth.score.toFixed(1)}%</p>
+                            </div>
+                            <div className="bg-[var(--bg-main)] px-3.5 py-1.5 rounded-lg border border-[var(--border)]">
+                                <p className="text-[11px] text-[var(--text-muted)]">Status</p>
+                                <p className="text-xs font-medium text-[var(--text-heading)] flex items-center mt-0.5"><Award size={14} className="mr-1 text-[var(--color-warning)]" /> Outstanding</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            )
-            }
+            )}
 
             {/* Team Benchmark Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-brand-500">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold">Avg Team Score</p>
-                    <p className="text-2xl font-bold text-white">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-[var(--bg-surface)] p-4 rounded-xl border border-[var(--border)]">
+                    <p className="text-xs text-[var(--text-muted)]">Average team score</p>
+                    <p className="font-display text-2xl font-semibold text-[var(--text-heading)] tabular-nums mt-1">
                         {(Object.values(performanceData).reduce((sum, s) => sum + s.totalScore, 0) / Math.max(staff.length, 1)).toFixed(1)}%
                     </p>
                 </div>
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-brand-">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold">Exceptional</p>
-                    <p className="text-2xl font-bold text-brand-400">
+                <div className="bg-[var(--bg-surface)] p-4 rounded-xl border border-[var(--border)]">
+                    <p className="text-xs text-[var(--text-muted)]">Exceptional performers</p>
+                    <p className="font-display text-2xl font-semibold text-[var(--color-success)] tabular-nums mt-1">
                         {Object.values(performanceData).filter(s => s.performanceTier === 'Exceptional').length}
                     </p>
                 </div>
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-orange-500">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold">Needs Improvement</p>
-                    <p className="text-2xl font-bold text-orange-400">
+                <div className="bg-[var(--bg-surface)] p-4 rounded-xl border border-[var(--border)]">
+                    <p className="text-xs text-[var(--text-muted)]">Needs improvement</p>
+                    <p className="font-display text-2xl font-semibold text-[var(--color-warning)] tabular-nums mt-1">
                         {Object.values(performanceData).filter(s => s.performanceTier === 'Needs Improvement' || s.performanceTier === 'Critical').length}
                     </p>
                 </div>
-                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-red-500">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold">Overdue Tasks</p>
-                    <p className="text-2xl font-bold text-red-400">
+                <div className="bg-[var(--bg-surface)] p-4 rounded-xl border border-[var(--border)]">
+                    <p className="text-xs text-[var(--text-muted)]">Overdue tasks</p>
+                    <p className="font-display text-2xl font-semibold text-[var(--color-danger)] tabular-nums mt-1">
                         {Object.values(performanceData).reduce((sum, s) => sum + s.overdueTasks, 0)}
                     </p>
                 </div>
@@ -498,7 +476,7 @@ const PerformancePage: React.FC = () => {
 
             {/* Main Content Area */}
             {activeTab === 'roster' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {staff.map((member) => {
                         const stats = performanceData[member.uid];
                         if (!stats) return null;
@@ -507,83 +485,82 @@ const PerformancePage: React.FC = () => {
                             <div
                                 key={member.uid}
                                 onClick={() => setExpandedStaffId(expandedStaffId === member.uid ? null : member.uid)}
-                                className={`glass-panel p-6 rounded-2xl border transition-all cursor-pointer ${expandedStaffId === member.uid ? 'border-brand-500 ring-2 ring-brand-500/20 bg-white/[0.04]' : 'border-white/10 hover:border-brand-500/40 hover:bg-white/[0.02]'}`}
+                                className={`bg-[var(--bg-surface)] p-4 rounded-xl border transition-colors cursor-pointer ${expandedStaffId === member.uid ? 'border-[var(--border-accent)] ring-1 ring-[var(--accent)]' : 'border-[var(--border)] hover:border-[var(--border-mid)]'}`}
                             >
-                                <div className="flex items-center gap-4 mb-4">
+                                <div className="flex items-center gap-3.5 mb-3">
                                     <div className="relative">
-                                        <div className="w-12 h-12 rounded-xl bg-navy-800 flex items-center justify-center font-bold text-white border border-white/5">
+                                        <div className="w-10 h-10 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center font-semibold text-[var(--text-heading)] border border-[var(--border)]">
                                             {member.photoURL ? (
-                                                <img src={member.photoURL} className="w-full h-full object-cover rounded-xl" alt="" />
+                                                <img src={member.photoURL} className="w-full h-full object-cover rounded-lg" alt="" />
                                             ) : (
                                                 member.displayName?.[0]
                                             )}
                                         </div>
                                         {stats.totalScore >= 90 && (
-                                            <div className="absolute -top-1 -right-1 bg-yellow-500 text-navy-900 rounded-full p-0.5 border-2 border-navy-900">
-                                                <Trophy size={10} />
+                                            <div className="absolute -top-1 -right-1 bg-[var(--color-warning)] text-black rounded-full p-0.5">
+                                                <Trophy size={9} />
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-white">{member.displayName}</h3>
-                                        <p className="text-xs text-gray-500 capitalize">{member.role.replace('_', ' ')} • {member.department || 'General'}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-sm text-[var(--text-heading)] truncate">{member.displayName}</h3>
+                                        <p className="text-xs text-[var(--text-muted)] capitalize truncate">{member.role.replace('_', ' ').toLowerCase()} • {member.department || 'General'}</p>
                                     </div>
                                     <div className="text-right">
-                                        <span className={`text-lg font-mono font-bold ${stats.totalScore > 85 ? 'text-brand-400' : stats.totalScore > 60 ? 'text-brand-400' : 'text-orange-400'}`}>
+                                        <span className={`text-base font-semibold tabular-nums ${stats.totalScore > 85 ? 'text-[var(--color-success)]' : stats.totalScore > 60 ? 'text-[var(--accent)]' : 'text-[var(--color-warning)]'}`}>
                                             {stats.totalScore.toFixed(0)}
                                         </span>
-                                        <span className="text-[10px] text-gray-600 font-bold">/100</span>
+                                        <span className="text-xs text-[var(--text-subtle)]">/100</span>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400">Weighted Performance</span>
-                                        <span className="text-white font-mono">{stats.totalScore.toFixed(1)}%</span>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-xs text-[var(--text-muted)]">
+                                        <span>Weighted performance</span>
+                                        <span className="text-[var(--text-heading)] font-medium tabular-nums">{stats.totalScore.toFixed(1)}%</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-navy-800 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-[var(--border)] rounded-full overflow-hidden">
                                         <div
-                                            className={`h-full rounded-full transition-all duration-1000 ${stats.totalScore > 85 ? 'bg-brand-500' : stats.totalScore > 60 ? 'bg-brand-500' : 'bg-orange-500'}`}
+                                            className="h-full rounded-full transition-all duration-500 bg-[var(--accent)]"
                                             style={{ width: `${stats.totalScore}%` }}
                                         />
                                     </div>
 
                                     {/* Expanded Details */}
                                     {expandedStaffId === member.uid && (
-                                        <div className="pt-4 mt-4 border-t border-white/5 grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div className="bg-white/5 p-2 rounded-lg">
-                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Fulfillment</p>
+                                        <div className="pt-3 mt-3 border-t border-[var(--border)] grid grid-cols-2 gap-2">
+                                            <div className="bg-[var(--bg-main)] p-2 rounded-lg border border-[var(--border)]">
+                                                <p className="text-[11px] text-[var(--text-muted)] mb-0.5">Fulfillment</p>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-white">{(stats.assignmentFulfillment || 0).toFixed(0)}%</span>
-                                                    <TrendingUp size={10} className="text-brand-400" />
+                                                    <span className="text-xs font-semibold text-[var(--text-heading)] tabular-nums">{(stats.assignmentFulfillment || 0).toFixed(0)}%</span>
+                                                    <TrendingUp size={11} className="text-[var(--color-success)]" />
                                                 </div>
                                             </div>
-                                            <div className="bg-white/5 p-2 rounded-lg">
-                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">On-Time Rate</p>
+                                            <div className="bg-[var(--bg-main)] p-2 rounded-lg border border-[var(--border)]">
+                                                <p className="text-[11px] text-[var(--text-muted)] mb-0.5">On-time rate</p>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-white">{(stats.dueDateFulfillment || 0).toFixed(0)}%</span>
-                                                    <Clock size={10} className="text-amber-400" />
+                                                    <span className="text-xs font-semibold text-[var(--text-heading)] tabular-nums">{(stats.dueDateFulfillment || 0).toFixed(0)}%</span>
+                                                    <Clock size={11} className="text-[var(--color-warning)]" />
                                                 </div>
                                             </div>
-                                            <div className="bg-white/5 p-2 rounded-lg">
-                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Avg Cycle Time</p>
+                                            <div className="bg-[var(--bg-main)] p-2 rounded-lg border border-[var(--border)]">
+                                                <p className="text-[11px] text-[var(--text-muted)] mb-0.5">Avg cycle time</p>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-white">{(stats.avgCycleTime || 0).toFixed(1)} <span className="text-[8px] text-gray-500 uppercase">Days</span></span>
-                                                    <Zap size={10} className="text-yellow-400" />
+                                                    <span className="text-xs font-semibold text-[var(--text-heading)] tabular-nums">{(stats.avgCycleTime || 0).toFixed(1)} <span className="text-[10px] text-[var(--text-muted)] font-normal">days</span></span>
                                                 </div>
                                             </div>
-                                            <div className="bg-white/5 p-2 rounded-lg">
-                                                <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Tasks</p>
+                                            <div className="bg-[var(--bg-main)] p-2 rounded-lg border border-[var(--border)]">
+                                                <p className="text-[11px] text-[var(--text-muted)] mb-0.5">Tasks</p>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-white">{stats.completedTasks} / {stats.totalTasks}</span>
-                                                    <CheckCircle2 size={10} className="text-brand-400" />
+                                                    <span className="text-xs font-semibold text-[var(--text-heading)] tabular-nums">{stats.completedTasks} / {stats.totalTasks}</span>
+                                                    <CheckCircle2 size={11} className="text-[var(--color-success)]" />
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
                                     {!expandedStaffId && (
-                                        <p className="text-[9px] text-gray-600 text-center animate-pulse">Click to view detailed metrics</p>
+                                        <p className="text-[11px] text-[var(--text-muted)] text-center pt-1">Click to view details</p>
                                     )}
                                 </div>
                             </div>
@@ -591,35 +568,40 @@ const PerformancePage: React.FC = () => {
                     })}
                 </div>
             ) : (
-                <div className="glass-panel p-8 rounded-3xl border border-white/10 animate-in fade-in zoom-in-95 duration-500">
-                    <div className="space-y-4">
+                <div className="bg-[var(--bg-surface)] p-6 rounded-xl border border-[var(--border)]">
+                    <div className="space-y-2.5">
                         {staff
                             .sort((a, b) => (performanceData[b.uid]?.totalScore || 0) - (performanceData[a.uid]?.totalScore || 0))
                             .map((member, index) => {
                                 const stats = performanceData[member.uid];
                                 if (!stats) return null;
                                 return (
-                                    <div key={member.uid} className="flex items-center gap-6 p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/[0.08] transition-all group">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg ${index === 0 ? 'bg-yellow-500 text-black' : index === 1 ? 'bg-gray-400 text-black' : index === 2 ? 'bg-amber-600 text-black' : 'text-gray-500'}`}>
+                                    <div key={member.uid} className="flex items-center gap-4 p-3 bg-[var(--bg-main)] rounded-lg border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs tabular-nums ${
+                                            index === 0 ? 'bg-[var(--color-warning)] text-black' : 
+                                            index === 1 ? 'bg-gray-300 text-black' : 
+                                            index === 2 ? 'bg-amber-700 text-white' : 
+                                            'bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border)]'
+                                        }`}>
                                             {index + 1}
                                         </div>
-                                        <div className="flex-1 flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center font-bold text-white border border-white/5">
+                                        <div className="flex-1 flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center font-semibold text-xs text-[var(--text-heading)] border border-[var(--border)]">
                                                 {member.displayName?.[0]}
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-white">{member.displayName}</h4>
-                                                <p className="text-[10px] text-gray-500 uppercase font-black">{member.department || 'General'}</p>
+                                                <h4 className="font-medium text-sm text-[var(--text-heading)]">{member.displayName}</h4>
+                                                <p className="text-xs text-[var(--text-muted)]">{member.department || 'General'}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-8">
+                                        <div className="flex items-center gap-6">
                                             <div className="text-right">
-                                                <p className="text-[10px] text-gray-500 uppercase font-bold">Total Score</p>
-                                                <p className="text-lg font-mono font-bold text-white">{stats.totalScore.toFixed(1)}%</p>
+                                                <p className="text-[11px] text-[var(--text-muted)]">Total score</p>
+                                                <p className="text-sm font-semibold tabular-nums text-[var(--text-heading)]">{stats.totalScore.toFixed(1)}%</p>
                                             </div>
-                                            <div className="w-24">
-                                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-brand-500" style={{ width: `${stats.totalScore}%` }} />
+                                            <div className="w-24 hidden sm:block">
+                                                <div className="h-1.5 w-full bg-[var(--border)] rounded-full overflow-hidden">
+                                                    <div className="h-full bg-[var(--accent)]" style={{ width: `${stats.totalScore}%` }} />
                                                 </div>
                                             </div>
                                         </div>

@@ -12,41 +12,42 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Geist', 'DM Sans', 'system-ui', 'sans-serif'],
-        heading: ['DM Sans', 'system-ui', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
+        sans: ['Instrument Sans', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        heading: ['Instrument Sans', 'system-ui', 'sans-serif'],
+        display: ['Newsreader', 'Georgia', 'serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
         // Carbon Ledger — dark surfaces
         carbon: {
-          950: '#0a0b0d',
-          900: '#111318',
-          800: '#181c22',
-          700: '#1f2430',
-          600: '#262c38',
+          950: '#0c0f0e',
+          900: '#131816',
+          800: '#1a201d',
+          700: '#222925',
+          600: '#2b332e',
         },
         // Olive-green accent
         brand: {
-          50:  '#f5f9ee',
-          100: '#e6f1d0',
-          200: '#cde3a3',
-          300: '#aece70',
-          400: '#8db943',
-          500: '#659a2b', // Dark mode accent
-          600: '#527a22', // Light mode accent
-          700: '#3f5e1a',
-          800: '#2e4513',
-          900: '#1e2d0c',
-          950: '#0f1806',
+          50:  '#eef6f1',
+          100: '#d5e8dc',
+          200: '#aed2bd',
+          300: '#82b999',
+          400: '#4fb286',
+          500: '#3a8f68',
+          600: '#2a6a4b',
+          700: '#1f5239',
+          800: '#173d2b',
+          900: '#0f2a1d',
+          950: '#081a11',
         },
         // Parchment — light mode surfaces
         parchment: {
-          50:  '#fafaf6',
-          100: '#f4f5f0',
-          200: '#eaebe5',
-          300: '#dfe0d9',
-          400: '#cccec5',
-          500: '#b2b5aa',
+          50:  '#fafbf9',
+          100: '#f5f6f4',
+          200: '#eef0ed',
+          300: '#e4e7e2',
+          400: '#cfd4cd',
+          500: '#aab1a8',
         },
         base:      'var(--bg-main)',
         surface:   'var(--bg-surface)',
@@ -61,10 +62,10 @@ export default {
           DEFAULT: 'var(--accent)',
           dim:     'var(--accent-dim)',
           glow:    'var(--accent-glow)',
-          green:   '#659a2b',
+          green:   '#4fb286',
           amber:   '#c98a2a',
-          rose:    '#c4445a',
-          sky:     '#3d82c9',
+          rose:    '#e0707a',
+          sky:     '#6aa3d9',
           neutral: '#6a6866',
         },
         navy: {
@@ -74,7 +75,7 @@ export default {
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
-        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+        'fade-in-up': 'fadeInUp 0.35s ease-out forwards',
         'slide-in': 'slideIn 0.3s ease-out forwards',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'float': 'float 3s ease-in-out infinite',
@@ -85,7 +86,7 @@ export default {
           '100%': { opacity: '1' },
         },
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideIn: {

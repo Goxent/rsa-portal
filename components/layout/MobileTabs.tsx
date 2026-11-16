@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
     LayoutDashboard, CheckSquare, Clock, Calendar, Building2, 
     MoreHorizontal, Bell, AlertCircle, FolderArchive, Megaphone, 
@@ -11,7 +11,6 @@ import { UserRole } from '../../types';
 
 const MobileTabs: React.FC = () => {
     const { user } = useAuth();
-    const location = useLocation();
     const [isMoreOpen, setIsMoreOpen] = useState(false);
 
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MASTER_ADMIN;
@@ -51,7 +50,7 @@ const MobileTabs: React.FC = () => {
 
     return (
         <>
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[72px] bg-[#0c0c0e]/80 backdrop-blur-xl border-t border-white/5 z-[60] flex items-center justify-around px-4 pb-safe shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-[var(--bg-surface)] border-t border-[var(--border)] z-[60] flex items-center justify-around px-2 pb-safe">
                 {visibleCoreTabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
@@ -59,36 +58,18 @@ const MobileTabs: React.FC = () => {
                             key={tab.to}
                             to={tab.to}
                             onClick={closeDrawer}
-                            className="relative flex flex-col items-center justify-center w-full h-full group"
+                            className="relative flex flex-col items-center justify-center w-full min-h-[44px] py-1 transition-colors"
                         >
                             {({ isActive }) => (
                                 <>
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="activeTabPill"
-                                            className="absolute inset-x-1 inset-y-2 bg-accent/10 rounded-2xl -z-10"
-                                            transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                                        />
-                                    )}
-                                    <motion.div
-                                        animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
-                                        className="relative"
-                                    >
-                                        <Icon 
-                                            size={22} 
-                                            className={`transition-colors duration-300 ${
-                                                isActive ? 'text-accent' : 'text-gray-500'
-                                            }`} 
-                                        />
-                                        {isActive && (
-                                            <motion.div 
-                                                layoutId="activeDot"
-                                                className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-accent"
-                                            />
-                                        )}
-                                    </motion.div>
-                                    <span className={`text-[10px] mt-1.5 font-bold tracking-wider transition-all duration-300 uppercase ${
-                                        isActive ? 'text-accent' : 'text-gray-500 opacity-60'
+                                    <Icon 
+                                        size={18} 
+                                        className={`transition-colors ${
+                                            isActive ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
+                                        }`} 
+                                    />
+                                    <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                                        isActive ? 'text-[var(--accent)] font-semibold' : 'text-[var(--text-muted)]'
                                     }`}>
                                         {tab.label}
                                     </span>
@@ -101,20 +82,17 @@ const MobileTabs: React.FC = () => {
                 {/* More Tab */}
                 <button
                     onClick={() => setIsMoreOpen(!isMoreOpen)}
-                    className="relative flex flex-col items-center justify-center w-full h-full group"
+                    className="relative flex flex-col items-center justify-center w-full min-h-[44px] py-1 transition-colors"
+                    aria-label="More navigation options"
                 >
-                    <motion.div
-                        animate={isMoreOpen ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
-                    >
-                        <MoreHorizontal 
-                            size={22} 
-                            className={`transition-colors duration-300 ${
-                                isMoreOpen ? 'text-accent' : 'text-gray-500'
-                            }`} 
-                        />
-                    </motion.div>
-                    <span className={`text-[10px] mt-1.5 font-bold tracking-wider uppercase ${
-                        isMoreOpen ? 'text-accent' : 'text-gray-500 opacity-60'
+                    <MoreHorizontal 
+                        size={18} 
+                        className={`transition-colors ${
+                            isMoreOpen ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
+                        }`} 
+                    />
+                    <span className={`text-[10px] mt-0.5 font-medium transition-colors ${
+                        isMoreOpen ? 'text-[var(--accent)] font-semibold' : 'text-[var(--text-muted)]'
                     }`}>
                         More
                     </span>
@@ -130,27 +108,27 @@ const MobileTabs: React.FC = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={closeDrawer}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] md:hidden"
+                            className="fixed inset-0 bg-black/60 z-[70] md:hidden"
                         />
                         <motion.div
                             initial={{ y: "100%" }}
                             animate={{ y: 0 }}
                             exit={{ y: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 z-[80] bg-[var(--bg-elevated)] border-t border-[var(--border)] rounded-t-[2rem] px-6 pt-2 pb-12 md:hidden"
+                            transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                            className="fixed bottom-0 left-0 right-0 z-[80] bg-[var(--bg-elevated)] border-t border-[var(--border)] rounded-t-2xl px-5 pt-2 pb-10 md:hidden"
                             style={{ maxHeight: '80vh', overflowY: 'auto' }}
                         >
                             {/* Handle Bar */}
-                            <div className="w-12 h-1.5 bg-[var(--border)] rounded-full mx-auto my-4" />
+                            <div className="w-10 h-1 bg-[var(--border)] rounded-full mx-auto my-3" />
                             
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-[var(--text-heading)] font-black uppercase tracking-widest text-sm">Application Menu</h2>
-                                <button onClick={closeDrawer} className="p-2 text-[var(--text-muted)] hover:text-white">
-                                    <X size={20} />
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-[var(--text-heading)] font-semibold text-xs">All Navigation</h2>
+                                <button onClick={closeDrawer} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-heading)]" aria-label="Close menu">
+                                    <X size={18} />
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-2.5">
                                 {visibleDrawerItems.map((item) => {
                                     const Icon = item.icon;
                                     return (
@@ -159,15 +137,15 @@ const MobileTabs: React.FC = () => {
                                             to={item.to}
                                             onClick={closeDrawer}
                                             className={({ isActive }) => `
-                                                flex flex-col items-center justify-center p-4 rounded-[var(--radius-md)] border transition-all duration-200
+                                                flex flex-col items-center justify-center p-3 rounded-lg border transition-colors min-h-[44px]
                                                 ${isActive 
-                                                    ? 'bg-accent/10 border-accent/30 text-accent shadow-accent-glow' 
-                                                    : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-white/10 hover:text-white'
+                                                    ? 'bg-[var(--accent-dim)] border-[var(--border-accent)] text-[var(--accent)] font-semibold' 
+                                                    : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-heading)] hover:bg-[var(--bg-elevated)]'
                                                 }
                                             `}
                                         >
-                                            <Icon size={24} className="mb-2" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">{item.label}</span>
+                                            <Icon size={20} className="mb-1" />
+                                            <span className="text-xs font-medium">{item.label}</span>
                                         </NavLink>
                                     );
                                 })}
@@ -181,4 +159,3 @@ const MobileTabs: React.FC = () => {
 };
 
 export default MobileTabs;
-

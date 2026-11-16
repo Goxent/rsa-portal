@@ -71,17 +71,14 @@ const DroppableDay = ({ dateStr, isToday, isSelected, onClick, children }: any) 
         <div
             ref={setNodeRef}
             onClick={onClick}
-            className={`group relative min-h-[110px] p-2.5 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col ${
-                isToday
-                    ? 'border-l-4'
-                    : isSelected
-                        ? 'border-l-4 scale-[1.01] z-10'
-                        : 'hover:-translate-y-0.5'
-            } ${isOver ? 'ring-2 ring-offset-1' : ''}`}
+            className={`group relative min-h-[110px] p-2.5 rounded-xl border transition-colors duration-150 cursor-pointer overflow-hidden flex flex-col ${
+                isOver ? 'ring-2 ring-offset-1 ring-[var(--accent)]' : ''
+            }`}
             style={{
-                background: isToday ? 'var(--accent-dim)' : isSelected ? 'var(--bg-elevated)' : 'var(--bg-surface)',
-                borderColor: isToday ? 'var(--accent)' : isSelected ? 'var(--border-accent)' : 'var(--border)',
-                borderLeftColor: isToday ? 'var(--accent)' : isSelected ? 'var(--accent)' : undefined
+                background: isSelected ? 'var(--bg-elevated)' : 'var(--bg-surface)',
+                borderColor: isSelected ? 'var(--border-accent)' : 'var(--border)',
+                outline: isToday ? '2px solid var(--accent)' : 'none',
+                outlineOffset: '-1px'
             }}
         >
             {children}
@@ -404,20 +401,31 @@ const CalendarPage: React.FC = () => {
                                 <button
                                     key={`strip-${day}`}
                                     onClick={() => setSelectedDate(day)}
-                                    className={`flex-shrink-0 w-12 h-16 rounded-2xl flex flex-col items-center justify-center transition-all border ${
-                                        isSelected 
-                                            ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/20 scale-110' 
-                                            : isToday
-                                                ? 'bg-brand-500/20 border-brand-500/50 text-brand-400'
-                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                                    }`}
+                                    className="flex-shrink-0 w-12 h-16 rounded-xl flex flex-col items-center justify-center transition-colors border"
+                                    style={{
+                                        background: isSelected 
+                                            ? 'var(--accent)' 
+                                            : isToday 
+                                                ? 'var(--accent-dim)' 
+                                                : 'var(--bg-surface)',
+                                        borderColor: isSelected 
+                                            ? 'var(--border-accent)' 
+                                            : isToday 
+                                                ? 'var(--accent)' 
+                                                : 'var(--border)',
+                                        color: isSelected 
+                                            ? 'var(--on-accent)' 
+                                            : isToday 
+                                                ? 'var(--accent)' 
+                                                : 'var(--text-heading)'
+                                    }}
                                 >
-                                    <span className="text-[10px] font-bold uppercase opacity-60">
+                                    <span className="text-[10px] font-medium opacity-70">
                                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(year, month, day).getDay()]}
                                     </span>
-                                    <span className="text-lg font-black">{day}</span>
+                                    <span className="text-base font-bold tabular-nums">{day}</span>
                                     {hasItems && !isSelected && (
-                                        <div className="w-1 h-1 rounded-full bg-amber-500 mt-1" />
+                                        <div className="w-1 h-1 rounded-full mt-1" style={{ background: 'var(--accent)' }} />
                                     )}
                                 </button>
                             );
@@ -427,15 +435,16 @@ const CalendarPage: React.FC = () => {
                     {/* Selected Day Agenda */}
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-black text-white flex items-center gap-2">
-                                <span className="w-1.5 h-6 bg-amber-500 rounded-full" />
+                            <h3 className="text-base font-bold flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
+                                <span className="w-1.5 h-5 rounded-full" style={{ background: 'var(--accent)' }} />
                                 {selectedDate ? `${monthNames[month]} ${selectedDate}, ${year}` : 'Select a date'}
                             </h3>
                             <button
                                 onClick={() => handleOpenEventModal(selectedDate || undefined)}
-                                className="w-10 h-10 rounded-xl bg-brand-500 text-white flex items-center justify-center shadow-lg shadow-brand-500/20 active:scale-95 transition-transform"
+                                className="w-9 h-9 rounded-lg flex items-center justify-center transition-opacity"
+                                style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                             >
-                                <Plus size={20} />
+                                <Plus size={18} />
                             </button>
                         </div>
 
@@ -443,13 +452,13 @@ const CalendarPage: React.FC = () => {
                             <div className="space-y-3">
                                 {[...selectedDayTasks, ...selectedDayEvents].length === 0 ? (
                                     <div className="py-8 rounded-xl border border-dashed flex flex-col items-center justify-center text-center px-4" style={{ borderColor: 'var(--border)' }}>
-                                        <CalendarIcon size={32} className="text-gray-600 mb-3 opacity-20" />
-                                        <p className="text-sm text-gray-400 font-medium">No schedule for this day</p>
+                                        <CalendarIcon size={32} className="mb-3 opacity-20" style={{ color: 'var(--text-muted)' }} />
+                                        <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>No schedule for this day</p>
                                         <button 
                                             onClick={() => handleOpenEventModal(selectedDate)}
-                                            className="mt-3 text-[11px] font-bold uppercase tracking-wider hover:underline" style={{ color: 'var(--accent)' }}
+                                            className="mt-3 text-xs font-semibold hover:underline" style={{ color: 'var(--accent)' }}
                                         >
-                                            Add Entry
+                                            Add entry
                                         </button>
                                     </div>
                                 ) : (
@@ -463,13 +472,13 @@ const CalendarPage: React.FC = () => {
                                                     <CheckCircle2 size={18} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-brand-400 mb-0.5">Task Assignment</p>
-                                                    <h4 className="font-bold text-white truncate">{task.title}</h4>
-                                                    {task.clientName && <p className="text-[11px] text-gray-500 truncate">{task.clientName}</p>}
+                                                    <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--accent)' }}>Task assignment</p>
+                                                    <h4 className="font-semibold truncate text-xs" style={{ color: 'var(--text-heading)' }}>{task.title}</h4>
+                                                    {task.clientName && <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{task.clientName}</p>}
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Due</p>
-                                                    <p className="text-[11px] font-bold text-white">{task.dueDate?.split('-').slice(1).join('/')}</p>
+                                                    <p className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Due</p>
+                                                    <p className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-heading)' }}>{task.dueDate?.split('-').slice(1).join('/')}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -477,21 +486,21 @@ const CalendarPage: React.FC = () => {
                                             <div 
                                                 key={ev.id}
                                                 onClick={(e) => handleEditEvent(ev, e)}
-                                                className="p-3 rounded-lg border flex items-center gap-3 transition-colors" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                                className="p-3 rounded-lg border flex items-center gap-3 transition-colors cursor-pointer" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                                             >
                                                 <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: `${ev.color}15`, borderColor: `${ev.color}30`, color: ev.color }}>
                                                     <Clock size={18} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-0.5">
-                                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: ev.color }}>{ev.type}</p>
-                                                        {ev.isRecurring && <Repeat size={10} className="text-gray-500" />}
+                                                        <p className="text-[10px] font-semibold" style={{ color: ev.color }}>{ev.type}</p>
+                                                        {ev.isRecurring && <Repeat size={10} style={{ color: 'var(--text-muted)' }} />}
                                                     </div>
-                                                    <h4 className="font-bold text-white truncate">{ev.title}</h4>
-                                                    {ev.time && <p className="text-[11px] text-gray-500 font-medium">{ev.time}</p>}
+                                                    <h4 className="font-semibold truncate text-xs" style={{ color: 'var(--text-heading)' }}>{ev.title}</h4>
+                                                    {ev.time && <p className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>{ev.time}</p>}
                                                 </div>
                                                 <div className="flex gap-1">
-                                                    <button onClick={(e) => handleDeleteEvent(ev, e)} className="p-2 text-gray-600 hover:text-red-400 transition-colors">
+                                                    <button onClick={(e) => handleDeleteEvent(ev, e)} className="p-2 transition-colors" style={{ color: 'var(--text-muted)' }}>
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
@@ -514,14 +523,14 @@ const CalendarPage: React.FC = () => {
             >
                 <div className="grid grid-cols-7 gap-3 lg:gap-4 mb-2">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                        <div key={d} className="text-center text-[11px] font-bold uppercase tracking-[0.15em] py-1.5" style={{ color: i === 6 ? 'var(--color-danger)' : 'var(--text-muted)' }}>
+                        <div key={d} className="text-center text-xs font-semibold py-1.5" style={{ color: i === 6 ? 'var(--color-danger)' : 'var(--text-muted)' }}>
                             {d}
                         </div>
                     ))}
                 </div>
                 <div className="grid grid-cols-7 gap-3 lg:gap-4 auto-rows-fr">
                     {totalSlots.map((day, index) => {
-                        if (!day) return <div key={`blank-${index}`} className="min-h-[120px] rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm"></div>;
+                        if (!day) return <div key={`blank-${index}`} className="min-h-[120px] rounded-xl border border-transparent opacity-30"></div>;
 
                         const { events: dayEvents, tasks: dayTasks, dateStr } = getItemsForDay(day);
                         const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
@@ -540,14 +549,14 @@ const CalendarPage: React.FC = () => {
                                 onClick={() => setSelectedDate(day)}
                             >
                                 <div className="flex justify-between items-start mb-2 relative z-10">
-                                    <span className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all ${isToday
-                                        ? 'bg-brand-500 text-white shadow-lg shadow-brand-/30'
+                                    <span className={`text-base font-bold w-7 h-7 flex items-center justify-center rounded-lg transition-colors tabular-nums ${isToday
+                                        ? 'bg-[var(--accent)] text-[var(--on-accent)]'
                                         : isSelected
-                                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/30'
-                                            : 'text-gray-300 group-hover:bg-white/10'}`}>
+                                            ? 'bg-[var(--bg-elevated)] border border-[var(--border-accent)] text-[var(--text-heading)]'
+                                            : 'text-[var(--text-heading)] group-hover:bg-[var(--bg-elevated)]'}`}>
                                         {day}
                                     </span>
-                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                                    <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded border" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                                         {bsDay}
                                     </span>
                                 </div>
@@ -557,15 +566,16 @@ const CalendarPage: React.FC = () => {
                                         <DraggableTask key={`task-${task.id}`} task={task} canDrag={user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER} />
                                     ))}
                                     {dayEvents.slice(0, Math.max(0, 3 - dayTasks.length)).map((ev, i) => (
-                                        <div key={`ev-${ev.id || i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/10 border border-white/20 hover:bg-white/20 transition-colors shadow-sm">
-                                            <div className="w-1.5 h-1.5 rounded-full shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.4)]" style={{ backgroundColor: ev.color || '#fff' }}></div>
-                                            <div className="text-[10.5px] text-white truncate font-bold leading-none">
+                                        <div key={`ev-${ev.id || i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md border transition-colors shadow-sm"
+                                            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+                                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ev.color || 'var(--accent)' }}></div>
+                                            <div className="text-[11px] truncate font-medium leading-none" style={{ color: 'var(--text-heading)' }}>
                                                 {ev.title}
                                             </div>
                                         </div>
                                     ))}
                                     {(dayEvents.length + dayTasks.length) > 3 && (
-                                        <div className="text-[10px] text-gray-400 font-medium px-1">
+                                        <div className="text-[10px] font-medium px-1" style={{ color: 'var(--text-muted)' }}>
                                             +{(dayEvents.length + dayTasks.length) - 3} more
                                         </div>
                                     )}
@@ -601,9 +611,9 @@ const CalendarPage: React.FC = () => {
         const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         return (
-            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full border border-white/10">
+            <div className="rounded-xl overflow-hidden flex flex-col h-full border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
                 {/* Advanced Filter Toolbar */}
-                <div className="p-4 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent space-y-4">
+                <div className="p-4 border-b space-y-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
                     <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                         <div className="flex items-center gap-3 flex-1 w-full">
                             <div className="relative flex-1 max-w-md group">
@@ -612,33 +622,36 @@ const CalendarPage: React.FC = () => {
                                     placeholder="Search events..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white w-full focus:border-brand-500 focus:bg-black/40 transition-all outline-none placeholder:text-gray-500"
+                                    className="border rounded-lg pl-10 pr-4 py-2 text-xs w-full transition-colors outline-none"
+                                    style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                                 />
-                                <div className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-brand-400 transition-colors">
-                                    <List size={16} />
+                                <div className="absolute left-3 top-2.5 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                                    <List size={14} />
                                 </div>
                             </div>
 
                             <select
                                 value={typeFilter}
                                 onChange={(e) => setTypeFilter(e.target.value)}
-                                className="bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-brand-500 transition-all cursor-pointer hover:bg-black/30"
+                                className="border rounded-lg px-3 py-2 text-xs outline-none transition-colors cursor-pointer"
+                                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}
                             >
-                                <option value="ALL">All Types</option>
+                                <option value="ALL">All types</option>
                                 <option value="MEETING">Meeting</option>
                                 <option value="DEADLINE">Deadline</option>
                                 <option value="GENERAL">General</option>
                                 <option value="PERSONAL">Personal</option>
-                                <option value="FIRM_EVENT">Firm Event</option>
+                                <option value="FIRM_EVENT">Firm event</option>
                             </select>
                         </div>
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={exportToCSV}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-brand-600/10 text-brand-300 border border-brand-500/20 rounded-xl text-sm font-bold hover:bg-brand-600/20 hover:border-brand-500/40 transition-all shadow-lg shadow-brand-500/5 group"
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-colors border"
+                                style={{ background: 'var(--accent)', color: 'var(--on-accent)', borderColor: 'var(--border-accent)' }}
                             >
-                                <FileDown size={16} className="group-hover:scale-110 transition-transform" />
-                                <span>Export Log</span>
+                                <FileDown size={14} />
+                                <span>Export log</span>
                             </button>
                         </div>
                     </div>
@@ -648,111 +661,125 @@ const CalendarPage: React.FC = () => {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleSelectAll}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedEventIds.size === events.length && events.length > 0 ? 'bg-brand-500 border-brand-400 text-white shadow-lg shadow-brand-500/20' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
+                                style={{ 
+                                    background: selectedEventIds.size === events.length && events.length > 0 ? 'var(--accent)' : 'var(--bg-elevated)',
+                                    color: selectedEventIds.size === events.length && events.length > 0 ? 'var(--on-accent)' : 'var(--text-muted)',
+                                    borderColor: 'var(--border)'
+                                }}
                             >
-                                {selectedEventIds.size === events.length ? 'Deselect All' : 'Select All'}
+                                {selectedEventIds.size === events.length ? 'Deselect all' : 'Select all'}
                             </button>
 
                             {selectedEventIds.size > 0 && (
-                                <div className="flex items-center gap-2 p-1 bg-brand-500/10 rounded-xl border border-brand-500/20 animate-in fade-in slide-in-from-left-4 duration-300">
-                                    <span className="text-[10px] text-brand-300 font-bold px-3 uppercase tracking-wider">Bulk Actions:</span>
-                                    <div className="h-4 w-px bg-brand-500/20"></div>
+                                <div className="flex items-center gap-2 p-1 rounded-lg border animate-in fade-in slide-in-from-left-4 duration-300"
+                                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+                                    <span className="text-xs font-semibold px-2" style={{ color: 'var(--text-muted)' }}>Bulk actions:</span>
+                                    <div className="h-4 w-px" style={{ background: 'var(--border)' }} />
                                     <button
                                         onClick={() => handleBulkVisibility('PUBLIC')}
-                                        className="px-3 py-1 hover:bg-brand-500/20 rounded-lg text-[10px] text-amber-300 font-bold uppercase transition-all"
+                                        className="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+                                        style={{ color: 'var(--text-heading)' }}
                                     >
-                                        Make Public
+                                        Make public
                                     </button>
                                     <button
                                         onClick={() => handleBulkVisibility('PRIVATE')}
-                                        className="px-3 py-1 hover:bg-brand-500/20 rounded-lg text-[10px] text-gray-300 font-bold uppercase transition-all"
+                                        className="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+                                        style={{ color: 'var(--text-muted)' }}
                                     >
-                                        Make Private
+                                        Make private
                                     </button>
                                     <button
                                         onClick={handleBulkDelete}
-                                        className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-[10px] text-red-400 font-bold uppercase transition-all flex items-center gap-1.5 border border-red-500/10 hover:border-red-500/30 ml-1"
+                                        className="px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 border"
+                                        style={{ color: 'var(--color-danger)', borderColor: 'rgba(224,112,122,0.3)', background: 'rgba(224,112,122,0.1)' }}
                                     >
-                                        <Trash2 size={10} /> Delete ({selectedEventIds.size})
+                                        <Trash2 size={12} /> Delete ({selectedEventIds.size})
                                     </button>
                                 </div>
                             )}
                         </div>
-                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/5">
+                        <div className="text-xs font-medium px-3 py-1 rounded-lg border"
+                            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                             Showing {filteredEvents.length} of {events.length} events
                         </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto flex-1 h-[60vh] custom-scrollbar bg-black/10">
+                <div className="overflow-x-auto flex-1 h-[60vh] custom-scrollbar">
                     <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 z-10 bg-[#09090b] shadow-xl">
-                            <tr className="border-b border-white/10 text-[10px] text-brand-200 uppercase font-black tracking-widest">
-                                <th className="p-4 w-12 bg-white/5 backdrop-blur-md"></th>
-                                <th className="p-4 bg-white/5 backdrop-blur-md">Date</th>
-                                <th className="p-4 bg-white/5 backdrop-blur-md">Title</th>
-                                <th className="p-4 bg-white/5 backdrop-blur-md">Type</th>
-                                <th className="p-4 bg-white/5 backdrop-blur-md">Visibility</th>
-                                <th className="p-4 bg-white/5 backdrop-blur-md">Creator</th>
-                                <th className="p-4 text-right bg-white/5 backdrop-blur-md">Actions</th>
+                        <thead className="sticky top-0 z-10" style={{ background: 'var(--bg-surface)' }}>
+                            <tr className="border-b text-xs font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                                <th className="p-3 w-12"></th>
+                                <th className="p-3">Date</th>
+                                <th className="p-3">Title</th>
+                                <th className="p-3">Type</th>
+                                <th className="p-3">Visibility</th>
+                                <th className="p-3">Creator</th>
+                                <th className="p-3 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
                             {sortedEvents.map(event => {
                                 const canEdit = user && canEditEvent(event, user);
                                 const isSelected = selectedEventIds.has(event.id);
                                 return (
-                                    <tr key={event.id} className={`hover:bg-white/[0.03] transition-all group ${isSelected ? 'bg-brand-900/10' : ''}`}>
-                                        <td className="p-4">
+                                    <tr key={event.id} className="transition-colors group hover:bg-[var(--bg-secondary)]"
+                                        style={{ background: isSelected ? 'var(--accent-dim)' : 'transparent' }}>
+                                        <td className="p-3">
                                             <div className="flex items-center justify-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={isSelected}
                                                     onChange={() => handleSelectEvent(event.id)}
-                                                    className="w-4 h-4 rounded border-brand-500/30 bg-black/20 text-brand-500 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer transition-all"
+                                                    className="w-4 h-4 rounded cursor-pointer"
                                                 />
                                             </div>
                                         </td>
-                                        <td className="p-4 text-sm text-gray-300 font-mono whitespace-nowrap">
+                                        <td className="p-3 text-xs tabular-nums whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-white tracking-tight">{event.date}</span>
-                                                <span className="text-[10px] text-gray-500 font-medium bg-white/5 w-fit px-1.5 rounded mt-0.5">{event.time || 'All Day'}</span>
+                                                <span className="font-semibold" style={{ color: 'var(--text-heading)' }}>{event.date}</span>
+                                                <span className="text-[10px] mt-0.5">{event.time || 'All day'}</span>
                                             </div>
                                         </td>
-                                        <td className="p-4">
+                                        <td className="p-3">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ring-2 ring-white/5`} style={{ color: event.color || '#8b5cf6', backgroundColor: 'currentColor' }}></div>
+                                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: event.color || 'var(--accent)' }}></div>
                                                 <div>
-                                                    <span className="font-bold text-white group-hover:text-brand-300 transition-colors block">{event.title}</span>
-                                                    {event.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1 max-w-xs">{event.description}</p>}
+                                                    <span className="font-semibold text-xs block" style={{ color: 'var(--text-heading)' }}>{event.title}</span>
+                                                    {event.description && <p className="text-xs mt-0.5 line-clamp-1 max-w-xs" style={{ color: 'var(--text-muted)' }}>{event.description}</p>}
                                                 </div>
-                                                {event.isRecurring && <Repeat size={14} className="text-brand-400 shrink-0 opacity-70" />}
+                                                {event.isRecurring && <Repeat size={12} className="shrink-0" style={{ color: 'var(--accent)' }} />}
                                             </div>
                                         </td>
-                                        <td className="p-4">
-                                            <span className="px-2.5 py-1 bg-white/5 rounded-lg text-[10px] text-gray-300 font-bold uppercase tracking-tight border border-white/5 group-hover:border-white/10 transition-colors">
+                                        <td className="p-3">
+                                            <span className="px-2 py-0.5 rounded text-[11px] font-medium border"
+                                                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-heading)' }}>
                                                 {event.type.toLowerCase().replace('_', ' ')}
                                             </span>
                                         </td>
-                                        <td className="p-4">
-                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold border shadow-sm ${getVisibilityBadge(event.visibility || 'PUBLIC').color}`}>
+                                        <td className="p-3">
+                                            <span className={`px-2 py-0.5 rounded text-[11px] font-medium border ${getVisibilityBadge(event.visibility || 'PUBLIC').color}`}>
                                                 {getVisibilityBadge(event.visibility || 'PUBLIC').text}
                                             </span>
                                         </td>
-                                        <td className="p-4">
+                                        <td className="p-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] font-bold text-brand-300 border border-brand-500/20 shadow-inner">
+                                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border"
+                                                    style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)', color: 'var(--accent)' }}>
                                                     {(allUsers.find(u => u.uid === event.createdBy)?.displayName || 'S')[0]}
                                                 </div>
-                                                <span className="text-xs text-gray-400">{allUsers.find(u => u.uid === event.createdBy)?.displayName || 'System'}</span>
+                                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{allUsers.find(u => u.uid === event.createdBy)?.displayName || 'System'}</span>
                                             </div>
                                         </td>
-                                        <td className="p-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                        <td className="p-3 text-right">
+                                            <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                                                 {canEdit && (
                                                     <button
                                                         onClick={(e) => handleEditEvent(event, e)}
-                                                        className="p-1.5 hover:bg-amber-500/20 rounded-lg text-gray-400 hover:text-amber-300 transition-all border border-transparent hover:border-amber-500/20"
+                                                        className="p-1.5 rounded-lg transition-colors hover:bg-[var(--bg-surface)]"
+                                                        style={{ color: 'var(--text-muted)' }}
                                                         title="Edit"
                                                     >
                                                         <Edit size={14} />
@@ -760,7 +787,8 @@ const CalendarPage: React.FC = () => {
                                                 )}
                                                 <button
                                                     onClick={() => addToGoogleCalendar(event.title, event.date, event.description || '')}
-                                                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all border border-transparent hover:border-white/10"
+                                                    className="p-1.5 rounded-lg transition-colors hover:bg-[var(--bg-surface)]"
+                                                    style={{ color: 'var(--text-muted)' }}
                                                     title="Add to G-Cal"
                                                 >
                                                     <ExternalLink size={14} />
@@ -851,8 +879,8 @@ const CalendarPage: React.FC = () => {
                                 </div>
                                 {selectedDate && (
                                     <div className="flex items-center gap-2 relative z-10">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-brand-400"></div>
-                                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
+                                        <div className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--accent)' }}></div>
+                                        <span className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>
                                             {(() => {
                                                 const bs = toBS(new Date(year, month, selectedDate)).split('-');
                                                 return `${bsMonths[parseInt(bs[1]) - 1]} ${bs[2]}, ${bs[0]}`;
@@ -863,19 +891,21 @@ const CalendarPage: React.FC = () => {
                             </div>
 
                             {/* Toggle for showing only my events */}
-                            <div className="px-6 py-3 border-b border-white/5 bg-black/10">
+                            <div className="px-4 py-2.5 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
                                 <button
                                     onClick={() => setShowOnlyMyEvents(!showOnlyMyEvents)}
-                                    className="flex items-center text-xs font-bold text-gray-400 hover:text-white transition-colors w-full"
+                                    className="flex items-center text-xs font-semibold transition-colors w-full"
+                                    style={{ color: 'var(--text-muted)' }}
                                 >
-                                    <div className={`w-8 h-4 rounded-full mr-3 relative transition-colors ${showOnlyMyEvents ? 'bg-brand-500' : 'bg-gray-700'}`}>
+                                    <div className="w-8 h-4 rounded-full mr-3 relative transition-colors"
+                                        style={{ background: showOnlyMyEvents ? 'var(--accent)' : 'var(--border)' }}>
                                         <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${showOnlyMyEvents ? 'left-4.5' : 'left-0.5'}`}></div>
                                     </div>
                                     {showOnlyMyEvents ? 'Showing only my events' : 'Showing all events'}
                                 </button>
                             </div>
 
-                            <div className="space-y-4 flex-1 overflow-y-auto p-4 custom-scrollbar">
+                            <div className="space-y-3 flex-1 overflow-y-auto p-4 custom-scrollbar">
                                 {/* Event Items */}
                                 {selectedDayEvents.length === 0 && selectedDayTasks.length === 0 ? (
                                     <EmptyState
@@ -899,17 +929,19 @@ const CalendarPage: React.FC = () => {
                                             const canDelete = user && canDeleteEvent(eventWithDefaults, user);
 
                                             return (
-                                                <div key={i} className="group relative p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all shadow-lg">
-                                                    <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-lg" style={{ backgroundColor: ev.color || '#8b5cf6' }}></div>
+                                                <div key={i} className="group relative p-3.5 rounded-xl border transition-colors shadow-sm"
+                                                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                                    <div className="absolute left-0 top-3 bottom-3 w-1 rounded-r" style={{ backgroundColor: ev.color || 'var(--accent)' }}></div>
 
-                                                    <div className="pl-3">
+                                                    <div className="pl-2">
                                                         <div className="flex items-start justify-between mb-1">
-                                                            <h4 className="text-sm font-bold text-white leading-tight">{eventWithDefaults.title}</h4>
+                                                            <h4 className="text-xs font-bold leading-tight" style={{ color: 'var(--text-heading)' }}>{eventWithDefaults.title}</h4>
                                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 {canEdit && (
                                                                     <button
                                                                         onClick={(e) => handleEditEvent(eventWithDefaults, e)}
-                                                                        className="p-1.5 hover:bg-amber-500/20 rounded text-amber-400 transition-colors"
+                                                                        className="p-1 rounded transition-colors"
+                                                                        style={{ color: 'var(--text-muted)' }}
                                                                     >
                                                                         <Edit size={12} />
                                                                     </button>
@@ -917,7 +949,8 @@ const CalendarPage: React.FC = () => {
                                                                 {canDelete && (
                                                                     <button
                                                                         onClick={(e) => handleDeleteEvent(eventWithDefaults, e)}
-                                                                        className="p-1.5 hover:bg-red-500/20 rounded text-red-400 transition-colors"
+                                                                        className="p-1 rounded transition-colors"
+                                                                        style={{ color: 'var(--color-danger)' }}
                                                                     >
                                                                         <Trash2 size={12} />
                                                                     </button>
@@ -925,28 +958,29 @@ const CalendarPage: React.FC = () => {
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex flex-wrap gap-2 text-[10px] text-gray-400 mb-3 items-center">
-                                                            <span className="flex items-center bg-black/30 px-1.5 py-0.5 rounded text-gray-300">
+                                                        <div className="flex flex-wrap gap-2 text-[10px] mb-2 items-center" style={{ color: 'var(--text-muted)' }}>
+                                                            <span className="flex items-center px-1.5 py-0.5 rounded border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
                                                                 <Clock size={10} className="mr-1" />
                                                                 {formatEventTime(eventWithDefaults)}
                                                             </span>
-                                                            <span className="uppercase font-bold tracking-wider">{eventWithDefaults.type.replace('_', ' ')}</span>
+                                                            <span className="font-semibold">{eventWithDefaults.type.replace('_', ' ')}</span>
                                                             {eventWithDefaults.isRecurring && (
-                                                                <span className="text-brand-400 flex items-center font-bold">
+                                                                <span className="flex items-center font-semibold" style={{ color: 'var(--accent)' }}>
                                                                     <Repeat size={10} className="mr-1" /> Recurring
                                                                 </span>
                                                             )}
                                                         </div>
 
-                                                        <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                                                            <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold border ${badge.color}`}>
+                                                        <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                                                            <span className={`px-2 py-0.5 rounded text-[9px] font-semibold border ${badge.color}`}>
                                                                 {badge.text}
                                                             </span>
                                                             <button
                                                                 onClick={() => addToGoogleCalendar(eventWithDefaults.title, eventWithDefaults.date, eventWithDefaults.description || '')}
-                                                                className="text-[10px] text-gray-400 hover:text-white flex items-center hover:underline transition-colors"
+                                                                className="text-[10px] flex items-center hover:underline transition-colors"
+                                                                style={{ color: 'var(--text-muted)' }}
                                                             >
-                                                                <ExternalLink size={10} className="mr-1" /> export
+                                                                <ExternalLink size={10} className="mr-1" /> Export
                                                             </button>
                                                         </div>
                                                     </div>
@@ -955,24 +989,28 @@ const CalendarPage: React.FC = () => {
                                         })}
 
                                         {selectedDayTasks.map((task, i) => (
-                                            <div key={i} className="group flex flex-col p-4 rounded-xl bg-gradient-to-br from-amber-900/10 to-blue-900/5 hover:bg-blue-900/20 border border-amber-500/10 hover:border-amber-500/30 transition-all">
-                                                <div className="flex items-start space-x-3 mb-3">
-                                                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                                                        <CheckCircle2 size={16} />
+                                            <div key={i} className="group flex flex-col p-3.5 rounded-xl border transition-colors shadow-sm"
+                                                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                                <div className="flex items-start space-x-3 mb-2">
+                                                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border"
+                                                        style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)', color: 'var(--accent)' }}>
+                                                        <CheckCircle2 size={15} />
                                                     </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">{task.clientName || task.title}</h4>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h4 className="text-xs font-bold truncate" style={{ color: 'var(--text-heading)' }}>{task.clientName || task.title}</h4>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/20 font-medium">TASK</span>
-                                                            <span className="text-[10px] uppercase tracking-wide text-gray-500 font-bold">{task.title}</span>
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded border font-semibold"
+                                                                style={{ background: 'var(--accent-dim)', borderColor: 'var(--border-accent)', color: 'var(--accent)' }}>Task</span>
+                                                            <span className="text-[10px] truncate" style={{ color: 'var(--text-muted)' }}>{task.title}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => addToGoogleCalendar(task.clientName || task.title, task.dueDate, `Task: ${task.title}`)}
-                                                    className="mt-1 text-xs flex items-center justify-center w-full py-2 bg-amber-600/10 hover:bg-amber-600/20 text-amber-300 rounded-lg border border-amber-500/20 transition-all font-bold hover:shadow-lg hover:shadow-blue-500/10"
+                                                    className="mt-1 text-xs flex items-center justify-center w-full py-1.5 rounded-lg border transition-colors font-semibold"
+                                                    style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-body)' }}
                                                 >
-                                                    <ExternalLink size={12} className="mr-2" /> Add to G-Cal
+                                                    <ExternalLink size={12} className="mr-1.5" /> Add to G-Cal
                                                 </button>
                                             </div>
                                         ))}

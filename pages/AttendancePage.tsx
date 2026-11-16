@@ -62,15 +62,15 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ title, value, denominator, icon: Icon, color, trend, onClick }) => (
     <div 
         onClick={onClick}
-        className={`flex items-start justify-between p-4 transition-all duration-200 group rounded-2xl border border-[var(--border)] hover:border-[var(--border-accent)] hover:-translate-y-[1px] ${onClick ? 'cursor-pointer' : ''}`}
+        className={`flex items-start justify-between p-4 transition-colors duration-150 group rounded-xl border border-[var(--border)] hover:border-[var(--border-accent)] ${onClick ? 'cursor-pointer' : ''}`}
         style={{ background: 'var(--bg-secondary)', boxShadow: 'var(--shadow-card)' }}
     >
         <div>
-            <p style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)' }} className="uppercase mb-1.5 flex items-center gap-1.5">
+            <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }} className="mb-1.5 flex items-center gap-1.5">
                 <Icon size={12} className={color} /> {title}
             </p>
             <div className="flex items-baseline gap-1.5">
-                <h3 style={{ fontSize: '1.625rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-heading)' }} className="leading-tight tabular-nums">
+                <h3 style={{ fontSize: '1.625rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-heading)' }} className="font-display leading-tight tabular-nums">
                     {value}
                 </h3>
                 {denominator && (
@@ -776,7 +776,7 @@ const AttendancePage: React.FC = () => {
                         {isAdmin && (
                             <button 
                                 onClick={() => setIsReviewModalOpen(true)}
-                                className="flex items-center justify-center gap-2 px-4 py-2.5 transition-all font-bold text-xs uppercase tracking-wider shadow-sm border relative cursor-pointer"
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 transition-colors font-semibold text-xs border relative cursor-pointer"
                                 style={{ 
                                     background: 'var(--accent-dim)', 
                                     color: 'var(--accent)', 
@@ -805,7 +805,7 @@ const AttendancePage: React.FC = () => {
                                 setSelectedRecord(null);
                                 setIsEditModalOpen(true);
                             }}
-                            className="flex items-center justify-center gap-2 px-5 py-2.5 transition-all font-bold text-xs uppercase tracking-wider shadow-lg text-white cursor-pointer"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 transition-colors font-semibold text-xs text-white cursor-pointer"
                             style={{ 
                                 background: 'var(--accent)', 
                                 borderRadius: 'var(--radius-xl)'
@@ -924,10 +924,10 @@ const AttendancePage: React.FC = () => {
                                 style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
                             >
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-amber-500">
+                                    <h3 className="text-xs font-semibold flex items-center gap-2" style={{ color: 'var(--color-warning)' }}>
                                         <AlertCircle size={16} /> Needs Action & Attention ({needsAttentionItems.length})
                                     </h3>
-                                    <span className="text-[10px] font-bold text-[var(--text-muted)]">
+                                    <span className="text-[10px] font-medium text-[var(--text-muted)]">
                                         Handbook rule triggers & unclosed shifts
                                     </span>
                                 </div>
@@ -936,13 +936,14 @@ const AttendancePage: React.FC = () => {
                                     {needsAttentionItems.slice(0, 6).map(item => (
                                         <div 
                                             key={item.id}
-                                            className="p-3.5 rounded-xl border bg-white dark:bg-white/[0.02] border-amber-500/20 flex flex-col justify-between gap-2"
+                                            className="p-3.5 rounded-xl border flex flex-col justify-between gap-2"
+                                            style={{ background: 'var(--bg-surface)', borderColor: 'rgba(217,164,65,0.25)' }}
                                         >
                                             <div>
                                                 <div className="flex items-center justify-between gap-2 mb-1">
-                                                    <span className="text-xs font-bold text-[var(--text-heading)]">{item.title}</span>
-                                                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600">
-                                                        {item.type === 'MISSED_CLOCKOUT' ? 'Shift Unclosed' : 'Late Rule'}
+                                                    <span className="text-xs font-semibold text-[var(--text-heading)]">{item.title}</span>
+                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(217,164,65,0.1)', color: 'var(--color-warning)' }}>
+                                                        {item.type === 'MISSED_CLOCKOUT' ? 'Shift unclosed' : 'Late rule'}
                                                     </span>
                                                 </div>
                                                 <p className="text-[11px] text-[var(--text-body)] opacity-80 leading-relaxed">
@@ -1010,7 +1011,7 @@ const AttendancePage: React.FC = () => {
                                                         <span className="text-xs font-bold tabular-nums text-[var(--text-body)]">
                                                             {rec.clockIn} {rec.clockOut ? `→ ${rec.clockOut}` : ''}
                                                         </span>
-                                                        <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                                                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
                                                             rec.checkInType === 'CLIENT_SITE' ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' :
                                                             rec.status === 'LATE' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
                                                             'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
@@ -1019,7 +1020,7 @@ const AttendancePage: React.FC = () => {
                                                         </span>
                                                     </div>
                                                 ) : leave ? (
-                                                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-600 border border-sky-500/20">
+                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 border border-sky-500/20">
                                                         On Leave ({leave.type})
                                                     </span>
                                                 ) : (
@@ -1045,8 +1046,8 @@ const AttendancePage: React.FC = () => {
                             style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                         >
                             <div className="flex items-center gap-3">
-                                <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Register Month:</span>
-                                <h3 className="text-base font-black text-[var(--text-heading)]">
+                                <span className="text-xs font-semibold text-[var(--text-muted)]">Register month:</span>
+                                <h3 className="text-base font-bold text-[var(--text-heading)]">
                                     {registerData.monthName} BS
                                 </h3>
                             </div>
@@ -1096,8 +1097,8 @@ const AttendancePage: React.FC = () => {
                             <table className="w-full text-center border-collapse">
                                 <thead>
                                     <tr className="border-b" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                                        <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-[var(--text-muted)] sticky left-0 z-20 min-w-[180px]" style={{ background: 'var(--bg-surface)' }}>
-                                            Staff Member
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] sticky left-0 z-20 min-w-[180px]" style={{ background: 'var(--bg-surface)' }}>
+                                            Staff member
                                         </th>
                                         {registerData.days.map(d => (
                                             <th 
@@ -1223,7 +1224,7 @@ const AttendancePage: React.FC = () => {
 
                             <button 
                                 onClick={loadData} 
-                                className="px-5 h-[42px] rounded-xl text-xs font-bold uppercase tracking-wider text-white shadow-md cursor-pointer shrink-0"
+                                className="px-5 h-[42px] rounded-xl text-xs font-semibold text-white cursor-pointer shrink-0"
                                 style={{ background: 'var(--accent)' }}
                             >
                                 Apply
@@ -1239,14 +1240,14 @@ const AttendancePage: React.FC = () => {
                                 <table className="w-full text-left border-collapse min-w-[1000px]">
                                     <thead>
                                         <tr className="border-b" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] w-12 text-center">SN</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Date & Staff</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Day</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Timing</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Status</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Client / Assignment</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Work Description</th>
-                                            {isAdmin && <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] text-right w-20">Edit</th>}
+                                            <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] w-12 text-center">SN</th>
+                                            <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">Date & staff</th>
+                                            <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">Day</th>
+                                            <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">Timing</th>
+                                            <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">Status</th>
+                                            <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">Client / assignment</th>
+                                            <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">Work description</th>
+                                            {isAdmin && <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right w-20">Edit</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
@@ -1280,22 +1281,22 @@ const AttendancePage: React.FC = () => {
                                                                     {record.clockIn} {record.clockOut ? `→ ${record.clockOut}` : ''}
                                                                 </div>
                                                                 {record.workHours > 0 && (
-                                                                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-[var(--accent-dim)] text-[var(--accent)]">
+                                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--accent-dim)] text-[var(--accent)]">
                                                                         {record.workHours}h
                                                                     </span>
                                                                 )}
                                                                 {record.missedClockOut && (
-                                                                    <div className="text-[9px] font-black uppercase text-rose-500 mt-1">
+                                                                    <div className="text-[10px] font-medium text-rose-500 mt-1">
                                                                         ⚠ Unclosed Shift
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Untracked</span>
+                                                            <span className="text-[10px] font-medium text-[var(--text-muted)]">Untracked</span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                                                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
                                                             record.status === 'PRESENT' || record.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
                                                             record.status === 'LATE' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
                                                             record.status === 'ON LEAVE' ? 'bg-sky-500/10 text-sky-600 border-sky-500/20' :
@@ -1378,7 +1379,7 @@ const AttendancePage: React.FC = () => {
                             style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                         >
                             <div className="p-4 px-6 border-b" style={{ borderColor: 'var(--border)' }}>
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Recent Workdays</h4>
+                                <h4 className="text-xs font-semibold text-[var(--text-muted)]">Recent workdays</h4>
                             </div>
                             <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
                                 {history.slice(0, 15).map(rec => (
@@ -1391,7 +1392,7 @@ const AttendancePage: React.FC = () => {
                                                 Timing: {rec.clockIn} → {rec.clockOut || 'Shift Active'} ({rec.workHours || 0} hrs)
                                             </div>
                                         </div>
-                                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border ${
+                                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
                                             rec.status === 'PRESENT' || rec.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
                                             rec.status === 'LATE' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
                                             'bg-slate-500/10 text-slate-500 border-slate-500/20'
@@ -1408,9 +1409,9 @@ const AttendancePage: React.FC = () => {
 
             {/* ── Cell Detail & Late Justification Modal ── */}
             {cellDetailModalOpen && cellDetailData && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-200">
                     <div 
-                        className="w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden flex flex-col"
+                        className="w-full max-w-lg rounded-2xl border overflow-hidden flex flex-col"
                         style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                     >
                         <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
@@ -1477,7 +1478,8 @@ const AttendancePage: React.FC = () => {
                                                     <button
                                                         onClick={handleJustifyLateSubmit}
                                                         disabled={isJustifying}
-                                                        className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs uppercase tracking-wider cursor-pointer"
+                                                        className="w-full py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                                                        style={{ background: 'var(--color-warning)', color: '#fff' }}
                                                     >
                                                         {isJustifying ? 'Saving...' : 'Confirm Justification'}
                                                     </button>

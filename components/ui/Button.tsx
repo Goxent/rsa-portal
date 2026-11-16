@@ -23,21 +23,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     ...props
 }, ref) => {
 
-    const baseStyles = "inline-flex items-center justify-center font-medium focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-[180ms] ease-in-out";
+    const baseStyles = "inline-flex items-center justify-center font-medium focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 ease-out";
 
     const variants = {
-        primary: "bg-[linear-gradient(135deg,var(--accent),var(--accent-secondary))] text-white shadow-[var(--shadow-accent)] hover:-translate-y-[1px] hover:shadow-[0_6px_20px_var(--accent-glow)] active:scale-[0.97]",
-        secondary: "bg-[var(--bg-surface)] text-[var(--text-body)] border border-[var(--border-mid)] hover:border-[var(--border-accent)] hover:text-[var(--text-heading)] active:scale-[0.97]",
-        outline: "bg-transparent border border-[var(--border-mid)] text-[var(--text-body)] hover:bg-[var(--accent-dim)] hover:border-[var(--border-accent)] hover:text-[var(--accent)] active:scale-[0.97]",
-        ghost: "bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-body)] active:scale-[0.97]",
-        danger: "bg-[linear-gradient(135deg,#c4445a,#a8364c)] text-white shadow-[0_4px_16px_rgba(196,68,90,0.3)] hover:-translate-y-[1px] hover:shadow-[0_6px_20px_rgba(196,68,90,0.4)] active:scale-[0.97]",
-        success: "bg-[linear-gradient(135deg,var(--color-success),var(--accent-secondary))] text-white shadow-[var(--shadow-accent)] hover:-translate-y-[1px] hover:shadow-[0_6px_20px_var(--accent-glow)] active:scale-[0.97]",
+        primary: "bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)] active:translate-y-[0.5px]",
+        secondary: "bg-[var(--bg-secondary)] text-[var(--text-heading)] border border-[var(--border-mid)] hover:bg-[var(--bg-surface)] active:translate-y-[0.5px]",
+        outline: "bg-transparent border border-[var(--border-mid)] text-[var(--text-body)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-heading)] active:translate-y-[0.5px]",
+        ghost: "bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-heading)] active:translate-y-[0.5px]",
+        danger: "bg-[var(--color-danger)] text-white hover:brightness-110 active:translate-y-[0.5px]",
+        success: "bg-[var(--color-success)] text-[var(--on-accent)] hover:brightness-110 active:translate-y-[0.5px]"
     };
 
     const sizes = {
         sm: "h-[30px] px-3 text-xs rounded-[var(--radius-md)]",
-        md: "h-[36px] px-4 text-sm rounded-[var(--radius-lg)]",
-        lg: "h-[42px] px-6 text-base rounded-[var(--radius-lg)]",
+        md: "h-[36px] px-4 text-sm rounded-[var(--radius-md)]",
+        lg: "h-[42px] px-6 text-[0.9375rem] rounded-[var(--radius-md)]",
         icon: "h-[36px] w-[36px] p-0 text-lg rounded-[var(--radius-md)]",
     };
 

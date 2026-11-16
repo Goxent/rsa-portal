@@ -127,24 +127,24 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
     const getTrendIcon = (trend: StaffMetrics['trend']) => {
         switch (trend) {
             case 'up':
-                return <TrendingUp size={16} className="text-green-400" />;
+                return <TrendingUp size={15} style={{ color: 'var(--color-success)' }} />;
             case 'down':
-                return <TrendingDown size={16} className="text-red-400" />;
+                return <TrendingDown size={15} style={{ color: 'var(--color-danger)' }} />;
             default:
-                return <Minus size={16} className="text-gray-400" />;
+                return <Minus size={15} style={{ color: 'var(--text-muted)' }} />;
         }
     };
 
     const getScoreColor = (score: number) => {
-        if (score >= 80) return 'text-green-400';
-        if (score >= 60) return 'text-yellow-400';
-        return 'text-red-400';
+        if (score >= 80) return 'text-[var(--color-success)]';
+        if (score >= 60) return 'text-[var(--color-warning)]';
+        return 'text-[var(--color-danger)]';
     };
 
     const getScoreBg = (score: number) => {
-        if (score >= 80) return 'bg-green-500/20';
-        if (score >= 60) return 'bg-yellow-500/20';
-        return 'bg-red-500/20';
+        if (score >= 80) return 'bg-[rgba(79,178,134,0.1)] border-[rgba(79,178,134,0.25)]';
+        if (score >= 60) return 'bg-[rgba(217,164,65,0.1)] border-[rgba(217,164,65,0.25)]';
+        return 'bg-[rgba(224,112,122,0.1)] border-[rgba(224,112,122,0.25)]';
     };
 
     // Calculate summary stats
@@ -173,20 +173,21 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <RefreshCw className="animate-spin text-brand-500" size={32} />
+            <div className="flex items-center justify-center min-h-[300px]">
+                <RefreshCw className="animate-spin text-[var(--accent)]" size={28} />
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="glass-panel rounded-2xl p-8 text-center">
-                <AlertTriangle size={48} className="mx-auto mb-4 text-red-400" />
-                <p className="text-red-400">{error}</p>
+            <div className="bg-[var(--bg-surface)] border border-[rgba(224,112,122,0.25)] rounded-xl p-8 text-center max-w-md mx-auto">
+                <AlertTriangle size={36} className="mx-auto mb-3 text-[var(--color-danger)]" />
+                <p className="text-xs text-[var(--color-danger)] mb-4">{error}</p>
                 <button
                     onClick={loadData}
-                    className="mt-4 px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-xl text-white"
+                    className="px-4 py-2 rounded-lg text-xs font-semibold"
+                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                 >
                     Retry
                 </button>
@@ -199,34 +200,36 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <BarChart3 className="text-brand-500" />
+                    <h2 className="text-2xl font-bold text-[var(--text-heading)] flex items-center gap-2">
+                        <BarChart3 className="text-[var(--accent)]" size={24} />
                         Staff Productivity Metrics
                     </h2>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
                         Analyze team performance and productivity trends
                     </p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2 px-4 py-2 glass-card hover:bg-white/10 rounded-xl transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg text-xs font-medium text-[var(--text-heading)] transition-colors"
                     >
-                        <Filter size={16} />
+                        <Filter size={14} />
                         Filters
                     </button>
                     <button
                         onClick={loadData}
-                        className="p-2 glass-card hover:bg-white/10 rounded-xl transition-colors"
+                        className="p-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-heading)] transition-colors"
+                        title="Refresh data"
                     >
-                        <RefreshCw size={16} />
+                        <RefreshCw size={14} />
                     </button>
                     <button
                         onClick={handleExportPDF}
-                        className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                        style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                     >
-                        <Download size={16} />
+                        <Download size={14} />
                         Export PDF
                     </button>
                 </div>
@@ -234,29 +237,29 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
 
             {/* Filters */}
             {showFilters && (
-                <div className="glass-panel rounded-2xl p-4 flex flex-wrap gap-4 animate-in slide-in-from-top-2">
+                <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-4 flex flex-wrap gap-4">
                     <div>
-                        <label className="text-xs text-gray-400 block mb-1">Date Range</label>
+                        <label className="text-xs text-[var(--text-muted)] block mb-1">Date range</label>
                         <select
                             value={filters.dateRange}
                             onChange={(e) => setFilters({ ...filters, dateRange: e.target.value as ProductivityFilters['dateRange'] })}
-                            className="glass-input px-3 py-2 rounded-lg text-sm"
+                            className="bg-[var(--bg-main)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
                         >
-                            <option value="week">Last Week</option>
-                            <option value="month">This Month</option>
-                            <option value="quarter">Last Quarter</option>
-                            <option value="year">This Year</option>
+                            <option value="week">Last week</option>
+                            <option value="month">This month</option>
+                            <option value="quarter">Last quarter</option>
+                            <option value="year">This year</option>
                         </select>
                     </div>
 
                     <div>
-                        <label className="text-xs text-gray-400 block mb-1">Department</label>
+                        <label className="text-xs text-[var(--text-muted)] block mb-1">Department</label>
                         <select
                             value={filters.department || ''}
                             onChange={(e) => setFilters({ ...filters, department: e.target.value || undefined })}
-                            className="glass-input px-3 py-2 rounded-lg text-sm"
+                            className="bg-[var(--bg-main)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
                         >
-                            <option value="">All Departments</option>
+                            <option value="">All departments</option>
                             {departments.map(dept => (
                                 <option key={dept} value={dept}>{dept}</option>
                             ))}
@@ -264,111 +267,113 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
                     </div>
 
                     <div>
-                        <label className="text-xs text-gray-400 block mb-1">Sort By</label>
+                        <label className="text-xs text-[var(--text-muted)] block mb-1">Sort by</label>
                         <select
                             value={filters.sortBy}
                             onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as ProductivityFilters['sortBy'] })}
-                            className="glass-input px-3 py-2 rounded-lg text-sm"
+                            className="bg-[var(--bg-main)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
                         >
-                            <option value="score">Productivity Score</option>
-                            <option value="completion">Completion Rate</option>
-                            <option value="tasks">Total Tasks</option>
+                            <option value="score">Productivity score</option>
+                            <option value="completion">Completion rate</option>
+                            <option value="tasks">Total tasks</option>
                             <option value="name">Name</option>
                         </select>
                     </div>
 
                     <div>
-                        <label className="text-xs text-gray-400 block mb-1">Order</label>
+                        <label className="text-xs text-[var(--text-muted)] block mb-1">Order</label>
                         <select
                             value={filters.sortOrder}
                             onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value as 'asc' | 'desc' })}
-                            className="glass-input px-3 py-2 rounded-lg text-sm"
+                            className="bg-[var(--bg-main)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-xs text-[var(--text-heading)] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
                         >
-                            <option value="desc">Highest First</option>
-                            <option value="asc">Lowest First</option>
+                            <option value="desc">Highest first</option>
+                            <option value="asc">Lowest first</option>
                         </select>
                     </div>
                 </div>
             )}
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="glass-panel rounded-2xl p-5">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-brand-500/20">
-                            <Users size={20} className="text-brand-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-[var(--text-muted)]">Average score</span>
+                        <div className="p-1.5 rounded-md bg-[var(--accent-dim)] text-[var(--accent)]">
+                            <Users size={16} />
                         </div>
-                        <span className="text-gray-400 text-sm">Avg Score</span>
                     </div>
-                    <p className={`text-3xl font-bold ${getScoreColor(avgScore)}`}>{avgScore}</p>
+                    <p className={`text-2xl font-bold tabular-nums ${getScoreColor(avgScore)}`}>{avgScore}</p>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-green-500/20">
-                            <CheckCircle size={20} className="text-green-400" />
+                <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-[var(--text-muted)]">Completed tasks</span>
+                        <div className="p-1.5 rounded-md bg-[rgba(79,178,134,0.1)] text-[var(--color-success)]">
+                            <CheckCircle size={16} />
                         </div>
-                        <span className="text-gray-400 text-sm">Completed</span>
                     </div>
-                    <p className="text-3xl font-bold text-green-400">{totalCompleted}</p>
+                    <p className="text-2xl font-bold tabular-nums text-[var(--color-success)]">{totalCompleted}</p>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-red-500/20">
-                            <AlertTriangle size={20} className="text-red-400" />
+                <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-[var(--text-muted)]">Overdue tasks</span>
+                        <div className="p-1.5 rounded-md bg-[rgba(224,112,122,0.1)] text-[var(--color-danger)]">
+                            <AlertTriangle size={16} />
                         </div>
-                        <span className="text-gray-400 text-sm">Overdue</span>
                     </div>
-                    <p className="text-3xl font-bold text-red-400">{totalOverdue}</p>
+                    <p className="text-2xl font-bold tabular-nums text-[var(--color-danger)]">{totalOverdue}</p>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-amber-500/20">
-                            <Clock size={20} className="text-amber-400" />
+                <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-[var(--text-muted)]">On-time rate</span>
+                        <div className="p-1.5 rounded-md bg-[rgba(217,164,65,0.1)] text-[var(--color-warning)]">
+                            <Clock size={16} />
                         </div>
-                        <span className="text-gray-400 text-sm">On-Time Rate</span>
                     </div>
-                    <p className="text-3xl font-bold text-amber-400">{avgOnTime}%</p>
+                    <p className="text-2xl font-bold tabular-nums text-[var(--color-warning)]">{avgOnTime}%</p>
                 </div>
             </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Bar Chart - Staff Scores */}
-                <div className="lg:col-span-2 glass-panel rounded-2xl p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Productivity by Staff</h3>
-                    <ResponsiveContainer width="100%" height={300}>
+                <div className="lg:col-span-2 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-[var(--text-heading)] mb-4">Productivity by Staff</h3>
+                    <ResponsiveContainer width="100%" height={280}>
                         <BarChart data={barData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                            <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
-                            <YAxis stroke="#9ca3af" fontSize={12} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
+                            <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} />
+                            <YAxis stroke="var(--text-muted)" fontSize={11} />
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '12px',
+                                    backgroundColor: 'var(--bg-elevated)',
+                                    borderColor: 'var(--border)',
+                                    borderRadius: '8px',
+                                    color: 'var(--text-heading)',
+                                    fontSize: '12px'
                                 }}
                             />
                             <Legend />
-                            <Bar dataKey="score" name="Score" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="completion" name="Completion %" fill="#10b981" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="score" name="Score" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="completion" name="Completion %" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
                 {/* Pie Chart - Task Distribution */}
-                <div className="glass-panel rounded-2xl p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Task Distribution</h3>
-                    <ResponsiveContainer width="100%" height={300}>
+                <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-[var(--text-heading)] mb-4">Task Distribution</h3>
+                    <ResponsiveContainer width="100%" height={280}>
                         <PieChart>
                             <Pie
                                 data={pieData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={60}
-                                outerRadius={100}
+                                innerRadius={55}
+                                outerRadius={90}
                                 paddingAngle={2}
                                 dataKey="value"
                             >
@@ -378,9 +383,11 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
                             </Pie>
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '12px',
+                                    backgroundColor: 'var(--bg-elevated)',
+                                    borderColor: 'var(--border)',
+                                    borderRadius: '8px',
+                                    color: 'var(--text-heading)',
+                                    fontSize: '12px'
                                 }}
                             />
                             <Legend />
@@ -390,78 +397,80 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
             </div>
 
             {/* Trend Line Chart */}
-            <div className="glass-panel rounded-2xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Completion Trends</h3>
-                <ResponsiveContainer width="100%" height={250}>
+            <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-[var(--text-heading)] mb-4">Completion Trends</h3>
+                <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={trendData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                        <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickFormatter={(d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-                        <YAxis stroke="#9ca3af" fontSize={12} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
+                        <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
+                        <YAxis stroke="var(--text-muted)" fontSize={11} />
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '12px',
+                                backgroundColor: 'var(--bg-elevated)',
+                                borderColor: 'var(--border)',
+                                borderRadius: '8px',
+                                color: 'var(--text-heading)',
+                                fontSize: '12px'
                             }}
                         />
                         <Legend />
-                        <Line type="monotone" dataKey="completed" name="Completed" stroke="#10b981" strokeWidth={2} dot={false} />
-                        <Line type="monotone" dataKey="created" name="Created" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="completed" name="Completed" stroke="var(--color-success)" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="created" name="Created" stroke="var(--accent)" strokeWidth={2} dot={false} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
 
             {/* Staff Table */}
-            <div className="glass-panel rounded-2xl overflow-hidden">
-                <div className="p-4 border-b border-white/10">
-                    <h3 className="text-lg font-semibold text-white">Staff Details</h3>
+            <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border)] overflow-hidden">
+                <div className="p-4 border-b border-[var(--border)]">
+                    <h3 className="text-sm font-semibold text-[var(--text-heading)]">Staff Details</h3>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-white/5">
+                    <table className="w-full text-xs">
+                        <thead className="bg-[var(--bg-elevated)] border-b border-[var(--border)] font-medium text-[var(--text-muted)]">
                             <tr>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Staff</th>
-                                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Dept</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Score</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Completion</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tasks</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Overdue</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">On-Time</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Trend</th>
+                                <th className="text-left px-4 py-2.5">Staff</th>
+                                <th className="text-left px-4 py-2.5">Department</th>
+                                <th className="text-center px-4 py-2.5">Score</th>
+                                <th className="text-center px-4 py-2.5">Completion</th>
+                                <th className="text-center px-4 py-2.5">Tasks</th>
+                                <th className="text-center px-4 py-2.5">Overdue</th>
+                                <th className="text-center px-4 py-2.5">On-time</th>
+                                <th className="text-center px-4 py-2.5">Trend</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-[var(--border)]">
                             {metrics.map((m) => (
                                 <tr
                                     key={m.staffId}
                                     onClick={() => setSelectedStaff(m)}
-                                    className="hover:bg-white/5 cursor-pointer transition-colors"
+                                    className="hover:bg-[var(--bg-elevated)]/50 cursor-pointer transition-colors"
                                 >
                                     <td className="px-4 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-accent-purple flex items-center justify-center text-xs font-bold text-white">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-7 h-7 rounded-full bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-xs font-semibold text-[var(--accent)]">
                                                 {m.staffName.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-white">{m.staffName}</p>
-                                                <p className="text-xs text-gray-500">{m.role}</p>
+                                                <p className="font-semibold text-[var(--text-heading)]">{m.staffName}</p>
+                                                <p className="text-[11px] text-[var(--text-muted)]">{m.role}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-400">{m.department || '-'}</td>
+                                    <td className="px-4 py-3 text-[var(--text-muted)]">{m.department || '-'}</td>
                                     <td className="px-4 py-3 text-center">
-                                        <span className={`px-2 py-1 rounded-lg text-sm font-bold ${getScoreBg(m.productivityScore)} ${getScoreColor(m.productivityScore)}`}>
+                                        <span className={`px-2 py-0.5 rounded-md text-xs font-semibold tabular-nums border ${getScoreBg(m.productivityScore)} ${getScoreColor(m.productivityScore)}`}>
                                             {m.productivityScore}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-center text-sm text-white">{m.completionRate}%</td>
-                                    <td className="px-4 py-3 text-center text-sm text-white">{m.totalTasks}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <span className={m.overdueTasks > 0 ? 'text-red-400 font-medium' : 'text-gray-400'}>
+                                    <td className="px-4 py-3 text-center text-[var(--text-heading)] tabular-nums">{m.completionRate}%</td>
+                                    <td className="px-4 py-3 text-center text-[var(--text-heading)] tabular-nums">{m.totalTasks}</td>
+                                    <td className="px-4 py-3 text-center tabular-nums">
+                                        <span className={m.overdueTasks > 0 ? 'text-[var(--color-danger)] font-semibold' : 'text-[var(--text-muted)]'}>
                                             {m.overdueTasks}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-center text-sm text-white">{m.onTimeRate}%</td>
+                                    <td className="px-4 py-3 text-center text-[var(--text-heading)] tabular-nums">{m.onTimeRate}%</td>
                                     <td className="px-4 py-3 text-center">{getTrendIcon(m.trend)}</td>
                                 </tr>
                             ))}
@@ -472,76 +481,76 @@ const StaffProductivityMetrics: React.FC<StaffProductivityMetricsProps> = ({
 
             {/* Staff Detail Modal */}
             {selectedStaff && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="glass-modal rounded-2xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-accent-purple flex items-center justify-center text-2xl font-bold text-white">
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                    <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl w-full max-w-lg p-5 max-h-[85vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-accent)] flex items-center justify-center text-xl font-bold text-[var(--accent)]">
                                     {selectedStaff.staffName.charAt(0)}
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-white">{selectedStaff.staffName}</h2>
-                                    <p className="text-gray-400">{selectedStaff.role} • {selectedStaff.department || 'No Dept'}</p>
+                                    <h2 className="text-base font-bold text-[var(--text-heading)]">{selectedStaff.staffName}</h2>
+                                    <p className="text-xs text-[var(--text-muted)]">{selectedStaff.role} • {selectedStaff.department || 'General'}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setSelectedStaff(null)}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                className="p-1 text-[var(--text-muted)] hover:text-[var(--text-heading)] rounded-lg transition-colors"
                             >
-                                <X size={20} className="text-gray-400" />
+                                <X size={18} />
                             </button>
                         </div>
 
                         {/* Score Display */}
-                        <div className="text-center mb-6">
-                            <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full ${getScoreBg(selectedStaff.productivityScore)}`}>
-                                <span className={`text-4xl font-bold ${getScoreColor(selectedStaff.productivityScore)}`}>
+                        <div className="text-center mb-5">
+                            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full border ${getScoreBg(selectedStaff.productivityScore)}`}>
+                                <span className={`text-3xl font-bold tabular-nums ${getScoreColor(selectedStaff.productivityScore)}`}>
                                     {selectedStaff.productivityScore}
                                 </span>
                             </div>
-                            <p className="text-gray-400 mt-2">Productivity Score</p>
+                            <p className="text-xs text-[var(--text-muted)] mt-1.5 font-medium">Productivity Score</p>
                         </div>
 
                         {/* Detailed Metrics */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">Total Tasks</p>
-                                <p className="text-2xl font-bold text-white">{selectedStaff.totalTasks}</p>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">Total tasks</p>
+                                <p className="text-xl font-bold text-[var(--text-heading)] tabular-nums mt-0.5">{selectedStaff.totalTasks}</p>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">Completed</p>
-                                <p className="text-2xl font-bold text-green-400">{selectedStaff.completedTasks}</p>
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">Completed</p>
+                                <p className="text-xl font-bold text-[var(--color-success)] tabular-nums mt-0.5">{selectedStaff.completedTasks}</p>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">Active</p>
-                                <p className="text-2xl font-bold text-amber-400">{selectedStaff.activeTasks}</p>
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">Active</p>
+                                <p className="text-xl font-bold text-[var(--color-warning)] tabular-nums mt-0.5">{selectedStaff.activeTasks}</p>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">Overdue</p>
-                                <p className="text-2xl font-bold text-red-400">{selectedStaff.overdueTasks}</p>
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">Overdue</p>
+                                <p className="text-xl font-bold text-[var(--color-danger)] tabular-nums mt-0.5">{selectedStaff.overdueTasks}</p>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">Completion Rate</p>
-                                <p className="text-2xl font-bold text-white">{selectedStaff.completionRate}%</p>
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">Completion rate</p>
+                                <p className="text-xl font-bold text-[var(--text-heading)] tabular-nums mt-0.5">{selectedStaff.completionRate}%</p>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">On-Time Rate</p>
-                                <p className="text-2xl font-bold text-white">{selectedStaff.onTimeRate}%</p>
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">On-time rate</p>
+                                <p className="text-xl font-bold text-[var(--text-heading)] tabular-nums mt-0.5">{selectedStaff.onTimeRate}%</p>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">This Week</p>
-                                <p className="text-2xl font-bold text-white">{selectedStaff.tasksCompletedThisWeek}</p>
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">This week</p>
+                                <p className="text-xl font-bold text-[var(--text-heading)] tabular-nums mt-0.5">{selectedStaff.tasksCompletedThisWeek}</p>
                             </div>
-                            <div className="bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">This Month</p>
-                                <p className="text-2xl font-bold text-white">{selectedStaff.tasksCompletedThisMonth}</p>
+                            <div className="bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3">
+                                <p className="text-[var(--text-muted)]">This month</p>
+                                <p className="text-xl font-bold text-[var(--text-heading)] tabular-nums mt-0.5">{selectedStaff.tasksCompletedThisMonth}</p>
                             </div>
                         </div>
 
                         {selectedStaff.avgCompletionTimeHours > 0 && (
-                            <div className="mt-4 bg-white/5 rounded-xl p-4">
-                                <p className="text-xs text-gray-400">Avg. Completion Time</p>
-                                <p className="text-xl font-bold text-white">{selectedStaff.avgCompletionTimeHours} hours</p>
+                            <div className="mt-3 bg-[var(--bg-main)] border border-[var(--border)] rounded-lg p-3 text-xs">
+                                <p className="text-[var(--text-muted)]">Average completion time</p>
+                                <p className="text-base font-bold text-[var(--text-heading)] tabular-nums mt-0.5">{selectedStaff.avgCompletionTimeHours} hours</p>
                             </div>
                         )}
                     </div>

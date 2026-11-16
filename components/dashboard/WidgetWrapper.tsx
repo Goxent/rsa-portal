@@ -50,19 +50,16 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
         >
             <div
                 className={`
-                    relative w-full h-full rounded-xl overflow-hidden
+                    relative w-full h-full rounded-[var(--radius-lg)] overflow-hidden
                     bg-secondary border border-border shadow-card
-                    transition-all duration-300
-                    ${!isDragging ? 'hover:border-[rgba(101,154,43,0.35)] hover:shadow-[0_8px_32px_var(--accent-glow)]' : ''}
-                    ${isDragging ? 'shadow-2xl ring-2 ring-accent/30 scale-[1.02] z-50 bg-surface' : ''}
+                    transition-colors duration-150
+                    ${!isDragging ? 'hover:border-[var(--border-mid)]' : ''}
+                    ${isDragging ? 'shadow-2xl ring-2 ring-accent/30 scale-[1.01] z-50 bg-surface' : ''}
                     ${isEditing ? 'ring-2 ring-dashed ring-accent/30' : ''}
                 `}
-                style={{
-                    background: 'radial-gradient(circle at top right, rgba(101,154,43,0.06) 0%, var(--bg-secondary) 100%)'
-                }}
             >
                 {/* Widget Header */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-secondary/30">
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
                     <div className="flex items-center gap-2.5">
                         {isEditing && (
                             <button
@@ -73,9 +70,7 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
                                 <GripVertical size={14} className="text-muted" />
                             </button>
                         )}
-                        {/* Category indicator */}
-                        <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--accent-glow)]" />
-                        <h3 className="text-[11px] font-bold text-accent dark:text-brand-400 uppercase tracking-[0.12em]">{widget.title}</h3>
+                        <h3 className="text-[0.8125rem] font-semibold text-heading tracking-[-0.005em]">{widget.title}</h3>
                     </div>
 
                     {isEditing && (
@@ -99,7 +94,7 @@ const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
                 </div>
 
                 {/* Widget Content */}
-                <div className="p-4 h-[calc(100%-45px)] overflow-hidden">
+                <div className="p-4 h-[calc(100%-49px)] overflow-hidden">
                     {children}
                 </div>
             </div>
